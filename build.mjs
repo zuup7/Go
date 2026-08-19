@@ -62,7 +62,11 @@ const bundle = order.map((path) => ({
 const css = await readFile(join(ROOT, 'assets/style.css'), 'utf8');
 const html = await readFile(join(ROOT, 'index.html'), 'utf8');
 const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? 'Family Go!';
-const favicon = html.match(/<link rel="icon"[\s\S]*?\/>/)?.[0]?.trim() ?? '';
+// index.html 의 <link> 중 로컬 스타일시트만 빼고 그대로 옮긴다 (아이콘, 웹폰트)
+const links = [...html.matchAll(/<link\b[\s\S]*?\/>/g)]
+  .map((m) => m[0].trim())
+  .filter((tag) => !tag.includes('assets/style.css'))
+  .join('\n');
 
 const payload = JSON.stringify(bundle).replaceAll('<\/', '<\\/').replaceAll('<script', '<\\script');
 
@@ -73,7 +77,7 @@ const out = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>${title}</title>
 <meta name="description" content="가족을 만들고, 인생을 선택하며, 세대를 이어가는 나만의 이야기를 만들어보세요." />
-${favicon}
+${links}
 <style>
 ${css}
 </style>

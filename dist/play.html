@@ -3,11 +3,16 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Family Go! — 대를 잇는 인생 시뮬레이션</title>
+<title>Family Go!</title>
 <meta name="description" content="가족을 만들고, 인생을 선택하며, 세대를 이어가는 나만의 이야기를 만들어보세요." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A1%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" />
 <style>
-/* Family Go! — 따뜻하고 편안한 톤 */
+/* Family Go! — 가족 이야기책 같은 따뜻한 톤 */
+
+/* 팔레트: 종이(--bg) 위의 잉크(--ink), 저녁 햇살(--accent), 계절을 나타내는 보조색 */
 :root {
   --bg: #fbf6ef;
   --bg-soft: #f4ece1;
@@ -15,29 +20,65 @@
   --ink: #3d3229;
   --ink-soft: #7d7166;
   --line: #e7dccd;
-  --accent: #e08a5b;
+  --accent: #d97a49;
   --accent-soft: #f7d9c6;
   --green: #6fa86f;
   --blue: #6f92b8;
   --pink: #d97f96;
+  --violet: #a97fbd;
   --gold: #d8a94a;
-  --bad: #c66565;
-  --radius: 18px;
+  --bad: #c05f5f;
+  --good-bg: #e9f3e6;
+  --bad-bg: #f7e8e6;
   --shadow: 0 6px 20px rgba(96, 74, 55, 0.09);
+
+  --font-display: 'Gowun Batang', 'Apple SD Gothic Neo', 'Noto Serif KR', serif;
+  --font-body: 'Gowun Dodum', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  --radius: 18px;
 }
 
+/* 다크: OS 설정만 있는 기본 상태 (명시적 라이트 선택은 이기지 못하도록 가드) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #221d19;
     --bg-soft: #2b2521;
     --card: #302a25;
     --ink: #f2e9df;
     --ink-soft: #b6a798;
     --line: #453c34;
-    --accent: #e79a6c;
+    --accent: #e2916a;
     --accent-soft: #4a382c;
+    --green: #82b782;
+    --blue: #86a6c9;
+    --pink: #e194a8;
+    --violet: #bb95cd;
+    --gold: #e0b962;
+    --bad: #d97b7b;
+    --good-bg: #2f3a2c;
+    --bad-bg: #3d2a29;
     --shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   }
+}
+
+/* 다크: 뷰어가 직접 고른 경우 */
+:root[data-theme="dark"] {
+  --bg: #221d19;
+  --bg-soft: #2b2521;
+  --card: #302a25;
+  --ink: #f2e9df;
+  --ink-soft: #b6a798;
+  --line: #453c34;
+  --accent: #e2916a;
+  --accent-soft: #4a382c;
+  --green: #82b782;
+  --blue: #86a6c9;
+  --pink: #e194a8;
+  --violet: #bb95cd;
+  --gold: #e0b962;
+  --bad: #d97b7b;
+  --good-bg: #2f3a2c;
+  --bad-bg: #3d2a29;
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
 * { box-sizing: border-box; }
@@ -46,17 +87,23 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-  line-height: 1.6;
+  font-family: var(--font-body);
+  line-height: 1.65;
   -webkit-text-size-adjust: 100%;
 }
 
 .app { max-width: 960px; margin: 0 auto; padding: 16px 16px 64px; }
 
-h1, h2, h3 { margin: 0 0 8px; line-height: 1.3; }
-h1 { font-size: 1.7rem; }
-h2 { font-size: 1.15rem; }
-h3 { font-size: 1rem; }
+h1, h2, h3 {
+  margin: 0 0 8px;
+  line-height: 1.3;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-wrap: balance;
+}
+h1 { font-size: 1.9rem; letter-spacing: -.01em; }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1.02rem; }
 p { margin: 0 0 10px; }
 
 button {
@@ -88,7 +135,8 @@ input, select {
 
 /* ── 타이틀 ── */
 .title-screen { text-align: center; padding: 24px 0; }
-.title-screen .logo { font-size: 3.2rem; line-height: 1; }
+.title-screen .logo { font-size: 3.4rem; line-height: 1; }
+.title-screen h1 { font-size: 2.4rem; letter-spacing: -.02em; }
 .title-screen .tag { color: var(--ink-soft); margin-bottom: 20px; }
 .form-grid { display: grid; gap: 12px; text-align: left; }
 .form-grid label { font-size: .85rem; color: var(--ink-soft); display: block; margin-bottom: 4px; }
@@ -108,7 +156,8 @@ input, select {
 }
 .stat-chip { text-align: center; }
 .stat-chip .k { font-size: .72rem; color: var(--ink-soft); display: block; }
-.stat-chip .v { font-weight: 700; font-size: .98rem; }
+.stat-chip .v { font-weight: 700; font-size: .98rem; font-variant-numeric: tabular-nums; }
+.stat-chip .k { letter-spacing: .04em; }
 
 /* ── 캐릭터 카드 ── */
 .hero { display: flex; gap: 14px; align-items: flex-start; }
@@ -119,7 +168,7 @@ input, select {
 .avatar-svg { display: block; }
 .hero-info { flex: 1; min-width: 0; }
 .name-line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.name-line .name { font-size: 1.25rem; font-weight: 800; }
+.name-line .name { font-size: 1.3rem; font-weight: 700; font-family: var(--font-display); }
 .muted { color: var(--ink-soft); font-size: .85rem; }
 .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .badge {
@@ -129,13 +178,13 @@ input, select {
 .badge.accent { background: var(--accent-soft); border-color: var(--accent); }
 
 .bars { margin-top: 12px; display: grid; gap: 7px; }
-.bar-row { display: grid; grid-template-columns: 46px 1fr 34px; gap: 8px; align-items: center; font-size: .8rem; }
+.bar-row { display: grid; grid-template-columns: 46px 1fr 34px; gap: 8px; align-items: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
 .bar { height: 8px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; }
 .bar > i { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
 .bar.health > i { background: var(--green); }
 .bar.intellect > i { background: var(--blue); }
 .bar.charm > i { background: var(--pink); }
-.bar.creativity > i { background: #a97fbd; }
+.bar.creativity > i { background: var(--violet); }
 .bar.fitness > i { background: var(--gold); }
 .bar.happy > i { background: linear-gradient(90deg, var(--gold), var(--pink)); }
 
@@ -170,12 +219,8 @@ input, select {
 .log { display: grid; gap: 6px; max-height: 340px; overflow-y: auto; }
 .log-line { display: flex; gap: 9px; font-size: .87rem; padding: 6px 8px; border-radius: 10px; background: var(--bg-soft); }
 .log-line .y { color: var(--ink-soft); flex: 0 0 40px; font-variant-numeric: tabular-nums; }
-.log-line.good { background: #e9f3e6; }
-.log-line.bad { background: #f7e8e6; }
-@media (prefers-color-scheme: dark) {
-  .log-line.good { background: #2f3a2c; }
-  .log-line.bad { background: #3d2a29; }
-}
+.log-line.good { background: var(--good-bg); }
+.log-line.bad { background: var(--bad-bg); }
 
 /* ── 가족 트리 ── */
 .gen-block { margin-bottom: 14px; }
@@ -215,6 +260,15 @@ input, select {
 @media (max-width: 520px) {
   .topbar { grid-template-columns: repeat(2, 1fr); }
   .row-2 { grid-template-columns: 1fr; }
+}
+
+button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
 }
 
 </style>
