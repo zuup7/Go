@@ -1,7 +1,7 @@
 // 앱 진입점: 상태를 들고, 화면을 그리고, 클릭을 게임 함수로 연결한다.
 import * as G from '../core/game.js';
 import * as V from './views.js';
-import { saveGame, loadGame, hasSave, clearSave, serialize } from '../core/save.js';
+import { saveGame, loadGame, hasSave, clearSave, serialize, deserialize } from '../core/save.js';
 import { fullName } from '../core/person.js';
 
 const app = document.getElementById('app');
@@ -10,6 +10,7 @@ const modalRoot = document.getElementById('modal-root');
 let state = null;
 let tab = 'life';
 let openPersonId = null;
+let importOpen = null;   // null | { error }
 let draft = { familyName: '', givenName: '', gender: '', traitId: '', villageName: '' };
 
 // ── 렌더 ─────────────────────────────────────────────────
@@ -41,6 +42,10 @@ function renderModal() {
   }
   if (state?.succession) {
     modalRoot.innerHTML = V.successionModal(state);
+    return;
+  }
+  if (importOpen) {
+    modalRoot.innerHTML = V.importModal(importOpen.error);
     return;
   }
   if (openPersonId && state?.people[openPersonId]) {
@@ -177,23 +182,51 @@ const actions = {
   },
 
   person: (id) => { openPersonId = id; renderModal(); },
-  'close-modal': () => { openPersonId = null; renderModal(); },
+  'close-modal': () => { openPersonId = null; importOpen = null; renderModal(); },
 
   save: () => { toast(saveGame(state) ? '저장했습니다.' : '저장에 실패했습니다.'); },
-  export: () => {
-    const blob = new Blob([serialize(state)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `family-go-${state.year}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+
+  'copy-save': async () => {
+    const text = serialize(state);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('저장 데이터를 클립보드에 복사했습니다.');
+    } catch {
+      // 클립보드를 쓸 수 없는 환경에서는 직접 복사하도록 보여준다
+      const box = document.createElement('textarea');
+      box.value = text;
+      box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;height:120px;z-index:99';
+      document.body.appendChild(box);
+      box.select();
+      toast('직접 복사한 뒤 화면을 다시 누르세요.');
+      const remove = () => { box.remove(); document.removeEventListener('click', remove); };
+      setTimeout(() => document.addEventListener('click', remove), 300);
+    }
+  },
+
+  'open-import': () => { importOpen = { error: '' }; renderModal(); },
+
+  'do-import': () => {
+    const text = document.getElementById('import-text')?.value?.trim();
+    if (!text) { importOpen = { error: '저장 데이터를 붙여넣어 주세요.' }; renderModal(); return; }
+    try {
+      state = deserialize(text);
+      importOpen = null;
+      tab = 'life';
+      autosave();
+      render();
+      toast('이야기를 불러왔습니다.');
+    } catch (error) {
+      importOpen = { error: `불러오지 못했습니다: ${error.message}` };
+      renderModal();
+    }
   },
   restart: () => {
     if (!confirm('지금 가문의 이야기를 접고 새로 시작할까요?')) return;
     clearSave();
     state = null;
     openPersonId = null;
+    importOpen = null;
     render();
   },
 };

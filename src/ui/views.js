@@ -398,9 +398,11 @@ export function legacyTab(state) {
 
   <div class="card">
     <h3>게임 관리</h3>
+    <p class="muted">이 브라우저에 자동 저장됩니다. 다른 기기로 옮기려면 저장 데이터를 복사해 두세요.</p>
     <div class="footer-actions">
-      <button data-act="save">💾 저장</button>
-      <button data-act="export">⬇️ 내보내기</button>
+      <button data-act="save">💾 지금 저장</button>
+      <button data-act="copy-save">📋 저장 데이터 복사</button>
+      <button data-act="open-import">📥 불러오기</button>
       <button class="ghost" data-act="restart">🔄 새로 시작</button>
     </div>
   </div>`;
@@ -491,6 +493,19 @@ export function personModal(state, person) {
       ${kids.length ? `자녀: ${kids.map((k) => esc(fullName(k))).join(', ')}` : ''}
     </p>
     <button class="wide" data-act="close-modal">닫기</button>`);
+}
+
+export function importModal(error) {
+  return modal(`
+    <div class="icon">📥</div>
+    <h2>저장 데이터 불러오기</h2>
+    <p class="muted">복사해 둔 저장 데이터를 아래에 붙여넣으세요. 지금 진행 중인 이야기는 덮어씁니다.</p>
+    <textarea id="import-text" rows="6" placeholder='{"version":1,...}'></textarea>
+    ${error ? `<div class="result-box">${esc(error)}</div>` : ''}
+    <div class="footer-actions">
+      <button class="primary" data-act="do-import">불러오기</button>
+      <button class="ghost" data-act="close-modal">닫기</button>
+    </div>`);
 }
 
 const modal = (inner) => `<div class="modal-bg"><div class="modal">${inner}</div></div>`;

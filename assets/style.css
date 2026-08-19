@@ -111,6 +111,12 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 button.ghost { background: transparent; }
 button.wide { width: 100%; }
 
+textarea {
+  font: inherit; font-size: .8rem; padding: 10px 12px; border-radius: 12px; width: 100%;
+  border: 1px solid var(--line); background: var(--bg-soft); color: var(--ink);
+  resize: vertical; margin: 8px 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 input, select {
   font: inherit; padding: 9px 12px; border-radius: 12px;
   border: 1px solid var(--line); background: var(--card); color: var(--ink); width: 100%;
