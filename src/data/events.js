@@ -58,9 +58,18 @@ export const EVENTS = [
     id: 'talent_found', icon: '✨', title: '숨겨진 재능', weight: 4, minAge: 6, maxAge: 15, once: true,
     text: '{me}에게서 남다른 무언가가 보입니다. 무엇을 밀어줄까요?',
     choices: [
-      { label: '악기를 배우게 한다', cost: 200, result: '작은 손이 건반 위를 달립니다.', effects: { stats: { creativity: 8 }, happiness: 3 } },
-      { label: '운동부에 보낸다', cost: 150, result: '흙투성이가 되어 웃으며 돌아옵니다.', effects: { stats: { fitness: 8, health: 2 } } },
-      { label: '책을 잔뜩 사준다', cost: 120, result: '밤늦게까지 불이 꺼지지 않습니다.', effects: { stats: { intellect: 8 } } },
+      { label: '악기를 배우게 한다', cost: 200, result: '작은 손이 건반 위를 달립니다.',
+        effects: { stats: { creativity: 8 }, happiness: 3, flag: 'music' },
+        echo: { delay: [8, 16], icon: '🎹', text: '어릴 적 배운 건반이 {actor}의 무대가 되었습니다. 첫 공연에 마을이 다 왔습니다.',
+                effects: { money: 900, stats: { creativity: 8, charm: 5 }, villageFame: 6, happiness: 8 } } },
+      { label: '운동부에 보낸다', cost: 150, result: '흙투성이가 되어 웃으며 돌아옵니다.',
+        effects: { stats: { fitness: 8, health: 2 }, flag: 'sport' },
+        echo: { delay: [7, 15], icon: '🏅', text: '{actor}이(가) 그때 시작한 운동으로 상을 받았습니다. 몸도 마음도 튼튼합니다.',
+                effects: { stats: { fitness: 6, health: 6 }, lifespan: 3, money: 500, villageFame: 4 } } },
+      { label: '책을 잔뜩 사준다', cost: 120, result: '밤늦게까지 불이 꺼지지 않습니다.',
+        effects: { stats: { intellect: 8 }, flag: 'books' },
+        echo: { delay: [8, 16], icon: '📚', text: '그때 읽은 책들이 {actor}의 길이 되었습니다. 배움의 속도가 남다릅니다.',
+                effects: { stats: { intellect: 8 }, education: 3, addTrait: 'diligent' } } },
     ],
   },
   {
@@ -134,7 +143,9 @@ export const EVENTS = [
     choices: [
       {
         label: '용기를 낸다', check: { stat: 'charm', difficulty: 50 },
-        success: { text: '풋풋한 계절이 시작되었습니다.', effects: { happiness: 8, stats: { charm: 4 } } },
+        success: { text: '풋풋한 계절이 시작되었습니다.', effects: { happiness: 8, stats: { charm: 4 } },
+          echo: { delay: [6, 14], icon: '💌', text: '그때의 용기가 {actor}에게 남았습니다. 사람 앞에서 주저하지 않습니다.',
+                  effects: { stats: { charm: 8 }, happiness: 6, affection: 10 } } },
         fail: { text: '거절당했지만, 이런 마음도 처음입니다.', effects: { happiness: -4, stats: { charm: 2 } } },
       },
       { label: '일기에만 적어둔다', result: '언젠가 꺼내볼 페이지가 생겼습니다.', effects: { stats: { creativity: 4 }, happiness: 1 } },
@@ -146,7 +157,10 @@ export const EVENTS = [
     choices: [
       { label: '밤을 새워 공부한다', result: '눈은 빨갛지만 머리는 맑습니다.', effects: { stats: { intellect: 6, health: -3 }, education: 1, happiness: -2 } },
       { label: '푹 자고 컨디션을 챙긴다', result: '아는 문제는 다 맞혔습니다.', effects: { stats: { intellect: 2, health: 3 }, happiness: 2 } },
-      { label: '친구들과 놀러 나간다', result: '성적표는 잊기로 했습니다.', effects: { stats: { charm: 5 }, happiness: 5, education: -1 } },
+      { label: '친구들과 놀러 나간다', result: '성적표는 잊기로 했습니다.',
+        effects: { stats: { charm: 5 }, happiness: 5, education: -1 },
+        echo: { delay: [5, 12], icon: '🪃', tone: 'bad', text: '그때 미룬 공부가 {actor}의 발목을 잡았습니다. 원하던 자리를 놓쳤습니다.',
+                effects: { happiness: -8, money: -400 } } },
     ],
   },
   {
@@ -180,7 +194,10 @@ export const EVENTS = [
     choices: [
       { label: '혼자만의 시간을 준다', result: '며칠 뒤 슬그머니 나와 밥을 먹었습니다.', effects: { happiness: 3, stats: { creativity: 3 } } },
       { label: '진지하게 마주 앉는다', check: { stat: 'charm', difficulty: 48 }, success: { text: '처음으로 속마음을 들었습니다.', effects: { happiness: 7, stats: { charm: 4 } } }, fail: { text: '말이 더 엇나갔습니다.', effects: { happiness: -5 } } },
-      { label: '엄하게 다스린다', result: '조용해졌지만 눈빛이 남았습니다.', effects: { education: 1, happiness: -4, stats: { intellect: 3 } } },
+      { label: '엄하게 다스린다', result: '조용해졌지만 눈빛이 남았습니다.',
+        effects: { education: 1, happiness: -4, stats: { intellect: 3 } },
+        echo: { delay: [6, 14], icon: '🚪', tone: 'bad', text: '{actor}은(는) 그해의 말들을 오래 기억했습니다. 집에 잘 들르지 않습니다.',
+                effects: { happiness: -8, familyHappiness: -4 } } },
     ],
   },
   {
@@ -242,7 +259,8 @@ export const EVENTS = [
     choices: [
       {
         label: '크게 투자한다', cost: 800, check: { stat: 'intellect', difficulty: 60 },
-        success: { text: '판단이 맞아떨어졌습니다!', effects: { money: 2400, happiness: 6 } },
+        success: { text: '판단이 맞아떨어졌습니다!', effects: { money: 2400, happiness: 6, flag: 'investor' },
+          echo: { delay: [6, 14], icon: '📈', text: '그때 묻어둔 돈이 몇 곱절로 돌아왔습니다.', effects: { money: 4200, happiness: 6 } } },
         fail: { text: '원금이 반토막 났습니다.', effects: { money: 200, happiness: -8 } },
       },
       { label: '조금만 넣어본다', cost: 200, result: '작게 넣고 작게 벌었습니다.', effects: { money: 320, happiness: 1 } },
@@ -271,7 +289,10 @@ export const EVENTS = [
     choices: [
       {
         label: '작은 가게를 열어본다', cost: 600, check: { stat: 'creativity', difficulty: 55 },
-        success: { text: '입소문이 나기 시작했습니다!', effects: { money: 1600, happiness: 5, villageFame: 4 } },
+        success: { text: '입소문이 나기 시작했습니다!',
+          effects: { money: 1600, happiness: 5, villageFame: 4, flag: 'business' },
+          echo: { delay: [5, 12], icon: '🏪', text: '{actor}의 가게가 자리를 잡았습니다. 2호점 이야기가 나옵니다.',
+                  effects: { money: 3200, villageFame: 6, happiness: 8 } } },
         fail: { text: '재고만 쌓였습니다.', effects: { money: 100, happiness: -4, stats: { health: -2 } } },
       },
       { label: '자격증을 딴다', cost: 250, result: '이력서 한 줄이 늘었습니다.', effects: { stats: { intellect: 5 }, education: 1, promote: 1 } },
@@ -283,8 +304,14 @@ export const EVENTS = [
     text: '{me}은(는) 요즘 아무것도 하고 싶지 않습니다.',
     choices: [
       { label: '긴 휴가를 낸다', cost: 400, result: '바다를 보고 왔습니다. 숨이 트입니다.', effects: { happiness: 10, stats: { health: 4 } } },
-      { label: '버티며 일한다', result: '해내긴 했지만 몸이 상했습니다.', effects: { money: 400, happiness: -6, stats: { health: -5 } } },
-      { label: '일을 줄이고 가족과 지낸다', result: '아이가 자라는 걸 처음으로 자세히 봤습니다.', effects: { happiness: 6, childHappiness: 6, money: -200 } },
+      { label: '버티며 일한다', result: '해내긴 했지만 몸이 상했습니다.',
+        effects: { money: 400, happiness: -6, stats: { health: -5 } },
+        echo: { delay: [6, 14], icon: '🏥', tone: 'bad', text: '그해 무리한 대가가 {actor}에게 돌아왔습니다. 병원 신세를 졌습니다.',
+                effects: { stats: { health: -10 }, lifespan: -4, money: -600 } } },
+      { label: '일을 줄이고 가족과 지낸다', result: '아이가 자라는 걸 처음으로 자세히 봤습니다.',
+        effects: { happiness: 6, childHappiness: 6, money: -200 },
+        echo: { delay: [8, 16], icon: '🏡', text: '그때 함께한 시간을 아이가 기억합니다. 어른이 되어서도 {actor} 곁을 지킵니다.',
+                effects: { familyHappiness: 10, childStats: { charm: 6 } } } },
     ],
   },
   {
@@ -326,8 +353,14 @@ export const EVENTS = [
     id: 'health_check', icon: '🩺', title: '건강검진', weight: 4, minAge: 40,
     text: '검진 결과지를 받았습니다.',
     choices: [
-      { label: '생활 습관을 바꾼다', cost: 200, result: '아침 산책이 습관이 되었습니다.', effects: { stats: { health: 7, fitness: 3 }, lifespan: 2 } },
-      { label: '괜찮겠지 하고 넘긴다', result: '결과지는 서랍 속으로 들어갔습니다.', effects: { stats: { health: -4 }, lifespan: -2, money: 100 } },
+      { label: '생활 습관을 바꾼다', cost: 200, result: '아침 산책이 습관이 되었습니다.',
+        effects: { stats: { health: 7, fitness: 3 }, lifespan: 2 },
+        echo: { delay: [6, 14], icon: '🌿', text: '{actor}의 아침 산책은 십 년째입니다. 또래보다 훨씬 정정합니다.',
+                effects: { stats: { health: 8, fitness: 5 }, lifespan: 4, happiness: 6 } } },
+      { label: '괜찮겠지 하고 넘긴다', result: '결과지는 서랍 속으로 들어갔습니다.',
+        effects: { stats: { health: -4 }, lifespan: -2, money: 100 },
+        echo: { delay: [3, 9], icon: '🚑', tone: 'bad', text: '서랍 속 결과지가 결국 {actor}를 병원으로 데려갔습니다.',
+                effects: { stats: { health: -12 }, lifespan: -5, money: -900 } } },
     ],
   },
   {
@@ -360,8 +393,14 @@ export const EVENTS = [
     text: '어른들이 부쩍 약해지셨습니다.',
     choices: [
       { label: '병원비를 대드린다', cost: 600, result: '해드릴 수 있는 게 있어 다행입니다.', effects: { happiness: 6, lifespan: 1 } },
-      { label: '주말마다 찾아뵌다', result: '얼굴 보는 게 최고라 하십니다.', effects: { happiness: 7, stats: { charm: 2 }, money: -100 } },
-      { label: '지금은 여력이 없다', result: '마음에 짐이 남았습니다.', effects: { happiness: -6, money: 200 } },
+      { label: '주말마다 찾아뵌다', result: '얼굴 보는 게 최고라 하십니다.',
+        effects: { happiness: 7, stats: { charm: 2 }, money: -100 },
+        echo: { delay: [5, 12], icon: '🎁', text: '어른들이 {actor} 앞으로 남겨둔 것이 있었습니다. 통장과 편지 한 장.',
+                effects: { money: 1600, happiness: 8 } } },
+      { label: '지금은 여력이 없다', result: '마음에 짐이 남았습니다.',
+        effects: { happiness: -6, money: 200 },
+        echo: { delay: [4, 10], icon: '🌧️', tone: 'bad', text: '그때 하지 못한 일이 {actor}의 마음에 오래 남았습니다.',
+                effects: { happiness: -10, stats: { health: -3 } } } },
     ],
   },
   {
@@ -467,8 +506,14 @@ export const EVENTS = [
     id: 'child_dream', icon: '🌟', title: '아이의 꿈', weight: 4, minAge: 25, needsChild: true,
     text: '{child}이(가) 되고 싶은 것이 생겼다고 합니다.',
     choices: [
-      { label: '전폭적으로 지원한다', cost: 400, result: '{child}의 눈이 반짝입니다.', effects: { childHappiness: 10, childStats: { creativity: 5, intellect: 3 }, happiness: 4 } },
-      { label: '현실적인 조언을 해준다', result: '{child}은(는) 잠시 시무룩했습니다.', effects: { childStats: { intellect: 6 }, childHappiness: -4 } },
+      { label: '전폭적으로 지원한다', cost: 400, result: '{child}의 눈이 반짝입니다.',
+        effects: { childHappiness: 10, childStats: { creativity: 5, intellect: 3 }, happiness: 4, flag: 'supported' },
+        echo: { delay: [8, 18], icon: '🌟', text: '{actor}이(가) 밀어준 그 꿈이 열매를 맺었습니다. 집안에 좋은 소식이 들어왔습니다.',
+                effects: { money: 2200, villageFame: 8, familyHappiness: 8 } } },
+      { label: '현실적인 조언을 해준다', result: '{child}은(는) 잠시 시무룩했습니다.',
+        effects: { childStats: { intellect: 6 }, childHappiness: -4 },
+        echo: { delay: [7, 15], icon: '🧭', text: '{actor}의 현실적인 말이 아이를 단단하게 만들었습니다. 안정된 길을 찾았습니다.',
+                effects: { money: 1100, childStats: { intellect: 5 } } } },
       { label: '스스로 해보게 둔다', result: '{child}은(는) 혼자 부딪히며 배웁니다.', effects: { childStats: { fitness: 3, creativity: 3 }, childHappiness: 2 } },
     ],
   },
@@ -520,7 +565,10 @@ export const EVENTS = [
     id: 'neighbor_help', icon: '🤝', title: '이웃의 부탁', weight: 3, minAge: 18,
     text: '{village} 이웃이 도움을 청합니다.',
     choices: [
-      { label: '기꺼이 돕는다', result: '마을에 {me}의 편이 늘었습니다.', effects: { happiness: 4, stats: { charm: 3 }, villageFame: 2 } },
+      { label: '기꺼이 돕는다', result: '마을에 {actor}의 편이 늘었습니다.',
+        effects: { happiness: 4, stats: { charm: 3 }, villageFame: 2, flag: 'goodneighbor' },
+        echo: { delay: [3, 9], icon: '🤝', text: '그때 도운 이웃이 {actor}에게 크게 보답했습니다.',
+                effects: { money: 1200, villageFame: 5, happiness: 6 } } },
       { label: '돈으로 돕는다', cost: 200, result: '고맙다는 인사가 오래갔습니다.', effects: { happiness: 2, villageFame: 3 } },
       { label: '사정을 말하고 거절한다', result: '조금 미안한 마음이 남았습니다.', effects: { happiness: -2 } },
     ],
@@ -560,7 +608,12 @@ export const EVENTS = [
     text: '외계인이 내려와 {village}의 김치 담그는 법을 알려달라고 합니다.',
     choices: [
       { label: '정성껏 알려준다', result: '답례로 이상한 금속 덩어리를 받았습니다. 비쌌습니다.', effects: { money: 1500, happiness: 9, stats: { creativity: 5 } } },
-      { label: '같이 타고 한 바퀴 돈다', check: { stat: 'health', difficulty: 50 }, success: { text: '우주에서 본 지구가 예뻤습니다. 무사 귀환.', effects: { happiness: 15, stats: { creativity: 8 }, lifespan: 1 } }, fail: { text: '멀미로 사흘을 앓았습니다.', effects: { stats: { health: -5 }, happiness: 3 } } },
+      { label: '같이 타고 한 바퀴 돈다', check: { stat: 'health', difficulty: 50 },
+        success: { text: '우주에서 본 지구가 예뻤습니다. 무사 귀환.',
+          effects: { happiness: 15, stats: { creativity: 8 }, lifespan: 1, flag: 'ufo' },
+          echo: { delay: [5, 15], icon: '🛸', text: '그날의 손님이 {actor}를 다시 찾아왔습니다. 이번엔 선물을 잔뜩 들고서.',
+                  effects: { money: 3000, stats: { creativity: 6 }, villageFame: 10 } } },
+        fail: { text: '멀미로 사흘을 앓았습니다.', effects: { stats: { health: -5 }, happiness: 3 } } },
       { label: '못 본 척한다', result: '다음 날 밭에 완벽한 원이 생겼습니다. 관광객이 왔습니다.', effects: { money: 600, villageFame: 8 } },
     ],
   },
@@ -621,7 +674,12 @@ export const EVENTS = [
     text: '{me}이(가) 끓인 국이 이상하게 맛있습니다. 마을 사람들이 비법을 캐묻습니다.',
     choices: [
       { label: '비법을 판다', result: '비법은 "그냥 대충"이었지만 아무도 안 믿었습니다.', effects: { money: 900, villageFame: 6, happiness: 5 } },
-      { label: '식당을 연다', cost: 800, check: { stat: 'creativity', difficulty: 50 }, success: { text: '줄 서는 집이 되었습니다!', effects: { money: 2600, villageFame: 10, happiness: 10 } }, fail: { text: '이상하게 밖에서는 그 맛이 안 났습니다.', effects: { money: 200, happiness: -5 } } },
+      { label: '식당을 연다', cost: 800, check: { stat: 'creativity', difficulty: 50 },
+        success: { text: '줄 서는 집이 되었습니다!',
+          effects: { money: 2600, villageFame: 10, happiness: 10, flag: 'business' },
+          echo: { delay: [5, 13], icon: '🍜', text: '{actor}의 국물이 {village}의 이름이 되었습니다. 방송에도 나왔습니다.',
+                  effects: { money: 3600, villageFame: 12, familyHappiness: 6 } } },
+        fail: { text: '이상하게 밖에서는 그 맛이 안 났습니다.', effects: { money: 200, happiness: -5 } } },
       { label: '가족에게만 끓여준다', result: '가족의 표정이 곧 별점 다섯 개였습니다.', effects: { happiness: 7, childHappiness: 8, affection: 6 } },
     ],
   },
@@ -630,7 +688,10 @@ export const EVENTS = [
     text: '텃밭에서 감자가 이백 킬로 났습니다. 아무도 이유를 모릅니다.',
     choices: [
       { label: '마을에 다 나눠준다', result: '한 달간 모든 집에서 감자 냄새가 났습니다. 인심을 얻었습니다.', effects: { villageFame: 9, happiness: 6 } },
-      { label: '감자 축제를 연다', cost: 200, result: '"제1회 감자의 날"이 마을 연례행사가 되었습니다.', effects: { money: 800, villageFame: 12, happiness: 8 } },
+      { label: '감자 축제를 연다', cost: 200, result: '"제1회 감자의 날"이 마을 연례행사가 되었습니다.',
+        effects: { money: 800, villageFame: 12, happiness: 8, flag: 'potato' },
+        echo: { delay: [6, 14], icon: '🥔', text: '감자의 날이 {village}의 대표 축제가 되었습니다. 관광객이 몰려옵니다.',
+                effects: { money: 2600, villageFame: 15, familyHappiness: 6 } } },
       { label: '전부 판다', result: '감자값이 폭락한 날이었습니다. 그래도 팔았습니다.', effects: { money: 500, happiness: -1 } },
     ],
   },
@@ -684,6 +745,161 @@ export const EVENTS = [
       { label: '굿을 한다', cost: 400, result: '그날 이후 양말이 짝을 맞춥니다. 원인은 세탁기였습니다.', effects: { happiness: 7, villageFame: 3, stats: { health: 2 } } },
       { label: '한 짝 양말을 유행시킨다', result: '{village} 젊은이들이 따라 하기 시작했습니다.', effects: { villageFame: 8, stats: { charm: 5 }, money: 300 } },
       { label: '아이에게 물려준다', result: '"이건 우리 집 전통이야"라고 진지하게 말했습니다.', effects: { childHappiness: 6, childStats: { creativity: 5 }, happiness: 4 } },
+    ],
+  },
+
+  // ══ 가족 구성원 이야기 ══════════════════════════════════
+  {
+    id: 'sibling_fight', icon: '🥊', title: '형제자매 싸움', weight: 3, minAge: 6, maxAge: 19, needsSibling: true,
+    text: '{actor}({relation})이(가) 형제와 크게 다투고 방문을 잠갔습니다.',
+    choices: [
+      { label: '둘을 마주 앉힌다', result: '서로 미안하다는 말이 나오는 데 한 시간이 걸렸습니다.', effects: { happiness: 5, familyHappiness: 3, stats: { charm: 4 } } },
+      { label: '각자 두게 한다', result: '며칠 뒤 아무 일 없다는 듯 같이 놀고 있었습니다.', effects: { happiness: 2, stats: { fitness: 2 } } },
+      { label: '{actor} 편을 들어준다', result: '{actor}은(는) 든든해했지만 다른 아이가 서운해했습니다.',
+        effects: { happiness: 7, familyHappiness: -3 },
+        echo: { delay: [8, 16], icon: '⚖️', tone: 'bad', text: '그때의 편애를 형제들이 기억합니다. 가족 모임이 어색해졌습니다.', effects: { familyHappiness: -8 } } },
+    ],
+  },
+  {
+    id: 'elder_wisdom', icon: '🍵', title: '어른의 한마디', weight: 3, minAge: 62, actor: 'any',
+    text: '{actor}({relation})이(가) 젊은 식구들을 불러 앉혔습니다.',
+    choices: [
+      { label: '살아온 이야기를 들려준다', result: '아이들이 처음으로 조용히 들었습니다.',
+        effects: { familyHappiness: 6, childStats: { intellect: 4, charm: 4 } },
+        echo: { delay: [10, 20], icon: '📜', text: '{actor}의 이야기가 집안의 규칙이 되었습니다. 후손들이 그대로 삽니다.', effects: { familyHappiness: 8, villageFame: 5 } } },
+      { label: '통장을 꺼낸다', cost: 0, result: '"이건 너희 몫이다." 아무도 몰랐던 돈이었습니다.', effects: { money: 1400, familyHappiness: 5 } },
+      { label: '잔소리로 끝난다', result: '다들 슬금슬금 자리를 떴습니다.', effects: { happiness: -2, familyHappiness: -2 } },
+    ],
+  },
+  {
+    id: 'grandkid_school', icon: '🎒', title: '손주의 첫 등교', weight: 3, minAge: 50, needsGrandchild: true,
+    text: '{actor}({relation})이(가) 손주의 첫 등굣길을 배웅합니다.',
+    choices: [
+      { label: '교문까지 따라간다', result: '손주가 뒤돌아 손을 흔들었습니다.', effects: { happiness: 10, familyHappiness: 4 } },
+      { label: '용돈을 쥐여준다', cost: 100, result: '학교에서 제일 부자가 되었습니다.', effects: { happiness: 6, familyHappiness: 5 } },
+    ],
+  },
+  {
+    id: 'holiday', icon: '🥮', title: '명절', weight: 4, minAge: 18,
+    text: '온 가족이 모이는 날입니다. {actor}({relation})이(가) 준비를 맡았습니다.',
+    choices: [
+      { label: '푸짐하게 차린다', cost: 300, result: '상다리가 부러질 뻔했습니다.', effects: { familyHappiness: 8, happiness: 4, stats: { charm: 2 } } },
+      { label: '간소하게 모인다', result: '설거지가 금방 끝나 다들 좋아했습니다.', effects: { familyHappiness: 4, money: 150 } },
+      { label: '올해는 건너뛴다', result: '각자의 사정이 있었습니다.',
+        effects: { money: 300, familyHappiness: -5 },
+        echo: { delay: [4, 10], icon: '🍂', tone: 'bad', text: '모이지 않는 해가 늘었습니다. 가족들이 서로 소식을 모릅니다.', effects: { familyHappiness: -6 } } },
+    ],
+  },
+  {
+    id: 'family_debt', icon: '📉', title: '가족 회의', weight: 3, minAge: 25, needsPartner: true,
+    text: '살림이 빠듯합니다. {actor}({relation})이(가) 가족을 불러 모았습니다.',
+    choices: [
+      { label: '모두 허리띠를 졸라맨다', result: '아이들까지 용돈을 줄이겠다고 했습니다.',
+        effects: { money: 900, familyHappiness: -4 },
+        echo: { delay: [5, 12], icon: '🪙', text: '그때 함께 아낀 습관이 남았습니다. 이 집은 웬만해선 흔들리지 않습니다.', effects: { money: 1500, addTrait: 'frugal' } } },
+      { label: '{actor}이(가) 일을 더 한다', result: '밤늦게 돌아오는 날이 늘었습니다.', effects: { money: 700, stats: { health: -4 }, happiness: -3 } },
+      { label: '집안의 물건을 판다', result: '아끼던 것들이 하나둘 사라졌습니다.', effects: { money: 1200, happiness: -5, familyHappiness: -2 } },
+    ],
+  },
+  {
+    id: 'moving_day', icon: '🚚', title: '이사', weight: 2, minAge: 24, needsPartner: true,
+    text: '{actor}({relation})의 가족이 새집을 알아봅니다.',
+    choices: [
+      { label: '{village} 좋은 자리로 옮긴다', cost: 1200, result: '창밖으로 마을이 다 보입니다.',
+        effects: { familyHappiness: 8, happiness: 5, villageFame: 3 },
+        echo: { delay: [6, 14], icon: '🏡', text: '그때 산 집값이 크게 올랐습니다.', effects: { money: 2800 } } },
+      { label: '지금 집을 고친다', cost: 400, result: '삐걱대던 곳이 사라졌습니다.', effects: { familyHappiness: 5, happiness: 3 } },
+      { label: '그냥 산다', result: '익숙한 게 최고입니다.', effects: { money: 200, happiness: 1 } },
+    ],
+  },
+  {
+    id: 'pet_farewell', icon: '🐾', title: '오래된 친구', weight: 2, minAge: 10,
+    text: '{actor}({relation})이(가) 오래 키운 동물이 많이 늙었습니다.',
+    choices: [
+      { label: '마지막까지 곁을 지킨다', result: '{actor}은(는) 그날을 오래 기억할 것입니다.', effects: { happiness: -6, familyHappiness: 4, stats: { charm: 4 } } },
+      { label: '치료에 힘쓴다', cost: 500, result: '한 해를 더 함께 지냈습니다.', effects: { happiness: 4, familyHappiness: 3 } },
+    ],
+  },
+  {
+    id: 'family_trip', icon: '🚌', title: '가족 여행', weight: 3, minAge: 22, needsChild: true,
+    text: '{actor}({relation})이(가) 온 가족 여행을 제안했습니다.',
+    choices: [
+      { label: '멀리 떠난다', cost: 900, result: '사진이 이백 장 넘게 남았습니다.',
+        effects: { familyHappiness: 12, happiness: 8, affection: 8 },
+        echo: { delay: [8, 18], icon: '📷', text: '그때 여행 사진이 집안의 보물이 되었습니다. 아이들이 그 이야기를 하며 자랐습니다.', effects: { familyHappiness: 8, childStats: { charm: 5 } } } },
+      { label: '가까운 데로 다녀온다', cost: 200, result: '차로 한 시간, 그래도 좋았습니다.', effects: { familyHappiness: 6, happiness: 4 } },
+      { label: '다음으로 미룬다', result: '"다음에 꼭 가자"는 말만 남았습니다.', effects: { money: 200, familyHappiness: -3 } },
+    ],
+  },
+  {
+    id: 'sibling_business', icon: '🧾', title: '가족의 동업 제안', weight: 2, minAge: 24, maxAge: 60,
+    text: '{actor}({relation})이(가) 집안 돈으로 사업을 해보자고 합니다.',
+    choices: [
+      {
+        label: '함께 시작한다', cost: 1000, check: { stat: 'intellect', difficulty: 58 },
+        success: { text: '가족이 함께 만든 첫 성과입니다.',
+          effects: { money: 2800, familyHappiness: 8, flag: 'business' },
+          echo: { delay: [6, 14], icon: '🏢', text: '가족 사업이 자리를 잡았습니다. 이제 식구들이 돌아가며 일합니다.', effects: { money: 4000, villageFame: 8 } } },
+        fail: { text: '돈도 사이도 상했습니다.', effects: { money: 200, familyHappiness: -8, happiness: -6 } },
+      },
+      { label: '조금만 빌려준다', cost: 400, result: '반은 돌려받았습니다.', effects: { money: 300, familyHappiness: 2 } },
+      { label: '거절한다', result: '{actor}은(는) 서운해했습니다.', effects: { familyHappiness: -3, money: 100 } },
+    ],
+  },
+  {
+    id: 'reunion', icon: '🏫', title: '동창회', weight: 2, minAge: 30, maxAge: 70,
+    text: '{actor}({relation})에게 동창회 연락이 왔습니다.',
+    choices: [
+      { label: '차려입고 나간다', cost: 150, result: '다들 여전했습니다. 명함도 몇 장 받았습니다.',
+        effects: { happiness: 6, stats: { charm: 4 } },
+        echo: { delay: [3, 8], icon: '📇', text: '그날 받은 명함 한 장이 {actor}에게 좋은 기회를 물어왔습니다.', effects: { money: 1400, promote: 1 } } },
+      { label: '가지 않는다', result: '집에서 오래된 사진첩을 봤습니다.', effects: { happiness: 2, familyHappiness: 2 } },
+    ],
+  },
+
+  // ══ 나비효과 후속 (예전 선택이 열어주는 이벤트) ═══════════
+  {
+    id: 'music_recital', icon: '🎻', title: '가문의 연주회', weight: 3, minAge: 12, requiresFlag: 'music',
+    text: '악기를 배운 사람이 집안에 여럿입니다. {actor}({relation})이(가) 함께 무대에 서자고 합니다.',
+    choices: [
+      { label: '가족 연주회를 연다', cost: 200, result: '{village} 사람들이 다 왔습니다. 박수가 길었습니다.', effects: { money: 700, villageFame: 10, familyHappiness: 10, stats: { creativity: 6 } } },
+      { label: '집에서만 연주한다', result: '거실이 작은 공연장이 되었습니다.', effects: { familyHappiness: 7, stats: { creativity: 4 } } },
+    ],
+  },
+  {
+    id: 'business_expand', icon: '🏬', title: '2호점', weight: 3, minAge: 25, requiresFlag: 'business',
+    text: '집안 사업이 잘됩니다. {actor}({relation})이(가) 하나 더 내자고 합니다.',
+    choices: [
+      {
+        label: '크게 확장한다', cost: 1800, check: { stat: 'charm', difficulty: 60 },
+        success: { text: '두 번째 가게도 자리를 잡았습니다.', effects: { money: 4200, villageFame: 8, happiness: 8 } },
+        fail: { text: '무리한 확장이었습니다.', effects: { money: 300, happiness: -8, familyHappiness: -4 } },
+      },
+      { label: '지금 규모를 지킨다', result: '단골이 더 늘었습니다.', effects: { money: 1200, happiness: 4 } },
+    ],
+  },
+  {
+    id: 'ufo_return', icon: '👽', title: '다시 온 손님', tag: 'absurd', weight: 2, minAge: 12, requiresFlag: 'ufo',
+    text: '밤하늘에 그때 그 불빛이 다시 떴습니다. {actor}({relation})의 이름을 부릅니다.',
+    choices: [
+      { label: '가족을 다 데리고 나간다', result: '온 가족이 우주에서 기념사진을 찍었습니다. 아무도 안 믿습니다.', effects: { familyHappiness: 15, villageFame: 12, stats: { creativity: 8 } } },
+      { label: '이번엔 사양한다', result: '대신 밭에 이상한 작물이 자랐습니다. 비싸게 팔렸습니다.', effects: { money: 2200, happiness: 5 } },
+    ],
+  },
+  {
+    id: 'potato_decade', icon: '🎊', title: '감자의 날 10주년', tag: 'absurd', weight: 2, minAge: 15, requiresFlag: 'potato',
+    text: '{village} 감자 축제가 열 돌을 맞았습니다. {actor}({relation})이(가) 명예 위원장입니다.',
+    choices: [
+      { label: '역대급으로 연다', cost: 600, result: '전국에서 감자를 들고 사람들이 왔습니다.', effects: { money: 3200, villageFame: 18, familyHappiness: 10 } },
+      { label: '조용히 기념한다', result: '마을 사람들끼리 감자를 나눠 먹었습니다.', effects: { villageFame: 6, familyHappiness: 6 } },
+    ],
+  },
+  {
+    id: 'neighbor_return', icon: '💐', title: '돌아온 인심', weight: 3, minAge: 20, requiresFlag: 'goodneighbor',
+    text: '{actor}({relation})이(가) 도왔던 사람들이 이번엔 먼저 찾아왔습니다.',
+    choices: [
+      { label: '고맙게 받는다', result: '마당에 채소와 선물이 쌓였습니다.', effects: { money: 900, familyHappiness: 6, happiness: 6 } },
+      { label: '마을에 다시 나눈다', result: '{village}에서 이 집을 모르는 사람이 없습니다.', effects: { villageFame: 12, familyHappiness: 5 } },
     ],
   },
 ];

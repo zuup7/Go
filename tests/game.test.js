@@ -32,10 +32,17 @@ function claimAll(state) {
   }
 }
 
-/** 이벤트와 보상을 모두 정리해 다음 해로 갈 수 있게 만든다 */
+/** 돌아온 나비효과 알림을 모두 확인한다 */
+function clearEchoes(state) {
+  let guard = 0;
+  while (state.echoNotices?.length && guard++ < 40) G.dismissEcho(state);
+}
+
+/** 이벤트·보상·나비효과를 모두 정리해 다음 해로 갈 수 있게 만든다 */
 function settle(state) {
   clearEvent(state);
   claimAll(state);
+  clearEchoes(state);
 }
 
 test('새 게임은 1대 18세, 마을과 자금을 갖고 시작한다', () => {
@@ -410,4 +417,125 @@ test('병맛 이벤트도 통계에 쌓인다', () => {
   }
   assert.ok(state.stats.absurdSeen > before, '병맛 이벤트가 등장한다');
   assert.ok(state.stats.eventsResolved > 0);
+});
+
+
+test('이벤트는 주인공뿐 아니라 가족 구성원에게도 일어난다', () => {
+  const state = start(30);
+  const me = G.player(state);
+  me.age = 30;
+  state.money = 20000;
+  G.meetPeople(state);
+  const spouse = G.candidates(state)[0];
+  spouse.affection = 95;
+  G.propose(state, spouse.id);
+  const child = bornChild(state);
+  child.age = 9;
+
+  const seen = new Set();
+  let guard = 0;
+  while (seen.size < 2 && guard++ < 200) {
+    if (state.pending && !state.pending.resolved) {
+      const event = G.pendingEvent(state);
+      seen.add(G.relationOf(state, event.actorPerson));
+      G.resolveEvent(state, event.choices.find((c) => c.affordable)?.index ?? 0);
+    }
+    settle(state);
+    if (state.succession) break;
+    G.advanceYear(state, 'rest');
+  }
+  assert.ok(seen.size >= 2, `가족 여러 명이 주인공이 되어야 한다 (본 관계: ${[...seen].join(', ')})`);
+});
+
+test('선택은 나비효과로 훗날 돌아온다', () => {
+  const state = start(31);
+  const me = G.player(state);
+  state.echoes.push({
+    actorId: me.id,
+    plantedYear: state.year,
+    dueYear: state.year + 1,
+    icon: '🦋',
+    fromTitle: '시험 전날',
+    fromLabel: '친구들과 놀러 나간다',
+    text: '그때 미룬 공부가 {actor}의 발목을 잡았습니다.',
+    effects: { money: -100, happiness: -5 },
+    tone: 'bad',
+  });
+  const happiness = me.happiness;
+  settle(state);
+  G.advanceYear(state, 'rest');
+
+  const notice = G.pendingEcho(state);
+  assert.ok(notice, '예약된 파장이 돌아와야 한다');
+  assert.equal(notice.years, 1);
+  assert.match(notice.text, /발목/);
+  assert.ok(me.happiness < happiness, '효과가 실제로 적용된다');
+  assert.equal(G.canAdvance(state), false, '알림을 볼 때까지 시간이 멈춘다');
+  G.dismissEcho(state);
+  assert.equal(G.pendingEcho(state), null);
+});
+
+test('나비효과는 본인이 떠났으면 자손에게 이어진다', () => {
+  const state = start(32);
+  const me = G.player(state);
+  me.age = 30;
+  state.money = 20000;
+  G.meetPeople(state);
+  const spouse = G.candidates(state)[0];
+  spouse.affection = 95;
+  G.propose(state, spouse.id);
+  const child = bornChild(state);
+  child.age = 20;
+
+  const ghost = { ...me, id: 'gone' };
+  state.people[ghost.id] = { ...ghost, alive: false, children: [child.id] };
+  state.echoes.push({
+    actorId: 'gone', plantedYear: state.year, dueYear: state.year + 1, icon: '🦋',
+    fromTitle: '옛 선택', fromLabel: '그때 그 결정', text: '{actor}에게 옛일의 결과가 닿았습니다.',
+    effects: { money: 500 }, tone: 'good',
+  });
+  settle(state);
+  G.advanceYear(state, 'rest');
+  const notice = G.pendingEcho(state);
+  assert.ok(notice, '파장은 사라지지 않는다');
+  assert.equal(notice.actorId, child.id, '자손이 결과를 받는다');
+});
+
+test('선택이 남긴 흔적은 새로운 사건을 연다', () => {
+  const state = start(33);
+  assert.equal(G.hasFlag(state, 'music'), false);
+  const musicEvents = G.eligibleEvents(state).filter((e) => e.event.requiresFlag === 'music');
+  assert.equal(musicEvents.length, 0, '흔적이 없으면 후속 사건도 없다');
+
+  G.applyEffects(state, { flag: 'music' });
+  assert.equal(G.hasFlag(state, 'music'), true);
+  G.player(state).age = 20;
+  const unlocked = G.eligibleEvents(state).filter((e) => e.event.requiresFlag === 'music');
+  assert.ok(unlocked.length >= 1, '흔적이 있으면 후속 사건이 열린다');
+});
+
+test('분가한 가족도 살림에 보탠다', () => {
+  const state = start(34);
+  const me = G.player(state);
+  me.age = 30;
+  state.money = 30000;
+  G.meetPeople(state);
+  const spouse = G.candidates(state)[0];
+  spouse.affection = 95;
+  G.propose(state, spouse.id);
+  const child = bornChild(state);
+  me.age = 52;
+  child.age = 26;
+  child.education = 3;
+  for (const key of Object.keys(child.stats)) child.stats[key] = 75;
+  child.jobId = 'teacher';
+
+  const atHome = G.financeSummary(state);
+  assert.ok(G.household(state).some((p) => p.id === child.id), '집에 있는 성인 자녀는 가구원이다');
+
+  // 짝을 만나 분가하면 일부만 보탠다
+  child.partnerId = 'someone';
+  const away = G.financeSummary(state);
+  assert.ok(away.support > 0, '분가해도 보조금이 들어온다');
+  assert.ok(away.income < atHome.income, '집에 있을 때보다는 적다');
 });

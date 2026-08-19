@@ -1,5 +1,6 @@
 // 화면 조각들. 모두 문자열 HTML 을 돌려주고, 클릭은 data-act 로 위임된다.
 import { portrait } from './avatar.js';
+import { familyTree } from './tree.js';
 import { fullName } from '../core/person.js';
 import { STAT_KEYS, STAT_LABELS, EDUCATION_LABELS, won, stageOf } from '../core/util.js';
 import { TRAIT_BY_ID, commonTraits } from '../data/traits.js';
@@ -159,18 +160,43 @@ export function lifeTab(state) {
     <button class="primary wide" data-act="advance" ${blocked ? 'disabled' : ''}>
       ${blocked ? blockReason : '한 해를 보낸다 →'}
     </button>
+    <div class="auto-bar">
+      <button class="pill ${state.auto?.running ? 'on' : ''}" data-act="auto-toggle">
+        ${state.auto?.running ? '⏸ 자동 진행 중' : '▶ 자동으로 흘려보내기'}
+      </button>
+      ${[['slow', '🐢 느리게'], ['normal', '🚶 보통'], ['fast', '🐇 빠르게']].map(([id, label]) => `
+        <button class="pill small ${state.auto?.speed === id ? 'on' : ''}" data-act="auto-speed" data-id="${id}">${label}</button>`).join('')}
+    </div>
+    <p class="muted auto-hint">
+      자동으로 두면 해가 저절로 흐르고, 가족들이 일해 돈을 벌다가 사건이 생기면 멈춥니다.
+    </p>
   </div>
 
   <div class="card">
     <h3>살림살이 (연간)</h3>
     <div class="list">
-      <div class="item"><span class="grow"><span class="t">수입</span><span class="s">직업 + 마을 수익</span></span><span>${won(finance.income)}</span></div>
+      <div class="item"><span class="grow"><span class="t">수입</span><span class="s">일하는 가족 ${finance.earners}명${finance.support ? ` + 분가한 가족 ${won(finance.support)}` : ''} + 마을 수익</span></span><span>${won(finance.income)}</span></div>
       <div class="item"><span class="grow"><span class="t">지출</span><span class="s">생활비 + 마을 관리비 ${won(finance.maintenance)}</span></span><span>-${won(finance.expense)}</span></div>
       <div class="item"><span class="grow"><span class="t">한 해 수지</span></span>
         <strong style="color:${finance.net >= 0 ? 'var(--green)' : 'var(--bad)'}">${finance.net >= 0 ? '+' : ''}${won(finance.net)}</strong>
       </div>
     </div>
   </div>
+
+  ${state.echoes?.length ? `
+  <div class="card">
+    <h3>🦋 씨앗이 된 선택</h3>
+    <p class="muted">언젠가 돌아올 선택 ${state.echoes.length}가지가 자라고 있습니다.</p>
+    <div class="list">
+      ${state.echoes.slice(0, 4).map((echo) => `
+        <div class="item">
+          <span class="grow">
+            <span class="t">${esc(fillEcho(state, echo.fromTitle))}</span>
+            <span class="s">"${esc(fillEcho(state, echo.fromLabel))}" · ${Math.max(1, echo.dueYear - state.year)}년쯤 뒤</span>
+          </span>
+        </div>`).join('')}
+    </div>
+  </div>` : ''}
 
   <div class="card">
     <h3>인생 기록</h3>
@@ -180,6 +206,8 @@ export function lifeTab(state) {
     </div>
   </div>`;
 }
+
+const fillEcho = (state, text) => G.fillText(state, text);
 
 // ── 인연 탭 ───────────────────────────────────────────────
 
@@ -299,45 +327,17 @@ export function personCard(state, person) {
 }
 
 export function familyTab(state) {
-  const everyone = G.allPeople(state);
-  const shown = everyone.filter((p) => p.inFamily || p.partnerId);
-  const generations = [...new Set(shown.map((p) => p.generation))].sort((a, b) => a - b);
-
-  const blocks = generations.map((gen) => {
-    const members = shown
-      .filter((p) => p.generation === gen)
-      .sort((a, b) => Number(b.alive) - Number(a.alive) || a.birthYear - b.birthYear);
-    if (!members.length) return '';
-
-    // 부부는 한 묶음으로, 나머지는 혼자
-    const used = new Set();
-    const units = [];
-    for (const person of members) {
-      if (used.has(person.id)) continue;
-      const partner = person.partnerId ? state.people[person.partnerId] : null;
-      if (partner && !used.has(partner.id) && partner.generation === gen) {
-        used.add(person.id);
-        used.add(partner.id);
-        units.push([person, partner]);
-      } else {
-        used.add(person.id);
-        units.push([person]);
-      }
-    }
-
-    return `
-      <div class="gen-block">
-        <div class="gen-title">${gen}대 · ${members.filter((m) => m.alive).length}명 생존</div>
-        <div class="units">
-          ${units.map((unit) => `
-            <div class="unit">
-              ${unit.map((person) => personCard(state, person)).join(unit.length > 1 ? '<span class="heart">💞</span>' : '')}
-            </div>`).join('')}
-        </div>
-      </div>`;
-  }).join('');
-
-  return `<div class="card"><h2>🌳 가족 나무</h2>${blocks}</div>`;
+  const living = G.allPeople(state).filter((p) => p.alive && p.inFamily).length;
+  const total = G.allPeople(state).length;
+  return `
+  <div class="card">
+    <div class="section-head">
+      <h2>🌳 족보</h2>
+      <span class="muted">${state.generation}대 · 생존 ${living}명 / 기록 ${total}명</span>
+    </div>
+    <p class="muted">인물을 누르면 자세히 볼 수 있습니다. 옆으로 밀어 넓게 볼 수 있어요.</p>
+    ${familyTree(state)}
+  </div>`;
 }
 
 // ── 마을 탭 ───────────────────────────────────────────────
@@ -456,13 +456,19 @@ export function eventModal(state, event) {
       <span class="c-sub">
         ${choice.cost ? `비용 ${won(choice.cost)}${choice.affordable ? '' : ' (자금 부족)'}` : ''}
         ${choice.odds != null ? `${choice.cost ? ' · ' : ''}${STAT_LABELS[choice.checkLabel]} 판정 · 성공률 ${choice.odds}%` : ''}
+        ${choice.echoHint ? `${choice.cost || choice.odds != null ? ' · ' : ''}<span class="echo-hint">🦋 훗날에 영향</span>` : ''}
       </span>
     </button>`).join('');
 
   return modal(`
     ${event.tag === 'absurd' ? '<span class="tag-absurd">🤪 병맛 사건</span>' : ''}
-    <div class="icon">${event.icon}</div>
-    <h2>${esc(event.title)}</h2>
+    <div class="event-head">
+      ${event.actorPerson ? portrait(event.actorPerson, 62, { ageTag: true }) : `<div class="icon">${event.icon}</div>`}
+      <div class="event-who">
+        <span class="badge accent">${event.icon} ${esc(event.relation ?? '가족')}</span>
+        <h2>${esc(event.title)}</h2>
+      </div>
+    </div>
     <p>${esc(event.text)}</p>
     <div class="choice-grid">${choices}</div>`, event.tag === 'absurd' ? 'absurd' : '');
 }
@@ -481,6 +487,21 @@ export function successionModal(state) {
           <button class="primary" data-act="choose-heir" data-id="${h.id}">선택</button>
         </div>`).join('')}
     </div>`);
+}
+
+export function echoModal(state, notice) {
+  return modal(`
+    <span class="tag-echo">🦋 나비효과</span>
+    <div class="echo-head">
+      ${notice.person ? portrait(notice.person, 64, { ageTag: true }) : ''}
+      <div>
+        <div class="muted">${notice.years}년 전의 선택</div>
+        <h2>${esc(notice.fromTitle)}</h2>
+        <div class="muted">"${esc(notice.fromLabel)}"</div>
+      </div>
+    </div>
+    <div class="result-box ${notice.tone === 'bad' ? 'bad' : ''}">${notice.icon} ${esc(notice.text)}</div>
+    <button class="primary wide" data-act="echo-close">그렇게 되었습니다</button>`, 'echo');
 }
 
 export function rewardModal(state, choice) {

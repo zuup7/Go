@@ -11,6 +11,10 @@ let state = null;
 let tab = 'life';
 let openPersonId = null;
 let importOpen = null;   // null | { error }
+let autoTimer = null;
+
+/** 자동 진행 속도 (ms/1년) */
+const SPEEDS = { slow: 6000, normal: 3200, fast: 1500 };
 let draft = { familyName: '', givenName: '', gender: '', traitId: '', villageName: '' };
 
 // ── 렌더 ─────────────────────────────────────────────────
@@ -33,7 +37,16 @@ function render() {
   }[tab] ?? V.lifeTab;
 
   app.innerHTML = V.topBar(state) + V.heroCard(state) + V.tabsBar(tab) + body(state);
+  if (tab === 'family') centerTreeOnPlayer();
   renderModal();
+}
+
+/** 족보를 열면 주인공이 가운데 보이도록 스크롤을 맞춘다 */
+function centerTreeOnPlayer() {
+  const scroller = app.querySelector('.tree-scroll');
+  const card = app.querySelector('.tree-card.me') ?? app.querySelector('.tree-card');
+  if (!scroller || !card) return;
+  scroller.scrollLeft = card.offsetLeft + card.offsetWidth / 2 - scroller.clientWidth / 2;
 }
 
 function renderModal() {
@@ -50,6 +63,11 @@ function renderModal() {
     modalRoot.innerHTML = V.rewardModal(state, reward);
     return;
   }
+  const echo = state ? G.pendingEcho(state) : null;
+  if (echo) {
+    modalRoot.innerHTML = V.echoModal(state, echo);
+    return;
+  }
   if (importOpen) {
     modalRoot.innerHTML = V.importModal(importOpen.error);
     return;
@@ -60,6 +78,25 @@ function renderModal() {
   }
   const event = state ? G.pendingEvent(state) : null;
   modalRoot.innerHTML = event ? V.eventModal(state, event) : '';
+}
+
+/**
+ * 자동 진행: 켜두면 해가 저절로 흐른다.
+ * 이벤트·보상·나비효과가 뜨면 canAdvance 가 false 라 저절로 멈춘다.
+ */
+function tick() {
+  if (!state || !state.auto?.running) return;
+  if (!G.canAdvance(state)) return;          // 모달이 떠 있으면 그대로 기다린다
+  G.advanceYear(state, state.activity);
+  autosave();
+  render();
+}
+
+function restartAutoTimer() {
+  clearInterval(autoTimer);
+  autoTimer = null;
+  if (!state?.auto?.running) return;
+  autoTimer = setInterval(tick, SPEEDS[state.auto.speed] ?? SPEEDS.normal);
 }
 
 let toastTimer = null;
@@ -99,6 +136,7 @@ const actions = {
       villageName: draft.villageName || undefined,
     });
     tab = 'life';
+    state.auto = { running: false, speed: 'normal' };
     autosave();
     render();
   },
@@ -107,7 +145,10 @@ const actions = {
     const loaded = loadGame();
     if (!loaded) { toast('저장된 게임을 찾지 못했습니다.'); return; }
     state = loaded;
+    state.auto = state.auto ?? { running: false, speed: 'normal' };
+    state.auto.running = false;
     tab = 'life';
+    restartAutoTimer();
     render();
   },
 
@@ -127,6 +168,21 @@ const actions = {
     render();
   },
   'event-close': () => { G.dismissEvent(state); render(); },
+  'echo-close': () => { G.dismissEcho(state); autosave(); render(); },
+
+  'auto-toggle': () => {
+    if (!state.auto) state.auto = { running: false, speed: 'normal' };
+    state.auto.running = !state.auto.running;
+    restartAutoTimer();
+    toast(state.auto.running ? '자동으로 시간이 흐릅니다.' : '자동 진행을 멈췄습니다.');
+    render();
+  },
+  'auto-speed': (id) => {
+    if (!state.auto) state.auto = { running: false, speed: 'normal' };
+    state.auto.speed = id;
+    restartAutoTimer();
+    render();
+  },
 
   'take-reward': (id) => {
     const result = G.takeReward(state, id);
@@ -225,6 +281,8 @@ const actions = {
     if (!text) { importOpen = { error: '저장 데이터를 붙여넣어 주세요.' }; renderModal(); return; }
     try {
       state = deserialize(text);
+      state.auto = { running: false, speed: 'normal' };
+      restartAutoTimer();
       importOpen = null;
       tab = 'life';
       autosave();
@@ -238,6 +296,8 @@ const actions = {
   restart: () => {
     if (!confirm('지금 가문의 이야기를 접고 새로 시작할까요?')) return;
     clearSave();
+    clearInterval(autoTimer);
+    autoTimer = null;
     state = null;
     openPersonId = null;
     importOpen = null;

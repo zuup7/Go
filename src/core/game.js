@@ -58,6 +58,10 @@ export function newGame({ seed = Date.now(), familyName, givenName, gender, trai
     ended: null,
     achievements: [],
     rewardQueue: [],
+    echoes: [],
+    echoNotices: [],
+    flags: {},
+    auto: { running: false, speed: 'normal' },
     stats: {
       yearsPlayed: 0, born: 0, married: 0, buildingsBuilt: 0, peakMoney: 2600,
       eventsResolved: 0, absurdSeen: 0, rewardsTaken: 0,
@@ -132,7 +136,7 @@ export const personOf = (state, id) => (id ? state.people[id] : null);
 export const partnerOf = (state) => personOf(state, player(state)?.partnerId);
 export const allPeople = (state) => Object.values(state.people);
 
-/** 같이 사는 가족: 나 + 배우자 + 미성년 자녀 + 모시는 부모님 */
+/** 같이 사는 가족: 나 + 배우자 + 자녀(아직 집에 있는) + 모시는 부모님 */
 export function household(state) {
   const me = player(state);
   if (!me) return [];
@@ -141,10 +145,28 @@ export function household(state) {
   if (partner?.alive) members.push(partner);
   for (const childId of me.children) {
     const child = state.people[childId];
-    if (child?.alive && child.age < 19) members.push(child);
+    if (!child?.alive) continue;
+    // 미성년이거나, 아직 짝을 만나지 않고 집에 남아 있는 자녀
+    if (child.age < 19 || (!child.partnerId && !child.independent)) members.push(child);
   }
   for (const elder of eldersOf(state)) members.push(elder);
   return members;
+}
+
+/** 분가한 가족이 다달이 보태는 몫 (연 20%) */
+export const SUPPORT_SHARE = 0.2;
+
+export function supportingRelatives(state) {
+  const members = new Set(household(state).map((p) => p.id));
+  return familyMembers(state).filter((person) => (
+    !members.has(person.id) && person.alive && person.jobId && person.age >= 19
+  ));
+}
+
+export function supportIncome(state, bonuses) {
+  return Math.round(
+    supportingRelatives(state).reduce((sum, person) => sum + salaryOf(person, bonuses) * SUPPORT_SHARE, 0),
+  );
 }
 
 /** 함께 사는 부모님(전 세대 플레이어와 그 배우자) */
@@ -172,62 +194,124 @@ export function pushLog(state, icon, text, tone = 'normal') {
   if (state.log.length > 300) state.log.length = 300;
 }
 
-/** 텍스트의 {me} {partner} {child} {village} 치환 */
-export function fillText(state, text) {
+/** 텍스트의 {me} {actor} {relation} {partner} {child} {village} 치환 */
+export function fillText(state, text, actor = null) {
   const me = player(state);
   const partner = partnerOf(state);
-  const kids = me ? childrenOf(state, me).filter((c) => c.alive) : [];
+  const subject = actor ?? me;
+  const subjectPartner = subject?.partnerId ? state.people[subject.partnerId] : null;
+  const kids = subject ? childrenOf(state, subject).filter((c) => c.alive) : [];
+  const myKids = me ? childrenOf(state, me).filter((c) => c.alive) : [];
   return String(text)
     .replaceAll('{me}', me ? fullName(me) : '주인공')
-    .replaceAll('{partner}', partner ? fullName(partner) : '배우자')
-    .replaceAll('{child}', kids.length ? fullName(kids[0]) : '아이')
+    .replaceAll('{actor}', subject ? fullName(subject) : '가족')
+    .replaceAll('{relation}', subject ? relationOf(state, subject) : '가족')
+    .replaceAll('{partner}', (subjectPartner ?? partner) ? fullName(subjectPartner ?? partner) : '배우자')
+    .replaceAll('{child}', (kids[0] ?? myKids[0]) ? fullName(kids[0] ?? myKids[0]) : '아이')
     .replaceAll('{village}', state.village.name);
 }
 
 // ── 효과 적용 ──────────────────────────────────────────────
 
-export function applyEffects(state, effects = {}) {
-  const me = player(state);
+/**
+ * 효과 적용. target 을 주면 그 사람에게, 없으면 주인공에게 적용된다.
+ * 돈·마을 명성처럼 집안 전체에 걸리는 것은 항상 가구에 적용된다.
+ */
+export function applyEffects(state, effects = {}, target = null) {
+  const person = target ?? player(state);
   const rng = rngFor(state);
+
   if (effects.money) state.money += effects.money;
-  if (effects.happiness) me.happiness = clamp(me.happiness + effects.happiness);
-  if (effects.stats) {
-    for (const [key, value] of Object.entries(effects.stats)) {
-      if (STAT_KEYS.includes(key)) me.stats[key] = clamp(me.stats[key] + value);
-    }
-  }
-  if (effects.education) me.eduPoints = Math.max(0, me.eduPoints + effects.education * 8);
-  if (effects.lifespan) me.lifespan += effects.lifespan;
-  if (effects.affection) {
-    const partner = partnerOf(state);
-    if (partner) partner.affection = clamp(partner.affection + effects.affection);
-  }
-  if (effects.addTrait && !me.traits.includes(effects.addTrait) && TRAIT_BY_ID[effects.addTrait]) {
-    me.traits.push(effects.addTrait);
-    pushLog(state, '✨', `${fullName(me)}에게 새로운 특성 "${TRAIT_BY_ID[effects.addTrait].label}"이(가) 생겼습니다.`, 'good');
-  }
-  if (effects.promote && me.jobId && me.jobLevel < MAX_JOB_LEVEL) {
-    me.jobLevel = Math.min(MAX_JOB_LEVEL, me.jobLevel + effects.promote);
-    pushLog(state, '📈', `${fullName(me)}이(가) 승진했습니다. (${me.jobLevel}호봉)`, 'good');
-  }
   if (effects.villageFame) state.village.fame = (state.village.fame ?? 0) + effects.villageFame;
   if (effects.expenseUp) state.upkeep += effects.expenseUp;
   if (effects.inheritBonus) state.inheritBonus = (state.inheritBonus ?? 0) + effects.inheritBonus;
 
-  const kids = childrenOf(state, me).filter((c) => c.alive);
+  if (!person) {
+    syncRng(state, rng);
+    return;
+  }
+
+  if (effects.happiness) person.happiness = clamp(person.happiness + effects.happiness);
+  if (effects.stats) {
+    for (const [key, value] of Object.entries(effects.stats)) {
+      if (!STAT_KEYS.includes(key)) continue;
+      person.stats[key] = clamp(person.stats[key] + value);
+      if (person.age <= 18) person.potential[key] = clamp(person.potential[key] + value / 3);
+    }
+  }
+  if (effects.education) person.eduPoints = Math.max(0, person.eduPoints + effects.education * 8);
+  if (effects.lifespan) person.lifespan += effects.lifespan;
+  if (effects.affection) {
+    const partner = state.people[person.partnerId];
+    if (partner) partner.affection = clamp(partner.affection + effects.affection);
+  }
+  if (effects.addTrait && !person.traits.includes(effects.addTrait) && TRAIT_BY_ID[effects.addTrait]) {
+    person.traits.push(effects.addTrait);
+    pushLog(state, '✨', `${fullName(person)}에게 새로운 특성 "${TRAIT_BY_ID[effects.addTrait].label}"이(가) 생겼습니다.`, 'good');
+  }
+  if (effects.promote && person.jobId && person.jobLevel < MAX_JOB_LEVEL) {
+    person.jobLevel = Math.min(MAX_JOB_LEVEL, person.jobLevel + effects.promote);
+    pushLog(state, '📈', `${fullName(person)}이(가) 승진했습니다. (${person.jobLevel}호봉)`, 'good');
+  }
+  if (effects.flag) addFlag(state, person, effects.flag);
+
+  // 가족 전체
+  if (effects.familyHappiness) {
+    for (const member of familyMembers(state)) {
+      member.happiness = clamp(member.happiness + effects.familyHappiness);
+    }
+  }
+
+  // 이 사람의 아이들
+  const kids = childrenOf(state, person).filter((c) => c.alive);
   if (effects.childHappiness) {
     for (const kid of kids) kid.happiness = clamp(kid.happiness + effects.childHappiness);
   }
   if (effects.childStats && kids.length) {
-    const target = kids[0];
+    const targetKid = kids[0];
     for (const [key, value] of Object.entries(effects.childStats)) {
-      if (STAT_KEYS.includes(key)) {
-        target.stats[key] = clamp(target.stats[key] + value);
-        target.potential[key] = clamp(target.potential[key] + value / 2);
-      }
+      if (!STAT_KEYS.includes(key)) continue;
+      targetKid.stats[key] = clamp(targetKid.stats[key] + value);
+      targetKid.potential[key] = clamp(targetKid.potential[key] + value / 2);
     }
   }
   syncRng(state, rng);
+}
+
+/** 선택이 남기는 흔적. 사람과 가문 양쪽에 쌓인다. */
+export function addFlag(state, person, flag) {
+  if (!flag) return;
+  if (!person.flags) person.flags = [];
+  if (!person.flags.includes(flag)) person.flags.push(flag);
+  if (!state.flags) state.flags = {};
+  state.flags[flag] = (state.flags[flag] ?? 0) + 1;
+}
+
+export const hasFlag = (state, flag) => Boolean(state.flags?.[flag]);
+
+/** 주인공에게서 본 관계 이름 */
+export function relationOf(state, person) {
+  const me = player(state);
+  if (!me || !person) return '가족';
+  if (person.id === me.id) return '나';
+  if (person.id === me.partnerId) return '배우자';
+  if (me.children.includes(person.id)) return person.gender === 'male' ? '아들' : '딸';
+  if (me.parents.includes(person.id)) return person.gender === 'male' ? '아버지' : '어머니';
+  const grandchild = childrenOf(state, me).some((kid) => kid.children.includes(person.id));
+  if (grandchild) return person.gender === 'male' ? '손자' : '손녀';
+  const sibling = me.parents.some((parentId) => state.people[parentId]?.children.includes(person.id));
+  if (sibling) return person.gender === 'male' ? '형제' : '자매';
+
+  // 결혼으로 들어온 사람은 짝을 기준으로 부른다
+  if (person.bloodline === false && person.partnerId) {
+    const spouse = state.people[person.partnerId];
+    if (spouse && me.children.includes(spouse.id)) return person.gender === 'male' ? '사위' : '며느리';
+    if (spouse && me.parents.includes(spouse.id)) return person.gender === 'male' ? '아버지' : '어머니';
+    return '가족';
+  }
+  if (person.generation > me.generation) return '자손';
+  if (person.generation < me.generation) return '윗세대';
+  return '가족';
 }
 
 // ── 연간 활동 ──────────────────────────────────────────────
@@ -297,31 +381,72 @@ export function availableActivities(state) {
 
 // ── 이벤트 ────────────────────────────────────────────────
 
-export function eligibleEvents(state) {
+/** 이 이벤트의 주인공이 될 수 있는 사람들 */
+export function actorsFor(state, event) {
   const me = player(state);
-  const partner = partnerOf(state);
-  const kids = childrenOf(state, me).filter((c) => c.alive);
-  const grandkids = kids.some((kid) => kid.children.length > 0);
-  return EVENTS.filter((event) => {
-    if (event.once && state.seenEvents.includes(event.id)) return false;
-    if (event.minAge != null && me.age < event.minAge) return false;
-    if (event.maxAge != null && me.age > event.maxAge) return false;
-    if (event.needsJob && !me.jobId) return false;
-    if (event.needsPartner && !partner) return false;
-    if (event.needsChild && kids.length === 0) return false;
-    if (event.needsGrandchild && !grandkids) return false;
-    return true;
-  });
+  if (!me) return [];
+  const scope = event.actor ?? 'any';
+  let pool;
+  switch (scope) {
+    case 'self': pool = [me]; break;
+    case 'partner': pool = [state.people[me.partnerId]]; break;
+    case 'child': pool = childrenOf(state, me); break;
+    case 'elder': pool = eldersOf(state); break;
+    case 'any':
+    default: pool = familyMembers(state); break;
+  }
+  return (pool ?? []).filter((person) => person?.alive && fitsEvent(state, event, person));
+}
+
+function fitsEvent(state, event, person) {
+  if (event.minAge != null && person.age < event.minAge) return false;
+  if (event.maxAge != null && person.age > event.maxAge) return false;
+  if (event.needsJob && !person.jobId) return false;
+  if (event.needsPartner && !state.people[person.partnerId]?.alive) return false;
+  if (event.needsChild && !childrenOf(state, person).some((c) => c.alive)) return false;
+  if (event.needsGrandchild && !childrenOf(state, person).some((c) => c.children.length > 0)) return false;
+  if (event.needsSibling && !hasLivingSibling(state, person)) return false;
+  if (event.requiresFlag && !hasFlag(state, event.requiresFlag)) return false;
+  if (event.forbidFlag && hasFlag(state, event.forbidFlag)) return false;
+  return true;
+}
+
+/** 살아 있는 형제자매가 있는가 */
+function hasLivingSibling(state, person) {
+  return person.parents.some((parentId) => (
+    (state.people[parentId]?.children ?? []).some((id) => id !== person.id && state.people[id]?.alive)
+  ));
+}
+
+/** 지금 일어날 수 있는 이벤트와 그 주인공 후보들 */
+export function eligibleEvents(state) {
+  return EVENTS
+    .filter((event) => !(event.once && state.seenEvents.includes(event.id)))
+    .map((event) => ({ event, actors: actorsFor(state, event) }))
+    .filter((entry) => entry.actors.length > 0);
+}
+
+/** 주인공에게 조금 더 자주, 그래도 온 가족에게 골고루 */
+function actorWeight(state, person) {
+  const me = player(state);
+  if (person.id === state.playerId) return 3.2;
+  if (person.id === me?.partnerId) return 1.6;
+  if (me?.children.includes(person.id)) return 1.6;
+  if (me?.parents.includes(person.id)) return 1;
+  const grandchild = me ? childrenOf(state, me).some((kid) => kid.children.includes(person.id)) : false;
+  if (grandchild) return 1;
+  return 0.55;   // 먼 친척은 가끔만
 }
 
 function rollEvent(state) {
   const pool = eligibleEvents(state);
   if (!pool.length) return;
   const rng = rngFor(state);
-  const event = rng.weighted(pool, (e) => e.weight ?? 1);
+  const entry = rng.weighted(pool, (e) => e.event.weight ?? 1);
+  const actor = rng.weighted(entry.actors, (person) => actorWeight(state, person));
   syncRng(state, rng);
-  state.pending = { eventId: event.id, resolved: null };
-  if (event.once) state.seenEvents.push(event.id);
+  state.pending = { eventId: entry.event.id, actorId: actor.id, resolved: null };
+  if (entry.event.once) state.seenEvents.push(entry.event.id);
 }
 
 /** 판정 성공 확률 */
@@ -334,22 +459,89 @@ export function pendingEvent(state) {
   if (!state.pending) return null;
   const event = EVENTS.find((e) => e.id === state.pending.eventId);
   if (!event) return null;
-  const me = player(state);
+  const actor = state.people[state.pending.actorId] ?? player(state);
   return {
     ...event,
     tag: event.tag ?? null,
-    title: fillText(state, event.title),
-    text: fillText(state, event.text),
+    actorPerson: actor,
+    relation: relationOf(state, actor),
+    title: fillText(state, event.title, actor),
+    text: fillText(state, event.text, actor),
     choices: event.choices.map((choice, index) => ({
       index,
-      label: fillText(state, choice.label),
+      label: fillText(state, choice.label, actor),
       cost: choice.cost ?? 0,
       affordable: (choice.cost ?? 0) <= state.money,
-      odds: choice.check ? Math.round(checkChance(me, choice.check) * 100) : null,
+      odds: choice.check ? Math.round(checkChance(actor, choice.check) * 100) : null,
       checkLabel: choice.check ? choice.check.stat : null,
+      echoHint: Boolean(choice.echo ?? choice.success?.echo ?? choice.fail?.echo),
     })),
     resolved: state.pending.resolved,
   };
+}
+
+/** 훗날 돌아올 선택의 파장을 예약한다 */
+function scheduleEcho(state, { actor, event, choice, branch, rng }) {
+  const echo = branch?.echo ?? choice.echo;
+  if (!echo) return;
+  const [min, max] = echo.delay ?? [4, 12];
+  if (!state.echoes) state.echoes = [];
+  state.echoes.push({
+    actorId: actor.id,
+    plantedYear: state.year,
+    dueYear: state.year + rng.int(min, max),
+    icon: echo.icon ?? '🦋',
+    fromTitle: event.title,
+    fromLabel: choice.label,
+    text: echo.text,
+    effects: echo.effects ?? {},
+    tone: echo.tone ?? 'good',
+  });
+}
+
+/** 파장이 돌아올 대상 (본인이 없으면 그 자손, 그마저 없으면 주인공) */
+function echoTarget(state, echo) {
+  const source = state.people[echo.actorId];
+  if (source?.alive) return source;
+  const heir = source ? childrenOf(state, source).find((c) => c.alive) : null;
+  return heir ?? player(state);
+}
+
+/** 올해 돌아온 파장들을 처리한다 */
+function fireEchoes(state) {
+  if (!state.echoes?.length) return;
+  const due = state.echoes.filter((echo) => echo.dueYear <= state.year);
+  if (!due.length) return;
+  state.echoes = state.echoes.filter((echo) => echo.dueYear > state.year);
+  if (!state.echoNotices) state.echoNotices = [];
+  for (const echo of due) {
+    const target = echoTarget(state, echo);
+    applyEffects(state, echo.effects, target);
+    const text = fillText(state, echo.text, target);
+    const years = state.year - echo.plantedYear;
+    pushLog(state, echo.icon, `나비효과 — ${text}`, echo.tone);
+    state.echoNotices.push({
+      icon: echo.icon,
+      years,
+      fromTitle: fillText(state, echo.fromTitle, target),
+      fromLabel: fillText(state, echo.fromLabel, target),
+      text,
+      tone: echo.tone,
+      actorId: target?.id ?? null,
+    });
+  }
+  runAchievementCheck(state);
+}
+
+/** 화면에 보여줄 나비효과 알림 */
+export function pendingEcho(state) {
+  const notice = state.echoNotices?.[0];
+  if (!notice) return null;
+  return { ...notice, person: notice.actorId ? state.people[notice.actorId] : null };
+}
+
+export function dismissEcho(state) {
+  state.echoNotices?.shift();
 }
 
 export function resolveEvent(state, choiceIndex) {
@@ -359,31 +551,33 @@ export function resolveEvent(state, choiceIndex) {
   if (!choice) return null;
   if ((choice.cost ?? 0) > state.money) return null;
 
-  const me = player(state);
+  const actor = state.people[state.pending.actorId] ?? player(state);
   const rng = rngFor(state);
   if (choice.cost) state.money -= choice.cost;
 
   let outcomeText;
   let effects;
+  let branch = null;
   if (choice.check) {
-    const success = rng.chance(checkChance(me, choice.check));
-    const branch = success ? choice.success : choice.fail;
+    const success = rng.chance(checkChance(actor, choice.check));
+    branch = success ? choice.success : choice.fail;
     outcomeText = branch.text;
     effects = branch.effects ?? {};
   } else {
     outcomeText = choice.result;
     effects = choice.effects ?? {};
   }
+  scheduleEcho(state, { actor, event, choice, branch, rng });
   syncRng(state, rng);
-  applyEffects(state, effects);
+  applyEffects(state, effects, actor);
 
   state.stats.eventsResolved = (state.stats.eventsResolved ?? 0) + 1;
   if (event.tag === 'absurd') state.stats.absurdSeen = (state.stats.absurdSeen ?? 0) + 1;
   runAchievementCheck(state);
 
-  const text = fillText(state, outcomeText);
-  state.pending.resolved = { text, label: fillText(state, choice.label) };
-  pushLog(state, event.icon ?? '❔', `${fillText(state, event.title)} — ${text}`);
+  const text = fillText(state, outcomeText, actor);
+  state.pending.resolved = { text, label: fillText(state, choice.label, actor) };
+  pushLog(state, event.icon ?? '❔', `${fillText(state, event.title, actor)} — ${text}`);
   return state.pending.resolved;
 }
 
@@ -397,6 +591,7 @@ export function canAdvance(state) {
   if (state.ended) return false;
   if (state.succession) return false;
   if (state.rewardQueue?.length) return false;
+  if (state.echoNotices?.length) return false;
   if (state.pending && !state.pending.resolved) return false;
   return true;
 }
@@ -424,7 +619,7 @@ export function advanceYear(state, activityId = state.activity) {
 
   // 2) 살림
   const members = household(state);
-  const income = householdIncome(members, bonuses);
+  const income = householdIncome(members, bonuses) + supportIncome(state, bonuses);
   const expense = householdExpense(members, bonuses, state.upkeep) + villageMaintenance(state.village);
   state.money += income - expense;
   state.stats.peakMoney = Math.max(state.stats.peakMoney, state.money);
@@ -474,14 +669,17 @@ export function advanceYear(state, activityId = state.activity) {
     }
   }
 
-  // 6) 사망 판정
+  // 6) 지난 선택의 파장이 돌아온다
+  fireEchoes(state);
+
+  // 7) 사망 판정
   processDeaths(state, bonuses);
 
   state.stats.yearsPlayed += 1;
   state.turnFlags = { romanceUsed: false, metThisYear: false };
   runAchievementCheck(state);
 
-  // 7) 새해 이벤트
+  // 8) 새해 이벤트
   if (!state.ended && !state.succession) rollEvent(state);
   return state;
 }
@@ -549,7 +747,17 @@ function npcLife(state) {
   const living = allPeople(state).filter((p) => p.alive && p.inFamily);
   for (const person of living) {
     if (person.id === me.id || person.id === me.partnerId) continue;
-    if (person.isCandidate || person.age < 22) continue;
+    if (person.isCandidate) continue;
+
+    // 어른이 되면 스스로 일자리를 찾는다 (기다리는 동안 집안 살림이 불어난다)
+    if (!person.jobId && person.age >= 19 && person.age < 62) autoCareerFor(state, person);
+    if (person.jobId && person.age >= 66) {
+      pushLog(state, '🌇', `${fullName(person)}이(가) 은퇴했습니다.`);
+      person.jobId = null;
+    }
+    if (person.jobId && rng.chance(promotionChance(person, false) * 0.6)) person.jobLevel += 1;
+
+    if (person.age < 22) continue;
     // 플레이어와 가까운 세대만 이야기가 이어진다 (가족이 무한히 불어나지 않도록)
     if (person.generation < state.generation - 1) continue;
 
@@ -874,8 +1082,9 @@ export function buildBuilding(state, buildingId) {
 export function financeSummary(state) {
   const bonuses = villageBonuses(state.village);
   const members = household(state);
-  const income = householdIncome(members, bonuses);
+  const support = supportIncome(state, bonuses);
+  const income = householdIncome(members, bonuses) + support;
   const maintenance = villageMaintenance(state.village);
   const expense = householdExpense(members, bonuses, state.upkeep) + maintenance;
-  return { income, expense, maintenance, net: income - expense, bonuses };
+  return { income, expense, maintenance, support, net: income - expense, bonuses, earners: members.filter((p) => p.jobId).length };
 }
