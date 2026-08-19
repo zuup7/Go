@@ -153,8 +153,40 @@ input, select {
 .stat-chip .v { font-weight: 700; font-size: .98rem; font-variant-numeric: tabular-nums; }
 .stat-chip .k { letter-spacing: .04em; }
 
+/* ── 초상화 ── */
+.portrait {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--portrait-size);
+  height: var(--portrait-size);
+  flex: 0 0 auto;
+}
+.portrait .avatar-svg {
+  display: block;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  box-shadow: 0 0 0 3px var(--line), var(--shadow);
+}
+.portrait.female .avatar-svg { box-shadow: 0 0 0 3px var(--pink), var(--shadow); }
+.portrait.male .avatar-svg { box-shadow: 0 0 0 3px var(--blue), var(--shadow); }
+.portrait.gone .avatar-svg { filter: grayscale(1); opacity: .55; box-shadow: 0 0 0 3px var(--line); }
+.portrait.plain .avatar-svg { box-shadow: none; }
+.portrait-badge {
+  position: absolute; top: -3px; right: -6px;
+  font-size: calc(var(--portrait-size) * .3); line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.2));
+}
+.portrait-age {
+  position: absolute; bottom: -2px; left: -4px;
+  background: var(--ink); color: var(--bg);
+  border-radius: 999px; padding: 0 6px;
+  font-size: calc(var(--portrait-size) * .19);
+  font-weight: 700; font-variant-numeric: tabular-nums;
+}
+
 /* ── 캐릭터 카드 ── */
-.hero { display: flex; gap: 14px; align-items: flex-start; }
+.hero { display: flex; gap: 16px; align-items: flex-start; }
 .avatar {
   background: var(--bg-soft); border-radius: 50%; border: 2px solid var(--line);
   flex: 0 0 auto; display: grid; place-items: center; overflow: hidden;
@@ -220,6 +252,14 @@ input, select {
 .gen-block { margin-bottom: 14px; }
 .gen-title { font-size: .8rem; color: var(--ink-soft); margin-bottom: 6px; letter-spacing: .05em; }
 .people-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.units { display: flex; flex-wrap: wrap; gap: 12px; }
+.unit {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--bg-soft); border: 1px solid var(--line);
+  border-radius: 18px; padding: 6px;
+}
+.unit .person-card { background: transparent; border: none; padding: 6px 8px; }
+.unit .heart { font-size: 1.1rem; }
 .person-card {
   background: var(--bg-soft); border: 1px solid var(--line); border-radius: 14px;
   padding: 10px; text-align: center;
@@ -264,3 +304,62 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+
+/* ── 병맛 / 업적 태그 ── */
+.tag-absurd, .tag-achieve {
+  display: inline-block; border-radius: 999px; padding: 3px 12px;
+  font-size: .75rem; font-weight: 700; letter-spacing: .02em; margin-bottom: 6px;
+}
+.tag-absurd { background: #f0e2ff; color: #6b3fa0; }
+.tag-achieve { background: var(--accent-soft); color: var(--accent); }
+:root[data-theme="dark"] .tag-absurd { background: #3d2f50; color: #d6b8ff; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tag-absurd { background: #3d2f50; color: #d6b8ff; }
+}
+.modal.absurd { border: 2px dashed #a97fbd; }
+
+/* ── 보상 선택 ── */
+.modal.reward { max-width: 540px; text-align: center; }
+.reward-head .icon { font-size: 2.6rem; }
+.reward-heading { margin: 16px 0 10px; font-size: 1.05rem; color: var(--accent); }
+.reward-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+.reward-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  border-radius: 16px; padding: 16px 10px 12px;
+  border: 2px solid var(--line); background: var(--bg-soft);
+  position: relative; word-break: keep-all;
+}
+.reward-card.gold { border-color: var(--gold); }
+.reward-card.family { border-color: var(--pink); }
+.reward-card.self { border-color: var(--blue); }
+.reward-card.village { border-color: var(--green); }
+.reward-crown { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); font-size: 1.25rem; }
+.reward-icon { font-size: 2.1rem; line-height: 1; }
+.reward-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.reward-title { font-weight: 700; font-size: .92rem; line-height: 1.35; }
+.reward-label { font-size: .75rem; color: var(--ink-soft); line-height: 1.45; }
+.reward-pick { width: 100%; padding: 8px 0; font-size: .9rem; }
+
+@media (max-width: 560px) {
+  .reward-grid { grid-template-columns: 1fr; gap: 12px; }
+  .reward-card {
+    flex-direction: row; align-items: center; text-align: left;
+    padding: 12px 12px 12px 14px; gap: 12px;
+  }
+  .reward-card .reward-crown { top: -11px; left: 16px; transform: none; font-size: 1.05rem; }
+  .reward-pick { width: auto; flex: 0 0 auto; padding: 8px 18px; }
+}
+
+/* ── 업적 ── */
+.item.achieve { align-items: flex-start; }
+.item.achieve.done { background: var(--good-bg); border-color: var(--green); }
+.achieve-icon { font-size: 1.6rem; width: 34px; text-align: center; }
+.achieve-check { color: var(--green); font-weight: 700; font-size: 1.2rem; }
+.badge.tier1 { background: #f0e0d0; }
+.badge.tier2 { background: #e2e6ea; }
+.badge.tier3 { background: #f7e6b8; }
+:root[data-theme="dark"] .badge.tier1,
+:root[data-theme="dark"] .badge.tier2,
+:root[data-theme="dark"] .badge.tier3 { background: var(--line); }

@@ -28,6 +28,7 @@ function render() {
     career: V.careerTab,
     family: V.familyTab,
     village: V.villageTab,
+    achieve: V.achievementsTab,
     legacy: V.legacyTab,
   }[tab] ?? V.lifeTab;
 
@@ -42,6 +43,11 @@ function renderModal() {
   }
   if (state?.succession) {
     modalRoot.innerHTML = V.successionModal(state);
+    return;
+  }
+  const reward = state ? G.rewardChoice(state) : null;
+  if (reward) {
+    modalRoot.innerHTML = V.rewardModal(state, reward);
     return;
   }
   if (importOpen) {
@@ -121,6 +127,14 @@ const actions = {
     render();
   },
   'event-close': () => { G.dismissEvent(state); render(); },
+
+  'take-reward': (id) => {
+    const result = G.takeReward(state, id);
+    if (!result.ok) { toast(result.reason); return; }
+    toast(`${result.reward.icon} ${result.text}`);
+    autosave();
+    render();
+  },
 
   meet: () => {
     const result = G.meetPeople(state);

@@ -1,5 +1,5 @@
 // 화면 조각들. 모두 문자열 HTML 을 돌려주고, 클릭은 data-act 로 위임된다.
-import { avatarSvg } from './avatar.js';
+import { portrait } from './avatar.js';
 import { fullName } from '../core/person.js';
 import { STAT_KEYS, STAT_LABELS, EDUCATION_LABELS, won, stageOf } from '../core/util.js';
 import { TRAIT_BY_ID, commonTraits } from '../data/traits.js';
@@ -99,7 +99,7 @@ export function heroCard(state) {
   return `
   <div class="card">
     <div class="hero">
-      <div class="avatar">${avatarSvg(me, 84)}</div>
+      ${portrait(me, 88, { ageTag: true })}
       <div class="hero-info">
         <div class="name-line">
           <span class="name">${esc(fullName(me))}</span>
@@ -126,6 +126,7 @@ export const TABS = [
   { id: 'career', label: '💼 직업' },
   { id: 'family', label: '🌳 가족' },
   { id: 'village', label: '🏙 마을' },
+  { id: 'achieve', label: '🏅 업적' },
   { id: 'legacy', label: '📜 유산' },
 ];
 
@@ -144,14 +145,19 @@ export function lifeTab(state) {
       ${a.icon} ${a.label}
     </button>`).join('');
 
-  const blocked = state.pending && !state.pending.resolved;
+  const blocked = !G.canAdvance(state);
+  const blockReason = state.rewardQueue?.length
+    ? '먼저 보상을 선택하세요'
+    : state.pending && !state.pending.resolved
+      ? '먼저 이번 이벤트를 마무리하세요'
+      : '지금은 한 해를 보낼 수 없습니다';
   return `
   <div class="card">
     <div class="section-head"><h2>올해는 무엇을 할까요?</h2><span class="muted">${state.year}년 · ${me.age}세</span></div>
     <div class="pill-row">${activities}</div>
     <p class="muted" style="margin-top:10px">${esc(G.ACTIVITY_BY_ID[state.activity]?.desc ?? '')}</p>
     <button class="primary wide" data-act="advance" ${blocked ? 'disabled' : ''}>
-      ${blocked ? '먼저 이번 이벤트를 마무리하세요' : '한 해를 보낸다 →'}
+      ${blocked ? blockReason : '한 해를 보낸다 →'}
     </button>
   </div>
 
@@ -190,7 +196,7 @@ export function loveTab(state) {
     const list = G.candidates(state);
     const cards = list.map((c) => `
       <div class="item">
-        <div class="avatar">${avatarSvg(c, 52)}</div>
+        ${portrait(c, 58, { ageTag: true })}
         <span class="grow">
           <span class="t">${esc(fullName(c))} <span class="muted">${c.age}세</span></span>
           <span class="s">${traitBadges(c) || '평범한 사람'}</span>
@@ -218,7 +224,7 @@ export function loveTab(state) {
   <div class="card">
     <h2>💞 우리 가족</h2>
     <div class="item">
-      <div class="avatar">${avatarSvg(partner, 60)}</div>
+      ${portrait(partner, 64, { ageTag: true })}
       <span class="grow">
         <span class="t">${esc(fullName(partner))} <span class="muted">${partner.age}세 · ${jobLabel(partner)}</span></span>
         <span class="s">${traitBadges(partner)}</span>
@@ -285,7 +291,7 @@ export function personCard(state, person) {
     : `${person.birthYear}–${person.deathYear}`;
   return `
     <button class="${classes.join(' ')}" data-act="person" data-id="${person.id}">
-      ${avatarSvg(person, 56)}
+      ${portrait(person, 60, { ageTag: true })}
       <div class="pname">${esc(fullName(person))}</div>
       <div class="pmeta">${meta}</div>
       <div class="pmeta">${person.traits.map((id) => TRAIT_BY_ID[id]?.icon ?? '').join('')}</div>
@@ -294,16 +300,40 @@ export function personCard(state, person) {
 
 export function familyTab(state) {
   const everyone = G.allPeople(state);
-  const generations = [...new Set(everyone.map((p) => p.generation))].sort((a, b) => a - b);
+  const shown = everyone.filter((p) => p.inFamily || p.partnerId);
+  const generations = [...new Set(shown.map((p) => p.generation))].sort((a, b) => a - b);
+
   const blocks = generations.map((gen) => {
-    const members = everyone
-      .filter((p) => p.generation === gen && (p.inFamily || p.partnerId))
+    const members = shown
+      .filter((p) => p.generation === gen)
       .sort((a, b) => Number(b.alive) - Number(a.alive) || a.birthYear - b.birthYear);
     if (!members.length) return '';
+
+    // 부부는 한 묶음으로, 나머지는 혼자
+    const used = new Set();
+    const units = [];
+    for (const person of members) {
+      if (used.has(person.id)) continue;
+      const partner = person.partnerId ? state.people[person.partnerId] : null;
+      if (partner && !used.has(partner.id) && partner.generation === gen) {
+        used.add(person.id);
+        used.add(partner.id);
+        units.push([person, partner]);
+      } else {
+        used.add(person.id);
+        units.push([person]);
+      }
+    }
+
     return `
       <div class="gen-block">
         <div class="gen-title">${gen}대 · ${members.filter((m) => m.alive).length}명 생존</div>
-        <div class="people-row">${members.map((m) => personCard(state, m)).join('')}</div>
+        <div class="units">
+          ${units.map((unit) => `
+            <div class="unit">
+              ${unit.map((person) => personCard(state, person)).join(unit.length > 1 ? '<span class="heart">💞</span>' : '')}
+            </div>`).join('')}
+        </div>
       </div>`;
   }).join('');
 
@@ -389,7 +419,7 @@ export function legacyTab(state) {
     <div class="list">
       ${heirs.map((h) => `
         <div class="item">
-          <div class="avatar">${avatarSvg(h, 48)}</div>
+          ${portrait(h, 54, { ageTag: true })}
           <span class="grow"><span class="t">${esc(fullName(h))}</span><span class="s">${h.age}세 · ${jobLabel(h)} · ${h.generation}대</span></span>
           <button class="primary" data-act="succeed" data-id="${h.id}">이 사람에게</button>
         </div>`).join('')}
@@ -413,11 +443,12 @@ export function legacyTab(state) {
 export function eventModal(state, event) {
   if (event.resolved) {
     return modal(`
+      ${event.tag === 'absurd' ? '<span class="tag-absurd">🤪 병맛 사건</span>' : ''}
       <div class="icon">${event.icon}</div>
       <h2>${esc(event.title)}</h2>
       <p class="muted">${esc(event.resolved.label)}</p>
       <div class="result-box">${esc(event.resolved.text)}</div>
-      <button class="primary wide" data-act="event-close">계속하기</button>`);
+      <button class="primary wide" data-act="event-close">계속하기</button>`, event.tag === 'absurd' ? 'absurd' : '');
   }
   const choices = event.choices.map((choice) => `
     <button class="choice" data-act="event-choice" data-id="${choice.index}" ${choice.affordable ? '' : 'disabled'}>
@@ -429,10 +460,11 @@ export function eventModal(state, event) {
     </button>`).join('');
 
   return modal(`
+    ${event.tag === 'absurd' ? '<span class="tag-absurd">🤪 병맛 사건</span>' : ''}
     <div class="icon">${event.icon}</div>
     <h2>${esc(event.title)}</h2>
     <p>${esc(event.text)}</p>
-    <div class="choice-grid">${choices}</div>`);
+    <div class="choice-grid">${choices}</div>`, event.tag === 'absurd' ? 'absurd' : '');
 }
 
 export function successionModal(state) {
@@ -444,11 +476,69 @@ export function successionModal(state) {
     <div class="list">
       ${heirs.map((h) => `
         <div class="item">
-          <div class="avatar">${avatarSvg(h, 48)}</div>
+          ${portrait(h, 54, { ageTag: true })}
           <span class="grow"><span class="t">${esc(fullName(h))}</span><span class="s">${h.age}세 · ${h.generation}대 · ${jobLabel(h)}</span></span>
           <button class="primary" data-act="choose-heir" data-id="${h.id}">선택</button>
         </div>`).join('')}
     </div>`);
+}
+
+export function rewardModal(state, choice) {
+  const cards = choice.options.map((option) => `
+    <div class="reward-card ${option.kind}">
+      <span class="reward-crown">👑</span>
+      <span class="reward-icon">${option.icon}</span>
+      <span class="reward-text">
+        <span class="reward-title">${esc(option.title)}</span>
+        <span class="reward-label">${esc(option.label)}</span>
+      </span>
+      <button class="primary reward-pick" data-act="take-reward" data-id="${option.id}">선택</button>
+    </div>`).join('');
+
+  return modal(`
+    <div class="reward-head">
+      <span class="tag-achieve">🏅 업적 달성</span>
+      <div class="icon">${choice.achievement.icon}</div>
+      <h2>${esc(choice.achievement.title)}</h2>
+      <p class="muted">${esc(choice.achievement.desc)}</p>
+    </div>
+    <h3 class="reward-heading">보상 선택</h3>
+    <div class="reward-grid">${cards}</div>
+    ${choice.remaining > 1 ? `<p class="muted">고를 보상이 ${choice.remaining - 1}개 더 남았습니다.</p>` : ''}`, 'reward');
+}
+
+export function achievementsTab(state) {
+  const list = G.achievements(state);
+  const done = list.filter((a) => a.done).length;
+  const tierLabel = { 1: '동', 2: '은', 3: '금' };
+
+  const items = list.map((achievement) => {
+    const progress = achievement.progress;
+    const ratio = progress ? Math.min(1, progress.current / progress.goal) : achievement.done ? 1 : 0;
+    return `
+    <div class="item achieve ${achievement.done ? 'done' : ''}">
+      <span class="achieve-icon">${achievement.done ? achievement.icon : '🔒'}</span>
+      <span class="grow">
+        <span class="t">${esc(achievement.title)} <span class="badge tier${achievement.tier}">${tierLabel[achievement.tier]}</span></span>
+        <span class="s">${esc(achievement.desc)}</span>
+        ${progress && !achievement.done ? `
+          <span class="bar happy" style="margin-top:5px"><i style="width:${Math.round(ratio * 100)}%"></i></span>
+          <span class="s">${Math.round(progress.current).toLocaleString('ko-KR')} / ${progress.goal.toLocaleString('ko-KR')}</span>` : ''}
+      </span>
+      ${achievement.done ? '<span class="achieve-check">✔</span>' : ''}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <div class="section-head">
+      <h2>🏅 업적</h2>
+      <span class="muted">${done} / ${list.length} 달성</span>
+    </div>
+    <span class="bar happy"><i style="width:${Math.round((done / list.length) * 100)}%"></i></span>
+    <p class="muted" style="margin-top:8px">업적을 달성할 때마다 보상 카드 3장 중 하나를 고를 수 있습니다.</p>
+  </div>
+  <div class="card"><div class="list">${items}</div></div>`;
 }
 
 export function endModal(state) {
@@ -476,7 +566,7 @@ export function personModal(state, person) {
 
   return modal(`
     <div style="display:flex;gap:14px;align-items:center">
-      <div class="avatar">${avatarSvg(person, 76)}</div>
+      ${portrait(person, 84, { ageTag: true })}
       <div>
         <h2 style="margin-bottom:2px">${esc(fullName(person))}</h2>
         <div class="muted">${person.alive ? `${person.age}세 · ${stageOf(person.age).label}` : `${person.birthYear}–${person.deathYear} · 향년 ${person.age}세`}</div>
@@ -508,4 +598,4 @@ export function importModal(error) {
     </div>`);
 }
 
-const modal = (inner) => `<div class="modal-bg"><div class="modal">${inner}</div></div>`;
+const modal = (inner, extra = '') => `<div class="modal-bg"><div class="modal ${extra}">${inner}</div></div>`;

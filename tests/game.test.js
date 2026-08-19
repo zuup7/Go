@@ -22,6 +22,22 @@ function clearEvent(state) {
   G.dismissEvent(state);
 }
 
+/** 밀린 보상 선택을 전부 첫 번째 카드로 받는다 */
+function claimAll(state) {
+  let guard = 0;
+  while (state.rewardQueue?.length && guard++ < 40) {
+    const choice = G.rewardChoice(state);
+    if (!choice) break;
+    G.takeReward(state, choice.options[0].id);
+  }
+}
+
+/** 이벤트와 보상을 모두 정리해 다음 해로 갈 수 있게 만든다 */
+function settle(state) {
+  clearEvent(state);
+  claimAll(state);
+}
+
 test('새 게임은 1대 18세, 마을과 자금을 갖고 시작한다', () => {
   const state = start();
   const me = G.player(state);
@@ -172,7 +188,7 @@ test('사망하면 계승 화면으로 넘어가고 자산의 70%가 상속된�
   me.age = 120;
   let guard = 0;
   while (!state.succession && guard++ < 30) {
-    clearEvent(state);
+    settle(state);
     G.advanceYear(state, 'rest');
   }
   assert.ok(state.succession, '사망 후 계승이 시작된다');
@@ -217,7 +233,7 @@ test('뒤를 이을 사람이 없으면 이야기가 끝난다', () => {
   me.age = 120;
   let guard = 0;
   while (!state.ended && guard++ < 30) {
-    clearEvent(state);
+    settle(state);
     G.advanceYear(state, 'rest');
   }
   assert.ok(state.ended, '후손이 없으면 게임이 끝난다');
@@ -248,7 +264,7 @@ test('저장하고 불러오면 이야기가 그대로 이어진다', () => {
   spouse.affection = 95;
   G.propose(state, spouse.id);
   G.haveChild(state);
-  clearEvent(state);
+  settle(state);
   G.advanceYear(state, 'family');
 
   const restored = deserialize(serialize(state));
@@ -258,7 +274,7 @@ test('저장하고 불러오면 이야기가 그대로 이어진다', () => {
   assert.equal(fullName(G.player(restored)), fullName(G.player(state)));
 
   // 이어서 플레이해도 새 인물 id 가 겹치지 않는다
-  clearEvent(restored);
+  settle(restored);
   G.advanceYear(restored, 'rest');
   const ids = Object.keys(restored.people);
   assert.equal(new Set(ids).size, ids.length);
@@ -269,7 +285,7 @@ test('여러 세대를 이어가도 가문이 유지된다', () => {
   let guard = 0;
   while (!state.ended && state.generation < 4 && guard++ < 400) {
     if (state.succession) { G.chooseHeir(state, state.succession.heirIds[0]); continue; }
-    clearEvent(state);
+    settle(state);
     const me = G.player(state);
     if (!me.jobId && me.age >= 19) {
       const best = G.jobOptions(state).filter((j) => j.eligible).sort((a, b) => b.expected - a.expected)[0];
@@ -294,4 +310,104 @@ test('여러 세대를 이어가도 가문이 유지된다', () => {
   assert.ok(state.generation >= 4, `4대까지 이어져야 한다 (현재 ${state.generation}대)`);
   assert.ok(G.allPeople(state).filter((p) => p.alive).length > 1);
   assert.ok(G.legacyScore(state) > 0);
+});
+
+
+test('업적을 달성하면 보상 카드 3장이 열린다', () => {
+  const state = start(20);
+  const me = G.player(state);
+  me.age = 25;
+  me.education = 4;
+  for (const key of Object.keys(me.stats)) me.stats[key] = 80;
+
+  assert.equal(state.rewardQueue.length, 0);
+  G.takeJob(state, 'engineer');
+  assert.ok(state.achievements.includes('firstJob'), '첫 취업 업적이 열린다');
+  assert.ok(state.rewardQueue.length >= 1);
+
+  const choice = G.rewardChoice(state);
+  assert.equal(choice.options.length, 3);
+  assert.equal(new Set(choice.options.map((o) => o.id)).size, 3, '보상이 겹치지 않는다');
+  for (const option of choice.options) {
+    assert.ok(option.title.length > 0 && option.label.length > 0);
+  }
+});
+
+test('보상을 고르기 전에는 다음 해로 갈 수 없다', () => {
+  const state = start(21);
+  G.player(state).age = 25;
+  G.takeJob(state, 'farmer');
+  assert.ok(state.rewardQueue.length > 0);
+  assert.equal(G.canAdvance(state), false);
+
+  const year = state.year;
+  G.advanceYear(state, 'rest');
+  assert.equal(state.year, year, '보상을 고를 때까지 시간이 멈춘다');
+
+  claimAll(state);
+  assert.equal(state.rewardQueue.length, 0);
+  assert.equal(G.canAdvance(state), true);
+});
+
+test('보상은 실제 효과를 준다', () => {
+  const state = start(22);
+  const me = G.player(state);
+  me.age = 25;
+  G.takeJob(state, 'farmer');
+
+  const choice = G.rewardChoice(state);
+  const cash = choice.options.find((o) => o.id === 'cash');
+  const mood = choice.options.find((o) => o.id === 'moodAll');
+  if (cash) {
+    const before = state.money;
+    G.takeReward(state, 'cash');
+    assert.ok(state.money > before, '축하금은 자금을 늘린다');
+  } else if (mood) {
+    me.happiness = 40;
+    G.takeReward(state, 'moodAll');
+    assert.ok(me.happiness > 40, '기분 보상은 행복을 올린다');
+  } else {
+    const result = G.takeReward(state, choice.options[0].id);
+    assert.equal(result.ok, true);
+  }
+  assert.equal(state.stats.rewardsTaken >= 1, true);
+});
+
+test('같은 업적은 두 번 열리지 않는다', () => {
+  const state = start(23);
+  const me = G.player(state);
+  me.age = 25;
+  G.takeJob(state, 'farmer');
+  claimAll(state);
+  const count = state.achievements.length;
+  G.runAchievementCheck(state);
+  G.runAchievementCheck(state);
+  assert.equal(state.achievements.length, count);
+  assert.equal(state.rewardQueue.length, 0);
+});
+
+test('업적 목록은 진행도를 알려준다', () => {
+  const state = start(24);
+  const list = G.achievements(state);
+  assert.ok(list.length >= 20);
+  const rich = list.find((a) => a.id === 'rich1');
+  assert.equal(rich.done, false);
+  assert.equal(rich.progress.goal, 10000);
+  state.money = 12000;
+  G.runAchievementCheck(state);
+  assert.ok(G.achievements(state).find((a) => a.id === 'rich1').done);
+});
+
+test('병맛 이벤트도 통계에 쌓인다', () => {
+  const state = start(25);
+  const before = state.stats.absurdSeen;
+  let guard = 0;
+  while (state.stats.absurdSeen === before && guard++ < 200) {
+    settle(state);
+    G.advanceYear(state, 'rest');
+    if (state.succession) G.chooseHeir(state, state.succession.heirIds[0]);
+    if (state.ended) break;
+  }
+  assert.ok(state.stats.absurdSeen > before, '병맛 이벤트가 등장한다');
+  assert.ok(state.stats.eventsResolved > 0);
 });

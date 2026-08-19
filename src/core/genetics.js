@@ -5,7 +5,7 @@ import { clamp, STAT_KEYS } from './util.js';
 export const GENE_POOL = {
   skin: ['#ffe0c8', '#f7cfa8', '#e8b48a', '#c98d63', '#9c6242', '#6f4530'],
   hairColor: ['#2b2118', '#4a2f1d', '#7b4a24', '#b57b3a', '#d8b06a', '#8a8a8a', '#c8546b', '#5a7fb5'],
-  hairStyle: ['short', 'bob', 'long', 'curly', 'ponytail', 'bald', 'buzz', 'wave'],
+  hairStyle: ['short', 'bob', 'long', 'curly', 'ponytail', 'bald', 'buzz', 'wave', 'twintail', 'afro', 'bun'],
   eyeColor: ['#3a2a1c', '#5b3b22', '#2f5d3f', '#2f4f7a', '#6b4a7a'],
   face: ['round', 'oval', 'square', 'heart'],
   freckles: [false, false, false, true],

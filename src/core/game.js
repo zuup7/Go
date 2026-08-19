@@ -10,6 +10,7 @@ import { householdIncome, householdExpense, promotionChance, salaryOf, MAX_JOB_L
 import { JOB_BY_ID, canApply } from '../data/jobs.js';
 import { EVENTS } from '../data/events.js';
 import { TRAIT_BY_ID } from '../data/traits.js';
+import { checkAchievements, pendingRewardChoice, claimReward, achievementList } from './achievements.js';
 import { VILLAGE_NAMES } from '../data/names.js';
 
 export const START_YEAR = 2000;
@@ -55,7 +56,12 @@ export function newGame({ seed = Date.now(), familyName, givenName, gender, trai
     activity: 'study',
     succession: null,
     ended: null,
-    stats: { yearsPlayed: 0, born: 0, married: 0, buildingsBuilt: 0, peakMoney: 2600 },
+    achievements: [],
+    rewardQueue: [],
+    stats: {
+      yearsPlayed: 0, born: 0, married: 0, buildingsBuilt: 0, peakMoney: 2600,
+      eventsResolved: 0, absurdSeen: 0, rewardsTaken: 0,
+    },
   };
   pushLog(state, '🌱', `${fullName(founder)}의 이야기가 ${state.village.name}에서 시작됩니다.`, 'good');
   return state;
@@ -76,6 +82,48 @@ const syncRng = (state, rng) => {
   state.rngState = rng.state;
   state.idCounter = currentIdCounter();
 };
+
+// ── 업적 연결 ──────────────────────────────────────────────
+
+/** achievements.js 가 쓰는 조회 함수 묶음 */
+const achievementDeps = {
+  player: (state) => player(state),
+  childrenOf: (state, person) => childrenOf(state, person),
+  rng: (state) => rngFor(state),
+  syncRng: (state, rng) => syncRng(state, rng),
+};
+
+/** 업적을 확인하고, 새로 달성한 것이 있으면 기록에 남긴다 */
+export function runAchievementCheck(state) {
+  if (state.ended) return [];
+  const unlocked = checkAchievements(state, achievementDeps);
+  for (const achievement of unlocked) {
+    pushLog(state, achievement.icon, `업적 달성! ${fillText(state, achievement.title)} — ${achievement.desc}`, 'good');
+  }
+  return unlocked;
+}
+
+/** 지금 골라야 할 보상 카드 */
+export function rewardChoice(state) {
+  const choice = pendingRewardChoice(state, achievementDeps);
+  if (!choice) return null;
+  return { ...choice, achievement: { ...choice.achievement, title: fillText(state, choice.achievement.title) } };
+}
+
+/** 보상 선택 */
+export function takeReward(state, rewardId) {
+  const result = claimReward(state, rewardId, achievementDeps);
+  if (result.ok) {
+    pushLog(state, result.reward.icon, `보상 획득 — ${result.text}`, 'good');
+    runAchievementCheck(state);
+  }
+  return result;
+}
+
+/** 업적 목록 (진행도 포함) */
+export function achievements(state) {
+  return achievementList(state, achievementDeps).map((a) => ({ ...a, title: fillText(state, a.title) }));
+}
 
 // ── 조회 헬퍼 ──────────────────────────────────────────────
 
@@ -289,6 +337,7 @@ export function pendingEvent(state) {
   const me = player(state);
   return {
     ...event,
+    tag: event.tag ?? null,
     title: fillText(state, event.title),
     text: fillText(state, event.text),
     choices: event.choices.map((choice, index) => ({
@@ -328,6 +377,10 @@ export function resolveEvent(state, choiceIndex) {
   syncRng(state, rng);
   applyEffects(state, effects);
 
+  state.stats.eventsResolved = (state.stats.eventsResolved ?? 0) + 1;
+  if (event.tag === 'absurd') state.stats.absurdSeen = (state.stats.absurdSeen ?? 0) + 1;
+  runAchievementCheck(state);
+
   const text = fillText(state, outcomeText);
   state.pending.resolved = { text, label: fillText(state, choice.label) };
   pushLog(state, event.icon ?? '❔', `${fillText(state, event.title)} — ${text}`);
@@ -343,6 +396,7 @@ export function dismissEvent(state) {
 export function canAdvance(state) {
   if (state.ended) return false;
   if (state.succession) return false;
+  if (state.rewardQueue?.length) return false;
   if (state.pending && !state.pending.resolved) return false;
   return true;
 }
@@ -425,6 +479,7 @@ export function advanceYear(state, activityId = state.activity) {
 
   state.stats.yearsPlayed += 1;
   state.turnFlags = { romanceUsed: false, metThisYear: false };
+  runAchievementCheck(state);
 
   // 7) 새해 이벤트
   if (!state.ended && !state.succession) rollEvent(state);
@@ -619,6 +674,7 @@ function handOver(state, heirId, baseRate) {
     'good',
   );
   if (heir.age >= 19 && !heir.jobId) autoCareerFor(state, heir);
+  runAchievementCheck(state);
   rollEvent(state);
   return state;
 }
@@ -711,6 +767,7 @@ export function propose(state, candidateId) {
   // 다른 후보들은 떠난다
   for (const other of candidates(state)) delete state.people[other.id];
   pushLog(state, '💍', `${fullName(me)}와(과) ${fullName(candidate)}이(가) 결혼했습니다!`, 'good');
+  runAchievementCheck(state);
   return { ok: true };
 }
 
@@ -761,6 +818,7 @@ export function haveChild(state) {
   state.turnFlags.childThisYear = true;
   syncRng(state, rng);
   pushLog(state, '👶', `${fullName(child)}이(가) 태어났습니다! (${state.generation + 1}대)`, 'good');
+  runAchievementCheck(state);
   return { ok: true, child, chance };
 }
 
@@ -787,6 +845,7 @@ export function takeJob(state, jobId) {
   me.jobId = jobId;
   me.jobLevel = changing ? Math.floor(me.jobLevel / 2) : 0;
   pushLog(state, job.icon, `${fullName(me)}이(가) ${job.label}${changing ? '(으)로 이직했습니다.' : ' 일을 시작했습니다.'}`, 'good');
+  runAchievementCheck(state);
   return { ok: true };
 }
 
@@ -808,6 +867,7 @@ export function buildBuilding(state, buildingId) {
   const me = player(state);
   me.happiness = clamp(me.happiness + 3);
   pushLog(state, '🏗️', `${state.village.name}에 건물을 올렸습니다. (Lv.${result.level})`, 'good');
+  runAchievementCheck(state);
   return result;
 }
 

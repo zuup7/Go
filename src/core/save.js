@@ -2,7 +2,7 @@
 import { rehydrate } from './game.js';
 
 export const SAVE_KEY = 'family-go/save-v1';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 const storage = () => (typeof localStorage === 'undefined' ? null : localStorage);
 
