@@ -47,18 +47,30 @@ export function checkAchievements(state, deps) {
     }
     if (!done) continue;
     state.achievements.push(achievement.id);
-    state.rewardQueue.push({
-      achievementId: achievement.id,
-      options: pickRewards(achievement, deps.rng(state)),
-    });
+    queueRewardChoice(state, {
+      icon: achievement.icon,
+      title: achievement.title,
+      desc: achievement.desc,
+      tier: achievement.tier,
+      kind: 'achievement',
+    }, deps.rng(state));
     unlocked.push(achievement);
   }
   return unlocked;
 }
 
+/**
+ * 보상 선택을 대기열에 넣는다. 업적뿐 아니라 숙원 달성 등에도 쓴다.
+ * source: { icon, title, desc, tier, kind }
+ */
+export function queueRewardChoice(state, source, rng) {
+  if (!state.rewardQueue) state.rewardQueue = [];
+  state.rewardQueue.push({ source, options: pickRewards(source.tier ?? 1, rng) });
+}
+
 /** 보상 카드 3장 뽑기 (종류가 겹치지 않게) */
-function pickRewards(achievement, rng) {
-  const pool = rng.shuffle(rewardPoolFor(achievement.tier));
+function pickRewards(tier, rng) {
+  const pool = rng.shuffle(rewardPoolFor(tier));
   const picked = [];
   const kinds = new Set();
   for (const reward of pool) {
@@ -78,14 +90,14 @@ function pickRewards(achievement, rng) {
 export function pendingRewardChoice(state, deps) {
   const entry = state.rewardQueue?.[0];
   if (!entry) return null;
-  const achievement = ACHIEVEMENT_BY_ID[entry.achievementId];
-  if (!achievement) {
+  const source = entry.source;
+  if (!source) {
     state.rewardQueue.shift();
     return null;
   }
-  const ctx = rewardContext(state, deps, achievement.tier);
+  const ctx = rewardContext(state, deps, source.tier ?? 1);
   return {
-    achievement,
+    achievement: source,
     remaining: state.rewardQueue.length,
     options: entry.options.map((id) => REWARD_BY_ID[id]).filter(Boolean).map((reward) => ({
       id: reward.id,
@@ -117,9 +129,9 @@ export function claimReward(state, rewardId, deps) {
   const entry = state.rewardQueue?.[0];
   if (!entry) return { ok: false, reason: '고를 보상이 없습니다.' };
   if (!entry.options.includes(rewardId)) return { ok: false, reason: '선택할 수 없는 보상입니다.' };
-  const achievement = ACHIEVEMENT_BY_ID[entry.achievementId];
+  const source = entry.source ?? {};
   const reward = REWARD_BY_ID[rewardId];
-  const ctx = rewardContext(state, deps, achievement?.tier ?? 1);
+  const ctx = rewardContext(state, deps, source.tier ?? 1);
 
   const text = reward.apply(state, ctx);
   deps.syncRng(state, ctx.rng);
@@ -128,7 +140,7 @@ export function claimReward(state, rewardId, deps) {
   const me = deps.player(state);
   if (me) me.happiness = clamp(me.happiness + 4);
   state.stats.rewardsTaken = (state.stats.rewardsTaken ?? 0) + 1;
-  return { ok: true, text, reward, achievement };
+  return { ok: true, text, reward, achievement: source };
 }
 
 /** 화면에 뿌릴 업적 목록 (달성 여부와 진행도 포함) */

@@ -11,6 +11,12 @@ import { JOB_BY_ID, canApply } from '../data/jobs.js';
 import { EVENTS } from '../data/events.js';
 import { TRAIT_BY_ID } from '../data/traits.js';
 import { checkAchievements, pendingRewardChoice, claimReward, achievementList } from './achievements.js';
+import {
+  assignDream, checkDreams, dreamOf, DREAM_AGE,
+  maybeStartCrisis, startCrisis, crisisStatus, payCrisis as payCrisisCore, tryCrisis as tryCrisisCore, tickCrisis,
+  assignQuest, questStatus, tickQuest,
+} from './life.js';
+import { ORIGIN_BY_ID } from '../data/origins.js';
 import { VILLAGE_NAMES } from '../data/names.js';
 
 export const START_YEAR = 2000;
@@ -28,13 +34,17 @@ export const ACTIVITIES = [
   { id: 'work', label: '일에 집중', icon: '💼', desc: '승진 확률과 수입이 오릅니다.', minAge: 19, needsJob: true },
   { id: 'family', label: '가족과 시간', icon: '🏡', desc: '가족 모두의 행복이 오릅니다.', minAge: 0 },
   { id: 'rest', label: '휴식', icon: '🌿', desc: '건강과 행복을 회복합니다.', minAge: 0 },
+  { id: 'grind', label: '극한 훈련', icon: '🔥', desc: '체력이 크게 오르지만 다칠 수 있습니다.', minAge: 14, risky: true },
+  { id: 'hustle', label: '부업', icon: '🛵', desc: '돈을 더 벌지만 몸과 마음이 지칩니다.', minAge: 17, risky: true },
+  { id: 'gamble', label: '한탕 노리기', icon: '🎲', desc: '자금의 15%를 겁니다. 두 배가 되거나 날아갑니다.', minAge: 19, risky: true },
+  { id: 'volunteer', label: '마을 봉사', icon: '🤲', desc: '명성과 매력이 오르고 가족이 뿌듯해합니다.', minAge: 12 },
 ];
 
 export const ACTIVITY_BY_ID = Object.fromEntries(ACTIVITIES.map((a) => [a.id, a]));
 
 // ── 상태 만들기 ────────────────────────────────────────────
 
-export function newGame({ seed = Date.now(), familyName, givenName, gender, traitId, villageName } = {}) {
+export function newGame({ seed = Date.now(), familyName, givenName, gender, traitId, villageName, originId = 'common' } = {}) {
   resetIdCounter(1);
   const rng = createRng(seed);
   const founder = createFounder(rng, { gender, familyName, givenName, year: START_YEAR, traitId });
@@ -59,15 +69,45 @@ export function newGame({ seed = Date.now(), familyName, givenName, gender, trai
     achievements: [],
     rewardQueue: [],
     echoes: [],
-    echoNotices: [],
+    notices: [],
     flags: {},
+    crisis: null,
+    quest: null,
+    questsDone: [],
+    originId: 'common',
     auto: { running: false, speed: 'normal' },
     stats: {
       yearsPlayed: 0, born: 0, married: 0, buildingsBuilt: 0, peakMoney: 2600,
       eventsResolved: 0, absurdSeen: 0, rewardsTaken: 0,
+      dreamsFulfilled: 0, crisesSurvived: 0, crisesFailed: 0, questsDone: 0,
     },
   };
-  pushLog(state, '🌱', `${fullName(founder)}의 이야기가 ${state.village.name}에서 시작됩니다.`, 'good');
+  // 출신 가문 적용
+  const origin = ORIGIN_BY_ID[originId] ?? ORIGIN_BY_ID.common;
+  state.originId = origin.id;
+  state.money = origin.money;
+  state.stats.peakMoney = origin.money;
+  origin.apply(state, { founder, rng });
+  syncRng(state, rng);
+
+  pushLog(state, '🌱', `${fullName(founder)}의 이야기가 ${state.village.name}에서 시작됩니다. (${origin.icon} ${origin.title})`, 'good');
+
+  assignDream(state, founder, rngFor(state));
+  const dream = dreamOf(founder);
+  if (dream) pushLog(state, dream.icon, `${fullName(founder)}의 꿈: ${dream.title}`);
+  assignQuest(state, lifeDeps);
+  const quest = questStatus(state, lifeDeps);
+  if (quest) pushLog(state, quest.icon, `가문의 숙원: ${quest.title} — ${quest.desc} (${quest.yearsLeft}년)`);
+
+  // 물려받은 빚은 곧바로 위기로 시작한다
+  if (state.startingDebt) {
+    startCrisis(state, lifeDeps, 'debt');
+    if (state.crisis) {
+      state.crisis.need = state.startingDebt;
+      pushNotice(state, crisisNotice(state, '물려받은 빚이 기다리고 있습니다.'));
+    }
+    delete state.startingDebt;
+  }
   return state;
 }
 
@@ -86,6 +126,74 @@ const syncRng = (state, rng) => {
   state.rngState = rng.state;
   state.idCounter = currentIdCounter();
 };
+
+// ── 알림 큐 (꿈·위기·나비효과) ─────────────────────────────
+
+export function pushNotice(state, notice) {
+  if (!notice) return;
+  if (!state.notices) state.notices = [];
+  state.notices.push(notice);
+}
+
+export function pendingNotice(state) {
+  const notice = state.notices?.[0];
+  if (!notice) return null;
+  return { ...notice, person: notice.personId ? state.people[notice.personId] : null };
+}
+
+export function dismissNotice(state) {
+  state.notices?.shift();
+}
+
+// ── 꿈 · 위기 · 숙원 연결 ──────────────────────────────────
+
+const lifeDeps = {
+  player: (state) => player(state),
+  childrenOf: (state, person) => childrenOf(state, person),
+  familyMembers: (state) => familyMembers(state),
+  rng: (state) => rngFor(state),
+  syncRng: (state, rng) => syncRng(state, rng),
+  applyEffects: (state, effects, target) => applyEffects(state, effects, target),
+  pushLog: (state, icon, text, tone) => pushLog(state, icon, text, tone),
+  checkChance: (person, check) => checkChance(person, check),
+  fillText: (state, text, actor) => fillText(state, text, actor),
+  financeSummary: (state) => financeSummary(state),
+};
+
+/** 지금 닥친 위기 (없으면 null) */
+export const crisis = (state) => crisisStatus(state, lifeDeps);
+
+export function payCrisis(state, amount = null) {
+  const result = payCrisisCore(state, lifeDeps, amount);
+  if (result.resolved) runAchievementCheck(state);
+  return result;
+}
+
+export function tryCrisis(state) {
+  const result = tryCrisisCore(state, lifeDeps);
+  if (result.resolved) runAchievementCheck(state);
+  return result;
+}
+
+/** 가문의 숙원 */
+export const quest = (state) => questStatus(state, lifeDeps);
+
+/** 인물의 꿈 */
+export const dreamFor = (person) => dreamOf(person);
+
+function crisisNotice(state, extra = '') {
+  const status = crisisStatus(state, lifeDeps);
+  if (!status) return null;
+  return {
+    kind: 'crisis',
+    icon: status.icon,
+    title: status.title,
+    text: `${status.desc}${extra ? ` ${extra}` : ''}`,
+    detail: `${status.yearsLeft}년 안에 ${Math.round(status.need).toLocaleString('ko-KR')}만원`,
+    tone: 'bad',
+    personId: status.target?.id ?? null,
+  };
+}
 
 // ── 업적 연결 ──────────────────────────────────────────────
 
@@ -156,11 +264,20 @@ export function household(state) {
 /** 분가한 가족이 다달이 보태는 몫 (연 20%) */
 export const SUPPORT_SHARE = 0.2;
 
+export const MAX_SUPPORTERS = 4;
+
 export function supportingRelatives(state) {
+  const me = player(state);
   const members = new Set(household(state).map((p) => p.id));
-  return familyMembers(state).filter((person) => (
-    !members.has(person.id) && person.alive && person.jobId && person.age >= 19
-  ));
+  const closeness = (person) => {
+    if (me?.children.includes(person.id)) return 0;
+    if (me?.parents.includes(person.id)) return 1;
+    return 2;
+  };
+  return familyMembers(state)
+    .filter((person) => !members.has(person.id) && person.alive && person.jobId && person.age >= 19)
+    .sort((a, b) => closeness(a) - closeness(b) || b.jobLevel - a.jobLevel)
+    .slice(0, MAX_SUPPORTERS);
 }
 
 export function supportIncome(state, bonuses) {
@@ -365,6 +482,53 @@ function applyActivity(state, activityId) {
       }
       break;
     }
+    case 'grind': {
+      gain('fitness', 6 + rng.int(0, 3));
+      gain('health', -2);
+      if (rng.chance(0.18)) {
+        gain('health', -8);
+        gain('fitness', -3);
+        me.happiness = clamp(me.happiness - 6);
+        pushLog(state, '🤕', `${fullName(me)}이(가) 무리하다 다쳤습니다.`, 'bad');
+      } else {
+        me.happiness = clamp(me.happiness + 1);
+      }
+      break;
+    }
+    case 'hustle': {
+      const earned = 300 + Math.round(me.stats.fitness * 6 + me.stats.charm * 4);
+      state.money += earned;
+      gain('health', -3);
+      me.happiness = clamp(me.happiness - 3);
+      pushLog(state, '🛵', `부업으로 ${earned.toLocaleString('ko-KR')}만원을 더 벌었습니다.`);
+      break;
+    }
+    case 'gamble': {
+      const bet = Math.round(state.money * 0.15);
+      if (bet < 50) {
+        me.happiness = clamp(me.happiness - 1);
+        pushLog(state, '🎲', '걸 돈이 없어 구경만 했습니다.');
+        break;
+      }
+      state.money -= bet;
+      const luck = me.traits.includes('lucky') ? 0.58 : 0.47;
+      if (rng.chance(luck)) {
+        state.money += bet * 2;
+        me.happiness = clamp(me.happiness + 8);
+        pushLog(state, '🎉', `한탕이 터졌습니다! ${bet.toLocaleString('ko-KR')}만원을 벌었습니다.`, 'good');
+      } else {
+        me.happiness = clamp(me.happiness - 7);
+        pushLog(state, '💸', `${bet.toLocaleString('ko-KR')}만원을 날렸습니다.`, 'bad');
+      }
+      break;
+    }
+    case 'volunteer': {
+      gain('charm', 3);
+      state.village.fame = (state.village.fame ?? 0) + 3;
+      me.happiness = clamp(me.happiness + 3);
+      for (const member of familyMembers(state)) member.happiness = clamp(member.happiness + 1.5);
+      break;
+    }
     case 'rest':
     default:
       gain('health', 3);
@@ -438,10 +602,16 @@ function actorWeight(state, person) {
   return 0.55;   // 먼 친척은 가끔만
 }
 
-function rollEvent(state) {
+export const EVENT_CHANCE = 0.78;
+
+function rollEvent(state, { forced = false } = {}) {
   const pool = eligibleEvents(state);
   if (!pool.length) return;
   const rng = rngFor(state);
+  if (!forced && !rng.chance(EVENT_CHANCE)) {
+    syncRng(state, rng);
+    return;                       // 조용히 지나가는 해
+  }
   const entry = rng.weighted(pool, (e) => e.event.weight ?? 1);
   const actor = rng.weighted(entry.actors, (person) => actorWeight(state, person));
   syncRng(state, rng);
@@ -513,36 +683,30 @@ function fireEchoes(state) {
   const due = state.echoes.filter((echo) => echo.dueYear <= state.year);
   if (!due.length) return;
   state.echoes = state.echoes.filter((echo) => echo.dueYear > state.year);
-  if (!state.echoNotices) state.echoNotices = [];
   for (const echo of due) {
     const target = echoTarget(state, echo);
     applyEffects(state, echo.effects, target);
     const text = fillText(state, echo.text, target);
     const years = state.year - echo.plantedYear;
     pushLog(state, echo.icon, `나비효과 — ${text}`, echo.tone);
-    state.echoNotices.push({
+    pushNotice(state, {
+      kind: 'echo',
       icon: echo.icon,
       years,
-      fromTitle: fillText(state, echo.fromTitle, target),
-      fromLabel: fillText(state, echo.fromLabel, target),
+      title: fillText(state, echo.fromTitle, target),
+      detail: `"${fillText(state, echo.fromLabel, target)}"`,
       text,
       tone: echo.tone,
-      actorId: target?.id ?? null,
+      effects: echo.effects,
+      personId: target?.id ?? null,
     });
   }
   runAchievementCheck(state);
 }
 
-/** 화면에 보여줄 나비효과 알림 */
-export function pendingEcho(state) {
-  const notice = state.echoNotices?.[0];
-  if (!notice) return null;
-  return { ...notice, person: notice.actorId ? state.people[notice.actorId] : null };
-}
-
-export function dismissEcho(state) {
-  state.echoNotices?.shift();
-}
+/** 이전 이름과의 호환 */
+export const pendingEcho = (state) => pendingNotice(state);
+export const dismissEcho = (state) => dismissNotice(state);
 
 export function resolveEvent(state, choiceIndex) {
   if (!state.pending || state.pending.resolved) return null;
@@ -576,7 +740,13 @@ export function resolveEvent(state, choiceIndex) {
   runAchievementCheck(state);
 
   const text = fillText(state, outcomeText, actor);
-  state.pending.resolved = { text, label: fillText(state, choice.label, actor) };
+  state.pending.resolved = {
+    text,
+    label: fillText(state, choice.label, actor),
+    effects,
+    cost: choice.cost ?? 0,
+    success: choice.check ? branch === choice.success : null,
+  };
   pushLog(state, event.icon ?? '❔', `${fillText(state, event.title, actor)} — ${text}`);
   return state.pending.resolved;
 }
@@ -591,7 +761,7 @@ export function canAdvance(state) {
   if (state.ended) return false;
   if (state.succession) return false;
   if (state.rewardQueue?.length) return false;
-  if (state.echoNotices?.length) return false;
+  if (state.notices?.length) return false;
   if (state.pending && !state.pending.resolved) return false;
   return true;
 }
@@ -602,6 +772,14 @@ export function advanceYear(state, activityId = state.activity) {
   state.activity = activityId;
   const bonuses = villageBonuses(state.village);
   const rng = rngFor(state);
+
+  const before = player(state);
+  state.snapshot = {
+    money: state.money,
+    happiness: before.happiness,
+    stats: { ...before.stats },
+    playerId: before.id,
+  };
 
   applyActivity(state, activityId);
 
@@ -620,7 +798,8 @@ export function advanceYear(state, activityId = state.activity) {
   // 2) 살림
   const members = household(state);
   const income = householdIncome(members, bonuses) + supportIncome(state, bonuses);
-  const expense = householdExpense(members, bonuses, state.upkeep) + villageMaintenance(state.village);
+  const expense = householdExpense(members, bonuses, state.upkeep, costOfLiving(state))
+    + villageMaintenance(state.village);
   state.money += income - expense;
   state.stats.peakMoney = Math.max(state.stats.peakMoney, state.money);
   if (state.money < 0) {
@@ -668,6 +847,61 @@ export function advanceYear(state, activityId = state.activity) {
       autoCareerFor(state, kid);
     }
   }
+
+  // 5-1) 아이들이 자라 꿈을 품는다
+  for (const person of familyMembers(state)) {
+    if (person.age === DREAM_AGE && !person.dreamId) {
+      const dream = assignDream(state, person, rngFor(state));
+      state.idCounter = currentIdCounter();
+      if (dream) pushLog(state, dream.icon, `${fullName(person)}이(가) 꿈을 품었습니다 — ${dream.title}`);
+    }
+  }
+
+  // 5-2) 이루어진 꿈
+  for (const { person, dream } of checkDreams(state, lifeDeps)) {
+    pushLog(state, dream.icon, `${fullName(person)}이(가) 꿈을 이뤘습니다 — ${dream.title}!`, 'good');
+    pushNotice(state, {
+      kind: 'dream',
+      icon: dream.icon,
+      title: '꿈을 이뤘습니다',
+      text: `${fullName(person)}의 오랜 꿈 "${dream.title}"이(가) 이루어졌습니다.`,
+      detail: dream.hint,
+      tone: 'good',
+      effects: dream.reward,
+      personId: person.id,
+    });
+  }
+
+  // 5-2b) 대를 이을 사람이 없으면 미리 알려준다
+  if (!state.ended && heirCandidates(state).length === 0) {
+    const yearsLeft = Math.max(0, Math.round(me.lifespan - me.age));
+    if (me.age >= 45 && yearsLeft <= 25 && (state.heirWarnedAt ?? -99) + 8 < state.year) {
+      state.heirWarnedAt = state.year;
+      pushLog(state, '⏳', `대를 이을 사람이 없습니다. ${fullName(me)}의 시간이 얼마 남지 않았습니다.`, 'bad');
+      pushNotice(state, {
+        kind: 'crisis',
+        icon: '⏳',
+        title: '대가 끊길 위기',
+        text: `${fullName(me)}에게 뒤를 이을 자손이 없습니다. 지금 가정을 이루지 않으면 가문의 이야기가 여기서 끝납니다.`,
+        detail: '인연 탭에서 짝을 만나고 아이를 맞이하세요.',
+        tone: 'bad',
+        personId: me.id,
+      });
+    }
+  }
+
+  // 5-3) 위기의 시계
+  const failed = tickCrisis(state, lifeDeps);
+  if (failed) {
+    pushNotice(state, {
+      kind: 'crisisFail', icon: failed.icon, title: `${failed.title} — 막지 못했습니다`,
+      text: failed.text, tone: 'bad',
+    });
+  }
+  if (maybeStartCrisis(state, lifeDeps)) pushNotice(state, crisisNotice(state));
+
+  // 5-4) 가문의 숙원
+  tickQuest(state, lifeDeps);
 
   // 6) 지난 선택의 파장이 돌아온다
   fireEchoes(state);
@@ -904,6 +1138,9 @@ export function legacyScore(state) {
     buildings * 180 +
     villageLevel(state.village) * 400 +
     Math.sqrt(Math.max(0, state.stats.peakMoney)) * 6 +
+    (state.stats.dreamsFulfilled ?? 0) * 600 +
+    (state.stats.crisesSurvived ?? 0) * 250 +
+    (state.stats.questsDone ?? 0) * 800 +
     happy * 8,
   );
 }
@@ -1079,12 +1316,15 @@ export function buildBuilding(state, buildingId) {
   return result;
 }
 
+/** 마을이 커질수록 사는 데 돈이 더 든다 */
+export const costOfLiving = (state) => 1 + (villageLevel(state.village) - 1) * 0.22;
+
 export function financeSummary(state) {
   const bonuses = villageBonuses(state.village);
   const members = household(state);
   const support = supportIncome(state, bonuses);
   const income = householdIncome(members, bonuses) + support;
   const maintenance = villageMaintenance(state.village);
-  const expense = householdExpense(members, bonuses, state.upkeep) + maintenance;
+  const expense = householdExpense(members, bonuses, state.upkeep, costOfLiving(state)) + maintenance;
   return { income, expense, maintenance, support, net: income - expense, bonuses, earners: members.filter((p) => p.jobId).length };
 }

@@ -228,6 +228,21 @@ export const ACHIEVEMENTS = [
   { id: 'absurd12', icon: '🛸', title: '{village}의 이상한 사람', desc: '병맛 이벤트 12번을 겪는다', tier: 3,
     progress: (s) => ({ current: s.stats.absurdSeen ?? 0, goal: 12 }),
     check: (s) => (s.stats.absurdSeen ?? 0) >= 12 },
+
+  // 위기 · 꿈 · 숙원
+  { id: 'crisis1', icon: '🛡️', title: '한 고비 넘기다', desc: '위기를 한 번 넘긴다', tier: 1,
+    check: (s) => (s.stats.crisesSurvived ?? 0) >= 1 },
+  { id: 'crisis5', icon: '⚓', title: '흔들리지 않는 집안', desc: '위기를 다섯 번 넘긴다', tier: 3,
+    progress: (s) => ({ current: s.stats.crisesSurvived ?? 0, goal: 5 }),
+    check: (s) => (s.stats.crisesSurvived ?? 0) >= 5 },
+  { id: 'dream1', icon: '⭐', title: '꿈을 이루다', desc: '가족 누군가 꿈을 이룬다', tier: 1,
+    check: (s) => (s.stats.dreamsFulfilled ?? 0) >= 1 },
+  { id: 'dream5', icon: '🌠', title: '꿈이 이어지는 집', desc: '가족이 꿈 다섯 개를 이룬다', tier: 3,
+    progress: (s) => ({ current: s.stats.dreamsFulfilled ?? 0, goal: 5 }),
+    check: (s) => (s.stats.dreamsFulfilled ?? 0) >= 5 },
+  { id: 'quest2', icon: '🏆', title: '가문의 숙원', desc: '숙원을 두 번 이룬다', tier: 2,
+    progress: (s) => ({ current: s.stats.questsDone ?? 0, goal: 2 }),
+    check: (s) => (s.stats.questsDone ?? 0) >= 2 },
 ];
 
 export const ACHIEVEMENT_BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));

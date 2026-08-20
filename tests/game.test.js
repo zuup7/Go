@@ -32,10 +32,10 @@ function claimAll(state) {
   }
 }
 
-/** 돌아온 나비효과 알림을 모두 확인한다 */
+/** 밀린 알림(꿈·위기·나비효과)을 모두 확인한다 */
 function clearEchoes(state) {
   let guard = 0;
-  while (state.echoNotices?.length && guard++ < 40) G.dismissEcho(state);
+  while (state.notices?.length && guard++ < 60) G.dismissNotice(state);
 }
 
 /** 이벤트·보상·나비효과를 모두 정리해 다음 해로 갈 수 있게 만든다 */
@@ -54,7 +54,8 @@ test('새 게임은 1대 18세, 마을과 자금을 갖고 시작한다', () => 
   assert.equal(fullName(me), '박서연');
   assert.equal(state.village.name, '햇살마을');
   assert.ok(state.money > 0);
-  assert.equal(state.log.length, 1);
+  assert.ok(state.log.length >= 1);
+  assert.equal(state.originId, 'common');
 });
 
 test('한 해를 보내면 연도와 나이가 늘고 이벤트가 준비된다', () => {
@@ -496,9 +497,9 @@ test('나비효과는 본인이 떠났으면 자손에게 이어진다', () => {
   });
   settle(state);
   G.advanceYear(state, 'rest');
-  const notice = G.pendingEcho(state);
-  assert.ok(notice, '파장은 사라지지 않는다');
-  assert.equal(notice.actorId, child.id, '자손이 결과를 받는다');
+  const echo = state.notices.find((n) => n.kind === 'echo');
+  assert.ok(echo, '파장은 사라지지 않는다');
+  assert.equal(echo.personId, child.id, '자손이 결과를 받는다');
 });
 
 test('선택이 남긴 흔적은 새로운 사건을 연다', () => {
@@ -538,4 +539,114 @@ test('분가한 가족도 살림에 보탠다', () => {
   const away = G.financeSummary(state);
   assert.ok(away.support > 0, '분가해도 보조금이 들어온다');
   assert.ok(away.income < atHome.income, '집에 있을 때보다는 적다');
+});
+
+
+test('출신에 따라 시작이 달라진다', () => {
+  const common = G.newGame({ seed: 40, originId: 'common' });
+  const fallen = G.newGame({ seed: 40, originId: 'fallen' });
+  const farm = G.newGame({ seed: 40, originId: 'farm' });
+
+  assert.ok(fallen.money < common.money, '몰락한 명문가는 현금이 적다');
+  assert.equal(fallen.village.buildings.house, 3, '대신 큰 집이 있다');
+  assert.ok(G.crisis(fallen), '물려받은 빚이 위기로 시작된다');
+  assert.equal(G.crisis(common), null);
+  assert.equal(farm.village.buildings.garden, 2, '농가는 텃밭을 갖고 시작한다');
+  assert.ok(G.player(farm).stats.health > G.player(common).stats.health);
+});
+
+test('위기는 돈으로 막거나 부딪혀 넘길 수 있다', () => {
+  const state = G.newGame({ seed: 41, originId: 'fallen' });
+  const crisis = G.crisis(state);
+  assert.ok(crisis, '위기가 있어야 한다');
+  assert.ok(crisis.yearsLeft > 0);
+  assert.ok(crisis.need > 0);
+
+  // 돈이 모자라면 부분 상환만 된다
+  state.money = Math.floor(crisis.need / 2);
+  const partial = G.payCrisis(state);
+  assert.equal(partial.ok, true);
+  assert.equal(partial.resolved, false, '절반만 내면 아직 남는다');
+  assert.equal(state.money, 0);
+
+  // 나머지를 채우면 해결된다
+  state.money = 999999;
+  const done = G.payCrisis(state);
+  assert.equal(done.resolved, true);
+  assert.equal(G.crisis(state), null);
+  assert.equal(state.stats.crisesSurvived, 1);
+});
+
+test('기한을 넘긴 위기는 실제로 손해를 입힌다', () => {
+  const state = G.newGame({ seed: 42, originId: 'fallen' });
+  state.money = 0;
+  const before = { ...state.village.buildings };
+  let guard = 0;
+  while (G.crisis(state) && guard++ < 12) {
+    settle(state);
+    G.advanceYear(state, 'rest');
+    if (state.succession || state.ended) break;
+  }
+  assert.equal(G.crisis(state), null, '기한이 지나면 위기는 끝난다');
+  assert.equal(state.stats.crisesFailed >= 1, true, '실패로 기록된다');
+  const after = state.village.buildings;
+  const lost = Object.keys(before).some((id) => (after[id] ?? 0) < before[id]);
+  assert.ok(lost, '건물을 잃는다');
+});
+
+test('아이는 자라며 꿈을 품고, 이루면 축하받는다', () => {
+  const state = G.newGame({ seed: 43 });
+  const me = G.player(state);
+  assert.ok(me.dreamId, '주인공은 시작부터 꿈이 있다');
+
+  // 꿈을 강제로 달성시켜 본다
+  me.dreamId = 'scholar';
+  me.dreamDone = false;
+  me.education = 4;
+  settle(state);
+  G.advanceYear(state, 'study');
+  assert.equal(me.dreamDone, true, '조건을 채우면 꿈이 이루어진다');
+  assert.equal(state.stats.dreamsFulfilled, 1);
+  const notice = state.notices.find((n) => n.kind === 'dream');
+  assert.ok(notice, '축하 알림이 뜬다');
+});
+
+test('가문의 숙원은 진행도와 기한을 갖는다', () => {
+  const state = G.newGame({ seed: 44 });
+  const quest = G.quest(state);
+  assert.ok(quest, '시작부터 숙원이 있다');
+  assert.ok(quest.yearsLeft > 0 && quest.goal > 0);
+  assert.ok(quest.ratio >= 0 && quest.ratio <= 1);
+  assert.equal(typeof quest.desc, 'string');
+});
+
+test('위험한 활동은 크게 얻거나 크게 잃는다', () => {
+  let win = 0;
+  let lose = 0;
+  for (let seed = 0; seed < 30; seed++) {
+    const state = G.newGame({ seed: 500 + seed });
+    const me = G.player(state);
+    me.age = 25;
+    state.money = 10000;
+    const before = state.money;
+    G.advanceYear(state, 'gamble');
+    // 살림 정산이 섞이므로 큰 폭 변화만 본다
+    if (state.money > before) win++;
+    if (state.money < before - 1000) lose++;
+  }
+  assert.ok(win > 0, '딸 때가 있다');
+  assert.ok(lose > 0, '잃을 때가 있다');
+});
+
+test('이벤트 결과에 무엇이 바뀌었는지 담긴다', () => {
+  const state = G.newGame({ seed: 45 });
+  let guard = 0;
+  while (!(state.pending && !state.pending.resolved) && guard++ < 20) {
+    settle(state);
+    G.advanceYear(state, 'rest');
+  }
+  const result = G.resolveEvent(state, 0);
+  assert.ok(result, '이벤트를 해결할 수 있다');
+  assert.equal(typeof result.effects, 'object');
+  assert.equal(typeof result.cost, 'number');
 });

@@ -1,6 +1,8 @@
 // 화면 조각들. 모두 문자열 HTML 을 돌려주고, 클릭은 data-act 로 위임된다.
 import { portrait } from './avatar.js';
 import { familyTree } from './tree.js';
+import { effectChips } from './effects.js';
+import { ORIGINS } from '../data/origins.js';
 import { fullName } from '../core/person.js';
 import { STAT_KEYS, STAT_LABELS, EDUCATION_LABELS, won, stageOf } from '../core/util.js';
 import { TRAIT_BY_ID, commonTraits } from '../data/traits.js';
@@ -66,6 +68,20 @@ export function titleScreen({ canContinue, draft }) {
         <label>마을 이름</label>
         <input id="in-village" value="${esc(draft.villageName)}" placeholder="비우면 랜덤" maxlength="10" />
       </div>
+      <div>
+        <label>어디서 시작할까요? (판마다 완전히 달라집니다)</label>
+        <div class="origin-grid">
+          ${ORIGINS.map((origin) => `
+            <button class="origin ${draft.originId === origin.id ? 'on' : ''}" data-act="draft-origin" data-id="${origin.id}">
+              <span class="origin-icon">${origin.icon}</span>
+              <span class="origin-body">
+                <span class="origin-title">${esc(origin.title)}${origin.hard ? ' <span class="badge hard">어려움</span>' : ''}</span>
+                <span class="origin-desc">${esc(origin.desc)}</span>
+                <span class="origin-detail">${esc(origin.detail)}</span>
+              </span>
+            </button>`).join('')}
+        </div>
+      </div>
       <button class="primary wide" data-act="new-game">새 인생 시작하기</button>
       ${canContinue ? '<button class="ghost wide" data-act="continue">이어서 하기</button>' : ''}
     </div>
@@ -77,7 +93,26 @@ export function titleScreen({ canContinue, draft }) {
 
 export function topBar(state) {
   const level = villageLevel(state.village);
+  const crisis = G.crisis(state);
+  const quest = G.quest(state);
   return `
+  ${crisis ? `
+    <button class="crisis-banner ${crisis.yearsLeft <= 1 ? 'urgent' : ''}" data-act="tab" data-id="life">
+      <span class="crisis-icon">${crisis.icon}</span>
+      <span class="crisis-body">
+        <span class="crisis-title">${esc(crisis.title)} · 남은 기한 ${crisis.yearsLeft}년</span>
+        <span class="crisis-sub">${won(crisis.remaining)} 더 필요 · 눌러서 대응</span>
+      </span>
+    </button>` : ''}
+  ${quest ? `
+    <div class="quest-bar">
+      <span class="quest-icon">${quest.icon}</span>
+      <span class="quest-body">
+        <span class="quest-title">숙원 · ${esc(quest.title)} <span class="muted">${quest.yearsLeft}년 남음</span></span>
+        <span class="bar happy"><i style="width:${Math.round(quest.ratio * 100)}%"></i></span>
+        <span class="quest-sub">${esc(quest.desc)} — ${Math.round(quest.current).toLocaleString('ko-KR')} / ${quest.goal.toLocaleString('ko-KR')}</span>
+      </span>
+    </div>` : ''}
   <div class="topbar">
     <div class="stat-chip"><span class="k">연도</span><span class="v">${state.year}년</span></div>
     <div class="stat-chip"><span class="k">세대</span><span class="v">${state.generation}대</span></div>
@@ -90,12 +125,20 @@ export function heroCard(state) {
   const me = G.player(state);
   const partner = G.partnerOf(state);
   const stage = stageOf(me.age);
+  const snap = state.snapshot?.playerId === me.id ? state.snapshot : null;
+  const delta = (now, before) => {
+    if (before == null) return '';
+    const diff = Math.round((now - before) * 10) / 10;
+    if (Math.abs(diff) < 0.5) return '';
+    return `<span class="delta ${diff > 0 ? 'up' : 'down'}">${diff > 0 ? '▲' : '▼'}${Math.abs(diff)}</span>`;
+  };
   const bars = STAT_KEYS.map((key) => `
     <div class="bar-row">
       <span>${STAT_LABELS[key]}</span>
       <span class="bar ${key}"><i style="width:${Math.round(me.stats[key])}%"></i></span>
-      <span class="muted">${Math.round(me.stats[key])}</span>
+      <span class="muted">${Math.round(me.stats[key])}${delta(me.stats[key], snap?.stats?.[key])}</span>
     </div>`).join('');
+  const dream = G.dreamFor(me);
 
   return `
   <div class="card">
@@ -108,6 +151,11 @@ export function heroCard(state) {
         </div>
         <div class="muted">${jobLabel(me)} · ${EDUCATION_LABELS[me.education]}${partner ? ` · 💞 ${esc(fullName(partner))}` : ''}</div>
         <div class="badges">${traitBadges(me)}</div>
+        ${dream ? `
+          <div class="dream ${me.dreamDone ? 'done' : ''}">
+            <span>${dream.icon} 꿈 · ${esc(dream.title)}</span>
+            ${me.dreamDone ? '<span class="dream-done">이룸 ✔</span>' : `<span class="muted">${esc(dream.hint)}</span>`}
+          </div>` : ''}
       </div>
     </div>
     <div class="bars">
@@ -115,7 +163,7 @@ export function heroCard(state) {
       <div class="bar-row">
         <span>행복</span>
         <span class="bar happy"><i style="width:${Math.round(me.happiness)}%"></i></span>
-        <span class="muted">${Math.round(me.happiness)}</span>
+        <span class="muted">${Math.round(me.happiness)}${delta(me.happiness, snap?.happiness)}</span>
       </div>
     </div>
   </div>`;
@@ -138,14 +186,40 @@ export const tabsBar = (active) => `
 
 // ── 인생 탭 ───────────────────────────────────────────────
 
+function crisisPanel(state) {
+  const crisis = G.crisis(state);
+  if (!crisis) return '';
+  return `
+  <div class="card crisis-card ${crisis.yearsLeft <= 1 ? 'urgent' : ''}">
+    <div class="section-head">
+      <h2>${crisis.icon} ${esc(crisis.title)}</h2>
+      <span class="badge ${crisis.yearsLeft <= 1 ? 'danger' : ''}">남은 기한 ${crisis.yearsLeft}년</span>
+    </div>
+    <p>${esc(crisis.desc)}</p>
+    <div class="bar crisis"><i style="width:${Math.round((crisis.paid / crisis.need) * 100)}%"></i></div>
+    <p class="muted">${won(crisis.paid)} / ${won(crisis.need)} 마련함</p>
+    <div class="footer-actions">
+      <button class="primary" data-act="crisis-pay" ${crisis.canPay ? '' : 'disabled'}>
+        ${crisis.remaining <= state.money ? `한 번에 해결 (${won(crisis.remaining)})` : `가진 돈 모두 내기 (${won(crisis.payAmount)})`}
+      </button>
+      ${crisis.checkStat ? `
+        <button data-act="crisis-try" ${crisis.canTry ? '' : 'disabled'}>
+          ${crisis.tried ? '올해는 이미 시도함' : `직접 부딪힌다 (${STAT_LABELS[crisis.checkStat]} · ${crisis.odds}%)`}
+        </button>` : ''}
+    </div>
+    <p class="muted">기한을 넘기면 가문이 실제로 손해를 봅니다.</p>
+  </div>`;
+}
+
 export function lifeTab(state) {
   const me = G.player(state);
   const finance = G.financeSummary(state);
   const activities = G.availableActivities(state).map((a) => `
-    <button class="pill ${state.activity === a.id ? 'on' : ''}" data-act="activity" data-id="${a.id}" title="${esc(a.desc)}">
+    <button class="pill ${state.activity === a.id ? 'on' : ''} ${a.risky ? 'risky' : ''}" data-act="activity" data-id="${a.id}" title="${esc(a.desc)}">
       ${a.icon} ${a.label}
     </button>`).join('');
 
+  const risky = new Set(G.ACTIVITIES.filter((a) => a.risky).map((a) => a.id));
   const blocked = !G.canAdvance(state);
   const blockReason = state.rewardQueue?.length
     ? '먼저 보상을 선택하세요'
@@ -153,6 +227,7 @@ export function lifeTab(state) {
       ? '먼저 이번 이벤트를 마무리하세요'
       : '지금은 한 해를 보낼 수 없습니다';
   return `
+  ${crisisPanel(state)}
   <div class="card">
     <div class="section-head"><h2>올해는 무엇을 할까요?</h2><span class="muted">${state.year}년 · ${me.age}세</span></div>
     <div class="pill-row">${activities}</div>
@@ -404,8 +479,29 @@ export function legacyTab(state) {
       <div class="item"><span class="grow"><span class="t">함께 사는 가족</span></span><span>${living}명</span></div>
       <div class="item"><span class="grow"><span class="t">태어난 아이</span></span><span>${state.stats.born}명</span></div>
       <div class="item"><span class="grow"><span class="t">지은 건물</span></span><span>${state.stats.buildingsBuilt}채</span></div>
+      <div class="item"><span class="grow"><span class="t">이룬 꿈</span><span class="s">가족이 이룬 꿈의 수</span></span><span>${state.stats.dreamsFulfilled ?? 0}개</span></div>
+      <div class="item"><span class="grow"><span class="t">넘긴 위기</span><span class="s">막지 못한 위기 ${state.stats.crisesFailed ?? 0}번</span></span><span>${state.stats.crisesSurvived ?? 0}번</span></div>
+      <div class="item"><span class="grow"><span class="t">이룬 숙원</span></span><span>${state.stats.questsDone ?? 0}번</span></div>
       <div class="item"><span class="grow"><span class="t">최고 자산</span></span><span>${won(state.stats.peakMoney)}</span></div>
       <div class="item"><span class="grow"><span class="t">현재 유산 점수</span></span><strong>${G.legacyScore(state).toLocaleString('ko-KR')}점</strong></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>가족의 꿈</h3>
+    <div class="list">
+      ${G.allPeople(state).filter((p) => p.alive && p.inFamily && p.dreamId).slice(0, 8).map((person) => {
+        const dream = G.dreamFor(person);
+        return `
+        <div class="item ${person.dreamDone ? 'achieve done' : ''}">
+          <span class="achieve-icon">${dream.icon}</span>
+          <span class="grow">
+            <span class="t">${esc(fullName(person))} <span class="muted">${G.relationOf(state, person)}</span></span>
+            <span class="s">${esc(dream.title)}${person.dreamDone ? ` · ${person.dreamYear}년에 이룸` : ''}</span>
+          </span>
+          ${person.dreamDone ? '<span class="achieve-check">✔</span>' : ''}
+        </div>`;
+      }).join('') || '<p class="muted">아직 꿈을 품은 가족이 없습니다.</p>'}
     </div>
   </div>
 
@@ -446,8 +542,9 @@ export function eventModal(state, event) {
       ${event.tag === 'absurd' ? '<span class="tag-absurd">🤪 병맛 사건</span>' : ''}
       <div class="icon">${event.icon}</div>
       <h2>${esc(event.title)}</h2>
-      <p class="muted">${esc(event.resolved.label)}</p>
+      <p class="muted">${esc(event.resolved.label)}${event.resolved.success === true ? ' · <span class="ok">성공</span>' : event.resolved.success === false ? ' · <span class="fail">실패</span>' : ''}</p>
       <div class="result-box">${esc(event.resolved.text)}</div>
+      ${effectChips(event.resolved.effects, { cost: event.resolved.cost })}
       <button class="primary wide" data-act="event-close">계속하기</button>`, event.tag === 'absurd' ? 'absurd' : '');
   }
   const choices = event.choices.map((choice) => `
@@ -489,19 +586,28 @@ export function successionModal(state) {
     </div>`);
 }
 
+const NOTICE_STYLE = {
+  echo: { tag: '🦋 나비효과', cls: 'echo', button: '그렇게 되었습니다' },
+  dream: { tag: '⭐ 꿈을 이루다', cls: 'dream-modal', button: '축하합니다' },
+  crisis: { tag: '⚠️ 위기', cls: 'crisis-modal', button: '어떻게든 해보겠습니다' },
+  crisisFail: { tag: '💔 막지 못했다', cls: 'crisis-modal', button: '받아들인다' },
+};
+
 export function echoModal(state, notice) {
+  const style = NOTICE_STYLE[notice.kind] ?? NOTICE_STYLE.echo;
   return modal(`
-    <span class="tag-echo">🦋 나비효과</span>
+    <span class="tag-echo">${style.tag}</span>
     <div class="echo-head">
-      ${notice.person ? portrait(notice.person, 64, { ageTag: true }) : ''}
+      ${notice.person ? portrait(notice.person, 64, { ageTag: true }) : `<div class="icon">${notice.icon}</div>`}
       <div>
-        <div class="muted">${notice.years}년 전의 선택</div>
-        <h2>${esc(notice.fromTitle)}</h2>
-        <div class="muted">"${esc(notice.fromLabel)}"</div>
+        ${notice.years != null ? `<div class="muted">${notice.years}년 전의 선택</div>` : ''}
+        <h2>${esc(notice.title)}</h2>
+        ${notice.detail ? `<div class="muted">${esc(notice.detail)}</div>` : ''}
       </div>
     </div>
     <div class="result-box ${notice.tone === 'bad' ? 'bad' : ''}">${notice.icon} ${esc(notice.text)}</div>
-    <button class="primary wide" data-act="echo-close">그렇게 되었습니다</button>`, 'echo');
+    ${effectChips(notice.effects)}
+    <button class="primary wide" data-act="echo-close">${style.button}</button>`, style.cls);
 }
 
 export function rewardModal(state, choice) {
@@ -570,7 +676,8 @@ export function endModal(state) {
     <div class="result-box">
       <strong>${state.generation}대 · ${state.ended.year}년</strong><br/>
       유산 점수 <strong>${state.ended.score.toLocaleString('ko-KR')}점</strong><br/>
-      태어난 아이 ${state.stats.born}명 · 지은 건물 ${state.stats.buildingsBuilt}채
+      태어난 아이 ${state.stats.born}명 · 지은 건물 ${state.stats.buildingsBuilt}채<br/>
+      이룬 꿈 ${state.stats.dreamsFulfilled ?? 0}개 · 넘긴 위기 ${state.stats.crisesSurvived ?? 0}번 · 이룬 숙원 ${state.stats.questsDone ?? 0}번
     </div>
     <button class="primary wide" data-act="restart">새로운 가문 시작하기</button>`);
 }
@@ -595,6 +702,11 @@ export function personModal(state, person) {
       </div>
     </div>
     <div class="badges" style="margin-top:10px">${traitBadges(person)}</div>
+    ${G.dreamFor(person) ? `
+      <div class="dream ${person.dreamDone ? 'done' : ''}" style="margin-top:10px">
+        <span>${G.dreamFor(person).icon} 꿈 · ${esc(G.dreamFor(person).title)}</span>
+        ${person.dreamDone ? '<span class="dream-done">이룸 ✔</span>' : ''}
+      </div>` : ''}
     <div class="bars" style="margin-top:12px">
       ${bars}
       <div class="bar-row"><span>행복</span><span class="bar happy"><i style="width:${Math.round(person.happiness)}%"></i></span><span class="muted">${Math.round(person.happiness)}</span></div>

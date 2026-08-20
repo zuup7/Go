@@ -2,6 +2,7 @@
 import { portrait } from './avatar.js';
 import { fullName } from '../core/person.js';
 import * as G from '../core/game.js';
+import { dreamOf } from '../core/life.js';
 
 const CARD_W = 104;     // 인물 카드 너비
 const CARD_H = 116;     // 인물 카드 높이
@@ -130,11 +131,13 @@ function personNode(state, person, x, y) {
   if (person.id === me?.id) classes.push('me');
   if (!person.alive) classes.push('gone');
   const relation = G.relationOf(state, person);
+  const dream = dreamOf(person);
   return `
     <button class="${classes.join(' ')}" style="left:${x}px; top:${y}px" data-act="person" data-id="${person.id}">
       ${portrait(person, 52, { ageTag: person.alive })}
       <span class="tree-name">${esc(fullName(person))}</span>
       <span class="tree-meta">${person.alive ? esc(relation) : `${person.birthYear}–${person.deathYear}`}</span>
+      ${dream ? `<span class="tree-dream ${person.dreamDone ? 'done' : ''}" title="${esc(dream.title)}">${dream.icon}${person.dreamDone ? '✔' : ''}</span>` : ''}
     </button>`;
 }
 

@@ -25,13 +25,16 @@ export function householdIncome(members, bonuses = {}) {
   return Math.round(wages + (bonuses.income ?? 0));
 }
 
-/** 가구 전체 연 지출 */
-export function householdExpense(members, bonuses = {}, extraUpkeep = 0) {
+/**
+ * 가구 전체 연 지출.
+ * costOfLiving 은 마을이 커질수록 오르는 물가 배수다.
+ */
+export function householdExpense(members, bonuses = {}, extraUpkeep = 0, costOfLiving = 1) {
   const adults = members.filter((p) => p.age >= 19).length;
   const kids = members.filter((p) => p.age < 19).length;
   const traitRate = members.reduce((sum, p) => sum + traitEffects(p.traits).expense, 0) / Math.max(1, members.length);
   const rate = Math.max(0.4, 1 + traitRate + (bonuses.expenseRate ?? 0));
-  const base = adults * BASE_LIVING_COST + kids * CHILD_COST + extraUpkeep * 120;
+  const base = (adults * BASE_LIVING_COST + kids * CHILD_COST) * costOfLiving + extraUpkeep * 120;
   return Math.round(base * rate);
 }
 

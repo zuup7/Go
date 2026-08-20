@@ -15,7 +15,7 @@ let autoTimer = null;
 
 /** 자동 진행 속도 (ms/1년) */
 const SPEEDS = { slow: 6000, normal: 3200, fast: 1500 };
-let draft = { familyName: '', givenName: '', gender: '', traitId: '', villageName: '' };
+let draft = { familyName: '', givenName: '', gender: '', traitId: '', villageName: '', originId: 'common' };
 
 // ── 렌더 ─────────────────────────────────────────────────
 
@@ -124,6 +124,7 @@ function captureDraft() {
 const actions = {
   'draft-gender': (id) => { captureDraft(); draft.gender = id; render(); },
   'draft-trait': (id) => { captureDraft(); draft.traitId = draft.traitId === id ? '' : id; render(); },
+  'draft-origin': (id) => { captureDraft(); draft.originId = id; render(); },
 
   'new-game': () => {
     captureDraft();
@@ -134,6 +135,7 @@ const actions = {
       gender: draft.gender || undefined,
       traitId: draft.traitId || undefined,
       villageName: draft.villageName || undefined,
+      originId: draft.originId || 'common',
     });
     tab = 'life';
     state.auto = { running: false, speed: 'normal' };
@@ -168,7 +170,22 @@ const actions = {
     render();
   },
   'event-close': () => { G.dismissEvent(state); render(); },
-  'echo-close': () => { G.dismissEcho(state); autosave(); render(); },
+  'echo-close': () => { G.dismissNotice(state); autosave(); render(); },
+
+  'crisis-pay': () => {
+    const result = G.payCrisis(state);
+    if (!result.ok) { toast(result.reason); return; }
+    toast(result.resolved ? '위기를 넘겼습니다!' : `${Math.round(result.remaining).toLocaleString('ko-KR')}만원 남았습니다.`);
+    autosave();
+    render();
+  },
+  'crisis-try': () => {
+    const result = G.tryCrisis(state);
+    if (!result.ok) { toast(result.reason); return; }
+    toast(result.resolved ? '직접 부딪혀 넘겼습니다!' : '이번엔 실패했습니다.');
+    autosave();
+    render();
+  },
 
   'auto-toggle': () => {
     if (!state.auto) state.auto = { running: false, speed: 'normal' };
