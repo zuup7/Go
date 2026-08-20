@@ -1,0 +1,1208 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>워드 넥서스</title>
+<meta name="description" content="영단어를 맞혀 골드를 캐고, 운에 기대어 유닛을 합성해 적 넥서스를 무너뜨리는 1대1 디펜스." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Press+Start+2P&display=swap" />
+<style>
+:root{
+  --void:#070A14;
+  --panel:#121732;
+  --panel-2:#0D1226;
+  --edge:#26305A;
+  --ally:#38E8C8;
+  --ally-deep:#12766A;
+  --foe:#FF3D6E;
+  --foe-deep:#7A1030;
+  --gold:#FFC53D;
+  --luck:#A97BFF;
+  --ink:#E9EDFB;
+  --dim:#7E88B4;
+
+  --display:"Do Hyeon","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --hud:"Press Start 2P","Courier New",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--void);
+  color:var(--ink);
+  font-family:var(--body);
+  display:flex;justify-content:center;align-items:stretch;
+  overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ── 캐비닛 ───────────────────────────────── */
+#cabinet{
+  position:relative;width:100%;max-width:460px;height:100dvh;
+  display:flex;flex-direction:column;
+  background:
+    radial-gradient(120% 60% at 50% 0%, #1A1038 0%, transparent 55%),
+    radial-gradient(120% 60% at 50% 100%, #04241F 0%, transparent 55%),
+    var(--void);
+  box-shadow:0 0 0 1px var(--edge), 0 0 60px rgba(0,0,0,.9);
+  overflow:hidden;
+}
+#cabinet::after{ /* 스캔라인 + 비네트 */
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:60;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,.028) 0 1px, transparent 1px 3px),
+    radial-gradient(130% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+#cabinet.shake{animation:shake .28s steps(4)}
+@keyframes shake{25%{transform:translate(3px,-2px)}50%{transform:translate(-3px,2px)}75%{transform:translate(2px,2px)}}
+
+/* ── 넥서스 바 ─────────────────────────────── */
+.nexus{
+  flex:0 0 auto;padding:8px 12px 9px;position:relative;z-index:10;
+  border-bottom:1px solid var(--edge);
+  background:linear-gradient(180deg, rgba(122,16,48,.34), transparent);
+}
+.nexus.mine{
+  border-bottom:none;border-top:1px solid var(--edge);
+  background:linear-gradient(0deg, rgba(18,118,106,.30), transparent);
+}
+.nexus-row{display:flex;align-items:center;gap:9px}
+.core{
+  width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;font-size:19px;
+  border:2px solid var(--foe);border-radius:9px;
+  background:radial-gradient(circle at 40% 30%, rgba(255,61,110,.5), rgba(255,61,110,.08));
+  box-shadow:0 0 14px rgba(255,61,110,.35) inset, 0 0 10px rgba(255,61,110,.25);
+}
+.mine .core{
+  border-color:var(--ally);
+  background:radial-gradient(circle at 40% 30%, rgba(56,232,200,.5), rgba(56,232,200,.08));
+  box-shadow:0 0 14px rgba(56,232,200,.35) inset, 0 0 10px rgba(56,232,200,.25);
+}
+.core.hurt{animation:corehit .3s}
+@keyframes corehit{0%{transform:scale(1)}40%{transform:scale(1.22);filter:brightness(2.4)}100%{transform:scale(1)}}
+.nexus-meta{flex:1;min-width:0}
+.nexus-name{
+  font-family:var(--display);font-size:14px;letter-spacing:.04em;
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+}
+.nexus-name span:first-child{color:var(--foe)}
+.mine .nexus-name span:first-child{color:var(--ally)}
+.hp-num{font-family:var(--hud);font-size:9px;color:var(--dim);font-variant-numeric:tabular-nums}
+.bar{
+  height:11px;margin-top:4px;border:1px solid var(--edge);border-radius:3px;
+  background:var(--panel-2);overflow:hidden;position:relative;
+}
+.bar-fill{
+  height:100%;width:100%;transition:width .22s ease-out;
+  background:linear-gradient(90deg,#FF3D6E,#FF8FA8);
+  box-shadow:0 0 10px rgba(255,61,110,.5);
+}
+.mine .bar-fill{background:linear-gradient(90deg,#12766A,#38E8C8);box-shadow:0 0 10px rgba(56,232,200,.5)}
+
+/* ── 전장 ─────────────────────────────────── */
+#field{
+  position:relative;flex:1 1 auto;min-height:130px;overflow:hidden;
+  background:
+    linear-gradient(180deg, rgba(255,61,110,.10) 0%, transparent 32%, transparent 68%, rgba(56,232,200,.10) 100%),
+    var(--panel-2);
+}
+#grid{position:absolute;inset:0;opacity:.5;pointer-events:none}
+.midline{
+  position:absolute;left:0;right:0;top:50%;height:1px;z-index:1;
+  background:repeating-linear-gradient(90deg,var(--edge) 0 8px,transparent 8px 16px);
+}
+
+.unit{
+  position:absolute;z-index:4;width:38px;
+  transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  will-change:top;
+}
+.unit-body{
+  width:31px;height:31px;display:grid;place-items:center;
+  font-size:16px;line-height:1;border-radius:9px;border:2px solid;
+  background:var(--panel);position:relative;
+}
+.unit.me .unit-body{border-color:var(--ally);box-shadow:0 0 9px rgba(56,232,200,.45)}
+.unit.enemy .unit-body{border-color:var(--foe);box-shadow:0 0 9px rgba(255,61,110,.45)}
+.unit-body.flash{animation:uflash .16s}
+@keyframes uflash{0%{filter:brightness(3.5)}100%{filter:none}}
+.unit-body.swing{animation:uswing .2s}
+@keyframes uswing{50%{transform:scale(1.18)}}
+.unit-tier{
+  position:absolute;bottom:-5px;right:-6px;
+  font-family:var(--hud);font-size:7px;padding:2px 3px;border-radius:4px;
+  background:var(--panel-2);border:1px solid var(--edge);color:var(--gold);
+}
+.unit-hp{width:28px;height:3px;border-radius:2px;background:#000;overflow:hidden}
+.unit-hp > i{display:block;height:100%;background:var(--ally)}
+.unit.enemy .unit-hp > i{background:var(--foe)}
+
+.dmg{
+  position:absolute;z-index:8;transform:translate(-50%,-50%);pointer-events:none;
+  font-family:var(--hud);font-size:9px;color:#fff;text-shadow:0 1px 0 #000;
+  animation:rise .62s ease-out forwards;
+}
+.dmg.crit{font-size:12px;color:var(--gold);text-shadow:0 0 8px var(--gold),0 1px 0 #000}
+@keyframes rise{0%{opacity:1;margin-top:0}100%{opacity:0;margin-top:-26px}}
+
+.spark{
+  position:absolute;z-index:7;width:22px;height:22px;border-radius:50%;
+  transform:translate(-50%,-50%);pointer-events:none;
+  border:2px solid var(--gold);animation:pop .26s ease-out forwards;
+}
+@keyframes pop{0%{opacity:.9;scale:.3}100%{opacity:0;scale:1.7}}
+
+#lootbox{
+  position:absolute;z-index:9;transform:translate(-50%,-50%);
+  width:40px;height:40px;display:grid;place-items:center;font-size:22px;
+  border:2px dashed var(--luck);border-radius:11px;background:rgba(169,123,255,.16);
+  animation:bob 1.1s ease-in-out infinite;cursor:pointer;
+}
+@keyframes bob{50%{transform:translate(-50%,-62%)}}
+
+#ticker{
+  position:absolute;left:0;right:0;top:6px;z-index:12;text-align:center;pointer-events:none;
+  font-family:var(--display);font-size:13px;letter-spacing:.03em;
+}
+#ticker b{
+  display:inline-block;padding:4px 11px;border-radius:999px;
+  background:rgba(7,10,20,.88);border:1px solid var(--edge);
+  animation:tick 1.8s ease-out forwards;
+}
+@keyframes tick{0%{opacity:0;transform:translateY(6px)}12%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
+
+/* ── 소환진 (3x3 머지 보드) ────────────────── */
+#barracks{
+  flex:0 0 auto;padding:7px 12px 9px;position:relative;z-index:10;
+  background:linear-gradient(0deg,var(--panel-2),transparent);
+  border-top:1px solid var(--edge);
+}
+.bar-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.label{
+  font-family:var(--display);font-size:12px;letter-spacing:.14em;color:var(--dim);
+}
+.hint{font-size:10.5px;color:var(--luck)}
+#deployAll{
+  font-family:var(--display);font-size:11px;letter-spacing:.06em;
+  padding:3px 9px;border-radius:6px;color:var(--ally);
+  border:1px solid var(--ally-deep);background:rgba(56,232,200,.09);
+}
+#deployAll:active{background:rgba(56,232,200,.24)}
+
+#board{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.cell{
+  position:relative;height:52px;border-radius:9px;
+  border:1px solid var(--edge);background:var(--panel);
+  display:grid;place-items:center;overflow:hidden;
+}
+.cell.empty::before{
+  content:"";width:11px;height:11px;border-radius:50%;
+  border:1px dashed var(--edge);
+}
+.cell.filled{cursor:pointer;background:linear-gradient(180deg,var(--panel),#0A0E20)}
+.cell.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 14px rgba(255,197,61,.35)}
+.cell.match{border-color:var(--luck);box-shadow:0 0 10px rgba(169,123,255,.35)}
+.cell.born{animation:born .3s ease-out}
+@keyframes born{0%{transform:scale(.5);opacity:0}100%{transform:none;opacity:1}}
+.cell.merged{animation:merged .45s ease-out}
+@keyframes merged{0%{transform:scale(1.4);filter:brightness(3)}100%{transform:none;filter:none}}
+
+.pawn{display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none}
+.pawn .face{font-size:19px;line-height:1}
+.pawn .nm{font-family:var(--display);font-size:9.5px;color:var(--dim);letter-spacing:.02em}
+.pawn .st{font-family:var(--hud);font-size:7px;color:var(--gold);letter-spacing:.06em}
+.fuse{
+  position:absolute;left:0;bottom:0;height:2px;background:var(--ally);opacity:.75;
+}
+
+/* ── 컨트롤 ───────────────────────────────── */
+#controls{
+  flex:0 0 auto;display:flex;align-items:center;gap:7px;
+  padding:8px 12px;border-top:1px solid var(--edge);
+  background:var(--panel-2);position:relative;z-index:10;
+}
+#goldBox{
+  flex:1;min-width:0;display:flex;align-items:center;gap:7px;
+  padding:7px 10px;border-radius:9px;border:1px solid var(--edge);background:var(--panel);
+}
+#goldBox .coin{font-size:15px}
+#goldVal{font-family:var(--hud);font-size:13px;color:var(--gold);font-variant-numeric:tabular-nums}
+#goldVal.bump{animation:bump .28s}
+@keyframes bump{40%{transform:scale(1.3);filter:brightness(1.6)}}
+#comboVal{font-family:var(--display);font-size:11px;color:var(--luck);margin-left:auto}
+
+.act{
+  font-family:var(--display);letter-spacing:.03em;border-radius:9px;
+  padding:8px 11px;font-size:13px;line-height:1.15;text-align:center;
+  border:1px solid var(--edge);background:var(--panel);
+}
+.act .cost{display:block;font-family:var(--hud);font-size:7px;color:var(--dim);margin-top:3px}
+#summonBtn{color:var(--ally);border-color:var(--ally-deep);background:rgba(56,232,200,.10)}
+#summonBtn:active:not(:disabled){background:rgba(56,232,200,.26)}
+#diceBtn{color:var(--luck);border-color:#4B2E7A;background:rgba(169,123,255,.10)}
+#diceBtn:active:not(:disabled){background:rgba(169,123,255,.28)}
+#diceBtn.roll{animation:roll .5s}
+@keyframes roll{50%{transform:rotate(180deg) scale(1.1)}100%{transform:none}}
+.act:disabled{opacity:.36;cursor:not-allowed}
+
+/* ── 퀴즈 ─────────────────────────────────── */
+#quiz{
+  flex:0 0 auto;padding:9px 12px calc(11px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--edge);
+  background:linear-gradient(180deg,var(--panel),var(--panel-2));
+  position:relative;z-index:10;
+}
+#wordRow{display:flex;align-items:baseline;justify-content:center;gap:9px;margin-bottom:8px}
+#word{
+  font-family:var(--display);font-size:29px;letter-spacing:.01em;color:var(--ink);
+  text-shadow:0 0 18px rgba(56,232,200,.28);
+}
+#pos{font-size:11px;color:var(--dim);font-style:italic}
+#choices{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.choice{
+  padding:11px 6px;border-radius:9px;font-size:13.5px;font-weight:500;
+  border:1px solid var(--edge);background:var(--panel);
+  min-height:44px;display:grid;place-items:center;text-align:center;line-height:1.25;
+}
+.choice:active{transform:translateY(1px)}
+.choice.right{border-color:var(--ally);background:rgba(56,232,200,.24);color:#fff}
+.choice.wrong{border-color:var(--foe);background:rgba(255,61,110,.26);color:#fff;animation:nope .3s}
+@keyframes nope{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#choices.locked .choice{pointer-events:none;opacity:.55}
+#cool{
+  height:3px;margin-top:7px;border-radius:2px;background:var(--panel-2);overflow:hidden;
+}
+#cool > i{display:block;height:100%;width:0;background:var(--foe)}
+#cool.run > i{width:100%;animation:cd 1s linear forwards}
+@keyframes cd{from{width:100%}to{width:0}}
+
+/* ── 오버레이 ─────────────────────────────── */
+#overlay{
+  position:absolute;inset:0;z-index:70;display:none;
+  place-items:center;padding:26px;text-align:center;
+  background:rgba(7,10,20,.93);backdrop-filter:blur(3px);
+}
+#overlay.on{display:grid}
+#overlay h1{font-family:var(--display);font-size:34px;letter-spacing:.05em;margin-bottom:6px}
+#overlay .sub{font-size:13px;color:var(--dim);margin-bottom:18px;line-height:1.7}
+#overlay .stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;width:100%;
+}
+#overlay .stat{border:1px solid var(--edge);border-radius:9px;padding:9px 4px;background:var(--panel)}
+#overlay .stat b{display:block;font-family:var(--hud);font-size:12px;color:var(--gold);margin-bottom:5px}
+#overlay .stat span{font-size:10.5px;color:var(--dim)}
+#again{
+  font-family:var(--display);font-size:16px;letter-spacing:.06em;padding:12px 30px;border-radius:10px;
+  border:1px solid var(--ally);color:var(--ally);background:rgba(56,232,200,.12);
+}
+.rules{
+  text-align:left;font-size:12.5px;line-height:1.85;color:var(--dim);
+  border-top:1px solid var(--edge);padding-top:13px;margin-bottom:18px;
+}
+.rules b{color:var(--ink);font-weight:600}
+.rules em{color:var(--luck);font-style:normal}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+@media (max-height:680px){
+  #word{font-size:24px}
+  .choice{padding:9px 5px;font-size:12.5px;min-height:40px}
+  .cell{height:44px}
+  .pawn .face{font-size:17px}
+  #barracks{padding:5px 12px 7px}
+}
+</style>
+</head>
+<body>
+<div id="cabinet">
+
+  <!-- 적 넥서스 -->
+  <section class="nexus" aria-label="적 넥서스">
+    <div class="nexus-row">
+      <div class="core" id="foeCore">☠</div>
+      <div class="nexus-meta">
+        <div class="nexus-name">
+          <span>적 넥서스</span>
+          <span class="hp-num" id="foeHpNum">1200 / 1200</span>
+        </div>
+        <div class="bar"><div class="bar-fill" id="foeHpBar"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 전장 -->
+  <div id="field">
+    <canvas id="grid"></canvas>
+    <div class="midline"></div>
+    <div id="ticker" aria-live="polite"></div>
+  </div>
+
+  <!-- 내 넥서스 -->
+  <section class="nexus mine" aria-label="내 넥서스">
+    <div class="nexus-row">
+      <div class="core" id="myCore">🏰</div>
+      <div class="nexus-meta">
+        <div class="nexus-name">
+          <span>내 넥서스</span>
+          <span class="hp-num" id="myHpNum">1200 / 1200</span>
+        </div>
+        <div class="bar"><div class="bar-fill" id="myHpBar"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 소환진 -->
+  <section id="barracks">
+    <div class="bar-head">
+      <span class="label">소환진</span>
+      <span class="hint" id="mergeHint"></span>
+      <button id="deployAll" type="button">⚔ 전원 출격</button>
+    </div>
+    <div id="board"></div>
+  </section>
+
+  <!-- 컨트롤 -->
+  <section id="controls">
+    <div id="goldBox">
+      <span class="coin">🪙</span>
+      <span id="goldVal">60</span>
+      <span id="comboVal"></span>
+    </div>
+    <button class="act" id="summonBtn" type="button">소환<span class="cost">30 G</span></button>
+    <button class="act" id="diceBtn" type="button">🎲 운명<span class="cost">25 G</span></button>
+  </section>
+
+  <!-- 퀴즈 -->
+  <section id="quiz">
+    <div id="wordRow">
+      <span id="word">word</span>
+      <span id="pos">n.</span>
+    </div>
+    <div id="choices"></div>
+    <div id="cool"><i></i></div>
+  </section>
+
+  <!-- 오버레이 -->
+  <div id="overlay" class="on">
+    <div>
+      <h1 id="ovTitle">워드 넥서스</h1>
+      <p class="sub" id="ovSub">영단어를 맞혀 골드를 캐고,<br />운에 기대어 유닛을 합성해 적 넥서스를 부순다.</p>
+      <div class="stats" id="ovStats" hidden></div>
+      <div class="rules" id="ovRules">
+        <b>정답</b> 즉시 <b>+10 G</b> · 연속 정답이면 보너스 · <b>오답</b> 1초 잠김<br />
+        <b>30 G</b>로 ★1 유닛을 소환진에 뽑는다 (종류는 <em>랜덤</em>)<br />
+        같은 종류 · 같은 등급 둘을 <b>탭해서 합성</b> → 한 등급 위로<br />
+        <em>낮은 확률로 대성공(2단계 점프)이나 복제가 터진다</em><br />
+        소환진의 유닛은 <b>남은 시간이 다하면 자동 출격</b>한다<br />
+        <em>🎁 전리품 상자</em>와 <em>🎲 운명의 주사위</em>가 판을 뒤집는다
+      </div>
+      <button id="again" type="button">게임 시작</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════
+   워드 넥서스 — 단어 퀴즈 1대1 운빨 머지 디펜스
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 단어 데이터 (고1 모의고사 필수 어휘 30) ── */
+const WORDS = [
+  { w:"abandon",     p:"v.", m:"버리다, 포기하다" },
+  { w:"achieve",     p:"v.", m:"성취하다, 달성하다" },
+  { w:"adapt",       p:"v.", m:"적응하다, 조정하다" },
+  { w:"anxious",     p:"a.", m:"불안한, 걱정하는" },
+  { w:"appreciate",  p:"v.", m:"감사하다, 진가를 알아보다" },
+  { w:"assume",      p:"v.", m:"가정하다, 추측하다" },
+  { w:"attempt",     p:"v.", m:"시도하다, 애써 해보다" },
+  { w:"benefit",     p:"n.", m:"이익, 혜택" },
+  { w:"concentrate", p:"v.", m:"집중하다" },
+  { w:"confident",   p:"a.", m:"자신 있는, 확신하는" },
+  { w:"consider",    p:"v.", m:"고려하다, 여기다" },
+  { w:"constant",    p:"a.", m:"끊임없는, 일정한" },
+  { w:"contribute",  p:"v.", m:"기여하다, 기부하다" },
+  { w:"crucial",     p:"a.", m:"결정적인, 중대한" },
+  { w:"decline",     p:"v.", m:"감소하다, 거절하다" },
+  { w:"describe",    p:"v.", m:"묘사하다, 설명하다" },
+  { w:"distinguish", p:"v.", m:"구별하다, 식별하다" },
+  { w:"eliminate",   p:"v.", m:"제거하다, 없애다" },
+  { w:"emphasize",   p:"v.", m:"강조하다" },
+  { w:"encourage",   p:"v.", m:"격려하다, 장려하다" },
+  { w:"establish",   p:"v.", m:"설립하다, 확립하다" },
+  { w:"estimate",    p:"v.", m:"추정하다, 어림잡다" },
+  { w:"evidence",    p:"n.", m:"증거, 흔적" },
+  { w:"expand",      p:"v.", m:"확장하다, 팽창하다" },
+  { w:"frequent",    p:"a.", m:"잦은, 빈번한" },
+  { w:"generate",    p:"v.", m:"발생시키다, 만들어내다" },
+  { w:"genuine",     p:"a.", m:"진짜의, 진실한" },
+  { w:"ignore",      p:"v.", m:"무시하다, 못 본 척하다" },
+  { w:"reveal",      p:"v.", m:"드러내다, 밝히다" },
+  { w:"severe",      p:"a.", m:"심각한, 가혹한" }
+];
+
+/* ── 유닛 도감 ── */
+const TYPES = {
+  sword:  { key:"sword",  name:"검사",   face:"🗡️", hp:110, atk:22, spd:11.5, range:7,  aspd:1.05, weight:30 },
+  shield: { key:"shield", name:"방패병", face:"🛡️", hp:230, atk:12, spd:8.0,  range:6,  aspd:0.85, weight:24 },
+  archer: { key:"archer", name:"궁수",   face:"🏹", hp:74,  atk:19, spd:13.5, range:23, aspd:1.30, weight:22 },
+  mage:   { key:"mage",   name:"마법사", face:"🧙", hp:68,  atk:33, spd:10.0, range:17, aspd:0.70, weight:17, splash:9 },
+  dragon: { key:"dragon", name:"드래곤", face:"🐉", hp:190, atk:42, spd:11.0, range:13, aspd:0.95, weight:7,  splash:7 }
+};
+const TYPE_LIST = Object.values(TYPES);
+const MAX_TIER = 5;
+const HP_STEP = 1.95, ATK_STEP = 1.8;
+
+const SUMMON_COST = 30, DICE_COST = 25, NEXUS_HP = 1200;
+const BOARD_SIZE = 9, FUSE_TIME = 14;   /* 소환진 대기 시간(초) — 이 시간이 지나면 자동 출격 */
+
+/* ── 유틸 ── */
+const $  = (s) => document.querySelector(s);
+const rnd  = (a, b) => a + Math.random() * (b - a);
+const irnd = (a, b) => Math.floor(rnd(a, b + 1));
+const chance = (p) => Math.random() < p;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+function shuffle(arr){
+  for (let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function weightedType(){
+  const total = TYPE_LIST.reduce((s, t) => s + t.weight, 0);
+  let r = Math.random() * total;
+  for (const t of TYPE_LIST){ r -= t.weight; if (r <= 0) return t; }
+  return TYPE_LIST[0];
+}
+function statsOf(typeKey, tier){
+  const t = TYPES[typeKey];
+  return {
+    hp:  Math.round(t.hp  * Math.pow(HP_STEP,  tier - 1)),
+    atk: Math.round(t.atk * Math.pow(ATK_STEP, tier - 1))
+  };
+}
+const stars = (n) => "★" + n;
+
+/* ── 사운드 (WebAudio, 외부 파일 없음) ── */
+let actx = null, muted = false;
+function blip(freq, dur, type, vol){
+  if (muted) return;
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || "square"; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol == null ? 0.05 : vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  } catch (e) { /* 오디오 불가 환경 무시 */ }
+}
+const sfx = {
+  right: () => { blip(880, .08, "square", .04); setTimeout(() => blip(1320, .09, "square", .04), 70); },
+  wrong: () => blip(150, .22, "sawtooth", .05),
+  summon:() => blip(520, .10, "triangle", .05),
+  merge: () => { blip(660, .07, "triangle", .06); setTimeout(() => blip(990, .12, "triangle", .06), 60); },
+  jack:  () => { [660, 880, 1180, 1560].forEach((f, i) => setTimeout(() => blip(f, .1, "square", .05), i * 65)); },
+  hit:   () => blip(220 + Math.random() * 60, .04, "square", .022),
+  boom:  () => blip(90, .3, "sawtooth", .06)
+};
+
+/* ── 게임 상태 ── */
+let S = null;
+function freshState(){
+  return {
+    running:false, over:false,
+    gold:60, combo:0, best:0,
+    myHp:NEXUS_HP, foeHp:NEXUS_HP,
+    board:new Array(BOARD_SIZE).fill(null),
+    sel:-1,
+    units:[], uid:1,
+    quizIndex:-1, quizLocked:false,
+    solved:0, misses:0, merges:0, deployed:0, luckyHits:0,
+    elapsed:0, foeTimer:6, foeInterval:5.5, lootTimer:rnd(12, 20), loot:null,
+    lastT:0
+  };
+}
+
+/* ══════════ 퀴즈 : 자원 채취 ══════════ */
+const wordEl = $("#word"), posEl = $("#pos"), choicesEl = $("#choices"), coolEl = $("#cool");
+
+function nextQuiz(){
+  let idx;
+  do { idx = irnd(0, WORDS.length - 1); } while (idx === S.quizIndex && WORDS.length > 1);
+  S.quizIndex = idx;
+  const q = WORDS[idx];
+
+  const pool = shuffle(WORDS.map((_, i) => i).filter((i) => i !== idx)).slice(0, 3);
+  const opts = shuffle([q.m, ...pool.map((i) => WORDS[i].m)]);
+
+  wordEl.textContent = q.w;
+  posEl.textContent  = q.p;
+  choicesEl.className = "";
+  choicesEl.innerHTML = "";
+  opts.forEach((text) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "choice";
+    b.textContent = text;
+    b.addEventListener("click", () => answer(b, text === q.m));
+    choicesEl.appendChild(b);
+  });
+}
+
+function answer(btn, correct){
+  if (!S.running || S.quizLocked) return;
+
+  if (correct){
+    S.solved++;
+    S.combo++;
+    S.best = Math.max(S.best, S.combo);
+    btn.classList.add("right");
+
+    let gain = 10 + Math.min(Math.floor(S.combo / 3) * 2, 10);   /* 연속 정답 보너스 (최대 +10) */
+    if (S.combo > 0 && S.combo % 10 === 0){                 /* 10연속 정답 */
+      gain += 40; S.luckyHits++;
+      say("🔥 " + S.combo + "연속! 보너스 +40 G", "gold"); sfx.jack();
+    } else if (chance(0.10)){                               /* 잭팟 */
+      gain += 35; S.luckyHits++;
+      say("🪙 잭팟! +35 G", "gold"); sfx.jack();
+    } else if (chance(0.05)){                               /* 무료 소환권 */
+      S.luckyHits++;
+      if (freeSlot() >= 0){ summon(true); say("🎉 무료 소환!", "luck"); }
+      else gain += 20;
+    } else {
+      sfx.right();
+    }
+    addGold(gain);
+    nextQuiz();                                             /* 딜레이 없이 다음 문제 */
+  } else {
+    S.misses++;
+    S.combo = 0;
+    btn.classList.add("wrong");
+    /* 정답도 같이 보여준다 */
+    const right = WORDS[S.quizIndex].m;
+    [...choicesEl.children].forEach((c) => { if (c.textContent === right) c.classList.add("right"); });
+    choicesEl.classList.add("locked");
+    S.quizLocked = true;
+    coolEl.classList.remove("run"); void coolEl.offsetWidth; coolEl.classList.add("run");
+    sfx.wrong();
+    renderGold();
+    setTimeout(() => {
+      S.quizLocked = false;
+      coolEl.classList.remove("run");
+      if (S.running) nextQuiz();
+    }, 1000);
+  }
+}
+
+/* ══════════ 골드 ══════════ */
+const goldValEl = $("#goldVal"), comboValEl = $("#comboVal");
+function addGold(n){
+  S.gold += n;
+  goldValEl.classList.remove("bump"); void goldValEl.offsetWidth; goldValEl.classList.add("bump");
+  renderGold();
+}
+function renderGold(){
+  goldValEl.textContent = S.gold;
+  comboValEl.textContent = S.combo >= 2 ? S.combo + " COMBO" : "";
+  $("#summonBtn").disabled = S.gold < SUMMON_COST || !S.running;
+  $("#diceBtn").disabled   = S.gold < DICE_COST   || !S.running;
+}
+
+/* ══════════ 소환진 : 소환 · 합성 ══════════ */
+const boardEl = $("#board"), hintEl = $("#mergeHint");
+
+function freeSlot(){
+  for (let i = 0; i < BOARD_SIZE; i++) if (!S.board[i]) return i;
+  return -1;
+}
+
+function summon(free){
+  if (!S.running) return;
+  const slot = freeSlot();
+  if (slot < 0){ say("소환진이 가득 찼다!", "foe"); return; }
+  if (!free){
+    if (S.gold < SUMMON_COST) return;
+    S.gold -= SUMMON_COST;
+  }
+
+  const type = weightedType();
+  let tier = 1;
+  if (chance(0.05)) { tier = 3; S.luckyHits++; say("💫 초월 소환! " + type.name + " " + stars(3), "luck"); sfx.jack(); }
+  else if (chance(0.12)) { tier = 2; S.luckyHits++; say("✨ 행운 소환! " + type.name + " " + stars(2), "luck"); sfx.merge(); }
+  else sfx.summon();
+
+  S.board[slot] = makePawn(type.key, tier);
+  renderBoard(slot, "born");
+  renderGold();
+}
+
+function makePawn(typeKey, tier){
+  return { id:S.uid++, type:typeKey, tier:clamp(tier, 1, MAX_TIER), fuse:FUSE_TIME };
+}
+
+function tapCell(i){
+  if (!S.running) return;
+  const pawn = S.board[i];
+  if (!pawn){ S.sel = -1; renderBoard(); return; }
+
+  if (S.sel === i){ S.sel = -1; renderBoard(); return; }
+
+  if (S.sel >= 0){
+    const a = S.board[S.sel];
+    if (a && a.type === pawn.type && a.tier === pawn.tier && a.tier < MAX_TIER){
+      doMerge(S.sel, i);
+      return;
+    }
+  }
+  S.sel = i;
+  renderBoard();
+}
+
+function doMerge(from, to){
+  const a = S.board[from];
+  const base = a.tier;
+  S.board[from] = null;
+  S.sel = -1;
+  S.merges++;
+
+  let tier = base + 1;
+  let msg = null, kind = "ally";
+
+  if (chance(0.12) && tier < MAX_TIER){        /* 대성공 : 2단계 점프 */
+    tier += 1; S.luckyHits++;
+    msg = "🌟 대성공! " + TYPES[a.type].name + " " + stars(tier); kind = "luck"; sfx.jack();
+  } else if (chance(0.15)){                    /* 복제 : 한 마리 더 */
+    const slot = freeSlot();
+    if (slot >= 0){
+      S.board[slot] = makePawn(a.type, tier);
+      S.luckyHits++;
+      msg = "👥 복제! " + TYPES[a.type].name + " 하나 더"; kind = "luck"; sfx.jack();
+    }
+  } else if (chance(0.10)){                    /* 변이 : 다른 종류로 바뀐다 */
+    const other = weightedType();
+    if (other.key !== a.type){
+      S.luckyHits++;
+      S.board[to] = makePawn(other.key, tier);
+      renderBoard(to, "merged");
+      say("🧬 변이! " + other.name + " " + stars(tier), "luck");
+      sfx.jack();
+      return;
+    }
+  }
+
+  S.board[to] = makePawn(a.type, tier);
+  renderBoard(to, "merged");
+  if (msg) say(msg, kind); else sfx.merge();
+  if (tier >= MAX_TIER) say("👑 최고 등급 " + TYPES[a.type].name + " " + stars(MAX_TIER) + " 완성!", "gold");
+}
+
+function deploy(i){
+  const pawn = S.board[i];
+  if (!pawn) return;
+  S.board[i] = null;
+  if (S.sel === i) S.sel = -1;
+  spawnUnit("me", pawn.type, pawn.tier);
+  S.deployed++;
+  renderBoard();
+}
+
+function deployAll(){
+  if (!S.running) return;
+  let any = false;
+  for (let i = 0; i < BOARD_SIZE; i++) if (S.board[i]){ deploy(i); any = true; }
+  if (any) blip(700, .1, "triangle", .05);
+}
+
+/* 보드 렌더 */
+function renderBoard(animSlot, animCls){
+  boardEl.innerHTML = "";
+  /* 합성 가능한 쌍 찾기 */
+  const seen = {}, matchable = {};
+  S.board.forEach((p, i) => {
+    if (!p || p.tier >= MAX_TIER) return;
+    const k = p.type + "-" + p.tier;
+    if (seen[k] != null){ matchable[i] = true; matchable[seen[k]] = true; }
+    else seen[k] = i;
+  });
+  const pairs = Object.keys(matchable).length / 2;
+  hintEl.textContent = pairs >= 1 ? "합성 가능 " + Math.floor(pairs) + "쌍" : "";
+
+  for (let i = 0; i < BOARD_SIZE; i++){
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    const p = S.board[i];
+    if (!p){
+      cell.classList.add("empty");
+    } else {
+      const t = TYPES[p.type], st = statsOf(p.type, p.tier);
+      cell.classList.add("filled");
+      if (S.sel === i) cell.classList.add("sel");
+      else if (matchable[i]) cell.classList.add("match");
+      cell.innerHTML =
+        '<div class="pawn">' +
+          '<span class="face">' + t.face + '</span>' +
+          '<span class="nm">' + t.name + '</span>' +
+          '<span class="st">' + stars(p.tier) + ' · ' + st.hp + '/' + st.atk + '</span>' +
+        '</div>' +
+        '<i class="fuse" style="width:' + (p.fuse / FUSE_TIME * 100) + '%"></i>';
+      cell.addEventListener("click", () => tapCell(i));
+      cell.setAttribute("role", "button");
+      cell.setAttribute("aria-label", t.name + " " + stars(p.tier));
+      cell.tabIndex = 0;
+      cell.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); tapCell(i); } });
+      if (animSlot === i && animCls) cell.classList.add(animCls);
+    }
+    boardEl.appendChild(cell);
+  }
+}
+
+/* 대기 시간 게이지만 갱신 (매 프레임 DOM 재생성 방지) */
+function tickFuseBars(){
+  const cells = boardEl.children;
+  for (let i = 0; i < BOARD_SIZE; i++){
+    const p = S.board[i], bar = cells[i] && cells[i].querySelector(".fuse");
+    if (p && bar) bar.style.width = clamp(p.fuse / FUSE_TIME * 100, 0, 100) + "%";
+  }
+}
+
+/* ══════════ 전장 : 유닛 · 자동 전투 ══════════ */
+const fieldEl = $("#field"), tickerEl = $("#ticker");
+
+function spawnUnit(side, typeKey, tier){
+  const t = TYPES[typeKey], st = statsOf(typeKey, tier);
+  const vary = rnd(0.94, 1.06);                       /* 개체마다 미세한 능력 편차 */
+  const u = {
+    id:S.uid++, side:side, type:typeKey, tier:tier,
+    maxHp:Math.round(st.hp * vary), hp:Math.round(st.hp * vary),
+    atk:Math.round(st.atk * vary),
+    spd:t.spd, range:t.range, aspd:t.aspd, splash:t.splash || 0,
+    cd:rnd(0, 0.4),
+    pos:side === "me" ? 1 : 99,
+    lane:rnd(16, 84),
+    el:null
+  };
+
+  const el = document.createElement("div");
+  el.className = "unit " + side;
+  el.innerHTML =
+    '<div class="unit-body">' + t.face + '<span class="unit-tier">' + stars(tier) + '</span></div>' +
+    '<div class="unit-hp"><i style="width:100%"></i></div>';
+  el.style.left = u.lane + "%";
+  el.style.top  = (100 - u.pos) + "%";
+  fieldEl.appendChild(el);
+  u.el = el;
+  u.body = el.querySelector(".unit-body");
+  u.hpBar = el.querySelector(".unit-hp > i");
+
+  S.units.push(u);
+  return u;
+}
+
+function fieldXY(lane, pos){
+  const r = fieldEl.getBoundingClientRect();
+  return { x:r.width * lane / 100, y:r.height * (100 - pos) / 100 };
+}
+
+function floatText(lane, pos, text, crit){
+  const p = fieldXY(lane, pos);
+  const d = document.createElement("div");
+  d.className = "dmg" + (crit ? " crit" : "");
+  d.textContent = text;
+  d.style.left = p.x + "px";
+  d.style.top  = p.y + "px";
+  fieldEl.appendChild(d);
+  setTimeout(() => d.remove(), 640);
+}
+function sparkAt(lane, pos){
+  const p = fieldXY(lane, pos);
+  const s = document.createElement("div");
+  s.className = "spark";
+  s.style.left = p.x + "px";
+  s.style.top  = p.y + "px";
+  fieldEl.appendChild(s);
+  setTimeout(() => s.remove(), 280);
+}
+
+function hurt(target, dmg, crit){
+  target.hp -= dmg;
+  target.hpBar.style.width = clamp(target.hp / target.maxHp * 100, 0, 100) + "%";
+  target.body.classList.remove("flash"); void target.body.offsetWidth; target.body.classList.add("flash");
+  floatText(target.lane, target.pos, Math.round(dmg), crit);
+  if (crit) sparkAt(target.lane, target.pos);
+}
+
+function strike(u, target){
+  const crit = chance(0.15);                            /* 치명타 : 운빨 */
+  const dmg = u.atk * rnd(0.9, 1.1) * (crit ? 2 : 1);
+  u.body.classList.remove("swing"); void u.body.offsetWidth; u.body.classList.add("swing");
+  hurt(target, dmg, crit);
+  sfx.hit();
+
+  if (u.splash){                                        /* 광역 : 주변까지 */
+    for (const o of S.units){
+      if (o === target || o.side === u.side || o.hp <= 0) continue;
+      if (Math.abs(o.pos - target.pos) <= u.splash) hurt(o, dmg * 0.5, false);
+    }
+  }
+}
+
+function strikeNexus(u){
+  const dmg = u.atk * rnd(0.9, 1.1) * (chance(0.15) ? 2 : 1);
+  u.body.classList.remove("swing"); void u.body.offsetWidth; u.body.classList.add("swing");
+  if (u.side === "me"){
+    S.foeHp = Math.max(0, S.foeHp - dmg);
+    floatText(u.lane, 99, "-" + Math.round(dmg), true);
+    pulseCore($("#foeCore"));
+  } else {
+    S.myHp = Math.max(0, S.myHp - dmg);
+    floatText(u.lane, 1, "-" + Math.round(dmg), true);
+    pulseCore($("#myCore"));
+    $("#cabinet").classList.remove("shake"); void $("#cabinet").offsetWidth; $("#cabinet").classList.add("shake");
+  }
+  sfx.boom();
+  renderNexus();
+}
+function pulseCore(el){
+  el.classList.remove("hurt"); void el.offsetWidth; el.classList.add("hurt");
+}
+
+function stepBattle(dt){
+  const live = S.units.filter((u) => u.hp > 0);
+
+  for (const u of live){
+    if (u.hp <= 0) continue;
+    const forward = u.side === "me" ? 1 : -1;
+    const goal = u.side === "me" ? 100 : 0;
+
+    /* 앞쪽(진행 방향)에 있는 가장 가까운 적 */
+    let target = null, bestDist = Infinity;
+    for (const o of live){
+      if (o.side === u.side || o.hp <= 0) continue;
+      const rel = (o.pos - u.pos) * forward;
+      if (rel < -4) continue;                            /* 이미 지나친 적은 무시 */
+      const d = Math.abs(rel);
+      if (d < bestDist){ bestDist = d; target = o; }
+    }
+
+    u.cd -= dt;
+
+    if (target && bestDist <= u.range){                  /* 적과 교전 */
+      if (u.cd <= 0){ strike(u, target); u.cd = 1 / u.aspd; }
+      continue;
+    }
+    if (Math.abs(goal - u.pos) <= u.range){              /* 넥서스 타격 */
+      if (u.cd <= 0){ strikeNexus(u); u.cd = 1 / u.aspd; }
+      continue;
+    }
+
+    /* 아군끼리 밀착 방지 — 앞선 아군이 가까우면 대기 */
+    let blocked = false;
+    for (const o of live){
+      if (o === u || o.side !== u.side || o.hp <= 0) continue;
+      const rel = (o.pos - u.pos) * forward;
+      if (rel > 0 && rel < 5.5){ blocked = true; break; }
+    }
+    if (!blocked) u.pos = clamp(u.pos + forward * u.spd * dt, 0, 100);
+  }
+
+  /* 사망 처리 */
+  for (let i = S.units.length - 1; i >= 0; i--){
+    const u = S.units[i];
+    if (u.hp <= 0){
+      sparkAt(u.lane, u.pos);
+      u.el.remove();
+      S.units.splice(i, 1);
+    } else {
+      u.el.style.top = (100 - u.pos) + "%";
+    }
+  }
+}
+
+/* ══════════ 적 AI ══════════ */
+function enemyWave(){
+  const min = Math.floor(S.elapsed / 60);
+  /* 시간이 갈수록 높은 등급이 나온다 */
+  const roll = Math.random() + min * 0.13;
+  let tier = 1;
+  if (roll > 1.55) tier = 4;
+  else if (roll > 1.10) tier = 3;
+  else if (roll > 0.62) tier = 2;
+  tier = clamp(tier, 1, MAX_TIER);
+
+  let count = 1;
+  if (chance(0.10 + min * 0.06)) count = 2;             /* 가끔 몰아친다 */
+  for (let i = 0; i < count; i++){
+    const t = weightedType();
+    spawnUnit("enemy", t.key, tier);
+  }
+  if (tier >= 3) say("⚠ 적 " + stars(tier) + " 출현!", "foe");
+
+  S.foeInterval = clamp(5.5 - S.elapsed / 80, 2.8, 5.5);
+  S.foeTimer = S.foeInterval * rnd(0.8, 1.2);           /* 간격에도 운이 섞인다 */
+}
+
+/* ══════════ 운빨 장치 : 전리품 상자 · 운명의 주사위 ══════════ */
+function dropLoot(){
+  if (S.loot) return;
+  const lane = rnd(20, 80), pos = rnd(28, 72);
+  const el = document.createElement("div");
+  el.id = "lootbox";
+  el.textContent = "🎁";
+  el.style.left = lane + "%";
+  el.style.top  = (100 - pos) + "%";
+  el.setAttribute("role", "button");
+  el.setAttribute("aria-label", "전리품 상자 열기");
+  el.addEventListener("click", openLoot);
+  fieldEl.appendChild(el);
+  S.loot = { el:el, life:7 };
+  say("🎁 전리품 상자 등장!", "luck");
+  blip(1000, .12, "triangle", .05);
+}
+function clearLoot(){
+  if (S.loot){ S.loot.el.remove(); S.loot = null; }
+}
+function openLoot(){
+  if (!S.loot || !S.running) return;
+  clearLoot();
+  S.luckyHits++;
+  sfx.jack();
+  const roll = Math.random();
+  if (roll < 0.30){
+    const g = irnd(40, 90); addGold(g); say("🪙 골드 " + g + " 획득!", "gold");
+  } else if (roll < 0.55){
+    const t = weightedType(), tier = chance(0.3) ? 3 : 2;
+    if (freeSlot() >= 0){
+      S.board[freeSlot()] = makePawn(t.key, tier);
+      renderBoard();
+      say("🎁 " + t.name + " " + stars(tier) + " 획득!", "luck");
+    } else { addGold(60); say("소환진이 꽉 차 골드 60으로!", "gold"); }
+  } else if (roll < 0.72){
+    S.myHp = Math.min(NEXUS_HP, S.myHp + 220); renderNexus();
+    say("💚 넥서스 수리 +220", "ally");
+  } else if (roll < 0.88){
+    let n = 0;
+    for (const u of S.units){ if (u.side === "enemy" && u.hp > 0){ hurt(u, u.maxHp, true); n++; } }
+    say(n ? "⚡ 벼락! 적 유닛 " + n + "기 소멸" : "⚡ 벼락이 허공을 갈랐다", "luck");
+  } else {
+    for (const u of S.units){
+      if (u.side === "me"){ u.atk = Math.round(u.atk * 1.5); u.body.style.filter = "drop-shadow(0 0 6px var(--gold))"; }
+    }
+    say("🔥 아군 전체 공격력 +50%", "gold");
+  }
+}
+
+function rollDice(){
+  if (!S.running || S.gold < DICE_COST) return;
+  S.gold -= DICE_COST;
+  renderGold();
+  const btn = $("#diceBtn");
+  btn.classList.remove("roll"); void btn.offsetWidth; btn.classList.add("roll");
+
+  const face = irnd(1, 6);
+  const faces = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+  setTimeout(() => {
+    if (!S.running) return;
+    if (face === 1){
+      say(faces[1] + " 꽝… 골드만 날렸다", "foe"); sfx.wrong();
+    } else if (face === 2){
+      addGold(40); say(faces[2] + " 골드 +40", "gold"); sfx.right();
+    } else if (face === 3){
+      const s = freeSlot();
+      if (s >= 0){ S.board[s] = makePawn(weightedType().key, 2); renderBoard(s, "born"); say(faces[3] + " ★2 유닛 등장!", "luck"); }
+      else { addGold(50); say(faces[3] + " 자리가 없어 골드 +50", "gold"); }
+      sfx.summon();
+    } else if (face === 4){
+      /* 소환진 유닛 하나를 무작위로 한 등급 올린다 */
+      const idxs = S.board.map((p, i) => (p && p.tier < MAX_TIER) ? i : -1).filter((i) => i >= 0);
+      if (idxs.length){
+        const i = idxs[irnd(0, idxs.length - 1)];
+        S.board[i].tier++;
+        renderBoard(i, "merged");
+        say(faces[4] + " " + TYPES[S.board[i].type].name + " 승급 → " + stars(S.board[i].tier), "luck");
+      } else { addGold(45); say(faces[4] + " 올릴 유닛이 없어 골드 +45", "gold"); }
+      sfx.merge();
+    } else if (face === 5){
+      S.foeHp = Math.max(0, S.foeHp - 160); renderNexus(); pulseCore($("#foeCore"));
+      say(faces[5] + " 적 넥서스에 벼락! -160", "luck"); sfx.boom();
+    } else {
+      const s = freeSlot();
+      if (s >= 0){ S.board[s] = makePawn("dragon", 3); renderBoard(s, "merged"); say(faces[6] + " 🐉 드래곤 ★3 강림!", "gold"); }
+      else { addGold(120); say(faces[6] + " 대박! 골드 +120", "gold"); }
+      sfx.jack();
+    }
+    S.luckyHits++;
+    renderGold();
+  }, 380);
+}
+
+/* ══════════ 알림 ══════════ */
+let sayTimer = null;
+function say(text, kind){
+  const color = kind === "gold" ? "var(--gold)" : kind === "luck" ? "var(--luck)"
+              : kind === "foe" ? "var(--foe)" : "var(--ally)";
+  tickerEl.innerHTML = '<b style="color:' + color + '">' + text + '</b>';
+  clearTimeout(sayTimer);
+  sayTimer = setTimeout(() => { tickerEl.innerHTML = ""; }, 1800);
+}
+
+/* ══════════ 넥서스 렌더 ══════════ */
+function renderNexus(){
+  const my = clamp(S.myHp / NEXUS_HP, 0, 1), foe = clamp(S.foeHp / NEXUS_HP, 0, 1);
+  $("#myHpBar").style.width  = my * 100 + "%";
+  $("#foeHpBar").style.width = foe * 100 + "%";
+  $("#myHpNum").textContent  = Math.ceil(S.myHp)  + " / " + NEXUS_HP;
+  $("#foeHpNum").textContent = Math.ceil(S.foeHp) + " / " + NEXUS_HP;
+}
+
+/* ══════════ 배경 그리드 ══════════ */
+const gridCv = $("#grid"), gtx = gridCv.getContext("2d");
+let gridOffset = 0;
+function sizeGrid(){
+  const r = fieldEl.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  gridCv.width = Math.max(1, Math.floor(r.width * dpr));
+  gridCv.height = Math.max(1, Math.floor(r.height * dpr));
+  gridCv.style.width = r.width + "px";
+  gridCv.style.height = r.height + "px";
+  gtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function drawGrid(dt){
+  const w = gridCv.width / (window.devicePixelRatio || 1);
+  const h = gridCv.height / (window.devicePixelRatio || 1);
+  gridOffset = (gridOffset + dt * 14) % 26;
+  gtx.clearRect(0, 0, w, h);
+  gtx.lineWidth = 1;
+  gtx.strokeStyle = "rgba(38,48,90,.85)";
+  gtx.beginPath();
+  for (let y = -26 + gridOffset; y < h + 26; y += 26){
+    gtx.moveTo(0, Math.round(y) + .5); gtx.lineTo(w, Math.round(y) + .5);
+  }
+  for (let x = 0; x <= w; x += w / 6){
+    gtx.moveTo(Math.round(x) + .5, 0); gtx.lineTo(Math.round(x) + .5, h);
+  }
+  gtx.stroke();
+}
+
+/* ══════════ 메인 루프 ══════════ */
+function loop(now){
+  requestAnimationFrame(loop);
+  if (!S || !S.running) return;
+  const dt = Math.min(0.05, (now - S.lastT) / 1000 || 0);
+  S.lastT = now;
+  S.elapsed += dt;
+
+  drawGrid(dt);
+
+  /* 소환진 대기 시간 → 자동 출격 */
+  for (let i = 0; i < BOARD_SIZE; i++){
+    const p = S.board[i];
+    if (!p) continue;
+    p.fuse -= dt;
+    if (p.fuse <= 0) deploy(i);
+  }
+  tickFuseBars();
+
+  /* 적 AI */
+  S.foeTimer -= dt;
+  if (S.foeTimer <= 0) enemyWave();
+
+  /* 전리품 상자 */
+  if (S.loot){
+    S.loot.life -= dt;
+    if (S.loot.life <= 0) clearLoot();
+  } else {
+    S.lootTimer -= dt;
+    if (S.lootTimer <= 0){ dropLoot(); S.lootTimer = rnd(16, 28); }
+  }
+
+  stepBattle(dt);
+
+  if (S.myHp <= 0)  return endGame(false);
+  if (S.foeHp <= 0) return endGame(true);
+}
+
+/* ══════════ 시작 · 종료 ══════════ */
+function startGame(){
+  [...fieldEl.querySelectorAll(".unit, .dmg, .spark, #lootbox")].forEach((e) => e.remove());
+  S = freshState();
+  S.running = true;
+  S.lastT = performance.now();
+  sizeGrid();
+  renderNexus();
+  renderBoard();
+  renderGold();
+  nextQuiz();
+  $("#overlay").classList.remove("on");
+  say("적이 몰려온다. 단어를 캐라!", "ally");
+  if (!actx) blip(660, .08, "triangle", .04);   /* 첫 탭에서 오디오 컨텍스트 개방 */
+}
+
+function endGame(win){
+  S.running = false;
+  S.over = true;
+  const mins = Math.floor(S.elapsed / 60), secs = Math.floor(S.elapsed % 60);
+  const acc = S.solved + S.misses > 0 ? Math.round(S.solved / (S.solved + S.misses) * 100) : 0;
+
+  $("#ovTitle").textContent = win ? "적 넥서스 함락" : "넥서스가 무너졌다";
+  $("#ovTitle").style.color = win ? "var(--ally)" : "var(--foe)";
+  $("#ovSub").innerHTML = win
+    ? "단어가 곧 자원이었고, 운은 네 편이었다."
+    : "다음 판엔 합성 타이밍을 조금 더 노려보자.";
+  $("#ovRules").hidden = true;
+
+  const stats = $("#ovStats");
+  stats.hidden = false;
+  stats.innerHTML =
+    '<div class="stat"><b>' + S.solved + '</b><span>맞힌 단어</span></div>' +
+    '<div class="stat"><b>' + acc + '%</b><span>정답률</span></div>' +
+    '<div class="stat"><b>' + S.best + '</b><span>최고 연속</span></div>' +
+    '<div class="stat"><b>' + S.merges + '</b><span>합성</span></div>' +
+    '<div class="stat"><b>' + S.luckyHits + '</b><span>행운 발동</span></div>' +
+    '<div class="stat"><b>' + mins + ':' + String(secs).padStart(2, "0") + '</b><span>생존 시간</span></div>';
+
+  $("#again").textContent = "다시 도전";
+  $("#overlay").classList.add("on");
+  if (win) sfx.jack(); else sfx.boom();
+}
+
+/* ══════════ 배선 ══════════ */
+$("#summonBtn").addEventListener("click", () => summon(false));
+$("#diceBtn").addEventListener("click", rollDice);
+$("#deployAll").addEventListener("click", deployAll);
+$("#again").addEventListener("click", startGame);
+
+window.addEventListener("resize", () => { if (S) sizeGrid(); });
+document.addEventListener("keydown", (e) => {
+  if (!S || !S.running) return;
+  if (e.key === "s" || e.key === "S") summon(false);
+  if (e.key === "d" || e.key === "D") deployAll();
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 4){
+    const b = choicesEl.children[n - 1];
+    if (b) b.click();
+  }
+});
+
+/* 첫 화면 준비 */
+S = freshState();
+sizeGrid();
+drawGrid(0);
+renderNexus();
+renderBoard();
+renderGold();
+nextQuiz();
+requestAnimationFrame(loop);
+
+/* 디버그 훅 (콘솔에서 상태 확인용) */
+Object.defineProperty(window, "__S", { get: function(){ return S; } });
+window.__words = WORDS;
+</script>
+</body>
+</html>
