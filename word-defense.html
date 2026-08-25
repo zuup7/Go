@@ -29,6 +29,8 @@
   --hud:"Press Start 2P","Courier New",monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* display 를 지정한 클래스가 [hidden] 을 덮어써 숨김이 먹지 않는 일을 막는다 */
+[hidden]{display:none !important}
 html,body{height:100%}
 body{
   background:var(--void);color:var(--ink);font-family:var(--body);
@@ -233,6 +235,26 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #cabinet.rage-p2 .unit[data-p="2"] .unit-body{
   border-color:var(--gold);box-shadow:0 0 14px rgba(255,197,61,.95);
 }
+.unit.boss{width:48px;z-index:5}
+.unit.boss .unit-body{
+  width:40px;height:40px;border-width:3px;border-color:var(--gold);
+  box-shadow:0 0 18px rgba(255,61,110,.85), inset 0 0 12px rgba(255,216,77,.5);
+  animation:bossbeat 1.1s ease-in-out infinite;
+}
+@keyframes bossbeat{50%{box-shadow:0 0 26px rgba(255,61,110,1), inset 0 0 16px rgba(255,216,77,.75)}}
+.unit.boss .art{width:33px;height:33px}
+.unit.boss .unit-hp{width:40px;height:4px}
+.bossname{
+  /* 보스는 전장 맨 위에서 등장하므로 이름표를 아래에 단다 (위는 잘린다) */
+  position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  white-space:nowrap;pointer-events:none;
+  padding:1px 6px;border-radius:999px;
+  background:rgba(7,10,20,.9);border:1px solid rgba(255,216,77,.6);
+  font-family:var(--display);font-size:8.5px;color:var(--gold);text-shadow:0 1px 2px #000;
+}
+#warn > i.boss{background:rgba(255,216,77,.22);border-color:var(--gold)}
+#warn > i.boss b{color:#FFE8A8}
+
 .unit-tier{
   position:absolute;bottom:-5px;right:-6px;
   font-family:var(--hud);font-size:7px;padding:2px 3px;border-radius:4px;
@@ -548,6 +570,27 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #overlay.on{display:grid}
 #overlay h1{font-family:var(--display);font-size:33px;letter-spacing:.05em;margin-bottom:6px;text-wrap:balance}
 #ovSub{font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.7}
+#bestLine{
+  font-family:var(--hud);font-size:8.5px;color:var(--gold);letter-spacing:.04em;
+  margin-bottom:9px;line-height:1.7;
+}
+#bestLine:empty{display:none}
+.missnote{
+  text-align:left;border:1px solid var(--edge);border-radius:11px;
+  background:var(--panel);padding:11px 12px;margin-bottom:16px;
+}
+.missnote h4{
+  font-family:var(--display);font-size:12.5px;font-weight:400;color:var(--foe);
+  letter-spacing:.05em;margin-bottom:7px;
+}
+.missnote .mw{display:flex;justify-content:space-between;gap:10px;padding:2.5px 0;font-size:11.5px}
+.missnote .mw b{color:var(--ink);font-weight:600}
+.missnote .mw span{color:var(--dim);text-align:right}
+.newrec{
+  display:inline-block;margin-bottom:10px;padding:3px 10px;border-radius:999px;
+  font-family:var(--display);font-size:12px;color:#0B1024;background:var(--gold);
+}
+
 .modes{display:grid;gap:8px;margin-bottom:16px}
 .mode-pick{
   display:flex;align-items:center;gap:11px;text-align:left;
@@ -658,6 +701,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   <div id="overlay" class="on">
     <div>
       <h1 id="ovTitle">워드 넥서스</h1>
+      <p id="bestLine"></p>
       <p id="ovSub">영단어를 맞혀 골드를 캐고,<br />운에 기대어 유닛을 합성해 상대 넥서스를 부순다.</p>
 
       <div class="modes" id="ovModes">
@@ -681,7 +725,9 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <div class="codex" id="ovCodex"></div>
 
       <button id="again" type="button" hidden>다시 하기</button>
+      <div class="newrec" id="newRec" hidden>🏆 신기록!</div>
       <div id="ovStats" hidden></div>
+      <div class="missnote" id="missNote" hidden></div>
 
       <div class="rules" id="ovRules">
         <b>정답</b> 즉시 <b>+10 G</b> · 연속 정답이면 보너스 · <b>오답</b> 1초 잠김<br />
@@ -698,6 +744,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
         전장에 세울 수 있는 유닛은 <b>6기까지</b>. 수보다 <em>질</em>이다<br />
         밀리고 있으면 <em>캐는 골드가 늘어난다</em>. 끝까지 모른다<br />
         정답이 쌓일 때마다 <em>축복 세 장 중 하나</em>를 고른다. 판마다 빌드가 갈린다<br />
+        <b>틀린 단어는 다시 나온다.</b> 되찾으면 <em>설욕 보너스</em><br />
+        다섯 번째 물결마다 이름 붙은 <em>👑 보스</em>가 한 길을 밀고 내려온다<br />
         소환 버튼 위 <b>확률 띠를 누르면</b> 모든 무작위 수치를 볼 수 있다<br />
         적 유닛을 쓰러뜨리면 <b>현상금</b>이 들어오고 게이지가 찬다<br />
         게이지가 가득 차면 출격 버튼이 <em>⚡ 총공격</em>으로 바뀐다<br />
@@ -718,35 +766,262 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 /* ── 단어 데이터 (고1 모의고사 필수 어휘 30) ── */
 const WORDS = [
   { w:"abandon",     p:"v.", m:"버리다, 포기하다" },
+  { w:"accurate",    p:"a.", m:"정확한, 정밀한" },
   { w:"achieve",     p:"v.", m:"성취하다, 달성하다" },
+  { w:"acquire",     p:"v.", m:"습득하다, 얻다" },
   { w:"adapt",       p:"v.", m:"적응하다, 조정하다" },
+  { w:"adequate",    p:"a.", m:"충분한, 적절한" },
+  { w:"admire",      p:"v.", m:"존경하다, 감탄하다" },
+  { w:"affect",      p:"v.", m:"영향을 미치다" },
+  { w:"afford",      p:"v.", m:"~할 여유가 있다" },
+  { w:"aggressive",  p:"a.", m:"공격적인, 적극적인" },
+  { w:"alter",       p:"v.", m:"바꾸다, 고치다" },
+  { w:"ancient",     p:"a.", m:"고대의, 아주 오래된" },
+  { w:"announce",    p:"v.", m:"발표하다, 알리다" },
   { w:"anxious",     p:"a.", m:"불안한, 걱정하는" },
+  { w:"apparent",    p:"a.", m:"명백한, 겉보기의" },
   { w:"appreciate",  p:"v.", m:"감사하다, 진가를 알아보다" },
+  { w:"appropriate", p:"a.", m:"적절한, 알맞은" },
+  { w:"approve",     p:"v.", m:"승인하다, 찬성하다" },
+  { w:"argue",       p:"v.", m:"주장하다, 논쟁하다" },
+  { w:"arrange",     p:"v.", m:"배열하다, 마련하다" },
+  { w:"aspect",      p:"n.", m:"측면, 양상" },
   { w:"assume",      p:"v.", m:"가정하다, 추측하다" },
+  { w:"attach",      p:"v.", m:"붙이다, 첨부하다" },
   { w:"attempt",     p:"v.", m:"시도하다, 애써 해보다" },
+  { w:"attitude",    p:"n.", m:"태도, 자세" },
+  { w:"attract",     p:"v.", m:"끌어당기다, 매혹하다" },
+  { w:"authority",   p:"n.", m:"권위, 당국" },
+  { w:"available",   p:"a.", m:"이용 가능한, 시간이 되는" },
+  { w:"avoid",       p:"v.", m:"피하다, 막다" },
+  { w:"aware",       p:"a.", m:"알고 있는, 인식하는" },
   { w:"benefit",     p:"n.", m:"이익, 혜택" },
+  { w:"capable",     p:"a.", m:"~할 수 있는, 유능한" },
+  { w:"capture",     p:"v.", m:"붙잡다, 포착하다" },
+  { w:"cease",       p:"v.", m:"그만두다, 중단하다" },
+  { w:"challenge",   p:"n.", m:"도전, 난제" },
+  { w:"circumstance",p:"n.", m:"상황, 환경" },
+  { w:"claim",       p:"v.", m:"주장하다, 요구하다" },
+  { w:"combine",     p:"v.", m:"결합하다, 합치다" },
+  { w:"commit",      p:"v.", m:"저지르다, 전념하다" },
+  { w:"compete",     p:"v.", m:"경쟁하다, 겨루다" },
+  { w:"complex",     p:"a.", m:"복잡한, 복합의" },
   { w:"concentrate", p:"v.", m:"집중하다" },
+  { w:"concept",     p:"n.", m:"개념, 관념" },
+  { w:"conclude",    p:"v.", m:"결론짓다, 끝맺다" },
+  { w:"conduct",     p:"v.", m:"수행하다, 지휘하다" },
   { w:"confident",   p:"a.", m:"자신 있는, 확신하는" },
+  { w:"confirm",     p:"v.", m:"확인하다, 확정하다" },
+  { w:"confuse",     p:"v.", m:"혼란시키다, 혼동하다" },
+  { w:"consequence", p:"n.", m:"결과, 영향" },
+  { w:"conserve",    p:"v.", m:"보존하다, 아끼다" },
   { w:"consider",    p:"v.", m:"고려하다, 여기다" },
+  { w:"consist",     p:"v.", m:"~로 이루어지다" },
   { w:"constant",    p:"a.", m:"끊임없는, 일정한" },
+  { w:"consume",     p:"v.", m:"소비하다, 먹어 치우다" },
+  { w:"contain",     p:"v.", m:"포함하다, 담고 있다" },
+  { w:"context",     p:"n.", m:"문맥, 맥락" },
+  { w:"contrast",    p:"n.", m:"대조, 차이" },
   { w:"contribute",  p:"v.", m:"기여하다, 기부하다" },
+  { w:"convince",    p:"v.", m:"확신시키다, 설득하다" },
+  { w:"cooperate",   p:"v.", m:"협력하다" },
+  { w:"cope",        p:"v.", m:"대처하다, 감당하다" },
+  { w:"criticize",   p:"v.", m:"비판하다, 비난하다" },
   { w:"crucial",     p:"a.", m:"결정적인, 중대한" },
+  { w:"cultivate",   p:"v.", m:"재배하다, 기르다" },
+  { w:"declare",     p:"v.", m:"선언하다, 신고하다" },
   { w:"decline",     p:"v.", m:"감소하다, 거절하다" },
+  { w:"dedicate",    p:"v.", m:"바치다, 헌신하다" },
+  { w:"defend",      p:"v.", m:"방어하다, 옹호하다" },
+  { w:"define",      p:"v.", m:"정의하다, 규정하다" },
+  { w:"delay",       p:"v.", m:"미루다, 지연시키다" },
+  { w:"demand",      p:"v.", m:"강력히 요구하다, 수요" },
+  { w:"demonstrate", p:"v.", m:"보여주다, 입증하다" },
+  { w:"deny",        p:"v.", m:"부인하다, 거부하다" },
+  { w:"depend",      p:"v.", m:"의존하다, ~에 달려 있다" },
   { w:"describe",    p:"v.", m:"묘사하다, 설명하다" },
+  { w:"deserve",     p:"v.", m:"~을 받을 만하다" },
+  { w:"determine",   p:"v.", m:"결정하다, 알아내다" },
+  { w:"devote",      p:"v.", m:"바치다, 쏟다" },
+  { w:"disappear",   p:"v.", m:"사라지다, 자취를 감추다" },
+  { w:"discover",    p:"v.", m:"발견하다, 알아내다" },
+  { w:"display",     p:"v.", m:"전시하다, 드러내다" },
+  { w:"dispose",     p:"v.", m:"처리하다, 버리다" },
   { w:"distinguish", p:"v.", m:"구별하다, 식별하다" },
+  { w:"dominate",    p:"v.", m:"지배하다, 우세하다" },
+  { w:"doubt",       p:"v.", m:"의심하다, 확신 못하다" },
+  { w:"efficient",   p:"a.", m:"효율적인, 능률적인" },
+  { w:"elaborate",   p:"a.", m:"정교한, 공들인" },
   { w:"eliminate",   p:"v.", m:"제거하다, 없애다" },
+  { w:"embrace",     p:"v.", m:"껴안다, 받아들이다" },
+  { w:"emerge",      p:"v.", m:"나타나다, 드러나다" },
   { w:"emphasize",   p:"v.", m:"강조하다" },
+  { w:"enable",      p:"v.", m:"가능하게 하다" },
   { w:"encourage",   p:"v.", m:"격려하다, 장려하다" },
+  { w:"endure",      p:"v.", m:"견디다, 지속되다" },
+  { w:"enhance",     p:"v.", m:"향상시키다, 높이다" },
+  { w:"enormous",    p:"a.", m:"거대한, 막대한" },
+  { w:"ensure",      p:"v.", m:"보장하다, 확실히 하다" },
+  { w:"entire",      p:"a.", m:"전체의, 온전한" },
+  { w:"equip",       p:"v.", m:"갖추다, 장비를 채우다" },
+  { w:"essential",   p:"a.", m:"필수적인, 본질적인" },
   { w:"establish",   p:"v.", m:"설립하다, 확립하다" },
   { w:"estimate",    p:"v.", m:"추정하다, 어림잡다" },
+  { w:"evaluate",    p:"v.", m:"평가하다" },
+  { w:"eventually",  p:"ad.",m:"결국, 마침내" },
   { w:"evidence",    p:"n.", m:"증거, 흔적" },
+  { w:"evolve",      p:"v.", m:"진화하다, 발전하다" },
+  { w:"examine",     p:"v.", m:"조사하다, 검사하다" },
+  { w:"exceed",      p:"v.", m:"초과하다, 넘어서다" },
+  { w:"exchange",    p:"v.", m:"교환하다, 주고받다" },
+  { w:"exist",       p:"v.", m:"존재하다, 살아가다" },
   { w:"expand",      p:"v.", m:"확장하다, 팽창하다" },
+  { w:"expect",      p:"v.", m:"기대하다, 예상하다" },
+  { w:"explore",     p:"v.", m:"탐험하다, 탐구하다" },
+  { w:"expose",      p:"v.", m:"노출시키다, 폭로하다" },
+  { w:"extend",      p:"v.", m:"연장하다, 뻗다" },
+  { w:"extract",     p:"v.", m:"추출하다, 뽑아내다" },
+  { w:"familiar",    p:"a.", m:"익숙한, 친숙한" },
+  { w:"flexible",    p:"a.", m:"유연한, 융통성 있는" },
+  { w:"forbid",      p:"v.", m:"금지하다, 못하게 하다" },
+  { w:"fortune",     p:"n.", m:"행운, 재산" },
+  { w:"foundation",  p:"n.", m:"기초, 토대" },
   { w:"frequent",    p:"a.", m:"잦은, 빈번한" },
+  { w:"fundamental", p:"a.", m:"근본적인, 기본의" },
+  { w:"gather",      p:"v.", m:"모으다, 모이다" },
   { w:"generate",    p:"v.", m:"발생시키다, 만들어내다" },
+  { w:"generous",    p:"a.", m:"관대한, 후한" },
   { w:"genuine",     p:"a.", m:"진짜의, 진실한" },
+  { w:"gradual",     p:"a.", m:"점진적인, 서서히 하는" },
+  { w:"guarantee",   p:"v.", m:"보장하다, 보증하다" },
+  { w:"hesitate",    p:"v.", m:"망설이다, 주저하다" },
+  { w:"identify",    p:"v.", m:"확인하다, 알아보다" },
   { w:"ignore",      p:"v.", m:"무시하다, 못 본 척하다" },
+  { w:"illustrate",  p:"v.", m:"설명하다, 예시하다" },
+  { w:"imitate",     p:"v.", m:"모방하다, 흉내내다" },
+  { w:"immediate",   p:"a.", m:"즉각적인, 당면한" },
+  { w:"impact",      p:"n.", m:"영향, 충격" },
+  { w:"imply",       p:"v.", m:"암시하다, 함축하다" },
+  { w:"impose",      p:"v.", m:"부과하다, 강요하다" },
+  { w:"improve",     p:"v.", m:"개선하다, 나아지다" },
+  { w:"indicate",    p:"v.", m:"나타내다, 가리키다" },
+  { w:"individual",  p:"n.", m:"개인, 개체" },
+  { w:"influence",   p:"n.", m:"영향, 영향력" },
+  { w:"inherit",     p:"v.", m:"물려받다, 상속하다" },
+  { w:"initial",     p:"a.", m:"처음의, 최초의" },
+  { w:"innocent",    p:"a.", m:"무죄의, 순진한" },
+  { w:"insist",      p:"v.", m:"주장하다, 고집하다" },
+  { w:"inspire",     p:"v.", m:"영감을 주다, 고무하다" },
+  { w:"instant",     p:"a.", m:"즉각적인, 즉석의" },
+  { w:"intend",      p:"v.", m:"의도하다, 작정하다" },
+  { w:"interpret",   p:"v.", m:"해석하다, 통역하다" },
+  { w:"introduce",   p:"v.", m:"소개하다, 도입하다" },
+  { w:"invade",      p:"v.", m:"침략하다, 침입하다" },
+  { w:"invest",      p:"v.", m:"투자하다" },
+  { w:"involve",     p:"v.", m:"포함하다, 관련시키다" },
+  { w:"isolate",     p:"v.", m:"고립시키다, 분리하다" },
+  { w:"justify",     p:"v.", m:"정당화하다" },
+  { w:"maintain",    p:"v.", m:"유지하다, 주장하다" },
+  { w:"measure",     p:"v.", m:"측정하다, 재다" },
+  { w:"mention",     p:"v.", m:"언급하다, 말하다" },
+  { w:"modify",      p:"v.", m:"수정하다, 변경하다" },
+  { w:"motivate",    p:"v.", m:"동기를 부여하다" },
+  { w:"negative",    p:"a.", m:"부정적인, 음성의" },
+  { w:"neglect",     p:"v.", m:"소홀히 하다, 방치하다" },
+  { w:"obtain",      p:"v.", m:"얻다, 획득하다" },
+  { w:"obvious",     p:"a.", m:"명백한, 뻔한" },
+  { w:"occupy",      p:"v.", m:"차지하다, 점령하다" },
+  { w:"occur",       p:"v.", m:"일어나다, 발생하다" },
+  { w:"operate",     p:"v.", m:"작동하다, 수술하다" },
+  { w:"oppose",      p:"v.", m:"반대하다, 대항하다" },
+  { w:"overcome",    p:"v.", m:"극복하다, 이겨내다" },
+  { w:"participate", p:"v.", m:"참여하다, 참가하다" },
+  { w:"particular",  p:"a.", m:"특정한, 까다로운" },
+  { w:"perceive",    p:"v.", m:"인지하다, 감지하다" },
+  { w:"perform",     p:"v.", m:"수행하다, 공연하다" },
+  { w:"permit",      p:"v.", m:"허락하다, 허용하다" },
+  { w:"persuade",    p:"v.", m:"설득하다" },
+  { w:"possess",     p:"v.", m:"소유하다, 지니다" },
+  { w:"potential",   p:"n.", m:"잠재력, 가능성" },
+  { w:"predict",     p:"v.", m:"예측하다, 예언하다" },
+  { w:"prefer",      p:"v.", m:"선호하다, 더 좋아하다" },
+  { w:"preserve",    p:"v.", m:"보존하다, 지키다" },
+  { w:"prevent",     p:"v.", m:"막다, 예방하다" },
+  { w:"previous",    p:"a.", m:"이전의, 앞선" },
+  { w:"priority",    p:"n.", m:"우선순위, 우선권" },
+  { w:"proceed",     p:"v.", m:"진행하다, 나아가다" },
+  { w:"promote",     p:"v.", m:"촉진하다, 승진시키다" },
+  { w:"propose",     p:"v.", m:"제안하다, 청혼하다" },
+  { w:"prove",       p:"v.", m:"증명하다, 판명되다" },
+  { w:"pursue",      p:"v.", m:"추구하다, 뒤쫓다" },
+  { w:"recall",      p:"v.", m:"기억해내다, 회수하다" },
+  { w:"recognize",   p:"v.", m:"알아보다, 인정하다" },
+  { w:"recommend",   p:"v.", m:"추천하다, 권하다" },
+  { w:"reduce",      p:"v.", m:"줄이다, 감소시키다" },
+  { w:"refer",       p:"v.", m:"언급하다, 참조하다" },
+  { w:"reflect",     p:"v.", m:"반사하다, 반영하다" },
+  { w:"refuse",      p:"v.", m:"거절하다, 거부하다" },
+  { w:"regard",      p:"v.", m:"여기다, 간주하다" },
+  { w:"regret",      p:"v.", m:"후회하다, 유감스럽다" },
+  { w:"reject",      p:"v.", m:"거절하다, 물리치다" },
+  { w:"release",     p:"v.", m:"풀어주다, 공개하다" },
+  { w:"relieve",     p:"v.", m:"완화하다, 덜어주다" },
+  { w:"rely",        p:"v.", m:"의존하다, 믿다" },
+  { w:"remain",      p:"v.", m:"남아 있다, 계속 ~이다" },
+  { w:"remind",      p:"v.", m:"상기시키다, 일깨우다" },
+  { w:"remove",      p:"v.", m:"제거하다, 치우다" },
+  { w:"replace",     p:"v.", m:"대체하다, 교체하다" },
+  { w:"represent",   p:"v.", m:"대표하다, 나타내다" },
+  { w:"require",     p:"v.", m:"요구하다, 필요로 하다" },
+  { w:"rescue",      p:"v.", m:"구조하다, 구출하다" },
+  { w:"resemble",    p:"v.", m:"닮다, 비슷하다" },
+  { w:"reserve",     p:"v.", m:"예약하다, 남겨두다" },
+  { w:"resist",      p:"v.", m:"저항하다, 참다" },
+  { w:"resolve",     p:"v.", m:"해결하다, 결심하다" },
+  { w:"respond",     p:"v.", m:"응답하다, 반응하다" },
+  { w:"restore",     p:"v.", m:"복원하다, 회복시키다" },
+  { w:"restrict",    p:"v.", m:"제한하다, 한정하다" },
+  { w:"retain",      p:"v.", m:"유지하다, 간직하다" },
+  { w:"retire",      p:"v.", m:"은퇴하다, 물러나다" },
   { w:"reveal",      p:"v.", m:"드러내다, 밝히다" },
-  { w:"severe",      p:"a.", m:"심각한, 가혹한" }
+  { w:"satisfy",     p:"v.", m:"만족시키다, 충족하다" },
+  { w:"seek",        p:"v.", m:"찾다, 구하다" },
+  { w:"select",      p:"v.", m:"선택하다, 고르다" },
+  { w:"sensitive",   p:"a.", m:"민감한, 예민한" },
+  { w:"separate",    p:"v.", m:"분리하다, 갈라놓다" },
+  { w:"severe",      p:"a.", m:"심각한, 가혹한" },
+  { w:"significant", p:"a.", m:"중요한, 상당한" },
+  { w:"similar",     p:"a.", m:"비슷한, 유사한" },
+  { w:"solve",       p:"v.", m:"해결하다, 풀다" },
+  { w:"specific",    p:"a.", m:"구체적인, 특정한" },
+  { w:"spread",      p:"v.", m:"퍼지다, 펼치다" },
+  { w:"struggle",    p:"v.", m:"분투하다, 몸부림치다" },
+  { w:"submit",      p:"v.", m:"제출하다, 굴복하다" },
+  { w:"succeed",     p:"v.", m:"성공하다, 뒤를 잇다" },
+  { w:"sufficient",  p:"a.", m:"충분한" },
+  { w:"suggest",     p:"v.", m:"제안하다, 시사하다" },
+  { w:"supply",      p:"v.", m:"공급하다, 제공하다" },
+  { w:"suppose",     p:"v.", m:"가정하다, 생각하다" },
+  { w:"surround",    p:"v.", m:"둘러싸다, 에워싸다" },
+  { w:"survive",     p:"v.", m:"살아남다, 견뎌내다" },
+  { w:"suspect",     p:"v.", m:"의심하다, 짐작하다" },
+  { w:"sustain",     p:"v.", m:"지속하다, 지탱하다" },
+  { w:"threaten",    p:"v.", m:"위협하다, 협박하다" },
+  { w:"tolerate",    p:"v.", m:"참다, 용인하다" },
+  { w:"transfer",    p:"v.", m:"옮기다, 이동하다" },
+  { w:"transform",   p:"v.", m:"변형시키다, 바꾸다" },
+  { w:"translate",   p:"v.", m:"번역하다, 옮기다" },
+  { w:"treat",       p:"v.", m:"다루다, 치료하다" },
+  { w:"urge",        p:"v.", m:"촉구하다, 재촉하다" },
+  { w:"utilize",     p:"v.", m:"활용하다, 이용하다" },
+  { w:"vanish",      p:"v.", m:"사라지다, 없어지다" },
+  { w:"various",     p:"a.", m:"다양한, 여러 가지의" },
+  { w:"violate",     p:"v.", m:"위반하다, 침해하다" },
+  { w:"virtue",      p:"n.", m:"미덕, 장점" },
+  { w:"vital",       p:"a.", m:"필수적인, 생명의" },
+  { w:"withdraw",    p:"v.", m:"철회하다, 인출하다" },
+  { w:"witness",     p:"v.", m:"목격하다, 증언하다" },
+  { w:"yield",       p:"v.", m:"생산하다, 양보하다" }
 ];
 
 /* ── 유닛 도감 ── */
@@ -1100,7 +1375,7 @@ function makePlayer(n, isAI, slots){
     bLuck:0, bMerge:0, bCrit:0, bAtk:1, bHp:1, bSpd:1, bGold:0, bBounty:1,
     bNexus:1, bRage:1, bSlots:0, bRegen:0, regenT:0, blessings:[], drafts:0, nextDraft:12,
     board:new Array(slots).fill(null), sel:-1, sel2:-1, chain:0, lastMergeT:-99,
-    quizIndex:-1, quizLocked:false, lockTimer:null,
+    quizIndex:-1, quizLocked:false, lockTimer:null, recent:[], missed:{}, revenge:[], avenged:0,
     solved:0, misses:0, merges:0, deployed:0, luckyHits:0,
     dom:null
   };
@@ -1116,7 +1391,7 @@ function freshState(mode){
     p1:p1, p2:p2, players:[p1, p2],
     units:[], uid:1,
     elapsed:0, lastT:0, paused:false,
-    aiTimer:0.6, aiInterval:4.2, wave:null, lastLane:null, aiLevel:1,
+    aiTimer:0.6, aiInterval:4.2, wave:null, lastLane:null, aiLevel:1, waveNo:0,
     lootTimer:rnd(12, 20), loot:null
   };
 }
@@ -1223,15 +1498,46 @@ function say(p, text, kind){
 function announce(text, kind){ S.players.forEach((p) => say(p, text, kind)); }
 
 /* ══════════ 퀴즈 : 자원 채취 ══════════ */
+/* 최근에 본 단어는 피하고, 틀렸던 단어는 반드시 다시 물고 늘어진다 */
+function pickWord(p){
+  /* 오답 큐가 있으면 셋에 한 번꼴로 되돌려 낸다 — 운에 맡기면 영영 안 나온다 */
+  if (p.revenge.length && chance(0.35)){
+    for (const i of p.revenge){
+      if (p.recent.indexOf(i) < 0){
+        p.recent.push(i);
+        if (p.recent.length > 14) p.recent.shift();
+        return i;
+      }
+    }
+  }
+  let best = irnd(0, WORDS.length - 1), bestScore = -1;
+  for (let n = 0; n < 10; n++){
+    const i = irnd(0, WORDS.length - 1);
+    if (p.recent.indexOf(i) >= 0) continue;
+    const score = (1 + (p.missed[i] || 0) * 6) * rnd(0.5, 1);
+    if (score > bestScore){ bestScore = score; best = i; }
+  }
+  p.recent.push(best);
+  if (p.recent.length > 14) p.recent.shift();
+  return best;
+}
+
 function nextQuiz(p){
   if (p.ai) return;
-  let idx;
-  do { idx = irnd(0, WORDS.length - 1); } while (idx === p.quizIndex && WORDS.length > 1);
+  const idx = pickWord(p);
   p.quizIndex = idx;
   const q = WORDS[idx];
 
-  const pool = shuffle(WORDS.map((_, i) => i).filter((i) => i !== idx)).slice(0, 3);
-  const opts = shuffle([q.m, ...pool.map((i) => WORDS[i].m)]);
+  /* 뜻이 겹치는 보기는 정답이 둘이 되므로 뜻 기준으로 걸러낸다 */
+  const seen = { [q.m]:true };
+  const pool = [];
+  for (const i of shuffle(WORDS.map((_, k) => k))){
+    if (i === idx || seen[WORDS[i].m]) continue;
+    seen[WORDS[i].m] = true;
+    pool.push(WORDS[i].m);
+    if (pool.length === 3) break;
+  }
+  const opts = shuffle([q.m, ...pool]);
 
   p.dom.word.textContent = q.w;
   p.dom.pos.textContent  = q.p;
@@ -1253,6 +1559,16 @@ function answer(p, btn, correct){
   if (correct){
     p.solved++;
     p.combo++;
+    if (p.missed[p.quizIndex] > 0){          /* 설욕 : 틀렸던 단어를 되찾았다 */
+      p.missed[p.quizIndex]--;
+      p.avenged++;
+      if (p.missed[p.quizIndex] === 0){
+        const at = p.revenge.indexOf(p.quizIndex);
+        if (at >= 0) p.revenge.splice(at, 1);
+      }
+      addGold(p, 20);
+      say(p, "🔁 설욕! " + WORDS[p.quizIndex].w + " +20 G", "gold");
+    }
     p.best = Math.max(p.best, p.combo);
     btn.classList.add("right");
 
@@ -1279,6 +1595,8 @@ function answer(p, btn, correct){
     nextQuiz(p);                                                  /* 딜레이 없이 다음 문제 */
   } else {
     p.misses++;
+    p.missed[p.quizIndex] = (p.missed[p.quizIndex] || 0) + 1;
+    if (p.revenge.indexOf(p.quizIndex) < 0) p.revenge.push(p.quizIndex);
     const hadCombo = p.combo;
     p.combo = 0;
     p.rage = Math.max(0, p.rage - 30);
@@ -1928,7 +2246,14 @@ function stepBattle(dt){
       burst(u.x, u.pos, u.owner.n === 1 ? "#38E8C8" : "#FF3D6E", 16, 1.25);
       const killer = u.owner.foe;                      /* 쓰러뜨린 쪽이 현상금을 챙긴다 */
       if (S.running && !killer.ai){
-        const bounty = Math.round((4 + u.tier * 3) * killer.bBounty);
+        const bounty = Math.round((u.boss ? 90 + u.tier * 25 : 4 + u.tier * 3) * killer.bBounty);
+        if (u.boss){
+          addRage(killer, 30 * killer.bRage);
+          say(killer, "👑 " + u.name + " 격파! +" + bounty + " G", "gold");
+          flash("gold"); shake();
+          burst(u.x, u.pos, "#FFD84D", 30, 1.8);
+          sfx.jack();
+        }
         killer.kills++;
         killer.gold += bounty;
         renderGold(killer);
@@ -1984,9 +2309,17 @@ function planWave(){
     drops.push({ lane:lane, tier:tier });
   }
 
+  /* 네 번째 물결마다 이름 붙은 보스가 한 길을 밀고 내려온다 */
+  S.waveNo++;
+  if (S.waveNo % 5 === 0){
+    drops.length = 0;
+    drops.push({ lane:main, tier:clamp(Math.round(lvl + 0.8), 2, MAX_TIER), boss:true });
+    if (chance(0.6)) drops.push({ lane:others[0], tier:clamp(pickTier() - 1, 1, MAX_TIER) });
+  }
+
   S.wave = { drops:drops, main:main, t:WARN_LEAD };
   drawWarn();
-  blip(300, .12, "sawtooth", .03);
+  blip(S.waveNo % 5 === 0 ? 180 : 300, .16, "sawtooth", .04);
 }
 function drawWarn(){
   warnBars = [];
@@ -1997,7 +2330,10 @@ function drawWarn(){
       let top = 1;
       for (const d of ds) if (d.tier > top) top = d.tier;
       cell.className = "hot" + (S.wave.main === l ? " main" : "");
-      cell.innerHTML = '<b>' + stars(top) + (ds.length > 1 ? " \u00d7" + ds.length : "") + '</b><s></s>';
+      const boss = ds.some((d) => d.boss);
+      if (boss) cell.className += " boss";
+      cell.innerHTML = '<b>' + (boss ? "👑 " : "") + stars(top) +
+        (ds.length > 1 ? " \u00d7" + ds.length : "") + '</b><s></s>';
       warnBars.push($("s", cell));
     } else {
       cell.className = "";
@@ -2010,7 +2346,9 @@ function releaseWave(){
   let heavy = 1;
   for (const d of w.drops){
     if (fieldCount(S.p2) >= capOf(S.p2)) break;
-    spawnUnit(S.p2, weightedType().key, d.tier, d.lane);
+    const t = weightedType().key;
+    const u = spawnUnit(S.p2, t, d.tier, d.lane);
+    if (d.boss) makeBoss(u);
     if (d.tier > heavy) heavy = d.tier;
   }
   if (heavy >= 3) say(S.p1, "\u26a0 " + (w.main + 1) + "번 길에 " + stars(heavy) + " 진입!", "foe");
@@ -2023,6 +2361,25 @@ function releaseWave(){
 }
 
 
+
+const BOSS_NAMES = {
+  sword:"강철의 군주", shield:"불괴의 성벽", archer:"그림자 사수",
+  mage:"심연의 술사", cleric:"타락한 사제", dragon:"고대의 불꽃"
+};
+function makeBoss(u){
+  u.boss = true;
+  u.maxHp = Math.round(u.maxHp * 1.9);
+  u.hp = u.maxHp;
+  u.atk = Math.round(u.atk * 1.15);
+  u.spd *= 0.85;
+  u.name = BOSS_NAMES[u.type];
+  u.el.classList.add("boss");
+  u.el.insertAdjacentHTML("beforeend", '<span class="bossname">👑 ' + u.name + '</span>');
+  say(S.p1, "👑 " + u.name + " 등장! " + (u.lane + 1) + "번 길", "foe");
+  flash("foe");
+  shake();
+  sfx.boom();
+}
 
 /* ══════════ 운빨 장치 : 전리품 상자 ══════════ */
 function dropLoot(){
@@ -2142,6 +2499,22 @@ function evolveShow(p, key, from, to){
   for (let l = 0; l < LANES; l++) burst(laneX(l), 50, "#FFD84D", 11, 1.4);
   shake();
   sfx.jack();
+}
+
+/* ══════════ 최고 기록 ══════════ */
+const BEST_KEY = "wordnexus.best.v1";
+function loadBest(){
+  try { return JSON.parse(localStorage.getItem(BEST_KEY)) || null; } catch (e){ return null; }
+}
+function saveBest(r){
+  try { localStorage.setItem(BEST_KEY, JSON.stringify(r)); } catch (e){ /* 저장 못 해도 게임은 돈다 */ }
+}
+function drawBest(){
+  const b = loadBest(), el = $("#bestLine");
+  if (!el) return;
+  el.textContent = b
+    ? "최고 기록  맞힌 단어 " + b.solved + " · 정답률 " + b.acc + "% · 최고 연속 " + b.combo
+    : "";
 }
 
 /* ══════════ 확률표 ══════════ */
@@ -2375,6 +2748,8 @@ function startGame(mode){
   drawWarn();
   fieldEl.classList.remove("paused");
   $("#pauseBtn").textContent = "⏸";
+  $("#missNote").hidden = true;
+  $("#newRec").hidden = true;
   overlayEl.classList.remove("on");
   announce(mode === "duo" ? "먼저 상대 넥서스를 부수는 쪽이 이긴다!" : "적이 몰려온다. 단어를 캐라!", "ally");
   blip(660, .08, "triangle", .04);                    /* 첫 탭에서 오디오를 깨운다 */
@@ -2388,6 +2763,7 @@ function statBlock(p, label){
     '<div class="stat"><b>' + p.best + '</b><span>최고 연속</span></div>' +
     '<div class="stat"><b>' + p.merges + '</b><span>합성</span></div>' +
     '<div class="stat"><b>' + p.kills + '</b><span>처치</span></div>' +
+    '<div class="stat"><b>' + p.avenged + '</b><span>설욕</span></div>' +
     '<div class="stat"><b>' + p.ults + '</b><span>총공격</span></div>' +
     '<div class="stat"><b>' + p.luckyHits + '</b><span>행운 발동</span></div>' +
     '<div class="stat"><b>' + Math.ceil(p.hp) + '</b><span>남은 넥서스</span></div>';
@@ -2433,8 +2809,37 @@ function showResult(winner){
 
   /* 결과 화면 순서 : 다시 하기 → 성적 → 모드 고르기 */
   const box = modesEl.parentNode;
-  box.insertBefore(statsEl, modesEl);
-  box.insertBefore(againEl, statsEl);
+  box.insertBefore($("#missNote"), modesEl);
+  box.insertBefore(statsEl, $("#missNote"));
+  box.insertBefore($("#newRec"), statsEl);
+  box.insertBefore(againEl, $("#newRec"));
+  /* 혼자 하기 성적만 기록으로 남긴다 */
+  let isNew = false;
+  if (S.mode === "solo"){
+    const acc = S.p1.solved + S.p1.misses > 0
+      ? Math.round(S.p1.solved / (S.p1.solved + S.p1.misses) * 100) : 0;
+    const prev = loadBest();
+    if (!prev || S.p1.solved > prev.solved){
+      saveBest({ solved:S.p1.solved, acc:acc, combo:S.p1.best, time:time, win:p1won });
+      isNew = !!prev;
+    }
+    drawBest();
+  }
+
+  /* 이번 판에 틀린 단어를 모아 보여준다 */
+  const missIdx = Object.keys(S.p1.missed).filter((i) => S.p1.missed[i] > 0)
+    .concat(S.mode === "duo" ? Object.keys(S.p2.missed).filter((i) => S.p2.missed[i] > 0) : []);
+  const uniq = [...new Set(missIdx)].slice(0, 10);
+  const note = $("#missNote");
+  if (uniq.length){
+    note.innerHTML = '<h4>놓친 단어 ' + uniq.length + '개</h4>' +
+      uniq.map((i) => '<div class="mw"><b>' + WORDS[i].w + '</b><span>' + WORDS[i].m + '</span></div>').join("");
+    note.hidden = false;
+  } else {
+    note.hidden = true;
+  }
+  $("#newRec").hidden = !isNew;
+
   againEl.hidden = false;
   againEl.textContent = S.mode === "duo" ? "둘이 다시 하기" : "다시 하기";
   statsEl.hidden = false;
@@ -2497,6 +2902,7 @@ $("#ovCodex").innerHTML = TYPE_LIST.map((t) =>
   '<div class="u"><span>' + unitArt(t.key, 1) + '</span>' +
   '<b>' + t.name + '</b><i>' + t.role + '</i><em>' + t.desc + '</em></div>').join("");
 
+drawBest();
 S = freshState("solo");
 S.players.forEach((p) => { buildSide(p); renderBoard(p); renderGold(p); renderRage(p); nextQuiz(p); });
 renderNexus();
