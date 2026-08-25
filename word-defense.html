@@ -164,6 +164,44 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   font-family:var(--display);font-size:16px;color:var(--ink);text-shadow:0 2px 8px #000;
 }
 
+#flash{
+  position:absolute;inset:0;z-index:58;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 50%, rgba(var(--fc,255,216,77),.42), transparent 72%);
+}
+#flash.go{animation:flashgo .34s ease-out}
+@keyframes flashgo{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+
+.side.hot .nexus{box-shadow:inset 0 0 22px rgba(255,197,61,.22)}
+.side.hot .goldBox{border-color:rgba(255,197,61,.5)}
+
+#oddsPanel{
+  position:absolute;inset:0;z-index:72;display:none;place-items:center;
+  padding:18px;background:rgba(7,10,20,.9);backdrop-filter:blur(3px);
+}
+#oddsPanel.on{display:grid}
+.obox{
+  width:100%;max-height:100%;overflow-y:auto;text-align:left;
+  border:1px solid var(--edge);border-radius:14px;background:var(--panel);padding:15px 15px 13px;
+}
+.obox h2{font-family:var(--display);font-size:20px;letter-spacing:.04em;color:var(--gold)}
+.onote{font-size:11px;color:var(--dim);margin:3px 0 12px;line-height:1.5}
+.obox h3{
+  font-family:var(--display);font-size:12.5px;font-weight:400;color:var(--ally);
+  letter-spacing:.06em;margin:13px 0 5px;padding-top:9px;border-top:1px solid var(--edge);
+}
+.obox h3:first-of-type{border-top:none;padding-top:0;margin-top:0}
+.obox h3 em{font-style:normal;font-size:10px;color:var(--dim);margin-left:5px}
+.orow{display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:2.5px 0;font-size:11.5px}
+.orow span{color:var(--dim);min-width:0}
+.orow b{font-family:var(--hud);font-size:9.5px;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.orow b.hi{color:var(--gold);text-shadow:0 0 8px rgba(255,197,61,.5)}
+.obless{font-size:11.5px;color:var(--luck);line-height:1.6;margin-top:2px}
+.oclose{
+  display:block;width:100%;margin-top:14px;padding:10px;border-radius:9px;
+  font-family:var(--display);font-size:14px;letter-spacing:.05em;
+  border:1px solid var(--ally);color:var(--ally);background:rgba(56,232,200,.12);
+}
+
 #blast{
   position:absolute;inset:0;z-index:65;pointer-events:none;opacity:0;
   transform-origin:50% var(--by,100%);
@@ -298,7 +336,50 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .pawn .nm{font-family:var(--display);font-size:9.5px;color:var(--dim)}
 .pawn .st{font-family:var(--hud);font-size:7px;color:var(--gold);letter-spacing:.06em}
 
-.controls{position:relative;display:flex;align-items:center;gap:7px;padding:8px 12px}
+.controls{position:relative;display:flex;align-items:center;gap:7px;padding:22px 12px 8px}
+
+/* 지금 소환하면 무엇이 나오는지 — 실시간 확률 띠 (눌러서 전체 확률표) */
+.odds{
+  position:absolute;left:12px;right:12px;top:6px;height:14px;
+  display:flex;gap:3px;padding:0;border:none;background:none;
+}
+.odds > i{
+  display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;
+  border-radius:3px;font-style:normal;overflow:hidden;background:rgba(126,136,180,.15);
+}
+.odds > i u,.odds > i s{text-decoration:none;font-family:var(--hud);font-size:6.5px;white-space:nowrap}
+.odds > i s{opacity:.8}
+.odds > i.t1{color:#94A0CC}
+.odds > i.t2{color:var(--ally);background:rgba(56,232,200,.16)}
+.odds > i.t3{color:var(--gold);background:rgba(255,197,61,.2)}
+.odds > i.t4,.odds > i.t5{color:var(--luck);background:rgba(169,123,255,.26)}
+.odds:active{opacity:.7}
+
+/* 축복 드래프트 — 보드 위에만 덮여 퀴즈는 계속 풀 수 있다 */
+.boardwrap{position:relative}
+.draft{
+  position:absolute;inset:0 12px;z-index:22;display:none;
+  flex-direction:column;justify-content:center;gap:6px;
+  background:rgba(7,10,20,.94);border:1px solid var(--luck);border-radius:12px;
+}
+.draft.on{display:flex}
+.draft > b{
+  font-family:var(--display);font-size:12.5px;font-weight:400;
+  color:var(--gold);text-align:center;letter-spacing:.05em;
+}
+.draft .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:0 6px}
+.draft .card{
+  border:1px solid var(--luck);border-radius:9px;background:rgba(169,123,255,.13);
+  padding:7px 3px;display:flex;flex-direction:column;align-items:center;gap:2px;
+  animation:cardin .22s ease-out backwards;
+}
+.draft .card:nth-child(2){animation-delay:.07s}
+.draft .card:nth-child(3){animation-delay:.14s}
+@keyframes cardin{from{opacity:0;transform:translateY(9px) scale(.93)}}
+.draft .card .ic{font-size:17px;line-height:1}
+.draft .card b{font-family:var(--display);font-size:11px;font-weight:400;color:var(--ink)}
+.draft .card em{font-style:normal;font-size:9px;color:var(--gold);text-align:center;line-height:1.3}
+.draft .card:active{background:rgba(169,123,255,.32)}
 .rage{
   position:absolute;left:12px;right:12px;top:1px;height:3px;
   border-radius:2px;background:#0A0E20;overflow:hidden;
@@ -375,7 +456,15 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #cabinet.mode-duo .pawn .face{width:22px;height:22px}
 #cabinet.mode-duo .pawn .nm{display:none}
 #cabinet.mode-duo .pawn .st{font-size:6.5px}
-#cabinet.mode-duo .controls{gap:5px;padding:6px 10px}
+#cabinet.mode-duo .controls{gap:5px;padding:19px 10px 6px}
+#cabinet.mode-duo .odds{left:10px;right:10px;top:4px;height:12px}
+#cabinet.mode-duo .odds > i u,#cabinet.mode-duo .odds > i s{font-size:6px}
+#cabinet.mode-duo .draft{inset:0 10px}
+#cabinet.mode-duo .draft > b{font-size:11px}
+#cabinet.mode-duo .draft .card{padding:5px 2px}
+#cabinet.mode-duo .draft .card .ic{font-size:14px}
+#cabinet.mode-duo .draft .card b{font-size:10px}
+#cabinet.mode-duo .draft .card em{font-size:8px}
 #cabinet.mode-duo .rage{left:10px;right:10px}
 #cabinet.mode-duo .goldBox{padding:5px 8px;gap:5px}
 #cabinet.mode-duo .goldVal{font-size:11px}
@@ -452,11 +541,16 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 }
 
 @media (max-height:660px){
-  #cabinet.mode-duo .cell{height:31px}
+  #cabinet.mode-duo #field{min-height:112px}
+  #cabinet.mode-duo .odds{height:10px;top:3px}
+  #cabinet.mode-duo .odds > i u,#cabinet.mode-duo .odds > i s{font-size:5.5px}
+  #cabinet.mode-duo .controls{padding:15px 10px 5px}
+  #cabinet.mode-duo .quiz{padding:0 10px 6px}
+  #cabinet.mode-duo .cell{height:29px}
   #cabinet.mode-duo .pawn .face{width:19px;height:19px}
   #cabinet.mode-duo .pawn .st{font-size:6px}
   #cabinet.mode-duo .word{font-size:17px}
-  #cabinet.mode-duo .choice{min-height:26px;padding:4px 3px;font-size:10.5px}
+  #cabinet.mode-duo .choice{min-height:23px;padding:3px 3px;font-size:10px}
   #cabinet.mode-duo .act{padding:5px 7px;font-size:11px}
   #cabinet.mode-duo .deployAll{padding:5px 7px;font-size:12px}
   #cabinet.mode-duo .nexus{padding:4px 10px 5px}
@@ -500,7 +594,9 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   <!-- 아래쪽 진영 : 언제나 플레이어 1 -->
   <section class="side" data-p="1"></section>
 
+  <div id="flash" aria-hidden="true"></div>
   <div id="blast" aria-hidden="true"></div>
+  <div id="oddsPanel"></div>
 
   <!-- 시작 · 결과 화면 -->
   <div id="overlay" class="on">
@@ -543,6 +639,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
         <b>연속 정답이 소환 등급을 올린다</b>. 15연속이면 ★2~3이 나온다<br />
         전장에 세울 수 있는 유닛은 <b>6기까지</b>. 수보다 <em>질</em>이다<br />
         밀리고 있으면 <em>캐는 골드가 늘어난다</em>. 끝까지 모른다<br />
+        정답이 쌓일 때마다 <em>축복 세 장 중 하나</em>를 고른다. 판마다 빌드가 갈린다<br />
+        소환 버튼 위 <b>확률 띠를 누르면</b> 모든 무작위 수치를 볼 수 있다<br />
         적 유닛을 쓰러뜨리면 <b>현상금</b>이 들어오고 게이지가 찬다<br />
         게이지가 가득 차면 출격 버튼이 <em>⚡ 총공격</em>으로 바뀐다<br />
         <em>🎁 전리품 상자</em>는 <b>먼저 누른 쪽</b>이 가져간다
@@ -775,6 +873,8 @@ function makePlayer(n, isAI, slots){
     name: isAI ? "적 넥서스" : (n === 1 ? "플레이어 1" : "플레이어 2"),
     hp:NEXUS_HP, gold:START_GOLD, combo:0, best:0,
     rage:0, atkMul:1, spdMul:1, buffT:0, ults:0, kills:0, turretCd:0, fieldTag:-1,
+    bLuck:0, bMerge:0, bCrit:0, bAtk:1, bHp:1, bSpd:1, bGold:0, bBounty:1,
+    bNexus:1, bRage:1, bSlots:0, bRegen:0, regenT:0, blessings:[], drafts:0, nextDraft:12,
     board:new Array(slots).fill(null), sel:-1,
     quizIndex:-1, quizLocked:false, lockTimer:null,
     solved:0, misses:0, merges:0, deployed:0, luckyHits:0,
@@ -813,13 +913,17 @@ function buildSide(p){
       '<div class="bar-head">' +
         '<span class="label">소환진</span><span class="hint"></span>' +
       '</div>' +
-      '<div class="board"></div>' +
+      '<div class="boardwrap">' +
+        '<div class="board"></div>' +
+        '<div class="draft"><b>축복을 하나 고른다</b><div class="cards"></div></div>' +
+      '</div>' +
       '<div class="controls">' +
         '<div class="goldBox"><span class="coin">🪙</span><span class="goldVal">0</span><span class="comboVal"></span></div>' +
         '<button class="act summonBtn" type="button"><span class="lbl">소환 ★1</span><span class="cost">30 G</span></button>' +
         '<button class="act diceBtn" type="button">🎲 운명<span class="cost">25 G</span></button>' +
         '<button class="deployAll" type="button" title="전원 출격">⚔<span class="cost">출격</span></button>' +
         '<div class="rage"><i></i></div>' +
+        '<button class="odds" type="button" title="확률표 보기" aria-label="확률표 보기"></button>' +
       '</div>' +
       '<div class="quiz">' +
         '<div class="wordRow"><span class="word"></span><span class="pos"></span></div>' +
@@ -847,6 +951,9 @@ function buildSide(p){
   d.cool     = $(".cool", root);
   d.rageWrap = $(".rage", root);
   d.rageBar  = $(".rage > i", root);
+  d.odds     = $(".odds", root);
+  d.draft    = $(".draft", root);
+  if (d.odds) d.odds.addEventListener("click", () => showOddsTable(p));
   p.dom = d;
   d.who.textContent = p.name;
 
@@ -921,14 +1028,15 @@ function answer(p, btn, correct){
 
     let gain = 10 + Math.min(Math.floor(p.combo / 5) * 2, 6);    /* 연속 정답 보너스 (최대 +6) */
     /* 밀리고 있으면 캐는 골드가 늘어난다 — 뒤집을 여지를 남겨둔다 */
+    gain += p.bGold;
     if (p.hp < p.foe.hp * 0.7) gain = Math.round(gain * 1.6);
     if (p.combo > 0 && p.combo % 10 === 0){
       gain += 40; p.luckyHits++;
       say(p, "🔥 " + p.combo + "연속! 보너스 +40 G", "gold"); sfx.jack();
-    } else if (chance(0.10)){
+    } else if (chance(ODDS.goldJack)){
       gain += 35; p.luckyHits++;
       say(p, "🪙 잭팟! +35 G", "gold"); sfx.jack();
-    } else if (chance(0.05)){
+    } else if (chance(ODDS.freeSummon)){
       p.luckyHits++;
       if (freeSlot(p) >= 0){ summon(p, true); say(p, "🎉 무료 소환!", "luck"); }
       else gain += 20;
@@ -936,7 +1044,8 @@ function answer(p, btn, correct){
       sfx.right();
     }
     addGold(p, gain);
-    addRage(p, RAGE_PER_ANSWER);
+    addRage(p, RAGE_PER_ANSWER * p.bRage);
+    if (p.solved >= p.nextDraft){ p.nextDraft += 12; p.drafts++; offerDraft(p); }
     nextQuiz(p);                                                  /* 딜레이 없이 다음 문제 */
   } else {
     p.misses++;
@@ -969,8 +1078,21 @@ function addGold(p, n){
   p.dom.goldVal.classList.add("bump");
   renderGold(p);
 }
+/* 지금 소환하면 무엇이 나오는지 실시간 확률로 보여준다 */
+function renderOdds(p){
+  if (p.ai || !p.dom.odds) return;
+  const o = summonOdds(p);
+  /* 1% 미만은 띠에서 접는다 — 글자가 뭉개지느니 확률표에서 보는 게 낫다 */
+  const tiers = Object.keys(o).map(Number).filter((t) => o[t] >= 0.01).sort((a, b) => a - b);
+  p.dom.odds.innerHTML = tiers.map((t) =>
+    '<i class="t' + t + '" style="flex:' + Math.max(o[t], 0.09) + '">' +
+      '<u>' + stars(t) + '</u><s>' + pct(o[t]) + '</s>' +
+    '</i>').join("");
+}
+
 function renderGold(p){
   if (p.ai) return;
+  renderOdds(p);
   p.dom.goldVal.textContent = p.gold;
   p.dom.comboVal.textContent = p.combo >= 2 ? p.combo + " COMBO" : "";
   const lbl = $(".lbl", p.dom.summon);
@@ -979,8 +1101,54 @@ function renderGold(p){
     lbl.textContent = "소환 " + tag;
     lbl.classList.toggle("hi", p.combo >= 15);
   }
+  p.dom.root.classList.toggle("hot", p.combo >= 15);
   p.dom.summon.disabled = p.gold < SUMMON_COST || !S.running;
   p.dom.dice.disabled   = p.gold < DICE_COST   || !S.running;
+}
+
+/* ══════════ 축복 : 판마다 빌드가 갈리는 갈림길 ══════════
+   일정 수의 정답마다 무작위 세 장 중 하나를 고른다. 시간이 멈추지 않으므로
+   고르는 동안에도 적은 밀고 들어온다. */
+const BLESSINGS = [
+  { id:"blade",  icon:"⚔",  name:"날카로운 칼날", desc:"아군 공격력 +20%",       apply:(p) => { p.bAtk *= 1.20; } },
+  { id:"armor",  icon:"🛡",  name:"두꺼운 갑옷",   desc:"새 유닛 체력 +30%",      apply:(p) => { p.bHp *= 1.30; } },
+  { id:"gold",   icon:"🪙", name:"황금 손",       desc:"정답 골드 +6",           apply:(p) => { p.bGold += 6; } },
+  { id:"star",   icon:"✨", name:"행운의 별",     desc:"소환 등급 상승 +10%p",   apply:(p) => { p.bLuck += 0.10; } },
+  { id:"fuse",   icon:"🌟", name:"합성의 대가",   desc:"합성 대성공 +12%p",      apply:(p) => { p.bMerge += 0.12; } },
+  { id:"slot",   icon:"➕", name:"증원",          desc:"전장 자리 +1",           apply:(p) => { p.bSlots += 1; } },
+  { id:"fort",   icon:"🏰", name:"요새",          desc:"넥서스 포격 +40%",       apply:(p) => { p.bNexus *= 1.40; } },
+  { id:"bounty", icon:"💰", name:"현상금 사냥꾼", desc:"처치 골드 2배",          apply:(p) => { p.bBounty *= 2; } },
+  { id:"rage",   icon:"⚡", name:"분노",          desc:"총공격 충전 +60%",       apply:(p) => { p.bRage *= 1.6; } },
+  { id:"crit",   icon:"🎯", name:"급소",          desc:"치명타 확률 +12%p",      apply:(p) => { p.bCrit += 0.12; } },
+  { id:"swift",  icon:"💨", name:"신속",          desc:"아군 이동 +25%",         apply:(p) => { p.bSpd *= 1.25; } },
+  { id:"regen",  icon:"💚", name:"재생",          desc:"매초 넥서스 +6 회복",    apply:(p) => { p.bRegen += 6; } }
+];
+
+function offerDraft(p){
+  if (p.ai || !p.dom.draft || p.drafting) return;
+  p.drafting = shuffle(BLESSINGS.slice()).slice(0, 3);
+  const box = $(".cards", p.dom.draft);
+  box.innerHTML = "";
+  p.drafting.forEach((b) => {
+    const c = document.createElement("button");
+    c.type = "button";
+    c.className = "card";
+    c.innerHTML = '<span class="ic">' + b.icon + '</span><b>' + b.name + '</b><em>' + b.desc + '</em>';
+    c.addEventListener("click", () => takeBlessing(p, b));
+    box.appendChild(c);
+  });
+  p.dom.draft.classList.add("on");
+  sfx.jack();
+}
+function takeBlessing(p, b){
+  b.apply(p);
+  p.blessings.push(b.id);
+  p.drafting = null;
+  p.dom.draft.classList.remove("on");
+  say(p, b.icon + " " + b.name + " — " + b.desc, "gold");
+  renderGold(p); renderRage(p); renderOdds(p);
+  flash("gold");
+  sfx.merge();
 }
 
 /* ══════════ 총공격 게이지 ══════════
@@ -995,6 +1163,7 @@ function addRage(p, n){
   renderRage(p);
   if (was < 100 && p.rage >= 100){
     say(p, "⚡ 총공격 준비 완료!", "gold");
+    flash("gold");
     sfx.jack();
   }
 }
@@ -1006,7 +1175,7 @@ function renderRage(p){
   p.dom.deploy.classList.toggle("ult", full);
   p.dom.deploy.innerHTML = full
     ? '⚡<span class="cost">총공격</span>'
-    : '⚔<span class="cost">' + fieldCount(p) + " / " + FIELD_CAP + '</span>';
+    : '⚔<span class="cost">' + fieldCount(p) + " / " + capOf(p) + '</span>';
   p.dom.deploy.title = full ? "총공격" : "전원 출격";
 }
 function unleash(p){
@@ -1014,6 +1183,8 @@ function unleash(p){
   renderRage(p);
   spreadOut(p);
   p.atkMul = 1.45; p.spdMul = 1.5; p.buffT = ULT_SECONDS;
+  flash("gold");
+  for (let l = 0; l < LANES; l++) burst(laneX(l), p.n === 1 ? 8 : 92, "#FFD84D", 14, 1.5);
   $("#cabinet").classList.add("rage-p" + p.n);
   announce("⚡ " + (S.mode === "duo" ? "플레이어 " + p.n + " " : "") + "총공격!", "gold");
   sfx.jack();
@@ -1022,6 +1193,8 @@ function unleash(p){
 }
 
 /* ══════════ 소환진 : 소환 · 합성 ══════════ */
+const capOf = (p) => FIELD_CAP + p.bSlots;
+
 function fieldCount(p){
   let n = 0;
   for (const u of S.units) if (u.owner === p && u.hp > 0) n++;
@@ -1033,6 +1206,18 @@ function freeSlot(p){
   return -1;
 }
 /* 연속 정답이 쌓일수록 뽑히는 유닛 등급이 올라간다 */
+/* 무작위 수치를 한 곳에 모아둔다 — 화면에 뜨는 %와 실제 굴림이 어긋나지 않게 */
+const ODDS = {
+  supreme:0.05,      /* 초월 소환 : 등급 +2 */
+  lucky:0.12,        /* 행운 소환 : 등급 +1 */
+  jackpot:0.12,      /* 합성 대성공 : 등급 +2 */
+  clone:0.15,        /* 합성 복제 : 한 마리 더 */
+  mutate:0.10,       /* 합성 변이 : 다른 종류로 */
+  crit:0.15,         /* 치명타 */
+  goldJack:0.10,     /* 정답 잭팟 */
+  freeSummon:0.05    /* 무료 소환 */
+};
+
 function comboTier(p){
   const c = p.combo;
   if (c >= 15) return chance(0.15) ? 3 : (chance(0.82) ? 2 : 1);
@@ -1045,6 +1230,29 @@ function comboTierLabel(p){
   if (c >= 6)  return "★1~2";
   return "★1";
 }
+
+/* 콤보 분포에 행운·초월 굴림을 겹쳐 최종 등급 확률을 낸다 */
+function comboDist(p){
+  const c = p.combo, d = {};
+  if (c >= 15){ d[3] = 0.15; d[2] = 0.85 * 0.82; d[1] = 0.85 * 0.18; }
+  else if (c >= 6){ d[2] = 0.45; d[1] = 0.55; }
+  else d[1] = 1;
+  return d;
+}
+function summonOdds(p){
+  const pSup  = clamp(ODDS.supreme + p.bLuck * 0.4, 0, 1);
+  const pLuck = clamp((1 - pSup) * (ODDS.lucky + p.bLuck), 0, 1 - pSup);
+  const pNone = 1 - pSup - pLuck;
+  const out = {};
+  const add = (t, w) => { const k = clamp(t, 1, MAX_TIER); out[k] = (out[k] || 0) + w; };
+  const base = comboDist(p);
+  for (const k in base){
+    const t = +k, w = base[k];
+    add(t, w * pNone); add(t + 1, w * pLuck); add(t + 2, w * pSup);
+  }
+  return out;
+}
+const pct = (x) => (x * 100 < 1 && x > 0 ? "<1" : Math.round(x * 100)) + "%";
 
 function makePawn(typeKey, tier){
   return { id:S.uid++, type:typeKey, tier:clamp(tier, 1, MAX_TIER), born:S.elapsed };
@@ -1070,10 +1278,10 @@ function summon(p, free){
 
   const type = weightedType();
   let tier = comboTier(p);
-  if (chance(0.05)){
+  if (chance(ODDS.supreme + p.bLuck * 0.4)){
     tier = clamp(tier + 2, 1, MAX_TIER); p.luckyHits++;
     say(p, "💫 초월 소환! " + type.name + " " + stars(tier), "luck"); sfx.jack();
-  } else if (chance(0.12)){
+  } else if (chance(ODDS.lucky + p.bLuck)){
     tier = clamp(tier + 1, 1, MAX_TIER); p.luckyHits++;
     say(p, "✨ 행운 소환! " + type.name + " " + stars(tier), "luck"); sfx.merge();
   } else sfx.summon();
@@ -1111,17 +1319,17 @@ function doMerge(p, from, to){
   let tier = base + 1;
   let msg = null, kind = "ally";
 
-  if (chance(0.12) && tier < MAX_TIER){            /* 대성공 : 2단계 점프 */
+  if (chance(ODDS.jackpot + p.bMerge) && tier < MAX_TIER){   /* 대성공 : 2단계 점프 */
     tier += 1; p.luckyHits++;
     msg = "🌟 대성공! " + TYPES[a.type].name + " " + stars(tier); kind = "luck"; sfx.jack();
-  } else if (chance(0.15)){                        /* 복제 : 한 마리 더 */
+  } else if (chance(ODDS.clone + p.bMerge * 0.5)){  /* 복제 : 한 마리 더 */
     const slot = freeSlot(p);
     if (slot >= 0){
       p.board[slot] = makePawn(a.type, tier);
       p.luckyHits++;
       msg = "👥 복제! " + TYPES[a.type].name + " 하나 더"; kind = "luck"; sfx.jack();
     }
-  } else if (chance(0.10)){                        /* 변이 : 다른 종류로 바뀐다 */
+  } else if (chance(ODDS.mutate)){                 /* 변이 : 다른 종류로 바뀐다 */
     const other = weightedType();
     if (other.key !== a.type){
       p.luckyHits++;
@@ -1136,15 +1344,15 @@ function doMerge(p, from, to){
   p.board[to] = makePawn(a.type, tier);
   renderBoard(p, to, "merged");
   showZones(p);
-  if (msg) say(p, msg, kind); else sfx.merge();
+  if (msg){ say(p, msg, kind); flash("luck"); } else sfx.merge();
   if (tier >= MAX_TIER) say(p, "👑 최고 등급 " + TYPES[a.type].name + " " + stars(MAX_TIER) + " 완성!", "gold");
 }
 
 function deploy(p, i, lane){
   const pawn = p.board[i];
   if (!pawn) return false;
-  if (fieldCount(p) >= FIELD_CAP){
-    say(p, "전장이 꽉 찼다 " + FIELD_CAP + "/" + FIELD_CAP, "foe");
+  if (fieldCount(p) >= capOf(p)){
+    say(p, "전장이 꽉 찼다 " + capOf(p) + "/" + capOf(p), "foe");
     return false;
   }
   p.board[i] = null;
@@ -1153,6 +1361,7 @@ function deploy(p, i, lane){
   p.deployed++;
   renderBoard(p);
   showZones(p);
+  burst(laneX(lane == null ? 1 : lane), p.n === 1 ? 3 : 97, p.n === 1 ? "#38E8C8" : "#FF3D6E", 10, 0.85);
   blip(560 + pawn.tier * 60, .07, "triangle", .045);
   return true;
 }
@@ -1176,7 +1385,7 @@ function spreadOut(p){
   let lane = irnd(0, LANES - 1), any = false;
   for (let i = 0; i < p.board.length; i++){
     if (!p.board[i]) continue;
-    if (fieldCount(p) >= FIELD_CAP) break;
+    if (fieldCount(p) >= capOf(p)) break;
     if (deploy(p, i, lane)){ lane = (lane + 1) % LANES; any = true; }
   }
   if (any) blip(700, .1, "triangle", .05);
@@ -1239,7 +1448,7 @@ function spawnUnit(p, typeKey, tier, lane){
   const vary = rnd(0.94, 1.06);                       /* 개체마다 미세한 능력 편차 */
   const u = {
     id:S.uid++, owner:p, type:typeKey, tier:tier,
-    maxHp:Math.round(st.hp * vary), hp:Math.round(st.hp * vary),
+    maxHp:Math.round(st.hp * vary * p.bHp), hp:Math.round(st.hp * vary * p.bHp),
     atk:Math.round(st.atk * vary),
     spd:t.spd, range:t.range, aspd:t.aspd, splash:t.splash || 0, heal:!!t.heal,
     cd:rnd(0, 0.4),
@@ -1306,7 +1515,13 @@ function hurt(target, dmg, crit){
   target.body.classList.remove("flash"); void target.body.offsetWidth;
   target.body.classList.add("flash");
   floatText(target.x, target.pos, Math.round(dmg), crit);
-  if (crit) sparkAt(target.x, target.pos);
+  if (crit){
+    sparkAt(target.x, target.pos);
+    burst(target.x, target.pos, "#FFD84D", 9, 1.1);
+    if (dmg > 160) shake();
+  } else if (chance(0.5)){
+    burst(target.x, target.pos, "#FFFFFF", 3, 0.55);
+  }
 }
 
 /* 성직자 : 사거리 안에서 가장 많이 다친 아군을 찾는다 */
@@ -1321,7 +1536,7 @@ function woundedAlly(u){
   return worst < 0.95 ? best : null;
 }
 function mend(u, ally){
-  const amt = u.atk * u.owner.atkMul * 0.6 * rnd(0.9, 1.1);   /* 치유량은 공격력의 6할 */
+  const amt = u.atk * u.owner.atkMul * u.owner.bAtk * 0.6 * rnd(0.9, 1.1);   /* 치유량은 공격력의 6할 */
   ally.hp = Math.min(ally.maxHp, ally.hp + amt);
   ally.hpBar.style.width = clamp(ally.hp / ally.maxHp * 100, 0, 100) + "%";
   u.body.classList.remove("swing"); void u.body.offsetWidth; u.body.classList.add("swing");
@@ -1330,8 +1545,8 @@ function mend(u, ally){
 }
 
 function strike(u, target){
-  const crit = chance(0.15);                          /* 치명타 : 운빨 */
-  const dmg = u.atk * u.owner.atkMul * rnd(0.9, 1.1) * (crit ? 2 : 1);
+  const crit = chance(ODDS.crit + u.owner.bCrit);     /* 치명타 : 운빨 */
+  const dmg = u.atk * u.owner.atkMul * u.owner.bAtk * rnd(0.9, 1.1) * (crit ? 2 : 1);
   u.body.classList.remove("swing"); void u.body.offsetWidth; u.body.classList.add("swing");
   hurt(target, dmg, crit);
   sfx.hit();
@@ -1346,7 +1561,7 @@ function strike(u, target){
 
 function strikeNexus(u){
   const victim = u.owner.foe;
-  const dmg = u.atk * u.owner.atkMul * rnd(0.9, 1.1) * (chance(0.15) ? 2 : 1);
+  const dmg = u.atk * u.owner.atkMul * u.owner.bAtk * rnd(0.9, 1.1) * (chance(ODDS.crit + u.owner.bCrit) ? 2 : 1);
   u.body.classList.remove("swing"); void u.body.offsetWidth; u.body.classList.add("swing");
   victim.hp = Math.max(0, victim.hp - dmg);
   floatText(u.x, goalOf(u.owner), "-" + Math.round(dmg), true);
@@ -1397,7 +1612,7 @@ function stepBattle(dt){
       const rel = (o.pos - u.pos) * forward;
       if (rel > 0 && rel < 5.5){ blocked = true; break; }
     }
-    if (!blocked) u.pos = clamp(u.pos + forward * u.spd * u.owner.spdMul * dt, 0, 100);
+    if (!blocked) u.pos = clamp(u.pos + forward * u.spd * u.owner.spdMul * u.owner.bSpd * dt, 0, 100);
   }
 
   /* 넥서스 방어 사격 : 코앞까지 온 적을 스스로 쏜다 */
@@ -1416,12 +1631,13 @@ function stepBattle(dt){
       for (const o of live){
         if (o.owner === p || o.hp <= 0) continue;
         if (Math.abs(o.pos - line) > NEXUS_RANGE) continue;
-        hurt(o, nexusHit(o) * (o === tgt ? 1 : NEXUS_SPLASH) * rnd(0.9, 1.1), o === tgt);
+        hurt(o, nexusHit(o) * p.bNexus * (o === tgt ? 1 : NEXUS_SPLASH) * rnd(0.9, 1.1), o === tgt);
       }
       p.turretCd = NEXUS_CD;
       p.dom.core.classList.remove("fire"); void p.dom.core.offsetWidth;
       p.dom.core.classList.add("fire");
       volley(p);
+      for (let l = 0; l < LANES; l++) burst(laneX(l), line, p.n === 1 ? "#38E8C8" : "#FF3D6E", 4, 0.7);
       blip(680, .07, "square", .03);
     }
   }
@@ -1430,13 +1646,14 @@ function stepBattle(dt){
     const u = S.units[i];
     if (u.hp <= 0){
       sparkAt(u.x, u.pos);
+      burst(u.x, u.pos, u.owner.n === 1 ? "#38E8C8" : "#FF3D6E", 16, 1.25);
       const killer = u.owner.foe;                      /* 쓰러뜨린 쪽이 현상금을 챙긴다 */
       if (S.running && !killer.ai){
-        const bounty = 4 + u.tier * 3;
+        const bounty = Math.round((4 + u.tier * 3) * killer.bBounty);
         killer.kills++;
         killer.gold += bounty;
         renderGold(killer);
-        addRage(killer, RAGE_PER_KILL);
+        addRage(killer, RAGE_PER_KILL * killer.bRage);
         floatText(u.x, u.pos, "+" + bounty, false, "coin");
       }
       u.el.remove();
@@ -1466,8 +1683,12 @@ function playerPower(){
 function planWave(){
   const min = S.elapsed / 60;
   const pw = playerPower();
+  /* 축복으로 커진 몫만큼 적도 함께 자란다 — 안 그러면 축복이 곧 승리가 된다 */
+  const boon = S.p1.blessings.length;
+  S.p2.bAtk = 1 + boon * 0.09;
+  S.p2.bHp  = 1 + boon * 0.11;
   /* 최고 등급보다 한 단계 아래를 겨누되, 한 번에 튀지 않게 서서히 따라붙는다 */
-  S.aiLevel += (Math.max(1, pw.top - 0.6) - S.aiLevel) * 0.4;
+  S.aiLevel += (Math.max(1, pw.top - 0.6 + boon * 0.13) - S.aiLevel) * 0.4;
   const lvl = S.aiLevel + min * 0.3;
   const pickTier = () => clamp(Math.round(lvl + rnd(-0.5, 0.8)), 1, MAX_TIER);
 
@@ -1509,7 +1730,7 @@ function releaseWave(){
   const w = S.wave;
   let heavy = 1;
   for (const d of w.drops){
-    if (fieldCount(S.p2) >= FIELD_CAP) break;
+    if (fieldCount(S.p2) >= capOf(S.p2)) break;
     spawnUnit(S.p2, weightedType().key, d.tier, d.lane);
     if (d.tier > heavy) heavy = d.tier;
   }
@@ -1517,7 +1738,7 @@ function releaseWave(){
   S.wave = null;
   drawWarn();
   /* 밀리고 있으면 숨 돌릴 틈을 준다 — 등급뿐 아니라 압박의 빈도도 따라간다 */
-  const ease = (FIELD_CAP - fieldCount(S.p1)) * 0.24;
+  const ease = (capOf(S.p1) - fieldCount(S.p1)) * 0.24;
   S.aiInterval = clamp(4.5 - S.elapsed / 75 + ease, 2.2, 5.6);
   S.aiTimer = S.aiInterval * rnd(0.85, 1.15);           /* 간격에도 운이 섞인다 */
 }
@@ -1589,7 +1810,7 @@ function rollDice(p){
   p.dom.dice.classList.add("roll");
 
   const face = irnd(1, 6);
-  const faces = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+  const faces = ["", "🎲1", "🎲2", "🎲3", "🎲4", "🎲5", "🎲6"];
   setTimeout(() => {
     if (!S.running) return;
     if (face === 1){
@@ -1626,6 +1847,101 @@ function rollDice(p){
   }, 380);
 }
 
+/* ══════════ 확률표 ══════════ */
+const oddsPanel = $("#oddsPanel");
+function row(label, value, hi){
+  return '<div class="orow"><span>' + label + '</span><b' + (hi ? ' class="hi"' : '') + '>' + value + '</b></div>';
+}
+function showOddsTable(p){
+  const o = summonOdds(p);
+  const tiers = Object.keys(o).map(Number).sort((a, b) => a - b);
+  const bless = p.blessings.length
+    ? p.blessings.map((id) => { const b = BLESSINGS.find((x) => x.id === id); return b.icon + " " + b.name; }).join(" · ")
+    : "아직 없다";
+
+  oddsPanel.innerHTML =
+    '<div class="obox">' +
+      '<h2>확률표</h2>' +
+      '<p class="onote">지금 이 순간의 실제 수치다. 콤보와 축복에 따라 바뀐다.</p>' +
+
+      '<h3>소환 결과 <em>' + p.combo + '연속</em></h3>' +
+      tiers.map((t) => row(stars(t) + " 유닛", pct(o[t]), t >= 3)).join("") +
+      row("↳ 행운 소환 (등급 +1)", pct(ODDS.lucky + p.bLuck)) +
+      row("↳ 초월 소환 (등급 +2)", pct(ODDS.supreme + p.bLuck * 0.4)) +
+
+      '<h3>합성</h3>' +
+      row("🌟 대성공 — 두 등급 점프", pct(ODDS.jackpot + p.bMerge), true) +
+      row("👥 복제 — 한 마리 더", pct(ODDS.clone + p.bMerge * 0.5)) +
+      row("🧬 변이 — 다른 종류로", pct(ODDS.mutate)) +
+
+      '<h3>전투 · 퀴즈</h3>' +
+      row("💥 치명타 (피해 2배)", pct(ODDS.crit + p.bCrit)) +
+      row("🪙 정답 잭팟 (+35 G)", pct(ODDS.goldJack)) +
+      row("🎉 무료 소환", pct(ODDS.freeSummon)) +
+
+      '<h3>🎲 운명의 주사위 <em>25 G</em></h3>' +
+      row("1 · 꽝", "17%") + row("2 · 골드 +40", "17%") +
+      row("3 · ★2 유닛", "17%") + row("4 · 유닛 하나 승급", "17%") +
+      row("5 · 상대 넥서스 -160", "17%") + row("6 · 드래곤 ★3", "17%", true) +
+
+      '<h3>🎁 전리품 상자</h3>' +
+      row("골드 40~90", "30%") + row("★2~3 유닛", "25%") +
+      row("넥서스 +220 수리", "17%") + row("⚡ 벼락 — 상대 유닛 전멸", "16%", true) +
+      row("🔥 아군 공격력 +50%", "12%") +
+
+      '<h3>지금 받은 축복</h3>' +
+      '<p class="obless">' + bless + '</p>' +
+      '<button class="oclose" type="button">닫기</button>' +
+    '</div>';
+  oddsPanel.classList.add("on");
+  $(".oclose", oddsPanel).addEventListener("click", hideOddsTable);
+  oddsPanel.addEventListener("click", (e) => { if (e.target === oddsPanel) hideOddsTable(); });
+}
+function hideOddsTable(){ oddsPanel.classList.remove("on"); oddsPanel.innerHTML = ""; }
+
+/* ══════════ 화면 이펙트 ══════════ */
+const flashEl = $("#flash");
+const FLASH_COLORS = { gold:"255,216,77", luck:"169,123,255", ally:"56,232,200", foe:"255,61,110" };
+function flash(kind){
+  flashEl.style.setProperty("--fc", FLASH_COLORS[kind] || FLASH_COLORS.gold);
+  flashEl.classList.remove("go"); void flashEl.offsetWidth; flashEl.classList.add("go");
+}
+function shake(){
+  const cab = $("#cabinet");
+  cab.classList.remove("shake"); void cab.offsetWidth; cab.classList.add("shake");
+}
+
+/* 파티클은 배경 그리드와 같은 캔버스에 그린다 */
+const parts = [];
+function burst(xPct, pos, color, n, power){
+  const xy = fieldXY(xPct, pos);
+  for (let i = 0; i < n; i++){
+    const a = Math.random() * Math.PI * 2, sp = rnd(24, 96) * (power || 1);
+    parts.push({
+      x:xy.x, y:xy.y, vx:Math.cos(a) * sp, vy:Math.sin(a) * sp - 20,
+      life:rnd(0.32, 0.72), t:0, c:color, r:rnd(1.1, 2.9)
+    });
+  }
+  if (parts.length > 320) parts.splice(0, parts.length - 320);
+}
+function drawParts(dt){
+  for (let i = parts.length - 1; i >= 0; i--){
+    const q = parts[i];
+    q.t += dt;
+    if (q.t >= q.life){ parts.splice(i, 1); continue; }
+    q.vy += 210 * dt;
+    q.x += q.vx * dt;
+    q.y += q.vy * dt;
+    const k = 1 - q.t / q.life;
+    gtx.globalAlpha = k;
+    gtx.fillStyle = q.c;
+    gtx.beginPath();
+    gtx.arc(q.x, q.y, q.r * k + 0.4, 0, 6.284);
+    gtx.fill();
+  }
+  gtx.globalAlpha = 1;
+}
+
 /* ══════════ 넥서스 렌더 ══════════ */
 function renderNexus(){
   for (const p of S.players){
@@ -1660,6 +1976,7 @@ function drawGrid(dt){
     gtx.moveTo(Math.round(x) + .5, 0); gtx.lineTo(Math.round(x) + .5, h);
   }
   gtx.stroke();
+  drawParts(dt);
 }
 
 /* ══════════ 메인 루프 ══════════ */
@@ -1671,6 +1988,16 @@ function loop(now){
   S.elapsed += dt;
 
   drawGrid(dt);
+
+  /* 축복 : 넥서스 재생 */
+  for (const p of S.players){
+    if (!p.bRegen || p.hp <= 0) continue;
+    p.regenT += dt;
+    if (p.regenT >= 1){
+      p.regenT -= 1;
+      if (p.hp < NEXUS_HP){ p.hp = Math.min(NEXUS_HP, p.hp + p.bRegen); renderNexus(); }
+    }
+  }
 
   /* 전장 자리 표시 갱신 */
   for (const p of S.players){
