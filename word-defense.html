@@ -355,6 +355,55 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .odds > i.t4,.odds > i.t5{color:var(--luck);background:rgba(169,123,255,.26)}
 .odds:active{opacity:.7}
 
+/* 합성 미리보기 : 무엇이 나오는지 보고 직접 눌러서 합친다 */
+.mergebar{
+  position:absolute;left:0;right:0;bottom:0;height:34px;z-index:20;
+  display:none;align-items:center;gap:6px;padding:0 10px;pointer-events:none;
+  background:linear-gradient(0deg,rgba(7,10,20,.97) 62%,rgba(7,10,20,0));
+}
+.mergebar.on{display:flex}
+.mprev{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+.mprev .mu{display:block;width:20px;height:20px}
+.mprev .mu.big{width:25px;height:25px}
+.mprev .mu.big.evo{filter:drop-shadow(0 0 5px var(--gold));animation:evopulse .7s ease-in-out infinite}
+@keyframes evopulse{50%{transform:scale(1.12)}}
+.mprev i{font-style:normal;font-size:10px;color:var(--dim)}
+.mprev .evotag{
+  font-style:normal;font-family:var(--display);font-size:9.5px;color:var(--gold);
+  margin-left:3px;padding:1px 4px;border:1px solid var(--gold);border-radius:4px;
+}
+.modds{display:flex;gap:5px;flex:1;min-width:0;justify-content:center}
+.modds u{text-decoration:none;font-family:var(--hud);font-size:6.5px;color:var(--luck);white-space:nowrap}
+.mgo{
+  pointer-events:auto;flex:0 0 auto;
+  font-family:var(--display);font-size:12.5px;letter-spacing:.06em;
+  padding:6px 13px;border-radius:8px;color:#0B1024;
+  background:linear-gradient(180deg,#C9A6FF,#8B5FE0);border:1px solid #D9C4FF;
+}
+.mgo:active{filter:brightness(1.25)}
+
+/* 진화하는 순간 */
+.evolve{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:24;
+  display:flex;align-items:center;gap:5px;pointer-events:none;
+  padding:7px 12px;border-radius:12px;
+  background:rgba(7,10,20,.92);border:1px solid var(--gold);
+  box-shadow:0 0 26px rgba(255,216,77,.5);
+  animation:evoin 1.5s ease-out forwards;
+}
+#cabinet.mode-duo:not(.same-facing) .evolve[data-p="2"]{transform:translate(-50%,-50%) rotate(180deg)}
+.evolve .ea{display:block;width:24px;height:24px;opacity:.5}
+.evolve .eb{display:block;width:34px;height:34px}
+.evolve b{font-size:11px;color:var(--gold)}
+.evolve em{font-style:normal;font-family:var(--display);font-size:12px;color:var(--gold);margin-left:3px}
+@keyframes evoin{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}
+  14%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}
+  22%{transform:translate(-50%,-50%) scale(1)}
+  78%{opacity:1}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.04)}
+}
+
 /* 축복 드래프트 — 보드 위에만 덮여 퀴즈는 계속 풀 수 있다 */
 .boardwrap{position:relative}
 .draft{
@@ -459,6 +508,13 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 #cabinet.mode-duo .controls{gap:5px;padding:19px 10px 6px}
 #cabinet.mode-duo .odds{left:10px;right:10px;top:4px;height:12px}
 #cabinet.mode-duo .odds > i u,#cabinet.mode-duo .odds > i s{font-size:6px}
+#cabinet.mode-duo .mergebar{height:29px;padding:0 8px;gap:4px}
+#cabinet.mode-duo .mprev .mu{width:17px;height:17px}
+#cabinet.mode-duo .mprev .mu.big{width:21px;height:21px}
+#cabinet.mode-duo .mgo{font-size:11px;padding:4px 10px}
+#cabinet.mode-duo .modds u{font-size:5.5px}
+#cabinet.mode-duo .evolve .eb{width:28px;height:28px}
+#cabinet.mode-duo .evolve em{font-size:11px}
 #cabinet.mode-duo .draft{inset:0 10px}
 #cabinet.mode-duo .draft > b{font-size:11px}
 #cabinet.mode-duo .draft .card{padding:5px 2px}
@@ -621,7 +677,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
         </button>
       </div>
 
-      <div class="codex-head" id="ovCodexHead">유닛 도감 · 합성할수록 강해진다</div>
+      <div class="codex-head" id="ovCodexHead">유닛 도감 · ★3과 ★5에서 모습이 바뀐다</div>
       <div class="codex" id="ovCodex"></div>
 
       <button id="again" type="button" hidden>다시 하기</button>
@@ -630,7 +686,9 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <div class="rules" id="ovRules">
         <b>정답</b> 즉시 <b>+10 G</b> · 연속 정답이면 보너스 · <b>오답</b> 1초 잠김<br />
         <b>30 G</b>로 ★1 유닛을 소환진에 뽑는다 (종류는 <em>랜덤</em>)<br />
-        같은 종류 · 같은 등급 둘을 <b>탭해서 합성</b> → 한 등급 위로<br />
+        같은 종류 · 같은 등급 둘을 고르면 <b>합성 버튼</b>이 뜬다. 눌러야 합쳐진다<br />
+        <b>★3과 ★5에서 유닛이 진화</b>해 아예 다른 모습이 된다<br />
+        <em>5초 안에 이어 합성하면 연쇄 보너스</em>가 붙는다<br />
         <em>낮은 확률로 대성공(2단계 점프)이나 복제가 터진다</em><br />
         유닛을 탭하면 전장에 <b>세 갈래 길</b>이 열린다. 골라서 내보낸다<br />
         길은 서로 막지 않는다. <b>뚫린 길은 그대로 넥서스로 이어진다</b><br />
@@ -711,92 +769,258 @@ const TYPES = {
    유닛마다 실루엣이 다른 SVG 캐릭터. 등급이 오르면 망토 → 금 어깨장식 →
    금빛 오라가 차례로 붙어, 보드만 봐도 몇 성인지 한눈에 들어온다. ── */
 const BODY = {
-  sword:
-    '<rect x="18.9" y="2.2" width="2.5" height="10.2" rx=".5" fill="#E4ECFF"/>' +
-    '<rect x="19.7" y="2.6" width=".9" height="9.4" fill="#FFFFFF" stroke="none"/>' +
-    '<rect x="17.2" y="12.2" width="5.9" height="1.7" rx=".7" fill="#E5A93F"/>' +
-    '<rect x="19.3" y="13.6" width="1.7" height="2.8" rx=".6" fill="#8A5F2B"/>' +
-    '<path d="M6.6 11.5h10.8l-1.3 9a1.5 1.5 0 0 1-1.5 1.3H9.4a1.5 1.5 0 0 1-1.5-1.3z" fill="#7E8FC4"/>' +
-    '<rect x="9.9" y="12.3" width="4.2" height="8.7" rx=".4" fill="#98A9DE" stroke="none"/>' +
-    '<rect x="4.3" y="10.7" width="4.4" height="4.9" rx="2.1" fill="#A6B6E6"/>' +
-    '<rect x="15.2" y="10.7" width="3.6" height="4.4" rx="1.8" fill="#A6B6E6"/>' +
-    '<rect x="16.4" y="13.1" width="3.4" height="2.2" rx="1.1" fill="#EFC79B"/>' +
-    '<path d="M7.3 6.1a4.7 4.7 0 0 1 9.4 0v3a4.7 4.7 0 0 1-9.4 0z" fill="#C6D2F5"/>' +
-    '<rect x="8.5" y="6.6" width="7" height="2.1" rx=".9" fill="#141C38" stroke="none"/>' +
-    '<path d="M12 .7c1.8 1 2.2 2.4 1.4 3.8-1.2-.7-2-1.8-1.4-3.8z" fill="#FF6B6B"/>',
-  shield:
-    '<path d="M7.4 11.4h9.8l-1.1 9.9H8.5z" fill="#6F80B4"/>' +
-    '<rect x="14.6" y="10.6" width="4.3" height="4.9" rx="2.1" fill="#9DAEE0"/>' +
-    '<path d="M7.8 6.2a4.3 4.3 0 0 1 8.6 0v2.9a4.3 4.3 0 0 1-8.6 0z" fill="#B9C6EE"/>' +
-    '<rect x="8.8" y="6.5" width="6.6" height="1.7" rx=".7" fill="#141C38" stroke="none"/>' +
-    '<rect x="11.3" y="6.5" width="1.5" height="4.2" fill="#141C38" stroke="none"/>' +
-    '<path d="M2.3 8.6h9.4v6.7c0 3.5-2.1 5.6-4.7 6.5-2.6-.9-4.7-3-4.7-6.5z" fill="#5C8AD6"/>' +
-    '<path d="M2.3 8.6h9.4v1.9H2.3z" fill="#8FB4EE" stroke="none"/>' +
-    '<rect x="6.2" y="11.1" width="1.6" height="8.1" fill="#D5E4FF" stroke="none"/>' +
-    '<rect x="3.9" y="13.2" width="6.2" height="1.6" fill="#D5E4FF" stroke="none"/>',
-  archer:
-    '<path d="M17.6 4.4a8.8 8.8 0 0 1 0 15.2" stroke="#B98A4E" stroke-width="2" fill="none" stroke-linecap="round"/>' +
-    '<path d="M17.6 4.4 15.7 12l1.9 7.6" stroke="#EDE6D2" stroke-width=".8" fill="none"/>' +
-    '<path d="M6 11.9h9.2l-1 9.4H7z" fill="#3E6B4E"/>' +
-    '<rect x="9.9" y="12.4" width="1.8" height="8.9" fill="#57946A" stroke="none"/>' +
-    '<path d="M5.9 10.4a5 5 0 0 1 9.8-1.5l-4.5 3.4z" fill="#256F46"/>' +
-    '<circle cx="10.7" cy="8.7" r="3.3" fill="#F0C199"/>' +
-    '<path d="M7.1 8.9a3.7 3.7 0 0 1 7.3-1.1l.6 1.7-2 .5a2.6 2.6 0 0 0-5-.4z" fill="#2E8B57"/>' +
-    '<circle cx="9.6" cy="9.2" r=".7" fill="#2A1E14" stroke="none"/>' +
-    '<rect x="12.6" y="12.3" width="6.2" height=".9" rx=".45" fill="#DCE6FF" stroke="none" transform="rotate(-10 12.6 12.3)"/>',
-  mage:
-    '<path d="M6.5 12.3 12 10.7l5.5 1.6 1.4 9h-13.8z" fill="#7B4FD1"/>' +
-    '<path d="M10.5 12.5h3l.7 8.8h-4.4z" fill="#9B70E8" stroke="none"/>' +
-    '<circle cx="12" cy="9.1" r="3.3" fill="#F0C199"/>' +
-    '<path d="M12 .8 18 9.1H6z" fill="#A97BFF"/>' +
-    '<ellipse cx="12" cy="9.1" rx="7.2" ry="1.8" fill="#8C5FE0"/>' +
-    '<rect x="18" y="7.3" width="1.7" height="14" rx=".8" fill="#8A5F2B"/>' +
-    '<circle cx="18.85" cy="5.9" r="2.8" fill="#FFE08A"/>' +
-    '<circle cx="18.1" cy="5.2" r=".9" fill="#FFFDF2" stroke="none"/>',
-  cleric:
-    '<path d="M6.8 12.3 12 10.7l5.2 1.6 1.3 9H5.5z" fill="#EFE6CE"/>' +
-    '<rect x="11" y="12" width="2" height="9.3" fill="#FFC53D" stroke="none"/>' +
-    '<circle cx="12" cy="8.9" r="3.3" fill="#F0C199"/>' +
-    '<path d="M8.5 9.3a3.6 3.6 0 0 1 7 0l.7-1.6a4.3 4.3 0 0 0-8.4 0z" fill="#FFFFFF"/>' +
-    '<circle cx="10.7" cy="9" r=".7" fill="#2A1E14" stroke="none"/>' +
-    '<circle cx="13.3" cy="9" r=".7" fill="#2A1E14" stroke="none"/>' +
-    '<circle cx="18.7" cy="8.9" r="3.2" fill="#FFE08A" fill-opacity=".3" stroke="none"/>' +
-    '<rect x="17.9" y="6.4" width="1.6" height="14.9" rx=".7" fill="#C9A253"/>' +
-    '<rect x="16" y="8.1" width="5.4" height="1.6" rx=".5" fill="#FFC53D"/>' +
-    '<rect x="17.9" y="5" width="1.6" height="5.6" rx=".5" fill="#FFC53D"/>',
-  dragon:
-    '<path d="M7.2 10 1.5 6.1l1.5 6.2-1.6 1.7 6.5 1.8z" fill="#C4622A"/>' +
-    '<path d="M16.8 10 22.5 6.1l-1.5 6.2 1.6 1.7-6.5 1.8z" fill="#C4622A"/>' +
-    '<path d="M8.2 11.6h7.6l-.8 8.6a1.3 1.3 0 0 1-1.3 1.2h-3.4a1.3 1.3 0 0 1-1.3-1.2z" fill="#FF9F4A"/>' +
-    '<path d="M10.4 13.2h3.2l-.4 6.7h-2.4z" fill="#FFDCA6" stroke="none"/>' +
-    '<path d="M7.7 6.5a4.3 4.3 0 0 1 8.6 0v1.8a4.3 4.3 0 0 1-8.6 0z" fill="#FF9F4A"/>' +
-    '<path d="M9.3 8.6h5.4v1.6a2.7 2.7 0 0 1-5.4 0z" fill="#FFB870"/>' +
-    '<circle cx="10.5" cy="10" r=".45" fill="#7A3410" stroke="none"/>' +
-    '<circle cx="13.5" cy="10" r=".45" fill="#7A3410" stroke="none"/>' +
-    '<path d="M8.5 2 10.3 5.5 7.1 4.8z" fill="#F4E3C8"/>' +
-    '<path d="M15.5 2 13.7 5.5l3.2-.7z" fill="#F4E3C8"/>' +
-    '<circle cx="10.1" cy="6.7" r="1.1" fill="#FF2D55" stroke="none"/>' +
-    '<circle cx="13.9" cy="6.7" r="1.1" fill="#FF2D55" stroke="none"/>' +
-    '<circle cx="10.1" cy="6.7" r=".4" fill="#3A0512" stroke="none"/>' +
-    '<circle cx="13.9" cy="6.7" r=".4" fill="#3A0512" stroke="none"/>'
+  /* ── 검사 : 검사 → 기사 → 검성 ── */
+  sword:{
+    a:'<rect x="18.9" y="2.2" width="2.5" height="10.2" rx=".5" fill="#E4ECFF"/>' +
+      '<rect x="19.7" y="2.6" width=".9" height="9.4" fill="#FFFFFF" stroke="none"/>' +
+      '<rect x="17.2" y="12.2" width="5.9" height="1.7" rx=".7" fill="#E5A93F"/>' +
+      '<rect x="19.3" y="13.6" width="1.7" height="2.8" rx=".6" fill="#8A5F2B"/>' +
+      '<path d="M6.6 11.5h10.8l-1.3 9a1.5 1.5 0 0 1-1.5 1.3H9.4a1.5 1.5 0 0 1-1.5-1.3z" fill="#7E8FC4"/>' +
+      '<rect x="9.9" y="12.3" width="4.2" height="8.7" rx=".4" fill="#98A9DE" stroke="none"/>' +
+      '<rect x="4.3" y="10.7" width="4.4" height="4.9" rx="2.1" fill="#A6B6E6"/>' +
+      '<rect x="15.2" y="10.7" width="3.6" height="4.4" rx="1.8" fill="#A6B6E6"/>' +
+      '<rect x="16.4" y="13.1" width="3.4" height="2.2" rx="1.1" fill="#EFC79B"/>' +
+      '<path d="M7.3 6.1a4.7 4.7 0 0 1 9.4 0v3a4.7 4.7 0 0 1-9.4 0z" fill="#C6D2F5"/>' +
+      '<rect x="8.5" y="6.6" width="7" height="2.1" rx=".9" fill="#141C38" stroke="none"/>' +
+      '<path d="M12 .7c1.8 1 2.2 2.4 1.4 3.8-1.2-.7-2-1.8-1.4-3.8z" fill="#FF6B6B"/>',
+    b:'<path d="M4.4 11.2q7.6 3.4 15.2 0l-1.2 10.5q-6.4 2-12.8 0z" fill="#B8332F"/>' +
+      '<rect x="18.4" y="1.4" width="3.4" height="11.6" rx=".6" fill="#EEF3FF"/>' +
+      '<rect x="19.5" y="1.9" width="1.1" height="10.6" fill="#FFFFFF" stroke="none"/>' +
+      '<rect x="16.2" y="12.8" width="7.8" height="2" rx=".8" fill="#FFC53D"/>' +
+      '<rect x="19.2" y="14.6" width="1.9" height="3.2" rx=".7" fill="#8A5F2B"/>' +
+      '<path d="M6.2 11h11.6l-1.4 9.4a1.6 1.6 0 0 1-1.6 1.4H9.2a1.6 1.6 0 0 1-1.6-1.4z" fill="#5E6FA8"/>' +
+      '<path d="M9.6 11.8h4.8l-.5 9.9h-3.8z" fill="#8C9DD6" stroke="none"/>' +
+      '<path d="M3.4 10.2h5.6v3.4a2.8 2.8 0 0 1-5.6 0z" fill="#C3D0F4"/>' +
+      '<path d="M15 10.2h5.6v3.4a2.8 2.8 0 0 1-5.6 0z" fill="#C3D0F4"/>' +
+      '<path d="M7 6a5 5 0 0 1 10 0v3.1a5 5 0 0 1-10 0z" fill="#D3DDFA"/>' +
+      '<rect x="8.2" y="6.4" width="7.6" height="2.2" rx=".9" fill="#0E1530" stroke="none"/>' +
+      '<path d="M12 8.6l1.5 2.6h-3z" fill="#8FA0D8" stroke="none"/>' +
+      '<path d="M12 -.4c2.6 1.2 3.2 3.2 2 5.4-1.8-1-2.8-2.6-2-5.4z" fill="#FF4D5E"/>',
+    c:'<path d="M3.4 10.6q8.6 4 17.2 0l-1.4 11.2q-7.2 2.2-14.4 0z" fill="#7A1230"/>' +
+      '<path d="M3.4 10.6q8.6 4 17.2 0l-.4 3.2q-8.2 3.6-16.4 0z" fill="#C43A54" stroke="none"/>' +
+      '<path d="M5.8 11h12.4l-1.5 9.6a1.7 1.7 0 0 1-1.7 1.4H9a1.7 1.7 0 0 1-1.7-1.4z" fill="#3F4E85"/>' +
+      '<path d="M2.6 9.6h6.2v3.6a3.1 3.1 0 0 1-6.2 0z" fill="#FFD84D"/>' +
+      '<path d="M15.2 9.6h6.2v3.6a3.1 3.1 0 0 1-6.2 0z" fill="#FFD84D"/>' +
+      '<path d="M6.9 5.8a5.1 5.1 0 0 1 10.2 0v3.2a5.1 5.1 0 0 1-10.2 0z" fill="#E7EEFF"/>' +
+      '<rect x="8.1" y="6.2" width="7.8" height="2.3" rx=".9" fill="#0B1024" stroke="none"/>' +
+      '<rect x="9" y="6.7" width="2" height="1.3" fill="#FF3D6E" stroke="none"/>' +
+      '<rect x="13" y="6.7" width="2" height="1.3" fill="#FF3D6E" stroke="none"/>' +
+      '<path d="M6.6 4.6 4.2.6l4 2.2z" fill="#FFD84D"/><path d="M17.4 4.6 19.8.6l-4 2.2z" fill="#FFD84D"/>' +
+      '<path d="M12 9.4 13.5 12.6v9.2h-3v-9.2z" fill="#F4F8FF"/>' +
+      '<rect x="11.6" y="11" width=".8" height="10.4" fill="#FFFFFF" stroke="none"/>' +
+      '<rect x="8.4" y="12.2" width="7.2" height="1.9" rx=".8" fill="#FFD84D"/>' +
+      '<circle cx="12" cy="13.15" r="1.2" fill="#FF6B6B"/>'
+  },
+  /* ── 방패병 : 방패병 → 중갑병 → 성벽 ── */
+  shield:{
+    a:'<path d="M7.4 11.4h9.8l-1.1 9.9H8.5z" fill="#6F80B4"/>' +
+      '<rect x="14.6" y="10.6" width="4.3" height="4.9" rx="2.1" fill="#9DAEE0"/>' +
+      '<path d="M7.8 6.2a4.3 4.3 0 0 1 8.6 0v2.9a4.3 4.3 0 0 1-8.6 0z" fill="#B9C6EE"/>' +
+      '<rect x="8.8" y="6.5" width="6.6" height="1.7" rx=".7" fill="#141C38" stroke="none"/>' +
+      '<rect x="11.3" y="6.5" width="1.5" height="4.2" fill="#141C38" stroke="none"/>' +
+      '<path d="M2.3 8.6h9.4v6.7c0 3.5-2.1 5.6-4.7 6.5-2.6-.9-4.7-3-4.7-6.5z" fill="#5C8AD6"/>' +
+      '<path d="M2.3 8.6h9.4v1.9H2.3z" fill="#8FB4EE" stroke="none"/>' +
+      '<rect x="6.2" y="11.1" width="1.6" height="8.1" fill="#D5E4FF" stroke="none"/>' +
+      '<rect x="3.9" y="13.2" width="6.2" height="1.6" fill="#D5E4FF" stroke="none"/>',
+    b:'<path d="M8 10.8h9.6l-1.2 10.4H9.2z" fill="#4E5E92"/>' +
+      '<rect x="14.4" y="10" width="5" height="5.4" rx="2.4" fill="#8B9CD4"/>' +
+      '<path d="M8 5.8a4.6 4.6 0 0 1 9.2 0v3.2a4.6 4.6 0 0 1-9.2 0z" fill="#C3D0F4"/>' +
+      '<rect x="9" y="6.2" width="7.2" height="1.8" rx=".7" fill="#0E1530" stroke="none"/>' +
+      '<rect x="11.7" y="6.2" width="1.6" height="4.6" fill="#0E1530" stroke="none"/>' +
+      '<path d="M8.4 3.4 6.6.4l4 1.8z" fill="#EFE6CE"/><path d="M16.8 3.4 18.6.4l-4 1.8z" fill="#EFE6CE"/>' +
+      '<path d="M1.4 7.2h11.2v8.4c0 4.2-2.5 6.6-5.6 7.6-3.1-1-5.6-3.4-5.6-7.6z" fill="#3E6DC0"/>' +
+      '<path d="M1.4 7.2h11.2v2.2H1.4z" fill="#7FA8EC" stroke="none"/>' +
+      '<path d="M7 9.9 9.6 15 7 20.1 4.4 15z" fill="#DCE8FF" stroke="none"/>' +
+      '<circle cx="7" cy="15" r="1.5" fill="#3E6DC0" stroke="none"/>',
+    c:'<path d="M8.6 10.4h9.2l-1.2 11H9.8z" fill="#39477A"/>' +
+      '<rect x="14.6" y="9.4" width="5.2" height="5.8" rx="2.6" fill="#FFD84D"/>' +
+      '<path d="M8.6 5.4a4.5 4.5 0 0 1 9 0v3.4a4.5 4.5 0 0 1-9 0z" fill="#D9E3FF"/>' +
+      '<rect x="9.6" y="5.8" width="7" height="1.9" rx=".7" fill="#0B1024" stroke="none"/>' +
+      '<rect x="12.3" y="5.8" width="1.6" height="4.8" fill="#0B1024" stroke="none"/>' +
+      '<path d="M9 2.8 7 -.4l4.2 2z" fill="#FFD84D"/><path d="M17.2 2.8 19.2-.4l-4.2 2z" fill="#FFD84D"/>' +
+      '<path d="M.6 5.4h13v10.2c0 5-3 7.9-6.5 8.9C3.6 23.5.6 20.6.6 15.6z" fill="#2C55A0"/>' +
+      '<path d="M.6 5.4h13v2.6H.6z" fill="#6E9AE4" stroke="none"/>' +
+      '<path d="M7.1 7.4 10.6 14.6 7.1 21.8 3.6 14.6z" fill="#FFD84D" stroke="none"/>' +
+      '<circle cx="7.1" cy="14.6" r="2.1" fill="#2C55A0" stroke="none"/>' +
+      '<circle cx="7.1" cy="14.6" r="1" fill="#FFF3CE" stroke="none"/>'
+  },
+  /* ── 궁수 : 궁수 → 저격수 → 마궁수 ── */
+  archer:{
+    a:'<path d="M17.6 4.4a8.8 8.8 0 0 1 0 15.2" stroke="#B98A4E" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      '<path d="M17.6 4.4 15.7 12l1.9 7.6" stroke="#EDE6D2" stroke-width=".8" fill="none"/>' +
+      '<path d="M6 11.9h9.2l-1 9.4H7z" fill="#3E6B4E"/>' +
+      '<rect x="9.9" y="12.4" width="1.8" height="8.9" fill="#57946A" stroke="none"/>' +
+      '<path d="M5.9 10.4a5 5 0 0 1 9.8-1.5l-4.5 3.4z" fill="#256F46"/>' +
+      '<circle cx="10.7" cy="8.7" r="3.3" fill="#F0C199"/>' +
+      '<path d="M7.1 8.9a3.7 3.7 0 0 1 7.3-1.1l.6 1.7-2 .5a2.6 2.6 0 0 0-5-.4z" fill="#2E8B57"/>' +
+      '<circle cx="9.6" cy="9.2" r=".7" fill="#2A1E14" stroke="none"/>' +
+      '<rect x="12.6" y="12.3" width="6.2" height=".9" rx=".45" fill="#DCE6FF" stroke="none" transform="rotate(-10 12.6 12.3)"/>',
+    b:'<path d="M18.6 1.6a11.4 11.4 0 0 1 0 20.8" stroke="#8E6534" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+      '<path d="M18.6 1.6 15.4 12l3.2 10.4" stroke="#F2ECDA" stroke-width=".9" fill="none"/>' +
+      '<path d="M3.4 9.6 8.2 12l-.8 2.2-4.6-2.6z" fill="#6B4A26"/>' +
+      '<path d="M4.2 8.6 5 6.4M5.6 9.2 6.6 7M7 9.9 8.2 7.8" stroke="#E8E0CC" stroke-width=".8" fill="none"/>' +
+      '<path d="M5.4 11.6h9.4l-1 9.8H6.4z" fill="#2C5940"/>' +
+      '<rect x="9.4" y="12.1" width="2" height="9.3" fill="#47825E" stroke="none"/>' +
+      '<path d="M5.2 10.2a5.2 5.2 0 0 1 10.2-1.7l-5 3.7z" fill="#1B5636"/>' +
+      '<circle cx="10.3" cy="8.5" r="3.4" fill="#E2B189"/>' +
+      '<path d="M6.4 8.8a3.9 3.9 0 0 1 7.7-1.4l.7 2-2.4.7a2.7 2.7 0 0 0-5.2-.5z" fill="#1B5636"/>' +
+      '<rect x="7.4" y="8.9" width="4.4" height="1.5" rx=".7" fill="#0E1530" stroke="none"/>' +
+      '<rect x="9.4" y="9.2" width="1.1" height="1" fill="#FF6B6B" stroke="none"/>',
+    c:'<circle cx="12" cy="12" r="9.6" fill="none" stroke="#66E8B0" stroke-opacity=".5" stroke-width=".9"/>' +
+      '<path d="M19 .8a12.4 12.4 0 0 1 0 22.4" stroke="#3FD68B" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+      '<path d="M19 .8 15 12l4 11.2" stroke="#DFFFF0" stroke-width="1" fill="none"/>' +
+      '<path d="M2.6 8.8 8 11.6l-.9 2.4-5.2-2.9z" fill="#4A3117"/>' +
+      '<path d="M3.4 7.8 4.2 5.2M4.9 8.6 6 5.9M6.4 9.4 7.7 6.7" stroke="#9BFFD2" stroke-width=".9" fill="none"/>' +
+      '<path d="M5 11.4h9.6l-1 10h-8z" fill="#1B4A34"/>' +
+      '<rect x="9.1" y="11.9" width="2.2" height="9.5" fill="#3FD68B" stroke="none"/>' +
+      '<path d="M4.8 10a5.4 5.4 0 0 1 10.6-1.8l-5.2 3.9z" fill="#0F3524"/>' +
+      '<circle cx="10.1" cy="8.4" r="3.5" fill="#E2B189"/>' +
+      '<path d="M6 8.7a4 4 0 0 1 8-1.5l.8 2.1-2.5.8a2.8 2.8 0 0 0-5.4-.6z" fill="#0F3524"/>' +
+      '<rect x="7" y="8.8" width="4.6" height="1.6" rx=".7" fill="#0B1024" stroke="none"/>' +
+      '<rect x="9.1" y="9.1" width="1.2" height="1.1" fill="#66E8B0" stroke="none"/>' +
+      '<rect x="14.6" y="11.4" width="7" height="1" rx=".5" fill="#9BFFD2" stroke="none"/>'
+  },
+  /* ── 마법사 : 마법사 → 대마법사 → 대현자 ── */
+  mage:{
+    a:'<path d="M6.5 12.2 12 10.8l5.4 1.4 1.4 9.1H5.2z" fill="#7B4FD1"/>' +
+      '<path d="M10.5 12.5h3l.7 8.8h-4.4z" fill="#9B70E8" stroke="none"/>' +
+      '<circle cx="12" cy="9.1" r="3.3" fill="#F0C199"/>' +
+      '<path d="M12 .8 18 9.1H6z" fill="#A97BFF"/>' +
+      '<ellipse cx="12" cy="9.1" rx="7.2" ry="1.8" fill="#8C5FE0"/>' +
+      '<rect x="18" y="7.3" width="1.7" height="14" rx=".8" fill="#8A5F2B"/>' +
+      '<circle cx="18.85" cy="5.9" r="2.8" fill="#FFE08A"/>' +
+      '<circle cx="18.1" cy="5.2" r=".9" fill="#FFFDF2" stroke="none"/>',
+    b:'<path d="M5.4 12.6 12 10.6l6.6 2 1.6 9.4H3.8z" fill="#5C34A8"/>' +
+      '<path d="M10.2 12.8h3.6l.9 9.2h-5.4z" fill="#8B5FE0" stroke="none"/>' +
+      '<circle cx="12" cy="8.8" r="3.4" fill="#F0C199"/>' +
+      '<path d="M9.4 10.6a4 4 0 0 0 5.2 0l-.6 3.4h-4z" fill="#EFE6CE"/>' +
+      '<path d="M12 -.6 19 8.8H5z" fill="#8B5FE0"/>' +
+      '<path d="M12 1.6 16.4 8h-8.8z" fill="#B896FF" stroke="none"/>' +
+      '<ellipse cx="12" cy="8.8" rx="8" ry="2" fill="#4B2A90"/>' +
+      '<rect x="18.4" y="5.4" width="1.9" height="16" rx=".9" fill="#6B4626"/>' +
+      '<circle cx="19.35" cy="4" r="3.4" fill="#FFE08A"/>' +
+      '<circle cx="19.35" cy="4" r="1.5" fill="#FFFDF2" stroke="none"/>' +
+      '<circle cx="19.35" cy="4" r="4.6" fill="none" stroke="#FFD84D" stroke-opacity=".55" stroke-width=".7"/>',
+    c:'<circle cx="12" cy="12" r="10" fill="none" stroke="#C9A6FF" stroke-opacity=".45" stroke-width=".8"/>' +
+      '<path d="M4.6 13.4 12 11l7.4 2.4 1.4 6.2q-4.4 3.2-9 3.2t-9-3.2z" fill="#3F1F7E"/>' +
+      '<path d="M9.8 13.2h4.4l1 8.6q-3.2.9-6.4 0z" fill="#7B4FD1" stroke="none"/>' +
+      '<circle cx="12" cy="8.4" r="3.5" fill="#F0C199"/>' +
+      '<path d="M9.2 10.4a4.2 4.2 0 0 0 5.6 0l-.8 4.4h-4z" fill="#F6F1E2"/>' +
+      '<path d="M12 -1.8 19.6 8.4H4.4z" fill="#7B4FD1"/>' +
+      '<path d="M12 .8 16.8 7.6H7.2z" fill="#C9A6FF" stroke="none"/>' +
+      '<ellipse cx="12" cy="8.4" rx="8.6" ry="2.1" fill="#2E1364"/>' +
+      '<circle cx="20.2" cy="3.4" r="3" fill="#FFE08A"/>' +
+      '<circle cx="3.8" cy="6" r="2.1" fill="#9BE8FF"/>' +
+      '<circle cx="20.2" cy="3.4" r="1.3" fill="#FFFDF2" stroke="none"/>' +
+      '<rect x="10.4" y="4.6" width="1" height="1" fill="#FFE08A" stroke="none"/>' +
+      '<rect x="13.6" y="5.4" width="1" height="1" fill="#FFE08A" stroke="none"/>'
+  },
+  /* ── 성직자 : 성직자 → 주교 → 성인 ── */
+  cleric:{
+    a:'<path d="M6.8 12.3 12 10.7l5.2 1.6 1.3 9H5.5z" fill="#EFE6CE"/>' +
+      '<rect x="11" y="12" width="2" height="9.3" fill="#FFC53D" stroke="none"/>' +
+      '<circle cx="12" cy="8.9" r="3.3" fill="#F0C199"/>' +
+      '<path d="M8.5 9.3a3.6 3.6 0 0 1 7 0l.7-1.6a4.3 4.3 0 0 0-8.4 0z" fill="#FFFFFF"/>' +
+      '<circle cx="10.7" cy="9" r=".7" fill="#2A1E14" stroke="none"/>' +
+      '<circle cx="13.3" cy="9" r=".7" fill="#2A1E14" stroke="none"/>' +
+      '<circle cx="18.7" cy="8.9" r="3.2" fill="#FFE08A" fill-opacity=".3" stroke="none"/>' +
+      '<rect x="17.9" y="6.4" width="1.6" height="14.9" rx=".7" fill="#C9A253"/>' +
+      '<rect x="16" y="8.1" width="5.4" height="1.6" rx=".5" fill="#FFC53D"/>' +
+      '<rect x="17.9" y="5" width="1.6" height="5.6" rx=".5" fill="#FFC53D"/>',
+    b:'<path d="M5.8 12.6 12 10.6l6.2 2 1.5 9.4H4.3z" fill="#F6F1E2"/>' +
+      '<path d="M10.6 12.8h2.8l.8 9.2h-4.4z" fill="#FFC53D" stroke="none"/>' +
+      '<circle cx="12" cy="9" r="3.4" fill="#F0C199"/>' +
+      '<circle cx="10.6" cy="9.1" r=".7" fill="#2A1E14" stroke="none"/>' +
+      '<circle cx="13.4" cy="9.1" r=".7" fill="#2A1E14" stroke="none"/>' +
+      '<path d="M8.2 6.6c0-3.4 1.6-5.6 3.8-7 2.2 1.4 3.8 3.6 3.8 7z" fill="#FFFFFF"/>' +
+      '<path d="M11.4 1.4h1.2v4.4h-1.2z" fill="#FFC53D" stroke="none"/>' +
+      '<path d="M8.2 6.4h7.6v1.7H8.2z" fill="#FFD84D"/>' +
+      '<rect x="18.2" y="4.6" width="1.8" height="16.8" rx=".8" fill="#C9A253"/>' +
+      '<rect x="15.9" y="7" width="6.4" height="1.8" rx=".6" fill="#FFD84D"/>' +
+      '<rect x="18.2" y="3" width="1.8" height="6.6" rx=".6" fill="#FFD84D"/>' +
+      '<circle cx="19.1" cy="7.9" r="4.2" fill="#FFE08A" fill-opacity=".3" stroke="none"/>',
+    c:'<path d="M2.4 15.6q3.6-5 7.4-2.6l-.6 3.4q-3.8 1-6.8-.8z" fill="#F6F1E2"/>' +
+      '<path d="M21.6 15.6q-3.6-5-7.4-2.6l.6 3.4q3.8 1 6.8-.8z" fill="#F6F1E2"/>' +
+      '<ellipse cx="12" cy="3" rx="4.4" ry="1.3" fill="none" stroke="#FFD84D" stroke-width="1.2"/>' +
+      '<path d="M6 12.8 12 10.6l6 2.2 1.4 9.2q-3.4 1.2-7.4 1.2t-7.4-1.2z" fill="#FFFFFF"/>' +
+      '<path d="M10.6 13h2.8l.9 9.6q-2.1.4-4.6 0z" fill="#FFD84D" stroke="none"/>' +
+      '<circle cx="12" cy="8.6" r="3.5" fill="#F0C199"/>' +
+      '<path d="M8.4 9a3.6 3.6 0 0 1 7.2 0l.8-1.8a4.4 4.4 0 0 0-8.8 0z" fill="#FFF9E8"/>' +
+      '<circle cx="10.6" cy="8.7" r=".7" fill="#2A1E14" stroke="none"/>' +
+      '<circle cx="13.4" cy="8.7" r=".7" fill="#2A1E14" stroke="none"/>' +
+      '<circle cx="12" cy="15.6" r="2.3" fill="#FFE08A"/>' +
+      '<circle cx="12" cy="15.6" r="1" fill="#FFFDF2" stroke="none"/>'
+  },
+  /* ── 드래곤 : 새끼용 → 성룡 → 고룡 ── */
+  dragon:{
+    a:'<path d="M7.2 10 1.5 6.1l1.5 6.2-1.6 1.7 6.5 1.8z" fill="#C4622A"/>' +
+      '<path d="M16.8 10 22.5 6.1l-1.5 6.2 1.6 1.7-6.5 1.8z" fill="#C4622A"/>' +
+      '<path d="M8.2 11.6h7.6l-.8 8.6a1.3 1.3 0 0 1-1.3 1.2h-3.4a1.3 1.3 0 0 1-1.3-1.2z" fill="#FF9F4A"/>' +
+      '<path d="M10.4 13.2h3.2l-.4 6.7h-2.4z" fill="#FFDCA6" stroke="none"/>' +
+      '<path d="M7.7 6.5a4.3 4.3 0 0 1 8.6 0v1.8a4.3 4.3 0 0 1-8.6 0z" fill="#FF9F4A"/>' +
+      '<path d="M9.3 8.6h5.4v1.6a2.7 2.7 0 0 1-5.4 0z" fill="#FFB870"/>' +
+      '<circle cx="10.5" cy="10" r=".45" fill="#7A3410" stroke="none"/>' +
+      '<circle cx="13.5" cy="10" r=".45" fill="#7A3410" stroke="none"/>' +
+      '<path d="M8.5 2 10.3 5.5 7.1 4.8z" fill="#F4E3C8"/>' +
+      '<path d="M15.5 2 13.7 5.5l3.2-.7z" fill="#F4E3C8"/>' +
+      '<circle cx="10.1" cy="6.7" r="1.1" fill="#FF2D55" stroke="none"/>' +
+      '<circle cx="13.9" cy="6.7" r="1.1" fill="#FF2D55" stroke="none"/>' +
+      '<circle cx="10.1" cy="6.7" r=".4" fill="#3A0512" stroke="none"/>' +
+      '<circle cx="13.9" cy="6.7" r=".4" fill="#3A0512" stroke="none"/>',
+    b:'<path d="M7 9.4 .6 4.6l1.6 7.2-1.6 2 7.4 2.2z" fill="#A8461C"/>' +
+      '<path d="M17 9.4 23.4 4.6l-1.6 7.2 1.6 2-7.4 2.2z" fill="#A8461C"/>' +
+      '<path d="M7.8 11h8.4l-.9 9.2a1.4 1.4 0 0 1-1.4 1.3h-3.8a1.4 1.4 0 0 1-1.4-1.3z" fill="#E8722B"/>' +
+      '<path d="M10.1 12.8h3.8l-.5 7.2h-2.8z" fill="#FFC98A" stroke="none"/>' +
+      '<path d="M7.3 6a4.7 4.7 0 0 1 9.4 0v1.9a4.7 4.7 0 0 1-9.4 0z" fill="#E8722B"/>' +
+      '<path d="M8.9 8.2h6.2v1.9a3.1 3.1 0 0 1-6.2 0z" fill="#FFA95E"/>' +
+      '<circle cx="10.4" cy="9.7" r=".5" fill="#5E2409" stroke="none"/>' +
+      '<circle cx="13.6" cy="9.7" r=".5" fill="#5E2409" stroke="none"/>' +
+      '<path d="M8 .8 10.4 5.2 6 4.2z" fill="#F4E3C8"/>' +
+      '<path d="M16 .8 13.6 5.2 18 4.2z" fill="#F4E3C8"/>' +
+      '<path d="M12 3.2 13 6.4h-2z" fill="#F4E3C8"/>' +
+      '<circle cx="9.9" cy="6.2" r="1.3" fill="#FFC53D" stroke="none"/>' +
+      '<circle cx="14.1" cy="6.2" r="1.3" fill="#FFC53D" stroke="none"/>' +
+      '<path d="M9.5 6.2h.8v-1.2h-.8z" fill="#3A0512" stroke="none"/>' +
+      '<path d="M13.7 6.2h.8v-1.2h-.8z" fill="#3A0512" stroke="none"/>',
+    c:'<path d="M6.6 8.6 .2 3l1.9 8-1.7 2.2 8 2.6z" fill="#7A2A0E"/>' +
+      '<path d="M17.4 8.6 23.8 3l-1.9 8 1.7 2.2-8 2.6z" fill="#7A2A0E"/>' +
+      '<path d="M6.6 8.6 .2 3l1.9 8z" fill="#C4622A" stroke="none"/>' +
+      '<path d="M17.4 8.6 23.8 3l-1.9 8z" fill="#C4622A" stroke="none"/>' +
+      '<path d="M7.5 10.6h9l-1 9.6a1.5 1.5 0 0 1-1.5 1.4h-4a1.5 1.5 0 0 1-1.5-1.4z" fill="#D2521C"/>' +
+      '<path d="M9.9 12.6h4.2l-.6 7.6h-3z" fill="#FFD84D" stroke="none"/>' +
+      '<path d="M7 5.6a5 5 0 0 1 10 0v2a5 5 0 0 1-10 0z" fill="#D2521C"/>' +
+      '<path d="M8.6 7.9h6.8v2.1a3.4 3.4 0 0 1-6.8 0z" fill="#FF9F4A"/>' +
+      '<path d="M10.4 10.2q1.6 2.6 3.2 0" fill="none" stroke="#FFD84D" stroke-width=".9"/>' +
+      '<path d="M7.2.2 10.2 4.8 5 3.6z" fill="#FFD84D"/>' +
+      '<path d="M16.8.2 13.8 4.8 19 3.6z" fill="#FFD84D"/>' +
+      '<path d="M12 1.4 13.4 5.6h-2.8z" fill="#FFD84D"/>' +
+      '<circle cx="9.7" cy="5.8" r="1.5" fill="#FFF3CE" stroke="none"/>' +
+      '<circle cx="14.3" cy="5.8" r="1.5" fill="#FFF3CE" stroke="none"/>' +
+      '<path d="M9.2 5.8h1v-1.4h-1z" fill="#3A0512" stroke="none"/>' +
+      '<path d="M13.8 5.8h1v-1.4h-1z" fill="#3A0512" stroke="none"/>'
+  }
 };
 const DECOR = {
-  cape:     '<path d="M4.9 10.9q7.1 3.5 14.2 0l-1.1 10.6q-6 2.1-12 0z" fill="#33407A"/>' +
-            '<path d="M4.9 10.9q7.1 3.5 14.2 0l-.3 2.7q-6.8 3-13.6 0z" fill="#46569B"/>',
+  trim:     '<circle cx="5.4" cy="12.4" r="1.5" fill="#DCE6FF"/><circle cx="18.6" cy="12.4" r="1.5" fill="#DCE6FF"/>',
   pauldron: '<circle cx="4.9" cy="12.3" r="2.2" fill="#FFC53D"/><circle cx="19.1" cy="12.3" r="2.2" fill="#FFC53D"/>' +
             '<circle cx="4.9" cy="12.3" r=".9" fill="#FFF3CE"/><circle cx="19.1" cy="12.3" r=".9" fill="#FFF3CE"/>',
   aura:     '<circle cx="12" cy="12" r="11.2" fill="none" stroke="#FFD84D" stroke-opacity=".7" stroke-width="1.1"/>' +
             '<circle cx="12" cy="12" r="11.2" fill="#FFD84D" fill-opacity=".07"/>'
 };
+/* 등급이 오르면 같은 유닛이 아예 다른 모습이 된다 : ★1~2 기본 · ★3~4 진화 · ★5 최종 */
+const stageOf = (tier) => (tier >= 5 ? "c" : tier >= 3 ? "b" : "a");
+const STAGE_NAME = { a:"", b:"진화", c:"각성" };
+
 function unitArt(key, tier){
   return '<svg class="art t' + tier + '" viewBox="0 0 24 24" aria-hidden="true">' +
     (tier >= 5 ? DECOR.aura : "") +
     '<g stroke="#0B1024" stroke-width=".6" stroke-linejoin="round" paint-order="stroke">' +
-      (tier >= 3 ? DECOR.cape : "") +
-      BODY[key] +
-      (tier >= 4 ? DECOR.pauldron : "") +
+      BODY[key][stageOf(tier)] +
+      (tier === 2 ? DECOR.trim : "") +
+      (tier === 4 ? DECOR.pauldron : "") +
     '</g></svg>';
 }
+
 
 const TYPE_LIST = Object.values(TYPES);
 const MAX_TIER = 5, HP_STEP = 1.95, ATK_STEP = 1.8;
@@ -875,7 +1099,7 @@ function makePlayer(n, isAI, slots){
     rage:0, atkMul:1, spdMul:1, buffT:0, ults:0, kills:0, turretCd:0, fieldTag:-1,
     bLuck:0, bMerge:0, bCrit:0, bAtk:1, bHp:1, bSpd:1, bGold:0, bBounty:1,
     bNexus:1, bRage:1, bSlots:0, bRegen:0, regenT:0, blessings:[], drafts:0, nextDraft:12,
-    board:new Array(slots).fill(null), sel:-1,
+    board:new Array(slots).fill(null), sel:-1, sel2:-1, chain:0, lastMergeT:-99,
     quizIndex:-1, quizLocked:false, lockTimer:null,
     solved:0, misses:0, merges:0, deployed:0, luckyHits:0,
     dom:null
@@ -915,6 +1139,10 @@ function buildSide(p){
       '</div>' +
       '<div class="boardwrap">' +
         '<div class="board"></div>' +
+        '<div class="mergebar">' +
+          '<div class="mprev"></div><div class="modds"></div>' +
+          '<button class="mgo" type="button">합성</button>' +
+        '</div>' +
         '<div class="draft"><b>축복을 하나 고른다</b><div class="cards"></div></div>' +
       '</div>' +
       '<div class="controls">' +
@@ -953,6 +1181,8 @@ function buildSide(p){
   d.rageBar  = $(".rage > i", root);
   d.odds     = $(".odds", root);
   d.draft    = $(".draft", root);
+  d.merge    = $(".mergebar", root);
+  if (d.merge) $(".mgo", d.merge).addEventListener("click", () => fireMerge(p));
   if (d.odds) d.odds.addEventListener("click", () => showOddsTable(p));
   p.dom = d;
   d.who.textContent = p.name;
@@ -1291,30 +1521,75 @@ function summon(p, free){
   renderGold(p);
 }
 
+function clearSel(p){
+  p.sel = -1; p.sel2 = -1;
+  renderBoard(p); showZones(p); showMerge(p);
+}
+
 function tapCell(p, i){
   if (!S.running || S.paused) return;
   const pawn = p.board[i];
-  if (!pawn){ p.sel = -1; renderBoard(p); showZones(p); return; }
-  if (p.sel === i){ p.sel = -1; renderBoard(p); showZones(p); return; }
+  if (!pawn){ clearSel(p); return; }
+  if (p.sel === i){ clearSel(p); return; }
+  if (p.sel2 === i){ p.sel2 = -1; renderBoard(p); showZones(p); showMerge(p); return; }
 
   if (p.sel >= 0){
     const a = p.board[p.sel];
     if (a && a.type === pawn.type && a.tier === pawn.tier && a.tier < MAX_TIER){
-      doMerge(p, p.sel, i);
+      p.sel2 = i;                       /* 짝이 맞으면 합성 대기 — 버튼을 눌러야 실행된다 */
+      renderBoard(p); showZones(p); showMerge(p);
+      blip(720, .05, "triangle", .04);
       return;
     }
   }
-  p.sel = i;
-  renderBoard(p);
-  showZones(p);
+  p.sel = i; p.sel2 = -1;
+  renderBoard(p); showZones(p); showMerge(p);
+}
+
+/* 합성 미리보기 : 무엇이 나오고 어떤 변수가 있는지 누르기 전에 보여준다 */
+function showMerge(p){
+  if (p.ai || !p.dom.merge) return;
+  const on = p.sel >= 0 && p.sel2 >= 0 && p.board[p.sel] && p.board[p.sel2];
+  p.dom.merge.classList.toggle("on", !!on);
+  if (!on) return;
+
+  const a = p.board[p.sel], next = a.tier + 1;
+  const evolves = stageOf(next) !== stageOf(a.tier);
+  $(".mprev", p.dom.merge).innerHTML =
+    '<span class="mu">' + unitArt(a.type, a.tier) + '</span>' +
+    '<i>+</i><span class="mu">' + unitArt(a.type, a.tier) + '</span>' +
+    '<i>→</i><span class="mu big' + (evolves ? " evo" : "") + '">' + unitArt(a.type, next) + '</span>' +
+    (evolves ? '<em class="evotag">' + STAGE_NAME[stageOf(next)] + '</em>' : "");
+  $(".modds", p.dom.merge).innerHTML =
+    '<u>🌟' + pct(ODDS.jackpot + p.bMerge) + '</u>' +
+    '<u>👥' + pct(ODDS.clone + p.bMerge * 0.5) + '</u>' +
+    '<u>🧬' + pct(ODDS.mutate) + '</u>';
+}
+
+function fireMerge(p){
+  if (!S.running || S.paused) return;
+  if (p.sel < 0 || p.sel2 < 0 || !p.board[p.sel] || !p.board[p.sel2]) return;
+  doMerge(p, p.sel, p.sel2);
 }
 
 function doMerge(p, from, to){
   const a = p.board[from];
   const base = a.tier;
   p.board[from] = null;
-  p.sel = -1;
+  p.sel = -1; p.sel2 = -1;
   p.merges++;
+
+  /* 연쇄 합성 : 5초 안에 이어 붙이면 보너스가 커진다 */
+  if (S.elapsed - p.lastMergeT <= 5){
+    p.chain++;
+    const bonus = 12 * p.chain;
+    addGold(p, bonus);
+    addRage(p, 5 * p.bRage);
+    say(p, "🔗 연쇄 " + (p.chain + 1) + "! +" + bonus + " G", "gold");
+  } else {
+    p.chain = 0;
+  }
+  p.lastMergeT = S.elapsed;
 
   let tier = base + 1;
   let msg = null, kind = "ally";
@@ -1335,6 +1610,8 @@ function doMerge(p, from, to){
       p.luckyHits++;
       p.board[to] = makePawn(other.key, tier);
       renderBoard(p, to, "merged");
+      showMerge(p);
+      if (stageOf(tier) !== stageOf(base)) evolveShow(p, other.key, base, tier);
       say(p, "🧬 변이! " + other.name + " " + stars(tier), "luck");
       sfx.jack();
       return;
@@ -1343,7 +1620,8 @@ function doMerge(p, from, to){
 
   p.board[to] = makePawn(a.type, tier);
   renderBoard(p, to, "merged");
-  showZones(p);
+  showZones(p); showMerge(p);
+  if (stageOf(tier) !== stageOf(base)) evolveShow(p, a.type, base, tier);
   if (msg){ say(p, msg, kind); flash("luck"); } else sfx.merge();
   if (tier >= MAX_TIER) say(p, "👑 최고 등급 " + TYPES[a.type].name + " " + stars(MAX_TIER) + " 완성!", "gold");
 }
@@ -1357,10 +1635,11 @@ function deploy(p, i, lane){
   }
   p.board[i] = null;
   if (p.sel === i) p.sel = -1;
+  if (p.sel2 === i) p.sel2 = -1;
   spawnUnit(p, pawn.type, pawn.tier, lane);
   p.deployed++;
   renderBoard(p);
-  showZones(p);
+  showZones(p); showMerge(p);
   burst(laneX(lane == null ? 1 : lane), p.n === 1 ? 3 : 97, p.n === 1 ? "#38E8C8" : "#FF3D6E", 10, 0.85);
   blip(560 + pawn.tier * 60, .07, "triangle", .045);
   return true;
@@ -1369,7 +1648,7 @@ function deploy(p, i, lane){
 /* 소환진에서 고른 유닛을 어느 길로 보낼지 — 전장에 열리는 세 갈래 */
 function showZones(p){
   if (p.ai || !p.zones) return;
-  const on = p.sel >= 0 && !!p.board[p.sel];
+  const on = p.sel >= 0 && !!p.board[p.sel] && p.sel2 < 0;
   p.zones.classList.toggle("on", on);
 }
 function dropInto(p, lane){
@@ -1415,7 +1694,7 @@ function renderBoard(p, animSlot, animCls){
     } else {
       const t = TYPES[pawn.type], st = statsOf(pawn.type, pawn.tier);
       cell.classList.add("filled");
-      if (p.sel === i) cell.classList.add("sel");
+      if (p.sel === i || p.sel2 === i) cell.classList.add("sel");
       else if (matchable[i]) cell.classList.add("match");
       cell.innerHTML =
         '<div class="pawn">' +
@@ -1847,6 +2126,24 @@ function rollDice(p){
   }, 380);
 }
 
+/* 등급이 단계를 넘으면 유닛이 아예 다른 모습이 된다 — 그 순간을 보여준다 */
+function evolveShow(p, key, from, to){
+  const el = document.createElement("div");
+  el.className = "evolve";
+  el.dataset.p = p.n;
+  el.innerHTML =
+    '<span class="ea">' + unitArt(key, from) + '</span>' +
+    '<b>▶</b>' +
+    '<span class="eb">' + unitArt(key, to) + '</span>' +
+    '<em>' + TYPES[key].name + " " + STAGE_NAME[stageOf(to)] + "!" + '</em>';
+  fieldEl.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+  flash("gold");
+  for (let l = 0; l < LANES; l++) burst(laneX(l), 50, "#FFD84D", 11, 1.4);
+  shake();
+  sfx.jack();
+}
+
 /* ══════════ 확률표 ══════════ */
 const oddsPanel = $("#oddsPanel");
 function row(label, value, hi){
@@ -2197,7 +2494,7 @@ document.addEventListener("keydown", (e) => {
 
 /* ══════════ 첫 화면 ══════════ */
 $("#ovCodex").innerHTML = TYPE_LIST.map((t) =>
-  '<div class="u"><span>' + unitArt(t.key, t.key === "dragon" ? 4 : 1) + '</span>' +
+  '<div class="u"><span>' + unitArt(t.key, 1) + '</span>' +
   '<b>' + t.name + '</b><i>' + t.role + '</i><em>' + t.desc + '</em></div>').join("");
 
 S = freshState("solo");
