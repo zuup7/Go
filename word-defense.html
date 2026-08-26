@@ -309,6 +309,23 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .side[data-p="2"] .playbox{background:linear-gradient(180deg,var(--panel-2),transparent)}
 #cabinet.mode-solo .side[data-p="2"] .playbox{display:none}
 
+.synbar{
+  position:absolute;left:0;right:0;z-index:12;pointer-events:none;
+  display:none;justify-content:center;gap:4px;
+}
+.synbar.on{display:flex}
+.synbar[data-p="1"]{bottom:24px}
+.synbar[data-p="2"]{top:24px}
+#cabinet.mode-duo:not(.same-facing) .synbar[data-p="2"]{transform:rotate(180deg)}
+.synbar i{
+  display:flex;align-items:center;gap:3px;font-style:normal;
+  padding:2px 6px 2px 3px;border-radius:999px;
+  background:rgba(7,10,20,.88);border:1px solid var(--gold);
+}
+.synbar i > span{display:block;width:15px;height:15px}
+.synbar i b{font-family:var(--hud);font-size:7px;color:var(--ink)}
+.synbar i u{text-decoration:none;font-family:var(--hud);font-size:6.5px;color:var(--gold)}
+
 .ftoast{
   position:absolute;left:0;right:0;z-index:15;text-align:center;pointer-events:none;
   font-family:var(--display);font-size:12.5px;letter-spacing:.02em;
@@ -499,6 +516,14 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   text-shadow:0 0 18px rgba(var(--team-rgb),.28);
 }
 .pos{font-size:11px;color:var(--dim);font-style:italic}
+.lv{
+  font-family:var(--display);font-size:9.5px;letter-spacing:.06em;
+  padding:1.5px 6px;border-radius:999px;border:1px solid currentColor;opacity:.85;
+}
+.lv.l1{color:#7FD8A8}
+.lv.l2{color:var(--gold)}
+.lv.l3{color:var(--foe)}
+#cabinet.mode-duo .lv{font-size:8.5px;padding:0;border:none}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .choice{
   padding:11px 6px;border-radius:9px;font-size:13.5px;font-weight:500;
@@ -575,6 +600,16 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   margin-bottom:9px;line-height:1.7;
 }
 #bestLine:empty{display:none}
+#lvRow{margin-bottom:14px}
+.lvline{
+  display:flex;justify-content:center;flex-wrap:wrap;gap:6px;
+  font-family:var(--hud);font-size:8px;margin-bottom:5px;
+}
+.lvline i{font-style:normal;padding:3px 8px;border-radius:999px;border:1px solid currentColor;opacity:.9}
+.lvline i.l1{color:#7FD8A8}
+.lvline i.l2{color:var(--gold)}
+.lvline i.l3{color:var(--foe)}
+
 .missnote{
   text-align:left;border:1px solid var(--edge);border-radius:11px;
   background:var(--panel);padding:11px 12px;margin-bottom:16px;
@@ -684,6 +719,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     <div id="warn" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="dropzones" data-p="2"></div>
     <div class="dropzones" data-p="1"></div>
+    <div class="synbar" data-p="2" aria-hidden="true"></div>
+    <div class="synbar" data-p="1" aria-hidden="true"></div>
     <div class="ftoast" data-p="2" aria-live="polite"></div>
     <div class="ftoast" data-p="1" aria-live="polite"></div>
     <button id="flipBtn" type="button" title="위쪽 화면 방향 바꾸기" aria-label="위쪽 화면 방향 바꾸기">⟳</button>
@@ -727,6 +764,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
       <button id="again" type="button" hidden>다시 하기</button>
       <div class="newrec" id="newRec" hidden>🏆 신기록!</div>
       <div id="ovStats" hidden></div>
+      <div id="lvRow" hidden></div>
       <div class="missnote" id="missNote" hidden></div>
 
       <div class="rules" id="ovRules">
@@ -742,9 +780,11 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
         <em>한 번에 몰아쳐야 뚫린다</em> — 그래서 ⚡ 총공격이 승부처다<br />
         <b>연속 정답이 소환 등급을 올린다</b>. 15연속이면 ★2~3이 나온다<br />
         전장에 세울 수 있는 유닛은 <b>6기까지</b>. 수보다 <em>질</em>이다<br />
+        같은 종류를 <b>셋 이상</b> 세우면 <em>결집</em>해 공격력 +30%<br />
         밀리고 있으면 <em>캐는 골드가 늘어난다</em>. 끝까지 모른다<br />
         정답이 쌓일 때마다 <em>축복 세 장 중 하나</em>를 고른다. 판마다 빌드가 갈린다<br />
         <b>틀린 단어는 다시 나온다.</b> 되찾으면 <em>설욕 보너스</em><br />
+        단어는 <b>기초 → 중급 → 고급</b>으로 올라간다. 어려울수록 골드가 많다<br />
         다섯 번째 물결마다 이름 붙은 <em>👑 보스</em>가 한 길을 밀고 내려온다<br />
         소환 버튼 위 <b>확률 띠를 누르면</b> 모든 무작위 수치를 볼 수 있다<br />
         적 유닛을 쓰러뜨리면 <b>현상금</b>이 들어오고 게이지가 찬다<br />
@@ -1023,6 +1063,31 @@ const WORDS = [
   { w:"witness",     p:"v.", m:"목격하다, 증언하다" },
   { w:"yield",       p:"v.", m:"생산하다, 양보하다" }
 ];
+
+/* ── 난이도 : 쉬운 것부터 나오고 판이 길어질수록 어려운 쪽이 섞인다 ── */
+const LV1 = ("achieve adapt admire affect afford ancient announce argue arrange attach attempt " +
+  "attract avoid aware benefit capture challenge claim combine compete concentrate confident " +
+  "confirm consider contain decline defend delay demand deny depend describe discover display " +
+  "doubt encourage entire examine exchange exist expand expect explore extend familiar gather " +
+  "ignore impact improve indicate individual influence insist introduce invade invest involve " +
+  "maintain measure mention negative obtain obvious occur operate oppose perform permit predict " +
+  "prefer prevent previous promote propose prove recall recognize recommend reduce refer reflect " +
+  "refuse regard regret reject release remain remind remove replace represent require rescue " +
+  "reserve resist respond satisfy seek select separate similar solve spread struggle succeed " +
+  "suggest supply suppose surround survive suspect threaten transfer translate treat various witness").split(" ");
+const LV3 = ("adequate apparent appropriate circumstance conserve consequence consist constant " +
+  "context contribute crucial cultivate dedicate demonstrate devote dispose dominate efficient " +
+  "elaborate embrace emerge endure enhance ensure equip evaluate eventually evolve exceed expose " +
+  "extract flexible foundation fundamental gradual illustrate imply impose inherit initial " +
+  "innocent interpret isolate justify modify motivate neglect occupy participate perceive possess " +
+  "potential priority proceed pursue relieve restrict retain retire significant specific " +
+  "sufficient sustain tolerate transform utilize vanish violate virtue vital withdraw yield").split(" ");
+const LV_NAME = { 1:"기초", 2:"중급", 3:"고급" };
+const BY_LV = { 1:[], 2:[], 3:[] };
+WORDS.forEach((w, i) => {
+  w.lv = LV1.indexOf(w.w) >= 0 ? 1 : (LV3.indexOf(w.w) >= 0 ? 3 : 2);
+  BY_LV[w.lv].push(i);
+});
 
 /* ── 유닛 도감 ── */
 const TYPES = {
@@ -1307,6 +1372,7 @@ const NEXUS_RANGE = 26, NEXUS_CD = 1.0, NEXUS_SPLASH = 0.6;
 /* 포격은 고정 피해가 아니라 상대 덩치에 비례한다 — ★5라고 버티지 못하게 */
 const nexusHit = (u) => 42 + u.maxHp * 0.10;
 const WARN_LEAD = 3.5;                      /* 적 웨이브를 몇 초 전에 예고할지 */
+const SYN_AT = 3, SYN_BONUS = 0.30;         /* 같은 종류 셋이 모이면 결집 */
 const FIELD_CAP = 6;                        /* 전장에 동시에 세울 수 있는 유닛 수 */
 const LANES = 3;                            /* 전장은 세 갈래 길이다 */
 const laneX = (lane) => (lane + 0.5) / LANES * 100;
@@ -1372,10 +1438,12 @@ function makePlayer(n, isAI, slots){
     name: isAI ? "적 넥서스" : (n === 1 ? "플레이어 1" : "플레이어 2"),
     hp:NEXUS_HP, gold:START_GOLD, combo:0, best:0,
     rage:0, atkMul:1, spdMul:1, buffT:0, ults:0, kills:0, turretCd:0, fieldTag:-1,
+    syn:{}, synKey:"",
     bLuck:0, bMerge:0, bCrit:0, bAtk:1, bHp:1, bSpd:1, bGold:0, bBounty:1,
     bNexus:1, bRage:1, bSlots:0, bRegen:0, regenT:0, blessings:[], drafts:0, nextDraft:12,
     board:new Array(slots).fill(null), sel:-1, sel2:-1, chain:0, lastMergeT:-99,
     quizIndex:-1, quizLocked:false, lockTimer:null, recent:[], missed:{}, revenge:[], avenged:0,
+    lvHit:[0,0,0], lvMiss:[0,0,0],
     solved:0, misses:0, merges:0, deployed:0, luckyHits:0,
     dom:null
   };
@@ -1429,7 +1497,7 @@ function buildSide(p){
         '<button class="odds" type="button" title="확률표 보기" aria-label="확률표 보기"></button>' +
       '</div>' +
       '<div class="quiz">' +
-        '<div class="wordRow"><span class="word"></span><span class="pos"></span></div>' +
+        '<div class="wordRow"><span class="word"></span><span class="pos"></span><span class="lv"></span></div>' +
         '<div class="choices"></div>' +
         '<div class="cool"><i></i></div>' +
       '</div>' +
@@ -1450,6 +1518,7 @@ function buildSide(p){
   d.deploy   = $(".deployAll", root);
   d.word     = $(".word", root);
   d.pos      = $(".pos", root);
+  d.lv       = $(".lv", root);
   d.choices  = $(".choices", root);
   d.cool     = $(".cool", root);
   d.rageWrap = $(".rage", root);
@@ -1499,27 +1568,39 @@ function announce(text, kind){ S.players.forEach((p) => say(p, text, kind)); }
 
 /* ══════════ 퀴즈 : 자원 채취 ══════════ */
 /* 최근에 본 단어는 피하고, 틀렸던 단어는 반드시 다시 물고 늘어진다 */
+/* 맞힌 수가 늘수록 어려운 단어의 비중이 커진다 */
+function levelMix(n){
+  if (n < 12) return [1, 0.18, 0];
+  if (n < 30) return [0.6, 1, 0.22];
+  if (n < 55) return [0.25, 1, 0.7];
+  return [0.12, 0.75, 1];
+}
+function rollLevel(mix){
+  let r = Math.random() * (mix[0] + mix[1] + mix[2]);
+  if ((r -= mix[0]) <= 0) return 1;
+  if ((r -= mix[1]) <= 0) return 2;
+  return 3;
+}
+
 function pickWord(p){
+  const take = (i) => {
+    p.recent.push(i);
+    if (p.recent.length > 14) p.recent.shift();
+    return i;
+  };
   /* 오답 큐가 있으면 셋에 한 번꼴로 되돌려 낸다 — 운에 맡기면 영영 안 나온다 */
   if (p.revenge.length && chance(0.35)){
-    for (const i of p.revenge){
-      if (p.recent.indexOf(i) < 0){
-        p.recent.push(i);
-        if (p.recent.length > 14) p.recent.shift();
-        return i;
-      }
+    for (const i of p.revenge) if (p.recent.indexOf(i) < 0) return take(i);
+  }
+  const mix = levelMix(p.solved);
+  for (let a = 0; a < 6; a++){
+    const pool = BY_LV[rollLevel(mix)];
+    for (let n = 0; n < 8; n++){
+      const i = pool[irnd(0, pool.length - 1)];
+      if (p.recent.indexOf(i) < 0) return take(i);
     }
   }
-  let best = irnd(0, WORDS.length - 1), bestScore = -1;
-  for (let n = 0; n < 10; n++){
-    const i = irnd(0, WORDS.length - 1);
-    if (p.recent.indexOf(i) >= 0) continue;
-    const score = (1 + (p.missed[i] || 0) * 6) * rnd(0.5, 1);
-    if (score > bestScore){ bestScore = score; best = i; }
-  }
-  p.recent.push(best);
-  if (p.recent.length > 14) p.recent.shift();
-  return best;
+  return take(irnd(0, WORDS.length - 1));
 }
 
 function nextQuiz(p){
@@ -1541,6 +1622,8 @@ function nextQuiz(p){
 
   p.dom.word.textContent = q.w;
   p.dom.pos.textContent  = q.p;
+  p.dom.lv.textContent = LV_NAME[q.lv];
+  p.dom.lv.className = "lv l" + q.lv;
   p.dom.choices.className = "choices";
   p.dom.choices.innerHTML = "";
   opts.forEach((text) => {
@@ -1558,6 +1641,7 @@ function answer(p, btn, correct){
 
   if (correct){
     p.solved++;
+    p.lvHit[WORDS[p.quizIndex].lv - 1]++;
     p.combo++;
     if (p.missed[p.quizIndex] > 0){          /* 설욕 : 틀렸던 단어를 되찾았다 */
       p.missed[p.quizIndex]--;
@@ -1572,7 +1656,9 @@ function answer(p, btn, correct){
     p.best = Math.max(p.best, p.combo);
     btn.classList.add("right");
 
-    let gain = 10 + Math.min(Math.floor(p.combo / 5) * 2, 6);    /* 연속 정답 보너스 (최대 +6) */
+    /* 어려운 단어일수록 더 많이 준다 : 기초 10 · 중급 14 · 고급 18 */
+    let gain = 10 + (WORDS[p.quizIndex].lv - 1) * 4
+             + Math.min(Math.floor(p.combo / 5) * 2, 6);        /* 연속 정답 보너스 (최대 +6) */
     /* 밀리고 있으면 캐는 골드가 늘어난다 — 뒤집을 여지를 남겨둔다 */
     gain += p.bGold;
     if (p.hp < p.foe.hp * 0.7) gain = Math.round(gain * 1.6);
@@ -1595,6 +1681,7 @@ function answer(p, btn, correct){
     nextQuiz(p);                                                  /* 딜레이 없이 다음 문제 */
   } else {
     p.misses++;
+    p.lvMiss[WORDS[p.quizIndex].lv - 1]++;
     p.missed[p.quizIndex] = (p.missed[p.quizIndex] || 0) + 1;
     if (p.revenge.indexOf(p.quizIndex) < 0) p.revenge.push(p.quizIndex);
     const hadCombo = p.combo;
@@ -2133,7 +2220,7 @@ function woundedAlly(u){
   return worst < 0.95 ? best : null;
 }
 function mend(u, ally){
-  const amt = u.atk * u.owner.atkMul * u.owner.bAtk * 0.6 * rnd(0.9, 1.1);   /* 치유량은 공격력의 6할 */
+  const amt = u.atk * u.owner.atkMul * u.owner.bAtk * (1 + (u.owner.syn[u.type] || 0)) * 0.6 * rnd(0.9, 1.1);   /* 치유량은 공격력의 6할 */
   ally.hp = Math.min(ally.maxHp, ally.hp + amt);
   ally.hpBar.style.width = clamp(ally.hp / ally.maxHp * 100, 0, 100) + "%";
   u.body.classList.remove("swing"); void u.body.offsetWidth; u.body.classList.add("swing");
@@ -2143,7 +2230,7 @@ function mend(u, ally){
 
 function strike(u, target){
   const crit = chance(ODDS.crit + u.owner.bCrit);     /* 치명타 : 운빨 */
-  const dmg = u.atk * u.owner.atkMul * u.owner.bAtk * rnd(0.9, 1.1) * (crit ? 2 : 1);
+  const dmg = u.atk * u.owner.atkMul * u.owner.bAtk * (1 + (u.owner.syn[u.type] || 0)) * rnd(0.9, 1.1) * (crit ? 2 : 1);
   u.body.classList.remove("swing"); void u.body.offsetWidth; u.body.classList.add("swing");
   hurt(target, dmg, crit);
   sfx.hit();
@@ -2158,7 +2245,7 @@ function strike(u, target){
 
 function strikeNexus(u){
   const victim = u.owner.foe;
-  const dmg = u.atk * u.owner.atkMul * u.owner.bAtk * rnd(0.9, 1.1) * (chance(ODDS.crit + u.owner.bCrit) ? 2 : 1);
+  const dmg = u.atk * u.owner.atkMul * u.owner.bAtk * (1 + (u.owner.syn[u.type] || 0)) * rnd(0.9, 1.1) * (chance(ODDS.crit + u.owner.bCrit) ? 2 : 1);
   u.body.classList.remove("swing"); void u.body.offsetWidth; u.body.classList.add("swing");
   victim.hp = Math.max(0, victim.hp - dmg);
   floatText(u.x, goalOf(u.owner), "-" + Math.round(dmg), true);
@@ -2170,8 +2257,42 @@ function strikeNexus(u){
   renderNexus();
 }
 
+/* 전장에 같은 종류가 몇 기나 서 있는지 세어 결집 보너스를 매긴다 */
+function refreshSynergy(){
+  for (const p of S.players){
+    const cnt = {};
+    for (const u of S.units) if (u.owner === p && u.hp > 0) cnt[u.type] = (cnt[u.type] || 0) + 1;
+    const syn = {};
+    const parts = [];
+    for (const k in cnt){
+      if (cnt[k] < SYN_AT) continue;
+      syn[k] = SYN_BONUS;
+      parts.push(k + ":" + cnt[k]);
+    }
+    const key = parts.sort().join(",");
+    if (key !== p.synKey){
+      /* 새로 결집한 종류가 있으면 알린다 */
+      for (const k in syn) if (!p.syn[k]) say(p, TYPES[k].name + " " + cnt[k] + "기 결집! 공격력 +30%", "gold");
+      p.synKey = key;
+      p.syn = syn;
+      drawSyn(p, cnt);
+    } else {
+      p.syn = syn;
+    }
+  }
+}
+function drawSyn(p, cnt){
+  const bar = document.querySelector('.synbar[data-p="' + p.n + '"]');
+  if (!bar) return;
+  const keys = Object.keys(p.syn);
+  bar.innerHTML = keys.map((k) =>
+    '<i><span>' + unitArt(k, 1) + '</span><b>\u00d7' + cnt[k] + '</b><u>+30%</u></i>').join("");
+  bar.classList.toggle("on", keys.length > 0);
+}
+
 function stepBattle(dt){
   const live = S.units.filter((u) => u.hp > 0);
+  refreshSynergy();
 
   for (const u of live){
     if (u.hp <= 0) continue;
@@ -2292,7 +2413,7 @@ function planWave(){
   S.p2.bAtk = 1 + boon * 0.09;
   S.p2.bHp  = 1 + boon * 0.11;
   /* 최고 등급보다 한 단계 아래를 겨누되, 한 번에 튀지 않게 서서히 따라붙는다 */
-  S.aiLevel += (Math.max(1, pw.top - 0.6 + boon * 0.13) - S.aiLevel) * 0.4;
+  S.aiLevel += (Math.max(1, pw.top - 0.72 + boon * 0.12) - S.aiLevel) * 0.4;
   const lvl = S.aiLevel + min * 0.3;
   const pickTier = () => clamp(Math.round(lvl + rnd(-0.5, 0.8)), 1, MAX_TIER);
 
@@ -2748,7 +2869,9 @@ function startGame(mode){
   drawWarn();
   fieldEl.classList.remove("paused");
   $("#pauseBtn").textContent = "⏸";
+  document.querySelectorAll(".synbar").forEach((b) => { b.className = "synbar"; b.innerHTML = ""; });
   $("#missNote").hidden = true;
+  $("#lvRow").hidden = true;
   $("#newRec").hidden = true;
   overlayEl.classList.remove("on");
   announce(mode === "duo" ? "먼저 상대 넥서스를 부수는 쪽이 이긴다!" : "적이 몰려온다. 단어를 캐라!", "ally");
@@ -2810,7 +2933,8 @@ function showResult(winner){
   /* 결과 화면 순서 : 다시 하기 → 성적 → 모드 고르기 */
   const box = modesEl.parentNode;
   box.insertBefore($("#missNote"), modesEl);
-  box.insertBefore(statsEl, $("#missNote"));
+  box.insertBefore($("#lvRow"), $("#missNote"));
+  box.insertBefore(statsEl, $("#lvRow"));
   box.insertBefore($("#newRec"), statsEl);
   box.insertBefore(againEl, $("#newRec"));
   /* 혼자 하기 성적만 기록으로 남긴다 */
@@ -2825,6 +2949,18 @@ function showResult(winner){
     }
     drawBest();
   }
+
+  /* 난이도별로 얼마나 맞혔는지 */
+  const lvRow = $("#lvRow");
+  const lvOf = (q) => [1, 2, 3].map((L) => {
+    const hit = q.lvHit[L - 1], tot = hit + q.lvMiss[L - 1];
+    return tot ? '<i class="l' + L + '">' + LV_NAME[L] + " " + hit + "/" + tot + '</i>' : "";
+  }).join("");
+  const lvHtml = S.mode === "duo"
+    ? '<div class="lvline">P1 ' + lvOf(S.p1) + '</div><div class="lvline">P2 ' + lvOf(S.p2) + '</div>'
+    : '<div class="lvline">' + lvOf(S.p1) + '</div>';
+  lvRow.innerHTML = lvHtml;
+  lvRow.hidden = (S.p1.solved + S.p1.misses) === 0;
 
   /* 이번 판에 틀린 단어를 모아 보여준다 */
   const missIdx = Object.keys(S.p1.missed).filter((i) => S.p1.missed[i] > 0)
