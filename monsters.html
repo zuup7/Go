@@ -50,7 +50,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 }
 .bar .ttl{font-family:var(--f-d);font-size:18px;letter-spacing:-.01em;flex:1;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.iconbtn{width:42px;height:42px;flex-shrink:0;border-radius:12px;background:var(--surf);
+.iconbtn{width:44px;height:44px;flex-shrink:0;border-radius:12px;background:var(--surf);
   border:1px solid var(--line);display:grid;place-items:center;transition:background .15s}
 .iconbtn:active{background:var(--surf2)}
 .view{flex:1;display:flex;flex-direction:column;padding:0 var(--pad) calc(24px + var(--safeb))}
@@ -634,7 +634,54 @@ const QUESTIONS=[
 {id:"s6-od1",unit:"s6",type:"order",question:"일어난 순서대로 놓으세요",choices:["1919. 1.|고종 서거","1919. 2. 8.|2·8 독립 선언","1919. 3. 1.|독립 선언과 만세 시위","1919. 4.|제암리 학살","1919. 9.|대한민국 임시 정부 통합"],answer:null,explain:"3·1 운동은 한 해 안에 벌어진 일이라 월까지 따져야 한다.",era:"만세의 봄"},
 {id:"s7-od1",unit:"s7",type:"order",question:"일어난 순서대로 놓으세요",choices:["1919. 3.|3·1 운동","1919. 4.|상하이 임시 정부 수립","1919. 9.|임시 정부 통합","1923|국민 대표 회의","1925|이승만 탄핵, 박은식 취임"],answer:null,explain:"수립에서 통합, 그리고 위기와 개편으로 이어진다.",era:"황제의 나라에서 국민의 나라로"},
 {id:"s8-od1",unit:"s8",type:"order",question:"일어난 순서대로 놓으세요",choices:["1920. 6.|봉오동 전투","1920. 10.|청산리 대첩","1920~21|간도 참변","1921|자유시 참변","1924~25|3부 성립"],answer:null,explain:"승리 뒤에 곧바로 두 번의 참변이 따라왔다.",era:"봉오동에서 대전자령까지"},
-{id:"s8-od2",unit:"s8",type:"order",question:"일어난 순서대로 놓으세요",choices:["1925|미쓰야 협정","1929|3부 통합 운동","1932|영릉가 전투","1933|대전자령 전투","1934|양세봉 전사"],answer:null,explain:"탄압 → 재편 → 한중 연합 작전으로 이어진다.",era:"봉오동에서 대전자령까지"}
+{id:"s8-od2",unit:"s8",type:"order",question:"일어난 순서대로 놓으세요",choices:["1925|미쓰야 협정","1929|3부 통합 운동","1932|영릉가 전투","1933|대전자령 전투","1934|양세봉 전사"],answer:null,explain:"탄압 → 재편 → 한중 연합 작전으로 이어진다.",era:"봉오동에서 대전자령까지"},
+/* ── 사료 제시형 · 교과서에 실린 원문 ── */
+{id:"s2-src1",unit:"s2",type:"source",question:"제1조 다음 각호에 해당하는 자는 구류 또는 벌금에 처한다.\n19. 함부로 대중을 모아 관공서에 청원 또는 진정을 한 자\n32. 경찰 관서에서 특별히 지시 또는 명령한 사항을 위반한 자\n— 『조선 총독부 관보』, 1912",choices:["경찰범 처벌 규칙","치안 유지법","국가 총동원법","조선 태형령"],answer:0,explain:"무단 통치기의 경찰범 처벌 규칙. 일상까지 경찰이 통제했다.",era:"칼을 찬 교사의 시대"},
+{id:"s2-src2",unit:"s2",type:"source",question:"제1조 3개월 이하의 징역 또는 구류에 처해야 하는 자는 상황에 따라 태형에 처할 수 있다.\n제13조 본령은 조선인에 한하여 적용한다.\n— 『조선 총독부 관보』 호외, 1912",choices:["조선 태형령","경찰범 처벌 규칙","회사령","토지 조사령"],answer:0,explain:"제13조가 핵심. 한국인에게만 적용한 노골적 차별 법령이다.",era:"칼을 찬 교사의 시대"},
+{id:"s2-src3",unit:"s2",type:"source",question:"제4조 토지의 소유자는 조선 총독이 정하는 기간 내에 그 주소, 성명·명칭 및 소유지의 소재, 지목, 자번호, 사표, 등급, 지적, 결수를 임시 토지 조사 국장에게 신고하여야 한다.\n— 『조선 총독부 관보』, 1912",choices:["토지 조사령","회사령","방곡령","조선 태형령"],answer:0,explain:"기한 안에 신고해야 소유권을 인정받는 기한부 신고제. 놓친 땅은 총독부가 차지했다.",era:"칼을 찬 교사의 시대"},
+{id:"s2-src4",unit:"s2",type:"source",question:"제1조 회사의 설립은 조선 총독의 허가를 받아야 한다.\n제5조 …조선 총독은 사업의 정지·금지, 지점의 폐쇄 또는 회사의 해산을 명령할 수 있다.\n— 『조선 총독부 관보』, 1910",choices:["회사령","토지 조사령","산미 증식 계획","국가 총동원법"],answer:0,explain:"허가제로 한국인 기업의 성장을 막았다. 1920년에 폐지되며 신고제로 바뀐다.",era:"칼을 찬 교사의 시대"},
+{id:"s3-src1",unit:"s3",type:"source",question:"• 친일 인물을 물색하고, 각기 계급 및 사정에 따라 여러 친일적 단체를 만들게 한 후 편의와 원조를 제공하여 충분히 활동하게 한다.\n• 조선인 부호들과 민중을 대립하게 하고, 이들에게 일본 자본을 공급해 친일화한다.\n— 조선 총독부, 『사이토 마코토 문서』",choices:["문화 정치의 민족 분열 의도","무단 통치의 강화 방침","민족 말살 통치의 지침","전시 동원 체제의 계획"],answer:0,explain:"이른바 문화 정치의 속셈이 그대로 드러난 문서다.",era:"가면을 쓴 통치"},
+{id:"s3-src2",unit:"s3",type:"source",question:"제1조 국체를 변혁하거나 사유 재산 제도를 부인할 목적으로 결사를 조직하거나 또는 그 사정을 알고 이에 가입한 자는 10년 이하의 징역 또는 금고에 처한다.\n— 『조선 총독부 관보』, 1925",choices:["치안 유지법","경찰범 처벌 규칙","조선 태형령","국가 총동원법"],answer:0,explain:"사유 재산 제도를 부인할 목적이라는 문구 때문에 사회주의자 탄압에 특히 쓰였다.",era:"가면을 쓴 통치"},
+{id:"s3-src3",unit:"s3",type:"source",question:"(관제 개정의 취지는) 시세에 맞추어 시정의 편리함을 도모하는 데 있다. …… 문화적 제도의 혁신에 의하여 조선인을 이끌어서 …… 정치상·사회상의 대우에서 일본인과 동일하게 취급하려는 궁극적 목적을 달성하고자 한다.\n— 『조선 총독부 관보』, 1919. 9.",choices:["문화 정치를 표방한 시정 방침","무단 통치의 시작을 알린 훈시","황국 신민화 정책의 선언","병참 기지화 정책의 지침"],answer:0,explain:"3·1 운동 뒤 새 총독 사이토 마코토가 발표했다. 문관 총독은 끝내 한 명도 나오지 않았다.",era:"가면을 쓴 통치"},
+{id:"s4-src1",unit:"s4",type:"source",question:"제1조 국가 총동원이란 전시에 국방 목적의 달성을 위해 국가의 전력을 가장 유효하게 발휘하도록 인적·물적 자원을 통제 운용하는 것을 가리킨다.\n제4조 제국 신민을 징용하여 총동원 업무에 종사하게 할 수 있다.\n— 『조선 총독부 관보』, 1938",choices:["국가 총동원법","치안 유지법","회사령","조선 태형령"],answer:0,explain:"중일 전쟁을 일으킨 뒤 공포했다. 강제 징용·징병·공출의 법적 근거가 된다.",era:"이름을 빼앗긴 시대"},
+{id:"s4-src2",unit:"s4",type:"source",question:"1. 우리는 대일본 제국의 신민입니다.\n2. 우리는 마음을 합하여 천황 폐하에게 충의를 다합니다.\n3. 우리는 인고 단련하여 훌륭하고 강한 국민이 되겠습니다.\n— 조선 총독부, 『시정 30년사』",choices:["황국 신민 서사","국민학교 규정","황국 신민화 교육령","국민정신 총동원 요강"],answer:0,explain:"아동용 황국 신민 서사. 매일 외우게 하고 궁성 요배를 시켰다.",era:"이름을 빼앗긴 시대"},
+{id:"s4-src3",unit:"s4",type:"source",question:"이번 사변에서 우리 조선은 상당량의 군수 물자를 공출하여 …… 일본으로부터의 해상 수송이 차단당하는 경우가 있더라도, 조선의 힘만으로 보충할 수 있도록 조선 산업 분야를 다각화하며 특히 군수 공업의 육성에 역점을 두어야 한다.\n— 『동아일보』, 1938",choices:["병참 기지화 정책","산미 증식 계획","남면북양 정책","토지 조사 사업"],answer:0,explain:"한반도를 전쟁 물자 공급 기지로 삼겠다는 조선 총독의 훈시다.",era:"이름을 빼앗긴 시대"},
+{id:"s5-src1",unit:"s5",type:"source",question:"1. 일반 부호로부터 의연금을 받는 한편, 일본인이 불법 징수한 세금을 압수하여 무장을 준비한다.\n2. 남북 만주에 사관 학교를 설치하고 인재를 양성하여 사관으로 채용한다.\n7. 무력이 완비되는 대로 일본인 섬멸전을 단행하여 최후의 목적을 이룬다.",choices:["대한 광복회 강령","독립 의군부 강령","신민회 4대 강령","대한민국 건국 강령"],answer:0,explain:"박상진이 주축이 된 대한 광복회. 독립 전쟁으로 국권을 되찾자는 공화주의 노선이다.",era:"국경을 넘은 사람들"},
+{id:"s5-src2",unit:"s5",type:"source",question:"융희 황제가 삼보(영토, 인민, 주권)를 포기한 경술년 8월 29일은 우리 동지가 삼보를 계승한 날이니 …… 저 황제권 소멸의 때가 즉 민권 발생의 때이고, 구한국의 마지막 날은 즉 신한국 최초의 날이니.",choices:["대동단결 선언","2·8 독립 선언","3·1 독립 선언서","대한민국 임시 헌장"],answer:0,explain:"1917년 신규식·박은식·신채호·조소앙 등이 발표한 국민 주권론. 임시 정부 수립의 밑돌이 된다.",era:"국경을 넘은 사람들"},
+{id:"s5-src3",unit:"s5",type:"source",question:"8월 초에 여러 형제분이 일시에 협력하여 만주로 갈 준비를 하였다. 비밀리에 땅과 집을 파는데, 여러 집을 일시에 파니 이 얼마나 어려웠겠는가.\n— 이은숙, 『서간도 시종기』",choices:["이회영 일가의 서간도 망명","안창호의 미주 망명","김구의 상하이 망명","이상설의 연해주 망명"],answer:0,explain:"대부호였던 이회영 일가가 전 재산을 처분해 삼원보에 독립운동 기지를 세웠다.",era:"국경을 넘은 사람들"},
+{id:"s6-src1",unit:"s6",type:"source",question:"3. 본 단체는 만국 평화 회의의 민족 자결주의를 우리 민족에게도 적용할 것을 청구한다.\n4. 앞의 요구가 실현되지 않을 경우, 우리 민족은 일본에 대하여 영원히 혈전을 벌일 것을 선언한다.",choices:["2·8 독립 선언","3·1 독립 선언서","대동단결 선언","대한민국 건국 강령"],answer:0,explain:"도쿄 유학생들이 조선 청년 독립단 이름으로 발표했다. 3·1 운동의 직접적 계기다.",era:"만세의 봄"},
+{id:"s6-src2",unit:"s6",type:"source",question:"우리는 오늘 우리 조선이 독립국임과 조선인이 자주민임을 선언하노라. 우리는 이를 세계 모든 나라에 알려 인류가 모두 평등하다는 큰 뜻을 분명히 하고, 우리 후손이 민족 스스로 살아갈 정당한 권리를 영원히 누리게 할 것이다.",choices:["3·1 독립 선언서","2·8 독립 선언","대동단결 선언","헌의 6조"],answer:0,explain:"1919년 3월 1일. 민족 대표는 태화관에서, 학생과 시민은 탑골 공원에서 낭독했다.",era:"만세의 봄"},
+{id:"s6-src3",unit:"s6",type:"source",question:"피고 한이순 등은 천안 사립 광명학교 학생으로 독립 만세 운동을 공모하고 3월 20일 학생 약 80명을 인솔하여 양대리 시장에 이르러 국기를 흔들고 조선 독립 만세를 불렀다.\n— 공주 지방 법원, 1919",choices:["3·1 운동에 참여한 학생의 판결문","6·10 만세 운동 참가자 신문 조서","광주 학생 항일 운동 재판 기록","물산 장려 운동 관련 문서"],answer:0,explain:"농촌 시위는 주로 장날에 열렸다. 최연소 수감자 한이순은 당시 13세였다.",era:"만세의 봄"},
+{id:"s7-src1",unit:"s7",type:"source",question:"유구한 역사와 전통에 빛나는 우리 대한 국민은 3·1 운동으로 건립된 대한민국 임시 정부의 법통과 불의에 항거한 4·19 민주 이념을 계승하고 …….",choices:["대한민국 헌법 전문","대한민국 임시 헌장","대한민국 건국 강령","제헌 헌법 제1조"],answer:0,explain:"지금 헌법이 임시 정부의 법통을 잇는다고 못 박고 있다.",era:"황제의 나라에서 국민의 나라로"},
+{id:"s7-src2",unit:"s7",type:"source",question:"3·1 운동에서 나타난 민족적 열망을 바탕으로 출범한 임시 정부는 민족의 대표 기관이다. 그러니 문제가 있다면 조직과 체제를 개선하여 독립운동 단체의 중심 역할을 하도록 만들어야 한다.",choices:["개조파의 주장","창조파의 주장","위임 통치 청원의 논리","한인 애국단의 강령"],answer:0,explain:"임시 정부를 고쳐 쓰자는 개조파. 새로 만들자는 창조파와 맞서다 회의가 결렬됐다.",era:"황제의 나라에서 국민의 나라로"},
+{id:"s7-src3",unit:"s7",type:"source",question:"본 국민 대표 회의에서 실제 독립운동에 적합하도록 새로운 조직을 만들어야 한다. 국내외 여러 독립운동 기관 중에서 상하이의 임시 정부를 개조하여 그 계통을 이어갈 이유는 없다.",choices:["창조파의 주장","개조파의 주장","신채호의 조선혁명선언","대동단결 선언"],answer:0,explain:"임시 정부를 새로 만들자는 창조파. 대립 끝에 국민 대표 회의는 성과 없이 끝났다.",era:"황제의 나라에서 국민의 나라로"},
+{id:"s8-src1",unit:"s8",type:"source",question:"2. 중국 관헌은 각 현에 명령하여 만주에 거주하는 한국인이 무기를 휴대하고 조선에 침입하는 것을 엄금한다. 범한 자는 이를 체포하여 일본 경찰에 인도한다.\n3. 조선인 단체를 해산하고 소유한 총기를 수색하여 이를 몰수하고 무장을 해제한다.",choices:["미쓰야 협정","가쓰라·태프트 밀약","한일 의정서","기유각서"],answer:0,explain:"1925년 조선 총독부 경무 국장 미쓰야가 만주 군벌과 맺었다. 3부 통합 운동의 배경이 된다.",era:"봉오동에서 대전자령까지"},
+{id:"s8-src2",unit:"s8",type:"source",question:"6월 7일 …… 북간도에 주둔한 아군 700여 명이 …… 왕칭현 봉오동을 향하여 행군할 때 …… 군을 지휘하는 홍범도, 최진동 두 장군은 적을 공격하여 급히 사격으로 적에게 120여 명의 사상자를 내게 하였고.\n— 『독립신문』, 1920",choices:["봉오동 전투","청산리 대첩","영릉가 전투","대전자령 전투"],answer:0,explain:"홍범도의 대한 독립군, 안무의 국민회군, 최진동의 군무 도독부군이 연합했다.",era:"봉오동에서 대전자령까지"},
+{id:"s8-src3",unit:"s8",type:"source",question:"교전은 아침부터 저녁까지 계속되었다. 굶주림! 그러나 이를 의식할 시간도 먹을 시간도 없었다. 마을 아낙네들이 치마폭에 밥을 싸 가지고 빗발치는 총알 사이로 산에 올라와 한 덩이 두 덩이 동지들 입에 넣어 주었다.\n— 이범석, 『우둥불』",choices:["청산리 대첩과 간도 동포의 지원","봉오동 전투의 매복 작전","자유시 참변의 혼란","영릉가 전투의 한중 연합"],answer:0,explain:"청산리 대첩은 간도 한인 사회의 뒷받침이 있었기에 가능했다.",era:"봉오동에서 대전자령까지"},
+{id:"s8-src4",unit:"s8",type:"source",question:"조선 혁명군 총사령 양세봉, 참모장 김학규 등은 일부 병력을 이끌고 중국 의용군 왕동헌·양석복 등이 이끄는 부대와 합세하였다. …… 당일 오후 3시경 신빈현 서쪽의 영릉가성을 점령하였다.\n— 『광복』 제1권",choices:["영릉가 전투","대전자령 전투","쌍성보 전투","봉오동 전투"],answer:0,explain:"양세봉의 조선 혁명군이 남만주에서 벌인 한중 연합 작전이다.",era:"봉오동에서 대전자령까지"},
+{id:"s8-src5",unit:"s8",type:"source",question:"대전자령의 양쪽은 우뚝 서 있어 그 절벽은 기어 올라갈 수 없는 험악한 골짜기였다. …… 지청천 장군은 우리 군 500명만 선발대로 하고 중국군 2,000명과 혼성하여 …… 일본군의 후방이 이 고개의 중간을 넘었을 때 일시에 공격하기로 하였다.\n— 지헌모, 『청천 장군의 혁명 투쟁사』",choices:["대전자령 전투","영릉가 전투","흥경성 전투","청산리 대첩"],answer:0,explain:"지청천의 한국 독립군이 북만주에서 거둔 승리. 뒤에 한국광복군 창설을 주도한다.",era:"봉오동에서 대전자령까지"},
+
+/* ── 키워드 입력형 · 서술형 대비. choices 각 항목이 필수 키워드이고 | 뒤는 허용 표기 ── */
+{id:"s2-kw1",unit:"s2",type:"keyword",question:"토지 조사 사업의 방식과 결과를 세 낱말로 답하세요.",choices:["기한부 신고제|신고제|기한부신고|신고","동양 척식 주식회사|동양척식|동척","소작농|기한부 소작|소작"],answer:null,explain:"기한부 신고제로 걷은 땅이 동양 척식 주식회사와 일본인에게 넘어가고, 기한부 계약 소작농이 늘었다.",era:"칼을 찬 교사의 시대"},
+{id:"s2-kw2",unit:"s2",type:"keyword",question:"1910년대 무단 통치의 대표적인 제도·법령 셋을 쓰세요.",choices:["헌병 경찰|헌병경찰제|헌병","조선 태형령|태형령|태형","회사령"],answer:null,explain:"헌병 경찰제(즉결 심판권) · 조선 태형령(조선인에 한하여) · 회사령(허가제).",era:"칼을 찬 교사의 시대"},
+{id:"s3-kw1",unit:"s3",type:"keyword",question:"문화 정치가 기만적이었음을 보여 주는 근거 셋을 쓰세요.",choices:["문관 총독|문관","보통 경찰|보통경찰제","치안 유지법|치안유지"],answer:null,explain:"문관 총독은 한 명도 없었고, 보통 경찰제로 바꾸며 경찰은 오히려 늘었으며, 치안 유지법으로 탄압했다.",era:"가면을 쓴 통치"},
+{id:"s3-kw2",unit:"s3",type:"keyword",question:"산미 증식 계획이 농민에게 끼친 영향을 세 낱말로 답하세요.",choices:["식량 사정|식량|식량난","수리 조합비|수리조합|수세","소작농|화전민|토막민"],answer:null,explain:"반출로 식량 사정이 나빠지고, 수리 조합비가 전가되어 자작농이 소작농·화전민·토막민이 되었다.",era:"가면을 쓴 통치"},
+{id:"s4-kw1",unit:"s4",type:"keyword",question:"민족 말살 통치의 정책 셋을 쓰세요.",choices:["내선일체|일선동조론","황국 신민 서사|황국신민서사|황국 신민","창씨개명|창씨"],answer:null,explain:"내선일체·일선동조론을 내세워 황국 신민 서사를 외우게 하고 창씨개명을 강요했다.",era:"이름을 빼앗긴 시대"},
+{id:"s4-kw2",unit:"s4",type:"keyword",question:"전시 동원 체제의 인적·물적 수탈을 보여 주는 낱말 셋을 쓰세요.",choices:["국가 총동원법|총동원법","국민 징용령|징용령|징용","공출"],answer:null,explain:"국가 총동원법을 근거로 국민 징용령을 내리고 쌀과 금속을 공출했다.",era:"이름을 빼앗긴 시대"},
+{id:"s5-kw1",unit:"s5",type:"keyword",question:"1910년대 국내 비밀 결사 둘과 그중 하나가 내세운 이념을 쓰세요.",choices:["독립 의군부|독립의군부","대한 광복회|대한광복회","복벽주의|공화주의|민주 공화제"],answer:null,explain:"독립 의군부(임병찬)는 복벽주의, 대한 광복회(박상진)는 공화주의를 내세웠다.",era:"국경을 넘은 사람들"},
+{id:"s5-kw2",unit:"s5",type:"keyword",question:"서간도 삼원보의 독립운동 기지와 관련된 낱말 셋을 쓰세요.",choices:["경학사","신흥 무관 학교|신흥무관학교|신흥 강습소|신흥강습소|신흥","이회영|이상룡"],answer:null,explain:"신민회의 이회영·이상룡 등이 경학사를 세우고 신흥 강습소(뒷날 신흥 무관 학교)를 열었다.",era:"국경을 넘은 사람들"},
+{id:"s6-kw1",unit:"s6",type:"keyword",question:"3·1 운동의 배경 셋을 쓰세요.",choices:["민족 자결주의|민족자결|자결주의","2·8 독립 선언|2.8 독립 선언|2·8|이팔 독립 선언","고종|고종 서거|고종의 죽음"],answer:null,explain:"윌슨의 민족 자결주의, 도쿄의 2·8 독립 선언, 고종의 서거가 겹쳐 터졌다.",era:"만세의 봄"},
+{id:"s6-kw2",unit:"s6",type:"keyword",question:"3·1 운동의 결과와 영향 셋을 쓰세요.",choices:["대한민국 임시 정부|임시 정부|임시정부","문화 정치|문화정치","5·4 운동|5.4 운동|오사 운동"],answer:null,explain:"임시 정부가 세워지고, 일제는 문화 정치로 바꾸었으며, 중국 5·4 운동에 영향을 주었다.",era:"만세의 봄"},
+{id:"s7-kw1",unit:"s7",type:"keyword",question:"대한민국 임시 정부의 자금·연락 조직 셋을 쓰세요.",choices:["연통제","교통국","독립 공채|독립공채|공채"],answer:null,explain:"국내 비밀 행정 조직 연통제, 통신 기관 교통국, 그리고 독립 공채로 자금을 모았다.",era:"황제의 나라에서 국민의 나라로"},
+{id:"s7-kw2",unit:"s7",type:"keyword",question:"대한민국 임시 정부의 정치 체제를 보여 주는 낱말 셋을 쓰세요.",choices:["민주 공화제|민주공화제|공화제","삼권 분립|삼권분립","임시 의정원|임시의정원|의정원"],answer:null,explain:"우리 역사상 최초의 민주 공화제 정부로 삼권 분립에 따라 임시 의정원·국무원·법원을 두었다.",era:"황제의 나라에서 국민의 나라로"},
+{id:"s7-kw3",unit:"s7",type:"keyword",question:"1923년 국민 대표 회의와 관련된 낱말 셋을 쓰세요.",choices:["개조파","창조파","결렬|침체|분열"],answer:null,explain:"임시 정부를 고쳐 쓰자는 개조파와 새로 만들자는 창조파가 맞서 결렬됐다.",era:"황제의 나라에서 국민의 나라로"},
+{id:"s8-kw1",unit:"s8",type:"keyword",question:"봉오동 전투의 주역과 부대를 세 낱말로 답하세요.",choices:["홍범도","대한 독립군|대한독립군","최진동|안무|군무 도독부군|국민회군"],answer:null,explain:"홍범도의 대한 독립군, 안무의 국민회군, 최진동의 군무 도독부군이 연합했다.",era:"봉오동에서 대전자령까지"},
+{id:"s8-kw2",unit:"s8",type:"keyword",question:"청산리 대첩의 주역과 전투를 세 낱말로 답하세요.",choices:["김좌진","북로 군정서|북로군정서","백운평|어랑촌|고동하"],answer:null,explain:"김좌진의 북로 군정서와 홍범도 부대가 백운평·어랑촌·고동하 등에서 싸웠다.",era:"봉오동에서 대전자령까지"},
+{id:"s8-kw3",unit:"s8",type:"keyword",question:"1920~21년 독립군이 겪은 두 참변과 자유시 참변의 원인을 쓰세요.",choices:["간도 참변|간도참변","자유시 참변|자유시참변","지휘권|무장 해제|적군"],answer:null,explain:"일본군의 간도 참변, 그리고 지휘권 다툼 끝에 러시아 적군에게 무장 해제당한 자유시 참변.",era:"봉오동에서 대전자령까지"},
+{id:"s8-kw4",unit:"s8",type:"keyword",question:"1920년대 중반 만주에 세워진 3부의 이름을 쓰세요.",choices:["참의부","정의부","신민부"],answer:null,explain:"남만주 참의부, 지린성 일대 정의부, 북만주 신민부. 사실상 공화주의 자치 정부였다.",era:"봉오동에서 대전자령까지"},
+{id:"s8-kw5",unit:"s8",type:"keyword",question:"1930년대 한중 연합 작전의 두 지휘관과 부대 하나를 쓰세요.",choices:["양세봉","지청천","조선 혁명군|한국 독립군|조선혁명군|한국독립군"],answer:null,explain:"양세봉의 조선 혁명군(영릉가·흥경성), 지청천의 한국 독립군(쌍성보·동경성·대전자령).",era:"봉오동에서 대전자령까지"},
+{id:"s1-kw1",unit:"s1",type:"keyword",question:"제1차 세계 대전 뒤 재편된 국제 질서와 관련된 낱말 셋을 쓰세요.",choices:["파리 강화 회의|파리강화회의|베르사유 조약|베르사유","민족 자결주의|민족자결|자결주의","워싱턴 회의|워싱턴회의|워싱턴"],answer:null,explain:"파리 강화 회의에서 베르사유 조약이 맺어지고, 윌슨의 민족 자결주의가 나왔으며, 워싱턴 회의로 동아시아 질서가 조정됐다.",era:"세계대전의 소용돌이"},
+{id:"s1-kw2",unit:"s1",type:"keyword",question:"일본이 침략 전쟁을 확대해 간 과정을 사건 셋으로 쓰세요.",choices:["만주 사변|만주사변","중일 전쟁|중일전쟁","아시아·태평양 전쟁|태평양 전쟁|진주만"],answer:null,explain:"만주 사변(1931) → 중일 전쟁(1937, 루거우차오) → 아시아·태평양 전쟁(1941, 진주만).",era:"세계대전의 소용돌이"}
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -719,12 +766,13 @@ function back(){
 }
 window.addEventListener("popstate",function(){ if(stack.length>1){stopAll();stack.pop();render();}
   else{try{history.pushState({i:1},"");}catch(e){}} });
+var VIEWS={};
 function render(){
   var s=stack[stack.length-1];
   backEl.classList.toggle("hidden",stack.length<=1);
   extraEl.innerHTML="";
   view.scrollTop=0; window.scrollTo(0,0);
-  ({home:vHome,units:vUnits,play:vPlay,result:vResult,monsters:vMonsters}[s.n])(s.a);
+  (VIEWS[s.n])(s.a);
 }
 backEl.onclick=back;
 
@@ -740,7 +788,8 @@ function buildRound(type,unit,n){
   var p=pool(type,unit),mine=[],rest=[],seen={},out=[];
   p.forEach(function(q){ (S.monsters[q.id]?mine:rest).push(q); });
   /* 몬스터는 우선 복습 대상이라 같은 사실이 겹쳐도 넣는다 */
-  shuffle(mine).forEach(function(q){ if(out.length<n){ out.push(q); seen[stem(q.id)]=1; } });
+  var quota=(typeof monsterQuota==="function")?monsterQuota(n):n;
+  shuffle(mine).forEach(function(q){ if(out.length<Math.min(n,quota)){ out.push(q); seen[stem(q.id)]=1; } });
   /* 나머지는 한 판에 같은 사실이 두 번 나오지 않게 거른다 */
   var restS=shuffle(rest);
   restS.forEach(function(q){ var k=stem(q.id); if(out.length<n&&!seen[k]){ seen[k]=1; out.push(q); } });
@@ -1179,6 +1228,8 @@ function vResult(){
   };
 }
 
+VIEWS={home:vHome,units:vUnits,play:vPlay,result:vResult,monsters:vMonsters};
+
 /* ═══════════ 부팅 ═══════════ */
 (function boot(){
   /* 홈 화면 추가용 매니페스트 — 단일 파일 유지를 위해 실행 시점에 만든다 */
@@ -1203,5 +1254,741 @@ function vResult(){
   try{history.replaceState({i:1},"");}catch(e){}
   render();
 })();
+
+</script>
+
+<style>
+/* ══════ 2단계 ══════ */
+.mode.m5 .ic{background:rgba(255,180,67,.14);color:var(--amber)}
+.mode.m6 .ic{background:rgba(91,155,232,.16);color:#7FB4F0}
+.mode.m7 .ic{background:rgba(53,214,160,.15);color:var(--jade)}
+
+/* 지도 */
+.eras{display:flex;flex-direction:column;gap:8px}
+.eracard{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:74px;position:relative;
+  background:var(--surf);border:1px solid var(--line);border-radius:var(--r);padding:11px 14px}
+.eracard:active:not([disabled]){background:var(--surf2)}
+.eracard.done{border-color:rgba(53,214,160,.45);background:linear-gradient(100deg,var(--jade-g),transparent 62%),var(--surf)}
+.eracard.lock{opacity:.5}
+.eracard .bs{width:52px;height:52px;flex-shrink:0;display:grid;place-items:center}
+.eracard .qm{font-family:var(--f-d);font-size:26px;color:var(--tx3)}
+.eracard .tx{flex:1;min-width:0}
+.eracard .tx b{display:block;font-family:var(--f-d);font-size:16px;font-weight:400;letter-spacing:-.01em}
+.eracard .tx small{display:block;font-size:11.5px;color:var(--tx3);line-height:1.5;word-break:keep-all}
+.eracard .st{flex-shrink:0;color:var(--tx3);font-size:14px}
+.eracard .st .ok{font-family:var(--f-d);font-size:12px;color:var(--jade);
+  border:1px solid rgba(53,214,160,.4);border-radius:99px;padding:3px 9px}
+
+/* 보스 바 */
+.boss{display:flex;align-items:center;gap:12px;background:var(--surf);border:1px solid var(--line);
+  border-radius:var(--r);padding:10px 13px;margin-bottom:10px}
+.bsv{flex-shrink:0;line-height:0}
+.bsv.hit{animation:hit .26s ease-out}
+.bsv.hero{display:grid;place-items:center}
+@keyframes hit{0%{transform:translateX(0)}25%{transform:translateX(-7px) scale(1.05)}
+  60%{transform:translateX(6px)}100%{transform:translateX(0)}}
+.btx{flex:1;min-width:0}
+.btx b{display:block;font-family:var(--f-d);font-size:15.5px;font-weight:400}
+.btx small{display:block;font-family:var(--f-m);font-size:11px;color:var(--tx3);margin-top:3px}
+.bhp{height:9px;border-radius:9px;background:var(--bg2);overflow:hidden;margin-top:5px;
+  border:1px solid var(--line)}
+.bhp i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--crim),#FF8A6B);
+  transition:width .45s cubic-bezier(.2,.8,.3,1)}
+.ult{position:fixed;inset:0;z-index:70;pointer-events:none;display:grid;place-items:center;
+  animation:ultf 1s ease-out forwards}
+.ult span{font-family:var(--f-d);font-size:56px;color:var(--amber);
+  text-shadow:0 0 34px rgba(255,180,67,.75),0 6px 24px rgba(0,0,0,.8)}
+.ult em{position:absolute;bottom:36%;font-family:var(--f-m);font-style:normal;font-size:14px;
+  letter-spacing:.24em;color:var(--tx2)}
+@keyframes ultf{0%{opacity:0;transform:scale(.7)}18%{opacity:1;transform:scale(1.1)}
+  70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.04)}}
+
+/* 도감 */
+.dex{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.dcard{background:var(--surf);border:1px solid var(--line);border-radius:var(--r-s);padding:10px 6px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;min-height:118px}
+.dcard:active:not([disabled]){background:var(--surf2)}
+.dcard.locked{opacity:.42}
+.dcard .pf{width:72px;height:72px;border-radius:50%;border:2px solid var(--line);overflow:hidden;
+  display:grid;place-items:center;background:var(--bg2)}
+.dcard .qm{font-family:var(--f-d);font-size:26px;color:var(--tx3)}
+.dcard .nm{font-size:11.5px;font-weight:700;line-height:1.3;word-break:keep-all;text-align:center}
+.dcard .gg{font-family:var(--f-m);font-size:9.5px;letter-spacing:.08em}
+
+/* 카드 획득 연출 */
+.modal{position:fixed;inset:0;z-index:80;background:rgba(10,8,14,.82);display:grid;place-items:center;
+  padding:24px;animation:fade .2s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.mbox{background:var(--surf);border:1px solid var(--line2);border-radius:20px;padding:24px 22px;
+  max-width:320px;width:100%;text-align:center;animation:rise .34s cubic-bezier(.2,.9,.3,1)}
+@keyframes rise{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
+.mbox .gr{font-family:var(--f-d);font-size:15px;letter-spacing:.16em}
+.mbox .pf{width:150px;height:150px;margin:12px auto;border-radius:50%;border:3px solid;overflow:hidden;
+  display:grid;place-items:center;background:var(--bg2)}
+.mbox .nm{font-family:var(--f-d);font-size:25px;letter-spacing:-.01em}
+.mbox .ds{font-size:13.5px;color:var(--tx2);line-height:1.6;margin:8px 0 18px;word-break:keep-all}
+
+.toast{position:fixed;left:50%;bottom:calc(22px + var(--safeb));transform:translateX(-50%);z-index:75;
+  background:var(--surf2);border:1px solid var(--line2);border-radius:99px;padding:10px 18px;
+  font-size:13.5px;font-weight:700;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:0 10px 30px -10px rgba(0,0,0,.8);animation:tst 2.1s ease-out forwards}
+@keyframes tst{0%{opacity:0;transform:translateX(-50%) translateY(14px)}
+  12%{opacity:1;transform:translateX(-50%) translateY(0)}
+  82%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-8px)}}
+
+/* 사료 */
+.srcbox{background:var(--bg2);border-left:3px solid var(--amber);border-radius:0 var(--r-s) var(--r-s) 0;
+  padding:14px 15px;font-size:14.5px;line-height:1.78;color:var(--tx2);word-break:keep-all;
+  max-height:38vh;overflow-y:auto}
+
+/* 키워드 입력 */
+.kws{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.kw{display:flex;align-items:center;gap:10px;background:var(--surf);border:2px solid var(--line);
+  border-radius:var(--r-s);padding:4px 12px 4px 10px;min-height:58px}
+.kw.ok{border-color:var(--jade);background:var(--jade-g)}
+.kw.no{border-color:var(--crim);background:var(--crim-g)}
+.kw .kn{font-family:var(--f-d);font-size:15px;color:var(--tx3);width:20px;text-align:center;flex-shrink:0}
+.kw input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--tx);
+  font-family:var(--f-b);font-size:16px;font-weight:600;padding:12px 0}
+.kw input::placeholder{color:var(--tx3);font-weight:400}
+
+/* 아이템 */
+.itembar{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+.ibtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 13px;border-radius:99px;
+  background:var(--surf);border:1px solid var(--line);font-size:12.5px;font-weight:700}
+.ibtn:active{background:var(--surf2)}
+.ibtn span{font-size:15px;color:var(--amber)}
+.ibtn b{font-family:var(--f-m);font-size:11px;color:var(--tx3)}
+.items{display:flex;flex-direction:column;gap:8px}
+.itm{display:flex;align-items:center;gap:11px;background:var(--surf);border:1px solid var(--line);
+  border-radius:var(--r-s);padding:12px 14px;min-height:60px}
+.itm .ic{font-size:20px;color:var(--amber);width:26px;text-align:center;flex-shrink:0}
+.itm b{font-size:14.5px}
+.itm small{color:var(--tx3);font-size:12px;flex:1;min-width:0;word-break:keep-all}
+.itm .ct{font-family:var(--f-d);font-size:19px;color:var(--amber);flex-shrink:0}
+
+/* D-day · 출석 · 미션 */
+.ddaybox{display:flex;align-items:center;gap:14px;background:var(--surf);border:1px solid var(--line);
+  border-radius:var(--r);padding:14px 16px}
+.ddaybox .dl{font-family:var(--f-d);font-size:34px;color:var(--crim);line-height:1;
+  font-variant-numeric:tabular-nums}
+.dinp{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:var(--tx3)}
+.dinp input{font-family:var(--f-m);font-size:14px;padding:11px 12px;border-radius:var(--r-s);
+  border:1px solid var(--line);background:var(--bg2);color:var(--tx);width:100%;min-height:44px}
+.stamps{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.stmp{aspect-ratio:1;border-radius:10px;background:var(--surf);border:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.stmp.on{background:var(--jade-g);border-color:rgba(53,214,160,.45)}
+.stmp b{font-family:var(--f-d);font-size:15px;color:var(--jade);line-height:1}
+.stmp small{font-family:var(--f-m);font-size:9px;color:var(--tx3)}
+.msns{display:flex;flex-direction:column;gap:8px}
+.msn{display:flex;align-items:center;gap:11px;background:var(--surf);border:1px solid var(--line);
+  border-radius:var(--r-s);padding:12px 14px;min-height:60px}
+.msn.done{border-color:rgba(53,214,160,.45);background:var(--jade-g)}
+.msn .ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;
+  display:grid;place-items:center;font-size:13px;color:var(--jade);font-weight:900}
+.msn.done .ck{border-color:var(--jade)}
+.msn .tx{flex:1;min-width:0}
+.msn .tx b{display:block;font-size:14px;font-weight:700}
+.pb{display:block;height:5px;border-radius:5px;background:var(--surf3);overflow:hidden;margin-top:6px}
+.pb i{display:block;height:100%;background:var(--jade);border-radius:5px;transition:width .4s}
+.msn .pc{font-family:var(--f-m);font-size:12px;color:var(--tx3);flex-shrink:0}
+</style>
+
+<script>
+
+/* ═══════════════════════════════════════════════════════════
+   2단계 데이터 — 시대 보스 · 인물 도감 · 아이템 · 일일 미션
+   ═══════════════════════════════════════════════════════════ */
+
+/* 보스는 사람이 아니라 그 시대를 짓눌렀던 제도와 정책이다 */
+const BOSSES={
+ s1:{n:"대전의 소용돌이",d:"제국주의 열강이 부딪히며 만들어 낸 소용돌이. 그 파장이 한반도까지 닿았다.",hp:240,hue:212,form:0},
+ s2:{n:"헌병의 칼",d:"재판 없이 처벌하던 무단 통치. 관리와 교사까지 칼을 찼다.",hp:260,hue:8,form:1},
+ s3:{n:"가면",d:"문화 정치라는 이름을 썼지만 속은 민족 분열 통치였다.",hp:270,hue:276,form:2},
+ s4:{n:"말살의 그림자",d:"이름과 말을 빼앗고 전쟁터로 끌고 가려 한 민족 말살 통치.",hp:290,hue:0,form:3},
+ s5:{n:"국경의 어둠",d:"국내 활동을 막아선 감시망. 지사들은 국경 너머에 기지를 세웠다.",hp:270,hue:190,form:0},
+ s6:{n:"침묵의 벽",d:"저항할 힘이 없다던 편견의 벽. 1919년 봄, 만세 함성이 그것을 깼다.",hp:280,hue:44,form:2},
+ s7:{n:"분열의 안개",d:"노선을 둘러싼 갈등으로 임시 정부를 침체에 빠뜨린 안개.",hp:300,hue:250,form:3},
+ s8:{n:"토벌대",d:"독립군의 근거지를 없애겠다며 만주를 짓밟은 토벌 작전.",hp:320,hue:20,form:1}
+};
+const ERA_ORDER=["s1","s2","s3","s4","s5","s6","s7","s8"];
+
+/* 인물 카드 — 초상은 사진이 아니라 특징만 살린 도식적 일러스트다 */
+const FIGURES=[
+ /* SR */
+ {id:"f_kimgu",n:"김구",u:"s7",g:"SR",d:"한인 애국단을 조직하고 임시 정부를 이끌었다.",t:{hair:1,glasses:1,cloth:0,beard:0,hat:0}},
+ {id:"f_kimjwajin",n:"김좌진",u:"s8",g:"SR",d:"북로 군정서를 이끌고 청산리 대첩을 이끈 장군.",t:{hair:2,glasses:0,cloth:2,beard:1,hat:2}},
+ {id:"f_hongbeomdo",n:"홍범도",u:"s8",g:"SR",d:"대한 독립군 대장. 봉오동 전투를 승리로 이끌었다.",t:{hair:2,glasses:0,cloth:2,beard:2,hat:2}},
+ {id:"f_ahnchangho",n:"안창호",u:"s5",g:"SR",d:"신민회를 만들고 미주에서 대한인 국민회를 이끌었다.",t:{hair:0,glasses:0,cloth:1,beard:1,hat:0}},
+ {id:"f_yugwansun",n:"유관순",u:"s6",g:"SR",d:"천안 아우내 장터에서 만세 시위를 주도했다.",t:{hair:3,glasses:0,cloth:3,beard:0,hat:0}},
+ {id:"f_leehoeyeong",n:"이회영",u:"s5",g:"SR",d:"전 재산을 처분해 서간도에 독립운동 기지를 세웠다.",t:{hair:0,glasses:1,cloth:0,beard:2,hat:1}},
+ /* R */
+ {id:"f_shinchaeho",n:"신채호",u:"s5",g:"R",d:"조선혁명선언을 썼고 대동단결 선언에 참여했다.",t:{hair:0,glasses:1,cloth:0,beard:1,hat:0}},
+ {id:"f_jicheongcheon",n:"지청천",u:"s8",g:"R",d:"한국 독립군을 이끌고 대전자령 전투에서 승리했다.",t:{hair:2,glasses:0,cloth:2,beard:0,hat:2}},
+ {id:"f_yangsebong",n:"양세봉",u:"s8",g:"R",d:"조선 혁명군 총사령. 영릉가 전투를 승리로 이끌었다.",t:{hair:2,glasses:0,cloth:2,beard:1,hat:2}},
+ {id:"f_parkeunsik",n:"박은식",u:"s7",g:"R",d:"임시 정부 제2대 대통령. 『한국통사』를 썼다.",t:{hair:0,glasses:1,cloth:0,beard:2,hat:1}},
+ {id:"f_parksangjin",n:"박상진",u:"s5",g:"R",d:"대한 광복회를 이끌며 공화주의를 내세웠다.",t:{hair:1,glasses:0,cloth:0,beard:0,hat:1}},
+ {id:"f_leesangseol",n:"이상설",u:"s5",g:"R",d:"연해주 대한 광복군 정부의 정통령을 맡았다.",t:{hair:0,glasses:0,cloth:0,beard:1,hat:1}},
+ {id:"f_leedonghwi",n:"이동휘",u:"s7",g:"R",d:"임시 정부 초대 국무총리. 무장 투쟁을 주장했다.",t:{hair:1,glasses:0,cloth:2,beard:1,hat:0}},
+ {id:"f_kimkyusik",n:"김규식",u:"s6",g:"R",d:"신한청년당 대표로 파리 강화 회의에 파견되었다.",t:{hair:0,glasses:1,cloth:1,beard:0,hat:0}},
+ {id:"f_josoang",n:"조소앙",u:"s7",g:"R",d:"삼균주의를 세워 건국 강령의 뼈대를 만들었다.",t:{hair:0,glasses:1,cloth:1,beard:0,hat:0}},
+ {id:"f_sonbyeonghui",n:"손병희",u:"s6",g:"R",d:"천도교 지도자로 민족 대표 33인을 이끌었다.",t:{hair:1,glasses:0,cloth:0,beard:2,hat:1}},
+ /* N */
+ {id:"f_imbyeongchan",n:"임병찬",u:"s5",g:"N",d:"고종의 밀명으로 독립 의군부를 조직했다.",t:{hair:1,glasses:0,cloth:0,beard:2,hat:1}},
+ {id:"f_seoil",n:"서일",u:"s5",g:"N",d:"대종교 간부로 중광단을 만들었다. 북로 군정서의 뿌리다.",t:{hair:1,glasses:0,cloth:0,beard:1,hat:1}},
+ {id:"f_parkyongman",n:"박용만",u:"s5",g:"N",d:"하와이에서 대조선 국민군단을 조직해 군사 훈련을 했다.",t:{hair:0,glasses:0,cloth:1,beard:0,hat:0}},
+ {id:"f_singyusik",n:"신규식",u:"s5",g:"N",d:"상하이에서 동제사를 조직했다.",t:{hair:0,glasses:1,cloth:1,beard:1,hat:0}},
+ {id:"f_leesangryong",n:"이상룡",u:"s5",g:"N",d:"서간도 삼원보에서 경학사를 이끌었다.",t:{hair:1,glasses:0,cloth:0,beard:2,hat:1}},
+ {id:"f_leeseunghun",n:"이승훈",u:"s6",g:"N",d:"오산 학교를 세웠고 민족 대표 33인에 이름을 올렸다.",t:{hair:0,glasses:0,cloth:0,beard:1,hat:0}},
+ {id:"f_hanyongun",n:"한용운",u:"s6",g:"N",d:"승려이자 시인. 민족 대표 33인의 한 사람이다.",t:{hair:4,glasses:0,cloth:4,beard:0,hat:0}},
+ {id:"f_choejindong",n:"최진동",u:"s8",g:"N",d:"군무 도독부군을 이끌고 봉오동 전투에 참여했다.",t:{hair:2,glasses:0,cloth:2,beard:1,hat:2}},
+ {id:"f_anmu",n:"안무",u:"s8",g:"N",d:"국민회군을 이끌고 봉오동 전투에 함께했다.",t:{hair:2,glasses:0,cloth:2,beard:0,hat:2}},
+ {id:"f_leebeomseok",n:"이범석",u:"s8",g:"N",d:"청산리 대첩에 참전하고 『우둥불』을 남겼다.",t:{hair:2,glasses:0,cloth:2,beard:0,hat:0}},
+ {id:"f_kimhakgyu",n:"김학규",u:"s8",g:"N",d:"조선 혁명군 참모장으로 영릉가 전투에 참여했다.",t:{hair:2,glasses:0,cloth:2,beard:0,hat:2}},
+ {id:"f_yeounhyeong",n:"여운형",u:"s6",g:"N",d:"신한청년당을 이끌었고 뒷날 조선 건국 동맹을 만들었다.",t:{hair:0,glasses:0,cloth:1,beard:0,hat:0}},
+ {id:"f_jeongjeonghwa",n:"정정화",u:"s7",g:"N",d:"여섯 차례 국내에 잠입해 임시 정부의 자금을 마련했다.",t:{hair:3,glasses:0,cloth:3,beard:0,hat:0}},
+ {id:"f_hwanggihwan",n:"황기환",u:"s7",g:"N",d:"파리 위원부를 이끌며 유럽에서 외교 활동을 폈다.",t:{hair:0,glasses:0,cloth:1,beard:1,hat:0}},
+ {id:"f_shaw",n:"조지 루이스 쇼",u:"s7",g:"N",d:"이륭 양행을 내주어 교통국 활동을 도운 아일랜드계 영국인.",t:{hair:0,glasses:1,cloth:1,beard:1,hat:3}},
+ {id:"f_hanisun",n:"한이순",u:"s6",g:"N",d:"열세 살에 만세 시위에 나선 3·1 운동 최연소 수감자.",t:{hair:3,glasses:0,cloth:3,beard:0,hat:0}}
+];
+const GRADE={N:{c:"#8E97AB",p:6,label:"N"},R:{c:"#5B9BE8",p:3,label:"R"},SR:{c:"#FFB443",p:1,label:"SR"}};
+
+/* 아이템 */
+const ITEMS={
+ fifty:{n:"5:5 소거",d:"오답 보기 둘을 지웁니다",ic:"✂"},
+ time:{n:"시간 +10초",d:"스피드 O·X에서 10초를 법니다",ic:"⏱"},
+ revive:{n:"부활",d:"한 번 틀려도 없던 일로",ic:"✦"}
+};
+
+/* 오늘의 미션 후보 — 날짜로 3개를 고정 선택한다 */
+const MISSIONS=[
+ {id:"m_solve",n:"문제 20개 풀기",goal:20,k:"solved"},
+ {id:"m_correct",n:"정답 15개 맞히기",goal:15,k:"correct"},
+ {id:"m_combo",n:"5연속 정답 만들기",goal:5,k:"combo"},
+ {id:"m_kill",n:"몬스터 2마리 잡기",goal:2,k:"kill"},
+ {id:"m_ox",n:"스피드 O·X 한 판 끝내기",goal:1,k:"ox"},
+ {id:"m_order",n:"연표 1세트 맞히기",goal:1,k:"order"},
+ {id:"m_source",n:"사료 문제 5개 풀기",goal:5,k:"source"},
+ {id:"m_keyword",n:"키워드 문제 2개 통과하기",goal:2,k:"keyword"},
+ {id:"m_boss",n:"보스 하나 격파하기",goal:1,k:"boss"}
+];
+
+/* ── SVG 초상 — 사진이 아니라 특징만 살린 도식 일러스트 ── */
+function portrait(f,size){
+  var t=f.t,gc=GRADE[f.g].c,h=hash(f.id),hue=(h%40)+18;
+  var skin="hsl("+hue+",34%,"+(72-(h>>4)%8)+"%)",dark="hsl("+hue+",30%,44%)";
+  var CLOTH=["#3C3550","#2B3448","#4A4136","#7A4A55","#6B5A3E"][t.cloth]||"#3C3550";
+  var HAIR="#1B1620";
+  var s='<svg viewBox="0 0 100 100" width="'+size+'" height="'+size+'" aria-hidden="true">';
+  s+='<circle cx="50" cy="50" r="49" fill="'+gc+'" opacity=".12"/>';
+  /* 옷 */
+  if(t.cloth===3) s+='<path d="M22 100c0-16 12-24 28-24s28 8 28 24z" fill="'+CLOTH+'"/><path d="M50 78l-9 22h18z" fill="#E9E2ED"/>';
+  else if(t.cloth===2) s+='<path d="M22 100c0-16 12-24 28-24s28 8 28 24z" fill="'+CLOTH+'"/><rect x="34" y="84" width="32" height="4" fill="#2A2438"/>';
+  else if(t.cloth===4) s+='<path d="M22 100c0-16 12-24 28-24s28 8 28 24z" fill="'+CLOTH+'"/>';
+  else s+='<path d="M22 100c0-16 12-24 28-24s28 8 28 24z" fill="'+CLOTH+'"/><path d="M50 77l-10 23 5 0 5-14 5 14 5 0z" fill="#E9E2ED"/>';
+  s+='<rect x="43" y="64" width="14" height="14" rx="5" fill="'+dark+'"/>';
+  /* 얼굴 */
+  s+='<ellipse cx="50" cy="47" rx="21" ry="24" fill="'+skin+'"/>';
+  /* 머리 */
+  if(t.hair===0) s+='<path d="M29 44c0-15 9-23 21-23s21 8 21 23c0-7-9-11-21-11s-21 4-21 11z" fill="'+HAIR+'"/>';
+  if(t.hair===1) s+='<path d="M29 45c-1-17 9-25 21-25s22 8 21 25c-2-9-4-13-21-13s-19 4-21 13z" fill="'+HAIR+'"/><path d="M50 20c9 0 15 5 17 12l-6 2c-2-6-6-8-11-8z" fill="#0F0C13"/>';
+  if(t.hair===2) s+='<path d="M30 42c0-14 9-21 20-21s20 7 20 21c-3-6-8-9-20-9s-17 3-20 9z" fill="'+HAIR+'"/>';
+  if(t.hair===3) s+='<path d="M28 48c0-18 10-27 22-27s22 9 22 27c0-9-4-14-8-16-5 3-23 4-28 0-4 3-8 7-8 16z" fill="'+HAIR+'"/><path d="M50 71c4 0 7 6 7 13s-3 12-7 12-7-5-7-12 3-13 7-13z" fill="'+HAIR+'"/>';
+  if(t.hair===4) s+='<ellipse cx="50" cy="30" rx="19" ry="12" fill="'+skin+'"/>';
+  /* 갓 · 군모 · 중절모 */
+  if(t.hat===1) s+='<ellipse cx="50" cy="26" rx="34" ry="6" fill="#191320"/><path d="M36 26c0-10 5-16 14-16s14 6 14 16z" fill="#221A2B"/>';
+  if(t.hat===2) s+='<path d="M30 30c0-11 8-17 20-17s20 6 20 17z" fill="#3A4130"/><rect x="27" y="29" width="46" height="5" rx="2.5" fill="#262B1F"/><circle cx="50" cy="22" r="3.4" fill="#D7A93F"/>';
+  if(t.hat===3) s+='<ellipse cx="50" cy="27" rx="28" ry="5" fill="#241C2E"/><path d="M36 27c0-11 5-16 14-16s14 5 14 16z" fill="#2E2439"/>';
+  /* 눈코입 */
+  s+='<ellipse cx="42" cy="46" rx="2.6" ry="3" fill="#14101A"/><ellipse cx="58" cy="46" rx="2.6" ry="3" fill="#14101A"/>';
+  s+='<path d="M37 39q5 -3 10 0M53 39q5 -3 10 0" stroke="#14101A" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  if(t.beard===1) s+='<path d="M42 57h16" stroke="#14101A" stroke-width="3.4" stroke-linecap="round"/>';
+  if(t.beard===2) s+='<path d="M42 56h16" stroke="#14101A" stroke-width="3.2" stroke-linecap="round"/><path d="M40 60q10 16 20 0q-4 12-10 12t-10-12z" fill="#14101A"/>';
+  if(t.beard!==2) s+='<path d="M45 60q5 4 10 0" stroke="#4A3540" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+  if(t.glasses) s+='<circle cx="42" cy="46" r="7.5" fill="none" stroke="#2A2438" stroke-width="2.2"/><circle cx="58" cy="46" r="7.5" fill="none" stroke="#2A2438" stroke-width="2.2"/><path d="M49.5 46h1M34.5 45l-5-2M65.5 45l5-2" stroke="#2A2438" stroke-width="2.2" stroke-linecap="round"/>';
+  return s+'</svg>';
+}
+
+/* ── 보스 SVG ── */
+function bossSVG(era,size,hurt){
+  var b=BOSSES[era],h=b.hue,f='hsl('+h+',48%,52%)',d='hsl('+h+',52%,30%)',l='hsl('+h+',56%,66%)';
+  var s='<svg viewBox="0 0 120 120" width="'+size+'" height="'+size+'" aria-hidden="true">';
+  s+='<defs><radialGradient id="bg'+era+'" cx="40%" cy="26%"><stop offset="0" stop-color="'+l+'"/><stop offset="1" stop-color="'+f+'"/></radialGradient></defs>';
+  if(b.form===0){ /* 소용돌이 */
+    s+='<circle cx="60" cy="60" r="46" fill="url(#bg'+era+')"/>';
+    s+='<path d="M60 22a38 38 0 1 1-26 65 30 30 0 1 0 20-52 22 22 0 1 1 14 39" fill="none" stroke="'+d+'" stroke-width="7" stroke-linecap="round"/>';
+  } else if(b.form===1){ /* 칼 */
+    s+='<path d="M60 12c22 0 40 20 40 46s-18 50-40 50S20 84 20 58 38 12 60 12z" fill="url(#bg'+era+')"/>';
+    s+='<path d="M44 24l32 62M76 24L44 86" stroke="'+d+'" stroke-width="8" stroke-linecap="round"/>';
+  } else if(b.form===2){ /* 가면 */
+    s+='<path d="M26 34h68v30c0 24-16 44-34 44S26 88 26 64z" fill="url(#bg'+era+')"/>';
+    s+='<ellipse cx="45" cy="62" rx="9" ry="12" fill="#14101A"/><ellipse cx="75" cy="62" rx="9" ry="12" fill="#14101A"/>';
+    s+='<path d="M42 90q18 12 36 0" stroke="'+d+'" stroke-width="6" fill="none" stroke-linecap="round"/>';
+  } else { /* 그림자 */
+    s+='<path d="M60 14c26 0 42 18 42 42 0 30-18 50-42 50S18 86 18 56C18 32 34 14 60 14z" fill="url(#bg'+era+')"/>';
+    s+='<path d="M32 46l20 10-20 10M88 46L68 56l20 10" stroke="'+d+'" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  s+='<ellipse cx="46" cy="'+(hurt?58:54)+'" rx="7" ry="'+(hurt?4:9)+'" fill="#0F0C13"/>';
+  s+='<ellipse cx="74" cy="'+(hurt?58:54)+'" rx="7" ry="'+(hurt?4:9)+'" fill="#0F0C13"/>';
+  return s+'</svg>';
+}
+
+/* ── 2단계 상태 (기존 저장 구조에 필드만 더한다) ── */
+function s2init(){
+  if(!S.cleared)S.cleared={};        /* 격파한 시대 */
+  if(!S.dex)S.dex={};                /* 모은 인물 카드 */
+  if(S.pt==null)S.pt=0;              /* 카드 뽑기용 학습 포인트 */
+  if(!S.items)S.items={fifty:1,time:1,revive:1};
+  if(!S.mission||S.mission.day!==today())S.mission={day:today(),p:{},done:{}};
+  if(!S.stamp)S.stamp=[];            /* 출석 도장 */
+  if(S.dday==null)S.dday="";
+  var t=today();
+  if(S.stamp.indexOf(t)<0&&S.last===t)S.stamp.push(t);
+  if(S.stamp.length>60)S.stamp=S.stamp.slice(-60);
+}
+function ddayLeft(){
+  if(!S.dday)return null;
+  var d=new Date(S.dday+"T00:00:00");
+  if(isNaN(d))return null;
+  return Math.round(Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)-today());
+}
+/* 시험이 가까울수록 몬스터 비중을 올린다. D-day 를 안 넣으면 기존 그대로 전부 우선 */
+function monsterQuota(n){
+  var L=ddayLeft();
+  if(L==null)return n;
+  var r=L<=6?1:L<=13?0.8:L<=29?0.6:0.4;
+  return Math.max(1,Math.ceil(n*r));
+}
+
+/* ── 오늘의 미션: 날짜로 3개 고정 ── */
+function todayMissions(){
+  var t=today(),out=[],used={};
+  for(var i=0;i<3;i++){
+    var k=(hash("m"+t+i)+i*7)%MISSIONS.length,gu=0;
+    while(used[k]&&gu++<MISSIONS.length)k=(k+1)%MISSIONS.length;
+    used[k]=1;out.push(MISSIONS[k]);
+  }
+  return out;
+}
+function missionBump(k,v){
+  var m=S.mission.p;m[k]=(m[k]||0)+(v||1);
+  todayMissions().forEach(function(ms){
+    if(!S.mission.done[ms.id]&&(m[ms.k]||0)>=ms.goal){
+      S.mission.done[ms.id]=1; grantItem(); toast("미션 완료 · "+ms.n);
+    }
+  });
+}
+function missionMax(k,v){ var m=S.mission.p; if((m[k]||0)<v){m[k]=v;missionBump(k,0);} }
+
+/* ── 아이템 · 카드 보상 (정답으로만 얻는다) ── */
+function grantItem(which){
+  var keys=Object.keys(ITEMS),k=which||keys[Math.floor(Math.random()*keys.length)];
+  S.items[k]=(S.items[k]||0)+1; save();
+  toast(ITEMS[k].ic+" "+ITEMS[k].n+" 획득");
+  return k;
+}
+function drawCard(){
+  var own=S.dex,pool=FIGURES.filter(function(f){return !own[f.id];});
+  if(!pool.length)return null;
+  var bag=[];
+  pool.forEach(function(f){ for(var i=0;i<GRADE[f.g].p;i++)bag.push(f); });
+  var f=bag[Math.floor(Math.random()*bag.length)];
+  S.dex[f.id]=Date.now(); save();
+  return f;
+}
+function addPoint(){
+  S.pt++;
+  if(S.pt%10!==0)return;
+  var f=drawCard(); if(!f)return;
+  if(G&&G.mode==="ox"){                       /* 타이머가 도는 중엔 결과 화면에서 보여 준다 */
+    (G.pending=G.pending||[]).push(f);
+    toast("★ 카드 획득 — 결과에서 확인");
+  } else cardModal(f);
+}
+function dexRate(){ return Math.round(Object.keys(S.dex).length/FIGURES.length*100); }
+
+/* ── 알림 · 카드 연출 ── */
+function toast(t){
+  var e=document.createElement("div");e.className="toast";e.textContent=t;
+  document.body.appendChild(e);setTimeout(function(){e.remove();},2100);
+}
+function cardModal(f){
+  var m=document.createElement("div");m.className="modal";
+  m.innerHTML='<div class="mbox"><div class="gr" style="color:'+GRADE[f.g].c+'">'+f.g+'</div>'+
+    '<div class="pf" style="border-color:'+GRADE[f.g].c+'">'+portrait(f,140)+'</div>'+
+    '<div class="nm">'+esc(f.n)+'</div><div class="ds">'+esc(f.d)+'</div>'+
+    '<button class="btn" id="mok">받기</button></div>';
+  document.body.appendChild(m);
+  m.querySelector("#mok").onclick=function(){m.remove();};
+  m.onclick=function(e){if(e.target===m)m.remove();};
+  buzz([12,40,12]);
+}
+
+/* ── 지도 · 스토리 ── */
+function eraUnlocked(era){
+  var i=ERA_ORDER.indexOf(era);
+  return i===0||!!S.cleared[ERA_ORDER[i-1]];
+}
+function vMap(){
+  titleEl.textContent="타임슬립";
+  var done=ERA_ORDER.filter(function(e){return S.cleared[e];}).length;
+  view.innerHTML=
+    '<p class="note" style="margin-bottom:14px">1919년 어느 밤, 교과서를 펴 둔 채 잠들었다. 눈을 뜨니 시대 한복판이다. '+
+      '각 시대를 짓눌렀던 제도를 지식으로 무너뜨리고 돌아오자.</p>'+
+    '<div class="stats" style="grid-template-columns:repeat(2,1fr)">'+
+      stat(done+" / "+ERA_ORDER.length,"격파한 시대")+stat(dexRate()+"%","인물 도감")+'</div>'+
+    '<div class="sect">시대</div><div class="eras">'+
+    ERA_ORDER.map(function(e,i){
+      var u=UMAP[e],b=BOSSES[e],cl=!!S.cleared[e],un=eraUnlocked(e);
+      return '<button class="eracard'+(cl?" done":"")+(un?"":" lock")+'" data-e="'+e+'"'+(un?"":" disabled")+'>'+
+        '<span class="ln"></span>'+
+        '<span class="bs">'+(un?bossSVG(e,46,cl):'<span class="qm">?</span>')+'</span>'+
+        '<span class="tx"><b>'+(i+1)+'. '+esc(u.era)+'</b>'+
+        '<small>'+(un?esc(u.name)+' · '+u.book:"앞 시대를 먼저 격파하세요")+'</small></span>'+
+        '<span class="st">'+(cl?'<span class="ok">격파</span>':(un?ICON.chev:'🔒'))+'</span></button>';
+    }).join("")+'</div>';
+  Array.prototype.forEach.call(view.querySelectorAll(".eracard"),function(b){
+    b.onclick=function(){go("play",{mode:"story",era:b.dataset.e});};
+  });
+}
+
+function vStoryPlay(a){
+  var era=a.era;
+  if(!G||G.key!==JSON.stringify(a)){
+    var q=buildRound("mc",era,40).concat(pool("source",era),pool("keyword",era),pool("ox",era));
+    q=shuffle(q);
+    G={key:JSON.stringify(a),mode:"story",era:era,unit:era,queue:q,i:0,score:0,combo:0,maxCombo:0,
+       ok:0,log:[],left:0,done:false,answered:false,
+       bossHP:BOSSES[era].hp,bossMax:BOSSES[era].hp,hurt:false,t0:Date.now()};
+  }
+  titleEl.textContent=UMAP[era].era;
+  paintQ();
+}
+function bossBar(){
+  var b=BOSSES[G.era],pct=Math.max(0,G.bossHP/G.bossMax*100);
+  return '<div class="boss">'+
+    '<div class="bsv'+(G.hurt?" hit":"")+'">'+bossSVG(G.era,58,G.bossHP<G.bossMax*0.35)+'</div>'+
+    '<div class="btx"><b>'+esc(b.n)+'</b>'+
+      '<div class="bhp"><i style="width:'+pct+'%"></i></div>'+
+      '<small>'+Math.max(0,Math.ceil(G.bossHP))+' / '+G.bossMax+
+      (G.combo>=2?' · <span style="color:var(--amber)">'+G.combo+'연속</span>':'')+'</small></div></div>';
+}
+function storyDamage(ms){
+  /* 빠를수록 세게. 3초 안이면 최대, 15초 넘으면 최소 */
+  var fast=Math.max(0,Math.min(1,(15000-ms)/12000));
+  var dmg=8+Math.round(fast*8);
+  if(G.combo>0&&G.combo%3===0){ dmg=Math.round(dmg*2.2); ultimate(); }
+  return dmg;
+}
+function ultimate(){
+  var e=document.createElement("div");e.className="ult";
+  e.innerHTML='<span>필살기</span><em>연속 '+G.combo+'타</em>';
+  document.body.appendChild(e);setTimeout(function(){e.remove();},1000);
+  buzz([30,50,30,50,60]);
+}
+function storyClear(){
+  stopAll();
+  var first=!S.cleared[G.era];
+  S.cleared[G.era]=Date.now();
+  if(first){ missionBump("boss"); grantItem(); var f=drawCard(); save(); if(f)setTimeout(function(){cardModal(f);},700); }
+  save(); go("sclear",{era:G.era,first:first},true);
+}
+function storyFail(){ stopAll(); go("sfail",{era:G.era},true); }
+function vSClear(a){
+  titleEl.textContent="격파";
+  var i=ERA_ORDER.indexOf(a.era),nx=ERA_ORDER[i+1];
+  view.innerHTML='<div class="result"><div class="bsv hero">'+bossSVG(a.era,120,true)+'</div>'+
+    '<div class="big" style="font-size:40px;margin-top:10px">'+esc(BOSSES[a.era].n)+' 격파</div>'+
+    '<div class="sub">'+esc(BOSSES[a.era].d)+'</div></div>'+
+    '<div class="rgrid">'+stat(G.ok+" / "+G.log.length,"정답")+stat(G.maxCombo,"최고 콤보")+
+      stat(dexRate()+"%","도감")+'</div>'+
+    (nx?'<div class="sect">해금</div><p class="note">다음 시대 <b style="color:var(--amber)">'+esc(UMAP[nx].era)+'</b>가 열렸어요.</p>':
+        '<div class="sect">완주</div><p class="note">여덟 시대를 모두 돌파했어요. 시험 범위를 한 바퀴 다 본 셈입니다.</p>')+
+    '<div class="sticky"><div class="btnrow">'+
+      '<button class="btn ghost" id="toMap">지도로</button>'+
+      (nx?'<button class="btn" id="nxE">다음 시대</button>':'<button class="btn" id="toMap2">지도로</button>')+
+    '</div></div>';
+  var toMap=function(){G=null;stack=[{n:"home"},{n:"map"}];render();};
+  document.getElementById("toMap").onclick=toMap;
+  if(nx)document.getElementById("nxE").onclick=function(){G=null;go("play",{mode:"story",era:nx},true);};
+  else document.getElementById("toMap2").onclick=toMap;
+}
+function vSFail(a){
+  titleEl.textContent="후퇴";
+  view.innerHTML='<div class="result"><div class="bsv hero">'+bossSVG(a.era,110,false)+'</div>'+
+    '<div class="big" style="font-size:34px;margin-top:10px">아직 버티고 있다</div>'+
+    '<div class="sub">문제를 다 썼는데 체력이 '+Math.ceil(G.bossHP)+' 남았어요.</div></div>'+
+    '<div class="rgrid">'+stat(G.ok+" / "+G.log.length,"정답")+stat(G.maxCombo,"최고 콤보")+
+      stat(monCount(),"몬스터")+'</div>'+
+    '<div class="sect">힌트</div><p class="note">빠르게 답할수록 데미지가 커지고, 3연속 정답마다 필살기가 터져요. '+
+      '오답 몬스터를 먼저 잡고 오면 훨씬 수월합니다.</p>'+
+    '<div class="sticky"><div class="btnrow">'+
+      '<button class="btn ghost" id="toMap">지도로</button>'+
+      '<button class="btn" id="retry">다시 도전</button></div></div>';
+  document.getElementById("toMap").onclick=function(){G=null;stack=[{n:"home"},{n:"map"}];render();};
+  document.getElementById("retry").onclick=function(){var e=G.era;G=null;go("play",{mode:"story",era:e},true);};
+}
+
+/* ── 인물 도감 ── */
+function vDex(){
+  titleEl.textContent="인물 도감";
+  var own=Object.keys(S.dex).length;
+  view.innerHTML=
+    '<div class="stats" style="grid-template-columns:repeat(3,1fr)">'+
+      stat(own+" / "+FIGURES.length,"수집")+stat(dexRate()+"%","수집률")+
+      stat(10-(S.pt%10),"다음 카드")+'</div>'+
+    '<p class="note" style="margin:12px 0">정답 10개마다 카드가 한 장 나와요. 초상은 사진이 아니라 특징만 살린 그림입니다.</p>'+
+    ["SR","R","N"].map(function(g){
+      var list=FIGURES.filter(function(f){return f.g===g;});
+      var got=list.filter(function(f){return S.dex[f.id];}).length;
+      return '<div class="sect">'+g+' · '+got+'/'+list.length+'</div><div class="dex">'+
+        list.map(function(f){
+          var has=!!S.dex[f.id];
+          return '<button class="dcard'+(has?"":" locked")+'" data-f="'+f.id+'"'+(has?"":" disabled")+'>'+
+            '<span class="pf" style="border-color:'+(has?GRADE[g].c:"var(--line)")+'">'+
+              (has?portrait(f,66):'<span class="qm">?</span>')+'</span>'+
+            '<span class="nm">'+(has?esc(f.n):"???")+'</span>'+
+            '<span class="gg" style="color:'+GRADE[g].c+'">'+g+'</span></button>';
+        }).join("")+'</div>';
+    }).join("");
+  Array.prototype.forEach.call(view.querySelectorAll(".dcard"),function(b){
+    b.onclick=function(){
+      var f=FIGURES.filter(function(x){return x.id===b.dataset.f;})[0];
+      if(f)cardModal(f);
+    };
+  });
+}
+
+/* ── 오늘 (출석 · 미션 · D-day) ── */
+function vDaily(){
+  titleEl.textContent="오늘";
+  var L=ddayLeft(),ms=todayMissions();
+  var days=[];for(var i=13;i>=0;i--)days.push(today()-i);
+  view.innerHTML=
+    '<div class="sect">시험까지</div>'+
+    '<div class="ddaybox"><div class="dl">'+(L==null?"–":(L>0?"D-"+L:(L===0?"D-DAY":"D+"+(-L))))+'</div>'+
+      '<label class="dinp">시험일<input type="date" id="ddayIn" value="'+(S.dday||"")+'"></label></div>'+
+    '<p class="note" style="margin-top:9px">'+
+      (L==null?"시험일을 넣으면 남은 날짜에 맞춰 오답 몬스터가 더 자주 나와요."
+             :"지금 한 판에 몬스터가 최대 "+Math.round((L<=6?1:L<=13?.8:L<=29?.6:.4)*100)+"% 섞여 나옵니다.")+'</p>'+
+    '<div class="sect">출석 도장</div><div class="stamps">'+
+      days.map(function(d){
+        var on=S.stamp.indexOf(d)>=0,dt=new Date(d*864e5);
+        return '<div class="stmp'+(on?" on":"")+'"><b>'+(on?"✓":"")+'</b><small>'+(dt.getUTCMonth()+1)+"/"+dt.getUTCDate()+'</small></div>';
+      }).join("")+'</div>'+
+    '<div class="sect">오늘의 미션</div><div class="msns">'+
+      ms.map(function(m){
+        var p=Math.min(m.goal,S.mission.p[m.k]||0),done=!!S.mission.done[m.id];
+        return '<div class="msn'+(done?" done":"")+'"><span class="ck">'+(done?"✓":"")+'</span>'+
+          '<span class="tx"><b>'+esc(m.n)+'</b><span class="pb"><i style="width:'+(p/m.goal*100)+'%"></i></span></span>'+
+          '<span class="pc">'+p+"/"+m.goal+'</span></div>';
+      }).join("")+'</div>'+
+    '<p class="note" style="margin-top:10px">미션을 끝내면 아이템을 하나 받아요.</p>'+
+    '<div class="sect">가진 아이템</div><div class="items">'+
+      Object.keys(ITEMS).map(function(k){
+        return '<div class="itm"><span class="ic">'+ITEMS[k].ic+'</span><b>'+ITEMS[k].n+'</b>'+
+          '<small>'+ITEMS[k].d+'</small><span class="ct">'+(S.items[k]||0)+'</span></div>';
+      }).join("")+'</div>';
+  document.getElementById("ddayIn").onchange=function(){S.dday=this.value;save();vDaily();};
+}
+
+/* ── 사료 제시형 ── */
+function paintSource(q){
+  view.innerHTML=hud()+
+    '<div class="qcard">'+qmeta(q)+
+      '<div class="srcbox">'+esc(q.question).replace(/\n/g,"<br>")+'</div>'+
+      '<div class="qtext" style="font-size:16px">이 사료에 해당하는 것은?</div></div>'+
+    '<div class="answers" id="ansBox">'+q.choices.map(function(c,i){
+      return '<button class="ans" data-i="'+i+'"><span class="kx">'+"ABCD".charAt(i)+'</span><span>'+esc(c)+'</span></button>';
+    }).join("")+'</div><div id="fbBox"></div><div class="grow"></div>';
+  Array.prototype.forEach.call(view.querySelectorAll("#ansBox button"),function(b){
+    b.onclick=function(){choose(+b.dataset.i,b);};
+  });
+  itemBar();
+}
+
+/* ── 키워드 입력형 (서술형 대비) ── */
+function norm(s){return String(s).toLowerCase().replace(/[\s·.,'"‘’“”()·\-–—]/g,"");}
+function kwMatch(input,spec){
+  var v=norm(input); if(!v)return false;
+  return spec.split("|").some(function(alt){
+    var a=norm(alt); return a.length>0&&(v===a||v.indexOf(a)>=0||a.indexOf(v)>=0&&v.length>=Math.min(3,a.length));
+  });
+}
+function paintKeyword(q){
+  view.innerHTML=hud()+
+    '<div class="qcard">'+qmeta(q)+'<div class="qtext">'+esc(q.question)+'</div>'+
+      '<p class="note">띄어쓰기는 신경 쓰지 않아도 돼요. 순서도 상관없어요.</p></div>'+
+    '<div class="kws" id="kws">'+q.choices.map(function(_,i){
+      return '<label class="kw"><span class="kn">'+(i+1)+'</span>'+
+        '<input type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" '+
+        'placeholder="키워드 '+(i+1)+'" data-k="'+i+'"></label>';
+    }).join("")+'</div><div id="fbBox"></div><div class="grow"></div>'+
+    '<div class="sticky"><button class="btn" id="kchk">제출</button></div>';
+  var ins=Array.prototype.slice.call(view.querySelectorAll("#kws input"));
+  ins.forEach(function(inp,i){
+    inp.addEventListener("keydown",function(e){
+      if(e.key==="Enter"){ e.preventDefault(); if(i<ins.length-1)ins[i+1].focus(); else document.getElementById("kchk").click(); }
+    });
+  });
+  document.getElementById("kchk").onclick=function(){
+    if(G.answered)return;
+    var vals=ins.map(function(x){return x.value;});
+    var used={},hit=q.choices.map(function(spec,si){
+      for(var i=0;i<vals.length;i++){ if(used[i])continue; if(kwMatch(vals[i],spec)){used[i]=1;return true;} }
+      return false;
+    });
+    var ok=hit.every(Boolean);
+    G.answered=true;
+    ins.forEach(function(x){x.disabled=true;});
+    view.querySelectorAll(".kw").forEach&&Array.prototype.forEach.call(view.querySelectorAll(".kw"),function(l,i){
+      l.classList.add(hit[i]?"ok":"no");
+    });
+    grade(q,ok);
+    document.getElementById("fbBox").innerHTML=
+      '<div class="fb '+(ok?"ok":"no")+'"><span class="em">'+(ok?"○":"×")+'</span><span>'+
+      '<b>정답 키워드</b> · '+q.choices.map(function(s){return esc(s.split("|")[0]);}).join(" / ")+
+      '<br>'+esc(q.explain)+'</span></div>';
+    var s=view.querySelector(".sticky");
+    s.innerHTML='<button class="btn" id="nx">'+(G.mode==="story"?"계속":(G.i+1>=G.queue.length?"결과 보기":"다음"))+'</button>';
+    document.getElementById("nx").onclick=next;
+  };
+  ins[0].focus({preventScroll:true});
+}
+
+/* ── 아이템 바 ── */
+function itemBar(){
+  var q=G.queue[G.i];
+  if(document.getElementById("itemBar"))return;
+  var can={fifty:(q.type==="mc"||q.type==="source")&&q.choices.length===4,
+           time:G.mode==="ox", revive:true};
+  var html=Object.keys(ITEMS).filter(function(k){return can[k]&&(S.items[k]||0)>0;}).map(function(k){
+    return '<button class="ibtn" data-k="'+k+'"><span>'+ITEMS[k].ic+'</span>'+ITEMS[k].n+
+      '<b>'+S.items[k]+'</b></button>';
+  }).join("");
+  if(!html)return;
+  var bar=document.createElement("div");bar.className="itembar";bar.id="itemBar";bar.innerHTML=html;
+  var box=document.getElementById("ansBox")||view.querySelector(".qcard");
+  box.parentNode.insertBefore(bar,box);
+  Array.prototype.forEach.call(bar.querySelectorAll(".ibtn"),function(b){
+    b.onclick=function(){useItem(b.dataset.k);};
+  });
+}
+function useItem(k){
+  if(!(S.items[k]>0)||G.answered&&k!=="revive")return;
+  var q=G.queue[G.i];
+  if(k==="fifty"){
+    var wrong=[];q.choices.forEach(function(_,i){if(i!==q.answer)wrong.push(i);});
+    shuffle(wrong).slice(0,2).forEach(function(i){
+      var b=document.querySelector('#ansBox [data-i="'+i+'"]');
+      if(b){b.disabled=true;b.classList.add("dim");}
+    });
+  } else if(k==="time"){
+    G.left+=10; var t=document.getElementById("clock");
+    if(t){t.textContent=G.left+"초";t.classList.toggle("warn",G.left<=10);}
+    pop("+10초");
+  } else if(k==="revive"){
+    G.revive=true; toast("✦ 부활 준비 — 다음에 틀려도 없던 일이 돼요");
+  }
+  S.items[k]--; save();
+  var bar=document.getElementById("itemBar"); if(bar)bar.remove(); itemBar();
+}
+
+/* ═══════════ 기존 함수를 감싸는 훅 (원본은 그대로 둔다) ═══════════ */
+var _paintQ=paintQ;
+paintQ=function(){
+  var q=G.queue[G.i]; G.t0=Date.now();
+  if(q.type==="source"){G.answered=false;return paintSource(q);}
+  if(q.type==="keyword"){G.answered=false;return paintKeyword(q);}
+  _paintQ(); itemBar();
+};
+var _hud=hud;
+hud=function(){ return (G.mode==="story"?bossBar():"")+_hud(); };
+
+var _grade=grade;
+grade=function(q,ok){
+  /* 부활: 틀린 걸 없던 일로 되돌린다 */
+  if(!ok&&G.revive){ G.revive=false; toast("✦ 부활 — 이번 오답은 넘어갑니다"); ok=true; G.revived=true; }
+  var ms=Date.now()-(G.t0||Date.now());
+  var wasMonster=!!S.monsters[q.id];
+  _grade(q,ok);
+  s2init();
+  missionBump("solved");
+  if(q.type==="source")missionBump("source");
+  if(q.type==="keyword"&&ok)missionBump("keyword");
+  if(q.type==="order"&&ok)missionBump("order");
+  if(ok){
+    missionBump("correct"); missionMax("combo",G.combo); addPoint();
+    if(wasMonster&&!S.monsters[q.id])missionBump("kill");
+    if(Math.random()<0.07)grantItem();
+    if(G.mode==="story"){
+      G.bossHP-=storyDamage(ms);
+      G.hurt=true; setTimeout(function(){if(G)G.hurt=false;},260);
+    }
+  }
+  save();
+};
+var _next=next;
+next=function(){ if(G&&G.mode==="story"&&G.bossHP<=0)return storyClear(); _next(); };
+var _finish=finish;
+finish=function(){
+  if(G&&G.mode==="story")return G.bossHP<=0?storyClear():storyFail();
+  if(G&&G.mode==="ox"){s2init();missionBump("ox");save();}
+  _finish();
+};
+var _vPlay=vPlay;
+vPlay=function(a){ if(a.mode==="story")return vStoryPlay(a); _vPlay(a); };
+
+var _vResult=vResult;
+vResult=function(){
+  var pend=(G&&G.pending)||[];
+  _vResult();
+  if(pend.length){
+    var i=0;
+    var show=function(){ if(i<pend.length)cardModal(pend[i++]); };
+    setTimeout(show,420);
+    document.addEventListener("click",function h(e){
+      if(e.target&&e.target.id==="mok"){ setTimeout(show,180);
+        if(i>=pend.length)document.removeEventListener("click",h); }
+    });
+  }
+};
+VIEWS.result=vResult;
+
+var _vHome=vHome;
+vHome=function(){
+  _vHome();
+  var L=ddayLeft(),ms=todayMissions();
+  var doneM=ms.filter(function(m){return S.mission.done[m.id];}).length;
+  var cleared=ERA_ORDER.filter(function(e){return S.cleared[e];}).length;
+  var extra=document.createElement("div");
+  extra.innerHTML=
+    '<div class="sect">모험</div><div class="modes">'+
+      '<button class="mode m5" data-go="map"><span class="ic">'+ICON.map+'</span>'+
+      '<span><b>스토리 · 타임슬립</b><small>시대마다 보스전. 격파하면 다음 시대가 열려요.</small></span>'+
+      '<span class="cnt">'+cleared+' / 8</span></button>'+
+      '<button class="mode m6" data-go="dex"><span class="ic">'+ICON.card+'</span>'+
+      '<span><b>인물 도감</b><small>정답 10개마다 카드 한 장. N · R · SR</small></span>'+
+      '<span class="cnt">'+dexRate()+'%</span></button>'+
+      '<button class="mode m7" data-go="daily"><span class="ic">'+ICON.cal+'</span>'+
+      '<span><b>오늘</b><small>출석 도장 · 오늘의 미션 · 시험 D-day</small></span>'+
+      '<span class="cnt">'+(L==null?"미션 "+doneM+"/3":"D-"+(L>0?L:0))+'</span></button>'+
+    '</div>';
+  var anchor=view.querySelector(".sect");
+  view.insertBefore(extra,anchor);
+  Array.prototype.forEach.call(extra.querySelectorAll("[data-go]"),function(b){
+    b.onclick=function(){go(b.dataset.go);};
+  });
+};
+VIEWS.home=vHome; VIEWS.play=vPlay; VIEWS.map=vMap; VIEWS.dex=vDex;
+VIEWS.daily=vDaily; VIEWS.sclear=vSClear; VIEWS.sfail=vSFail;
+
+ICON.map='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 7z"/><path d="M9 4v13M15 7v12.5"/></svg>';
+ICON.card='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="13" height="16" rx="2.5"/><path d="M19 7v11a2 2 0 0 1-2 2"/><circle cx="9.5" cy="10" r="2.2"/><path d="M6 16.5c.8-1.6 2-2.4 3.5-2.4s2.7.8 3.5 2.4"/></svg>';
+ICON.cal='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8.5 15l2 2 4-4"/></svg>';
+
+s2init(); save();
+if(stack.length===1&&stack[0].n==="home")render();
 
 </script>
