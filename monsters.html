@@ -831,9 +831,12 @@ backEl.onclick=back;
 /* ── 문제 뽑기: 몬스터 우선, 같은 사실은 한 판에 한 번만 ── */
 function stem(id){var p=id.split("-");return p[0]+"-"+p[1];}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+/* 「○○은(는) 몇 년의 일일까?」 는 내지 않는다. 정확한 연도가 아니라 전개를 보는 앱이다.
+   기록에 남은 옛 몬스터가 깨지지 않게 QMAP 에서 지우지는 않고 출제만 막는다 */
+function usable(q){ return !/-yr$/.test(q.id); }
 function pool(type,unit){
   return QUESTIONS.filter(function(q){
-    return q.type===type && (!unit||q.unit===unit);
+    return q.type===type && usable(q) && (!unit||q.unit===unit);
   });
 }
 function buildRound(type,unit,n){
@@ -955,10 +958,10 @@ function vPlay(a){
     if(a.mode==="ox")        q=buildRound("ox",null,60);
     else if(a.mode==="mc")   q=buildRound("mc",a.unit||null,GOAL);
     else if(a.mode==="order")q=buildRound("order",null,5);
-    else if(a.mode==="listen")q=shuffle(QUESTIONS.filter(function(x){return x.type!=="order";})).slice(0,40);
+    else if(a.mode==="listen")q=shuffle(QUESTIONS.filter(function(x){return x.type!=="order"&&usable(x);})).slice(0,40);
     else { /* hunt */
       var ids=Object.keys(S.monsters);
-      q=shuffle(ids.map(function(i){return QMAP[i];}).filter(Boolean));
+      q=shuffle(ids.map(function(i){return QMAP[i];}).filter(function(x){return x&&usable(x);}));
     }
     G={key:JSON.stringify(a),mode:a.mode,unit:a.unit,queue:q,i:0,score:0,combo:0,maxCombo:0,
        ok:0,log:[],left:OX_TIME,done:false,answered:false};
@@ -2153,16 +2156,16 @@ if(stack.length===1&&stack[0].n==="home")render();
 .choin.no{border-color:var(--crim);background:var(--crim-g)}
 
 /* ── 짝 맞추기 ── */
-.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
-@media(min-width:460px){.pgrid{grid-template-columns:repeat(4,1fr)}}
-.pcard{position:relative;aspect-ratio:3/4;background:var(--surf);border:var(--bd) solid var(--line);
+.pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+@media(min-width:560px){.pgrid{grid-template-columns:repeat(3,1fr)}}
+.pcard{position:relative;min-height:96px;background:var(--surf);border:var(--bd) solid var(--line);
   display:grid;place-items:center;padding:6px;text-align:center;
   box-shadow:inset -3px -3px 0 rgba(10,7,14,.45),inset 3px 3px 0 rgba(255,255,255,.12),
              var(--sh) var(--sh) 0 rgba(10,7,14,.5)}
 .pcard:active:not([disabled]){transform:translate(2px,2px);box-shadow:2px 2px 0 rgba(10,7,14,.5)}
 .pcard .bk{font-family:var(--f-px);font-size:15px;color:var(--mon)}
-.pcard .fr{font-size:12.5px;font-weight:700;line-height:1.4;word-break:keep-all;color:var(--tx)}
-.pcard .fr.y{font-family:var(--f-px);font-size:13px;color:var(--amber)}
+.pcard .fr{font-family:var(--f-d);font-size:18px;line-height:1.4;word-break:keep-all;color:var(--amber)}
+.pcard .fr.d{font-family:var(--f-b);font-size:12.5px;font-weight:700;color:var(--tx);line-height:1.5}
 .pcard.up{background:var(--surf2)}
 .pcard.hit{background:var(--jade-g);border-color:var(--jade);
   box-shadow:inset -3px -3px 0 rgba(10,7,14,.3),inset 3px 3px 0 rgba(255,255,255,.1)}
@@ -2174,9 +2177,10 @@ if(stack.length===1&&stack[0].n==="home")render();
 .pbar .m{font-family:var(--f-px);font-size:9px;color:var(--tx3);margin-left:auto}
 .prow{display:flex;flex-direction:column;gap:7px;margin-top:12px}
 .pr{display:flex;align-items:center;gap:11px}
-.pr .py{font-family:var(--f-px);font-size:10px;color:var(--ink);background:var(--amber);
-  border:2px solid var(--line);padding:5px 6px;flex-shrink:0;line-height:1}
-.pr .pn{font-size:14.5px;font-weight:700;line-height:1.45;min-width:0}
+.pr{align-items:flex-start}
+.pr .py{font-family:var(--f-d);font-size:15px;color:var(--ink);background:var(--amber);
+  border:2px solid var(--line);padding:4px 7px;flex-shrink:0;line-height:1.4;min-width:66px;text-align:center}
+.pr .pn{font-size:14px;line-height:1.6;color:var(--tx2);min-width:0}
 
 /* ── 서바이벌 목숨 ── */
 .lives{display:flex;gap:4px;flex-shrink:0;padding:6px 9px;border:2px solid var(--line);background:var(--bg2)}
@@ -2202,6 +2206,8 @@ if(stack.length===1&&stack[0].n==="home")render();
    ═══════════════════════════════════════════════════════════ */
 
 function s3init(){
+  /* 연도 맞히기를 그만두었으니 그때 잡힌 몬스터도 놓아 준다 */
+  Object.keys(S.monsters).forEach(function(id){ if(/-yr$/.test(id))delete S.monsters[id]; });
   if(!S.best)S.best={};
   if(S.best.ox==null)S.best.ox=0;
   if(S.best.cho==null)S.best.cho=0;      /* 초성 사냥 최고 점수 */
@@ -2336,31 +2342,20 @@ function choSubmit(){
 }
 
 /* ═══════════ 짝 맞추기 ═══════════ */
+/* 인물 ↔ 한 줄 활동. 연도를 짝짓던 자리를 인물로 바꿨다 — 날짜가 아니라 누가 뭘 했나가 남는다 */
 var PAIR_POOL=null;
 function pairPool(unit){
-  if(!PAIR_POOL){
-    PAIR_POOL=[];
-    QUESTIONS.forEach(function(q){
-      if(q.type!=="mc"||!/-yr$/.test(q.id))return;
-      var m=q.question.match(/[「『]([^」』]+)[」』]/);
-      var y=q.choices[q.answer];
-      if(!m||!/^\d{4}$/.test(y))return;
-      PAIR_POOL.push({id:q.id,unit:q.unit,t:m[1],y:y});
-    });
-  }
+  if(!PAIR_POOL)PAIR_POOL=FIGURES.map(function(f){
+    return {id:f.id,unit:f.u,t:f.n,y:f.d};
+  });
   return unit?PAIR_POOL.filter(function(x){return x.unit===unit;}):PAIR_POOL;
 }
 
-var PAIR_N=6,P=null,pairTimer=null;
+var PAIR_N=5,P=null,pairTimer=null;
 function vPair(a){
   a=a||{};
   if(!P||P.key!==JSON.stringify(a)){
-    /* 같은 연도가 두 장 있으면 짝이 애매해진다 — 연도가 겹치지 않게 고른다 */
-    var src=[],seen={};
-    shuffle(pairPool(a.unit)).forEach(function(x){
-      if(src.length>=PAIR_N||seen[x.y]||seen["t"+x.t])return;
-      seen[x.y]=1; seen["t"+x.t]=1; src.push(x);
-    });
+    var src=shuffle(pairPool(a.unit)).slice(0,PAIR_N);
     var cards=[];
     src.forEach(function(x,i){
       cards.push({p:i,k:"n",v:x.t}); cards.push({p:i,k:"y",v:x.y});
@@ -2389,17 +2384,17 @@ function paintPair(){
       '<span class="m">'+done+' / '+P.src.length+' 짝 · '+P.moves+'번</span></div>'+
     (P.over
       /* 끝나면 짝을 연도순으로 세워 보여 준다 — 이게 이 판의 배움이다 */
-      ? '<div class="qcard"><div class="qtext" style="font-size:17px">이번 판의 여섯 사건</div>'+
-        '<div class="prow">'+P.src.slice().sort(function(a,b){return a.y-b.y;}).map(function(x){
-          return '<div class="pr"><span class="py">'+esc(x.y)+'</span><span class="pn">'+esc(x.t)+'</span></div>';
+      ? '<div class="qcard"><div class="qtext" style="font-size:17px">이번 판의 인물</div>'+
+        '<div class="prow">'+P.src.map(function(x){
+          return '<div class="pr"><span class="py">'+esc(x.t)+'</span><span class="pn">'+esc(x.y)+'</span></div>';
         }).join("")+'</div></div>'
-      : '<div class="qcard"><div class="qtext" style="font-size:17px">사건과 연도를 짝지어요</div>'+
-        '<p class="note">두 장을 뒤집어 사건 이름과 그 해가 맞으면 그대로 남아요.</p></div>')+
+      : '<div class="qcard"><div class="qtext" style="font-size:17px">인물과 한 일을 짝지어요</div>'+
+        '<p class="note">두 장을 뒤집어 인물과 그가 한 일이 맞으면 그대로 남아요.</p></div>')+
     '<div class="pgrid" id="pg">'+P.cards.map(function(c,i){
       var up=P.hit[c.p]||P.open.indexOf(i)>=0;
       return '<button class="pcard'+(P.hit[c.p]?" hit":(up?" up":""))+'" data-i="'+i+'"'+
         (up?' disabled':'')+'>'+
-        (up?'<span class="fr'+(c.k==="y"?" y":"")+'">'+esc(c.v)+'</span>'
+        (up?'<span class="fr'+(c.k==="y"?" d":"")+'">'+esc(c.v)+'</span>'
            :'<span class="bk">?</span>')+'</button>';
     }).join("")+'</div><div class="grow"></div>'+
     (P.over
@@ -2459,7 +2454,7 @@ function pairDone(){
 /* ═══════════ 서바이벌 ═══════════ */
 var SV_LIVES=3;
 function svPool(){
-  return QUESTIONS.filter(function(q){return q.type==="mc"||q.type==="ox";});
+  return QUESTIONS.filter(function(q){return (q.type==="mc"||q.type==="ox")&&usable(q);});
 }
 function hearts(n){
   var out="";for(var i=0;i<SV_LIVES;i++)out+='<i'+(i<n?"":' class="off"')+'></i>';
@@ -2557,7 +2552,7 @@ function vHall(){
   var rows=[
     ["스피드 O·X","최고 점수",S.best.ox?S.best.ox+"점":null],
     ["초성 사냥","최고 점수",S.best.cho?S.best.cho+"점":null],
-    ["짝 맞추기","최단 기록",p?p.t+"초 / "+p.m+"번":null],
+    ["인물 짝 맞추기","최단 기록",p?p.t+"초 / "+p.m+"번":null],
     ["서바이벌","최다 문제",S.best.sv?S.best.sv+"문제":null],
     ["스토리","격파한 시대",ERA_ORDER.filter(function(e){return S.cleared[e];}).length+" / 8"],
     ["인물 도감","모은 카드",Object.keys(S.dex).length+" / "+FIGURES.length]
@@ -2577,7 +2572,7 @@ function vHall(){
 /* ═══════════ 등록 ═══════════ */
 MISSIONS.push(
   {id:"m_cho",n:"초성 사냥 한 판 끝내기",goal:1,k:"cho"},
-  {id:"m_pair",n:"짝 맞추기 한 판 끝내기",goal:1,k:"pair"},
+  {id:"m_pair",n:"인물 짝 맞추기 한 판 끝내기",goal:1,k:"pair"},
   {id:"m_sv",n:"서바이벌에서 10문제 버티기",goal:1,k:"sv"}
 );
 
@@ -2602,7 +2597,7 @@ vHome=function(){
       '<span><b>초성 사냥</b><small>ㅁㅆㅇ ㅎㅈ → 미쓰야 협정. 초성만 보고 낱말 맞히기.</small></span>'+
       '<span class="cnt">'+(S.best.cho?S.best.cho+"점":choPool().length+"낱말")+'</span></button>'+
       '<button class="mode m9" data-go="pair"><span class="ic">'+ICON.pair+'</span>'+
-      '<span><b>짝 맞추기</b><small>카드를 뒤집어 사건과 연도를 짝지어요. 연도가 착 붙어요.</small></span>'+
+      '<span><b>인물 짝 맞추기</b><small>카드를 뒤집어 인물과 한 일을 짝지어요. 도감에 나오는 그 사람들.</small></span>'+
       '<span class="cnt">'+(p?p.t+"초":PAIR_N+"짝")+'</span></button>'+
       '<button class="mode m10" data-go="sv"><span class="ic">'+ICON.sv+'</span>'+
       '<span><b>서바이벌</b><small>목숨 셋. 세 번 틀리면 끝. 어디까지 버티나.</small></span>'+

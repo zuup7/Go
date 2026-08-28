@@ -82,7 +82,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 
 /* ── 독 (넓은 화면: 오른쪽 · 좁은 화면: 아래 작업 표시줄) ── */
 .dock{display:flex;gap:8px;order:2}
-@media(min-width:820px){.dock{flex-direction:column;order:0;position:sticky;top:56px}}
+/* 넓은 화면에서 독은 세로. align-self 를 안 주면 격자 칸 높이만큼 늘어나 아이콘이 흩어진다 */
+@media(min-width:820px){.dock{flex-direction:column;order:0;position:sticky;top:56px;align-self:start}
+  .dk{flex:0 0 auto}}
 @media(max-width:819px){
   .dock{position:fixed;left:0;right:0;bottom:0;z-index:55;background:var(--ink);
     border-top:var(--bd) solid #150E1B;padding:6px;justify-content:center;
@@ -268,7 +270,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   box-shadow:inset -2px -2px 0 rgba(0,0,0,.25),inset 2px 2px 0 rgba(255,255,255,.35)}
 .lsn .tx{flex:1;min-width:0}
 .lsn .tx b{display:block;font-family:var(--f-h);font-size:15.5px;line-height:1.45}
-.lsn .tx small{display:block;font-family:var(--f-px);font-size:7px;color:var(--ink-3);
+.lsn .tx small{display:block;font-family:var(--f-px);font-size:7.5px;color:var(--ink-2);
   margin-top:3px;line-height:1.7}
 .lsn .rt{flex-shrink:0;color:var(--ink-3);display:flex;align-items:center}
 .lsn .chk{width:26px;height:26px;background:var(--teal);border:2px solid var(--ink);
@@ -1202,8 +1204,11 @@ function nextLesson(){
 }
 
 /* ── 화면 ── */
-var view=document.getElementById("view"),titleEl=document.getElementById("title"),
+var view=document.getElementById("view"),titleReal=document.getElementById("title"),
     backEl=document.getElementById("back");
+/* 창 제목에는 경로만 띄운다. 화면마다 넣던 한글 제목은 여기서 흘려보낸다 —
+   render 를 거치지 않고 다시 그리는 곳이 있어서 한 군데서 막는 편이 확실하다 */
+var titleEl={set textContent(v){},get textContent(){return titleReal.textContent;}};
 var stack=[],VIEWS={};
 function go(n,a,rep){
   if(rep)stack[stack.length-1]={n:n,a:a};
@@ -1287,7 +1292,7 @@ function vHome(){
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<div class="part">복습</div>'+
     '<button class="cta ghost" id="goRev2">'+IC.book+' 암기 장치와 인과 사슬 모아 보기</button>'+
-    '<button class="cta ghost" id="goTL" style="margin-top:9px">&#9202; 연표 한 장으로 훑기 ('+timeline().length+'개 사건)</button>'+
+    '<button class="cta ghost" id="goTL" style="margin-top:9px">&#9202; 흐름 한 장으로 훑기 ('+timeline().length+'개 사건)</button>'+
     '<p class="note" style="margin-top:14px">배운 내용을 문제로 확인하고 싶으면 「오답 몬스터」로 넘어가면 돼. 여긴 처음 배우는 곳이야.</p>';
   view.innerHTML=html;
   var gn=document.getElementById("goNext");
@@ -1598,13 +1603,15 @@ function jumpCard(lid,ci){
 function vTimeline(){
   var all=timeline();
   var rows=TLU?all.filter(function(r){return r.u===TLU;}):all;
-  var hide=!!S.tlHide;
+  /* 정확한 연도까지 외울 필요는 없다. 기본은 접어 두고, 필요할 때만 펴 본다 */
+  var hide=(S.tlHide==null)?true:!!S.tlHide;
   var html=tabsHTML()+
-    '<p class="note" style="margin-bottom:13px">수업에 나온 사건 '+all.length+'개를 연도순으로 모았어. '+
-      '연도를 가려 놓고 스스로 맞혀 보면 순서 문제에 훨씬 강해져. '+
+    '<p class="note" style="margin-bottom:13px">수업에 나온 사건 '+all.length+'개를 <b>일어난 순서대로</b> 세웠어. '+
+      '시험은 몇 년인지가 아니라 <b>무엇이 먼저였나</b>를 물어. 그래서 연도는 접어 뒀어 — '+
+      '궁금하면 「연도 펴기」를 누르거나 그 칸만 눌러 봐. '+
       '네모가 <b style="color:var(--teal)">■</b> 로 찬 건 이미 배운 수업이고, 아무 줄이나 누르면 그 수업의 그 자리로 바로 가.</p>'+
     '<div class="tlbar">'+
-      '<button class="chip'+(hide?" on":"")+'" id="tlh">'+(hide?"연도 보이기":"연도 가리기")+'</button>'+
+      '<button class="chip'+(hide?"":" on")+'" id="tlh">'+(hide?"연도 펴기":"연도 접기")+'</button>'+
       '<span class="cnt">'+rows.length+' / '+all.length+'</span></div>'+
     '<div class="chips strip" id="tlu">'+
       '<button class="chip'+(TLU?"":" on")+'" data-u="">전체</button>'+
@@ -1614,7 +1621,7 @@ function vTimeline(){
   var cy=null;
   rows.forEach(function(r,i){
     if(r.y!==cy){ cy=r.y;
-      html+='<div class="tly'+(hide?" hid":"")+'"><b data-y="'+r.y+'">'+(hide?"????":r.y)+'</b><i></i></div>'; }
+      html+='<div class="tly'+(hide?" hid":"")+'"><b data-y="'+r.y+'">'+(hide?"·····":r.y)+'</b><i></i></div>'; }
     html+='<button class="tlr'+(S.done[r.lid]?"":" new")+'" data-i="'+i+'">'+
       '<span class="d"></span><span class="x"><b>'+esc(r.n)+'</b>'+
       '<small>'+esc(r.lt)+'</small></span></button>';
@@ -1623,7 +1630,7 @@ function vTimeline(){
     html+='<div class="empty">'+scene("paper",56)+'<p>이 단원에는 연도가 붙은 사건이 없어.</p></div>';
   view.innerHTML=html;
   tabsBind();
-  document.getElementById("tlh").onclick=function(){S.tlHide=!S.tlHide;save();vTimeline();};
+  document.getElementById("tlh").onclick=function(){S.tlHide=!hide;save();vTimeline();};
   Array.prototype.forEach.call(view.querySelectorAll("#tlu .chip"),function(b){
     b.onclick=function(){TLU=b.dataset.u;vTimeline();};});
   /* 가린 연도는 눌러서 하나씩만 까 본다 — 전체를 다시 켜지 않아도 되게 */
@@ -1640,7 +1647,7 @@ function tabsBind(){
 }
 function tabsHTML(){
   return '<div class="tabs" role="tablist">'+
-    [["hint","암기 장치"],["time","연표"]].map(function(t){
+    [["hint","암기 장치"],["time","사건 흐름"]].map(function(t){
       return '<button class="tb" role="tab" data-t="'+t[0]+'" aria-selected="'+(RVTAB===t[0])+'">'+t[1]+'</button>';
     }).join("")+'</div>';
 }
@@ -2628,7 +2635,7 @@ render();
     _render();
     var s=stack[stack.length-1], p=PATH[s.n]||"/";
     if(s.n==="lesson"&&s.a){ var i=LESSONS.indexOf(LMAP[s.a.id]); p="/LESSON/"+String(i+1).padStart(2,"0"); }
-    titleEl.textContent=p;
+    titleReal.textContent=p;
     paintDock();
   };
   VIEWS_RENDER_PATCHED=true;
