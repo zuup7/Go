@@ -366,6 +366,43 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .cell.merged{animation:merged .45s ease-out}
 @keyframes merged{0%{transform:scale(1.4);filter:brightness(3)}100%{transform:none;filter:none}}
 
+/* 레어도 : 테두리와 광채로 한눈에 */
+.cell.rar{border-color:var(--rar);box-shadow:0 0 10px -2px var(--rar), inset 0 0 14px -8px var(--rar)}
+.cell .rtag{
+  position:absolute;top:2px;right:4px;font-style:normal;
+  font-family:var(--hud);font-size:6px;color:var(--rar);letter-spacing:.06em;
+}
+.unit.rar .unit-body{box-shadow:0 0 0 2px var(--rar), 0 0 13px var(--rar)}
+.unit.r3 .unit-body,.unit.r4 .unit-body{animation:rarbeat 1.2s ease-in-out infinite}
+@keyframes rarbeat{50%{box-shadow:0 0 0 2px var(--rar), 0 0 22px var(--rar)}}
+
+/* 뽑기 연출 */
+.reveal{
+  position:absolute;inset:0;z-index:23;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  background:radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--rar) 30%, transparent), rgba(7,10,20,.72) 74%);
+  animation:revealin .85s ease-out forwards;
+}
+.reveal b{
+  font-family:var(--hud);font-size:15px;color:var(--rar);
+  text-shadow:0 0 14px var(--rar);letter-spacing:.1em;
+}
+.reveal .ra{display:block;width:44px;height:44px;filter:drop-shadow(0 0 8px var(--rar))}
+.reveal em{
+  font-style:normal;font-family:var(--display);font-size:13px;color:#fff;
+  text-shadow:0 0 10px var(--rar);
+}
+@keyframes revealin{
+  0%{opacity:0;transform:scale(.75)}
+  12%{opacity:1;transform:scale(1.06)}
+  22%{transform:scale(1)}
+  74%{opacity:1}
+  100%{opacity:0;transform:scale(1.03)}
+}
+#cabinet.mode-duo .reveal b{font-size:12px}
+#cabinet.mode-duo .reveal .ra{width:32px;height:32px}
+#cabinet.mode-duo .reveal em{font-size:11px}
+
 .pawn{display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none}
 .pawn .face{display:block;width:26px;height:26px}
 .art{display:block;width:100%;height:100%;overflow:visible}
@@ -392,6 +429,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .odds > i.t2{color:var(--ally);background:rgba(56,232,200,.16)}
 .odds > i.t3{color:var(--gold);background:rgba(255,197,61,.2)}
 .odds > i.t4,.odds > i.t5{color:var(--luck);background:rgba(169,123,255,.26)}
+.odds > i.pity{flex:0 0 auto;padding:0 5px;color:#FF9F4A;background:rgba(255,159,74,.18)}
 .odds:active{opacity:.7}
 
 /* 합성 미리보기 : 무엇이 나오는지 보고 직접 눌러서 합친다 */
@@ -422,6 +460,26 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .mgo:active{filter:brightness(1.25)}
 
 /* 진화하는 순간 */
+.chaos{
+  position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:26;
+  display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none;
+  padding:9px 18px;border-radius:14px;text-align:center;
+  background:rgba(7,10,20,.94);border:1px solid var(--luck);
+  box-shadow:0 0 30px rgba(169,123,255,.55);
+  animation:chaosin 2.1s ease-out forwards;
+}
+.chaos b{font-family:var(--display);font-size:17px;color:var(--luck);letter-spacing:.04em}
+.chaos em{font-style:normal;font-size:11.5px;color:var(--ink)}
+@keyframes chaosin{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}
+  10%{opacity:1;transform:translate(-50%,-50%) scale(1.07)}
+  18%{transform:translate(-50%,-50%) scale(1)}
+  80%{opacity:1}
+  100%{opacity:0}
+}
+#cabinet.mode-duo .chaos b{font-size:14px}
+#cabinet.mode-duo .chaos em{font-size:10px}
+
 .evolve{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:24;
   display:flex;align-items:center;gap:5px;pointer-events:none;
@@ -769,7 +827,10 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
       <div class="rules" id="ovRules">
         <b>정답</b> 즉시 <b>+10 G</b> · 연속 정답이면 보너스 · <b>오답</b> 1초 잠김<br />
-        <b>30 G</b>로 ★1 유닛을 소환진에 뽑는다 (종류는 <em>랜덤</em>)<br />
+        <b>30 G</b>로 유닛을 뽑는다. 종류도 등급도 <em>레어도도 전부 랜덤</em><br />
+        <em>일반 58% · 희귀 26% · 영웅 12% · 전설 3.5% · 신화 0.5%</em><br />
+        레어도는 능력을 최대 <b>3.4배</b>로 올린다. <em>신화 ★1 이 일반 ★3 을 이긴다</em><br />
+        30회 안에 영웅, 90회 안에 전설이 <b>천장</b>으로 확정된다<br />
         같은 종류 · 같은 등급 둘을 고르면 <b>합성 버튼</b>이 뜬다. 눌러야 합쳐진다<br />
         <b>★3과 ★5에서 유닛이 진화</b>해 아예 다른 모습이 된다<br />
         <em>5초 안에 이어 합성하면 연쇄 보너스</em>가 붙는다<br />
@@ -789,7 +850,9 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
         소환 버튼 위 <b>확률 띠를 누르면</b> 모든 무작위 수치를 볼 수 있다<br />
         적 유닛을 쓰러뜨리면 <b>현상금</b>이 들어오고 게이지가 찬다<br />
         게이지가 가득 차면 출격 버튼이 <em>⚡ 총공격</em>으로 바뀐다<br />
-        <em>🎁 전리품 상자</em>는 <b>먼저 누른 쪽</b>이 가져간다
+        <em>🎁 전리품 상자</em>는 <b>먼저 누른 쪽</b>이 가져간다<br />
+        스무 초쯤마다 <em>대격변</em>이 양쪽을 똑같이 휘젓는다 —
+        황금비 · 대붕괴 · 광란의 소환 · 대장간 · 역병 · 축복의 비
       </div>
     </div>
   </div>
@@ -1372,6 +1435,39 @@ const NEXUS_RANGE = 26, NEXUS_CD = 1.0, NEXUS_SPLASH = 0.6;
 /* 포격은 고정 피해가 아니라 상대 덩치에 비례한다 — ★5라고 버티지 못하게 */
 const nexusHit = (u) => 42 + u.maxHp * 0.10;
 const WARN_LEAD = 3.5;                      /* 적 웨이브를 몇 초 전에 예고할지 */
+/* ── 레어도 ─────────────────────────────────────
+   등급(★)은 합성으로 올리는 실력, 레어도는 뽑는 순간에만 굴리는 운.
+   신화 ★1 이 일반 ★3 과 맞먹으니 한 방에 판이 뒤집힌다. ── */
+const RARITY = [
+  { key:"n",  name:"일반", tag:"N",   color:"#9AA6D0", mul:1.00, w:58 },
+  { key:"r",  name:"희귀", tag:"R",   color:"#4DABF7", mul:1.32, w:26 },
+  { key:"sr", name:"영웅", tag:"SR",  color:"#A97BFF", mul:1.78, w:12 },
+  { key:"ss", name:"전설", tag:"SSR", color:"#FFC53D", mul:2.45, w:3.5 },
+  { key:"ur", name:"신화", tag:"UR",  color:"#FF3D6E", mul:3.40, w:0.5 }
+];
+const PITY_SR = 30, PITY_SSR = 90;      /* 천장 : 여기까지 오면 확정으로 준다 */
+
+function rarityOdds(){
+  const tot = RARITY.reduce((a, r) => a + r.w, 0);
+  return RARITY.map((r) => r.w / tot);
+}
+function rollRarity(p){
+  /* 천장이 먼저다 — 안 나오면 확정으로 꽂아준다 */
+  if (p.pitySS >= PITY_SSR - 1) return 3;
+  if (p.pitySR >= PITY_SR - 1)  return 2;
+  const odds = rarityOdds();
+  let r = Math.random(), acc = 0;
+  for (let i = RARITY.length - 1; i >= 0; i--){
+    acc += odds[i];
+    if (r < acc) return i;
+  }
+  return 0;
+}
+function countPity(p, rar){
+  p.pitySR = rar >= 2 ? 0 : p.pitySR + 1;
+  p.pitySS = rar >= 3 ? 0 : p.pitySS + 1;
+}
+
 const SYN_AT = 3, SYN_BONUS = 0.30;         /* 같은 종류 셋이 모이면 결집 */
 const FIELD_CAP = 6;                        /* 전장에 동시에 세울 수 있는 유닛 수 */
 const LANES = 3;                            /* 전장은 세 갈래 길이다 */
@@ -1438,7 +1534,7 @@ function makePlayer(n, isAI, slots){
     name: isAI ? "적 넥서스" : (n === 1 ? "플레이어 1" : "플레이어 2"),
     hp:NEXUS_HP, gold:START_GOLD, combo:0, best:0,
     rage:0, atkMul:1, spdMul:1, buffT:0, ults:0, kills:0, turretCd:0, fieldTag:-1,
-    syn:{}, synKey:"",
+    syn:{}, synKey:"", pitySR:0, pitySS:0, pulls:0, bestRar:0, rushT:0,
     bLuck:0, bMerge:0, bCrit:0, bAtk:1, bHp:1, bSpd:1, bGold:0, bBounty:1,
     bNexus:1, bRage:1, bSlots:0, bRegen:0, regenT:0, blessings:[], drafts:0, nextDraft:12,
     board:new Array(slots).fill(null), sel:-1, sel2:-1, chain:0, lastMergeT:-99,
@@ -1458,7 +1554,7 @@ function freshState(mode){
     mode:mode, running:false, over:false,
     p1:p1, p2:p2, players:[p1, p2],
     units:[], uid:1,
-    elapsed:0, lastT:0, paused:false,
+    elapsed:0, lastT:0, paused:false, chaosT:rnd(20, 30), chaosN:0,
     aiTimer:0.6, aiInterval:4.2, wave:null, lastLane:null, aiLevel:1, waveNo:0,
     lootTimer:rnd(12, 20), loot:null
   };
@@ -1662,6 +1758,7 @@ function answer(p, btn, correct){
     /* 밀리고 있으면 캐는 골드가 늘어난다 — 뒤집을 여지를 남겨둔다 */
     gain += p.bGold;
     if (p.hp < p.foe.hp * 0.7) gain = Math.round(gain * 1.6);
+    if (p.rushT > 0) gain *= 3;                       /* 🌟 황금비 */
     if (p.combo > 0 && p.combo % 10 === 0){
       gain += 40; p.luckyHits++;
       say(p, "🔥 " + p.combo + "연속! 보너스 +40 G", "gold"); sfx.jack();
@@ -1722,7 +1819,8 @@ function renderOdds(p){
   p.dom.odds.innerHTML = tiers.map((t) =>
     '<i class="t' + t + '" style="flex:' + Math.max(o[t], 0.09) + '">' +
       '<u>' + stars(t) + '</u><s>' + pct(o[t]) + '</s>' +
-    '</i>').join("");
+    '</i>').join("") +
+    '<i class="pity"><u>천장</u><s>' + (PITY_SR - p.pitySR) + '</s></i>';
 }
 
 function renderGold(p){
@@ -1784,6 +1882,33 @@ function takeBlessing(p, b){
   renderGold(p); renderRage(p); renderOdds(p);
   flash("gold");
   sfx.merge();
+}
+
+/* 뽑기의 맛 : 영웅 이상은 크게 터뜨린다. 일반은 조용히 넘어간다. */
+function reveal(p, key, tier, rar){
+  if (p.ai || rar <= 0) return;
+  const R = RARITY[rar];
+  if (rar === 1){
+    say(p, "R  " + TYPES[key].name + " " + stars(tier), "ally");
+    blip(880, .08, "triangle", .04);
+    return;
+  }
+  const host = p.dom.board ? p.dom.board.parentNode : fieldEl;
+  const el = document.createElement("div");
+  el.className = "reveal";
+  el.style.setProperty("--rar", R.color);
+  el.innerHTML =
+    '<b>' + R.tag + '</b>' +
+    '<span class="ra">' + unitArt(key, tier) + '</span>' +
+    '<em>' + R.name + " " + TYPES[key].name + " " + stars(tier) + '</em>';
+  host.appendChild(el);
+  setTimeout(() => el.remove(), rar >= 4 ? 1250 : rar >= 3 ? 1050 : 850);
+
+  flash(rar >= 3 ? "gold" : "luck");
+  for (let l = 0; l < LANES; l++) burst(laneX(l), p.n === 1 ? 12 : 88, R.color, 6 + rar * 4, 1 + rar * 0.25);
+  if (rar >= 3){ shake(); sfx.jack(); }
+  else { blip(660, .09, "square", .05); setTimeout(() => blip(1180, .12, "square", .05), 90); }
+  if (rar >= 4) announce("🎆 신화 등장! " + TYPES[key].name, "foe");
 }
 
 /* ══════════ 총공격 게이지 ══════════
@@ -1889,8 +2014,8 @@ function summonOdds(p){
 }
 const pct = (x) => (x * 100 < 1 && x > 0 ? "<1" : Math.round(x * 100)) + "%";
 
-function makePawn(typeKey, tier){
-  return { id:S.uid++, type:typeKey, tier:clamp(tier, 1, MAX_TIER), born:S.elapsed };
+function makePawn(typeKey, tier, rar){
+  return { id:S.uid++, type:typeKey, tier:clamp(tier, 1, MAX_TIER), rar:rar || 0, born:S.elapsed };
 }
 
 function summon(p, free){
@@ -1912,6 +2037,10 @@ function summon(p, free){
   }
 
   const type = weightedType();
+  const rar = rollRarity(p);
+  countPity(p, rar);
+  p.pulls++;
+  if (rar > p.bestRar) p.bestRar = rar;
   let tier = comboTier(p);
   if (chance(ODDS.supreme + p.bLuck * 0.4)){
     tier = clamp(tier + 2, 1, MAX_TIER); p.luckyHits++;
@@ -1921,8 +2050,9 @@ function summon(p, free){
     say(p, "✨ 행운 소환! " + type.name + " " + stars(tier), "luck"); sfx.merge();
   } else sfx.summon();
 
-  p.board[slot] = makePawn(type.key, tier);
+  p.board[slot] = makePawn(type.key, tier, rar);
   renderBoard(p, slot, "born");
+  reveal(p, type.key, tier, rar);
   renderGold(p);
 }
 
@@ -1978,8 +2108,15 @@ function fireMerge(p){
 }
 
 function doMerge(p, from, to){
-  const a = p.board[from];
+  const a = p.board[from], b2 = p.board[to];
   const base = a.tier;
+  let rar = Math.max(a.rar || 0, b2 ? (b2.rar || 0) : 0);
+  if (chance(0.10 + p.bMerge * 0.5) && rar < RARITY.length - 1){
+    rar++;                                            /* 합성 중 승급 — 또 하나의 운 */
+    p.luckyHits++;
+    say(p, "⬆ 레어도 승급! " + RARITY[rar].name, "luck");
+    flash("luck");
+  }
   p.board[from] = null;
   p.sel = -1; p.sel2 = -1;
   p.merges++;
@@ -2005,7 +2142,7 @@ function doMerge(p, from, to){
   } else if (chance(ODDS.clone + p.bMerge * 0.5)){  /* 복제 : 한 마리 더 */
     const slot = freeSlot(p);
     if (slot >= 0){
-      p.board[slot] = makePawn(a.type, tier);
+      p.board[slot] = makePawn(a.type, tier, rar);
       p.luckyHits++;
       msg = "👥 복제! " + TYPES[a.type].name + " 하나 더"; kind = "luck"; sfx.jack();
     }
@@ -2013,7 +2150,7 @@ function doMerge(p, from, to){
     const other = weightedType();
     if (other.key !== a.type){
       p.luckyHits++;
-      p.board[to] = makePawn(other.key, tier);
+      p.board[to] = makePawn(other.key, tier, rar);
       renderBoard(p, to, "merged");
       showMerge(p);
       if (stageOf(tier) !== stageOf(base)) evolveShow(p, other.key, base, tier);
@@ -2023,7 +2160,7 @@ function doMerge(p, from, to){
     }
   }
 
-  p.board[to] = makePawn(a.type, tier);
+  p.board[to] = makePawn(a.type, tier, rar);
   renderBoard(p, to, "merged");
   showZones(p); showMerge(p);
   if (stageOf(tier) !== stageOf(base)) evolveShow(p, a.type, base, tier);
@@ -2041,7 +2178,7 @@ function deploy(p, i, lane){
   p.board[i] = null;
   if (p.sel === i) p.sel = -1;
   if (p.sel2 === i) p.sel2 = -1;
-  spawnUnit(p, pawn.type, pawn.tier, lane);
+  spawnUnit(p, pawn.type, pawn.tier, lane, pawn.rar);
   p.deployed++;
   renderBoard(p);
   showZones(p); showMerge(p);
@@ -2098,15 +2235,20 @@ function renderBoard(p, animSlot, animCls){
       cell.classList.add("empty");
     } else {
       const t = TYPES[pawn.type], st = statsOf(pawn.type, pawn.tier);
+      const R = RARITY[pawn.rar || 0];
       cell.classList.add("filled");
+      cell.style.setProperty("--rar", R.color);
+      if (pawn.rar) cell.classList.add("rar");
       if (p.sel === i || p.sel2 === i) cell.classList.add("sel");
       else if (matchable[i]) cell.classList.add("match");
       cell.innerHTML =
         '<div class="pawn">' +
           '<span class="face">' + unitArt(pawn.type, pawn.tier) + '</span>' +
           '<span class="nm">' + t.name + '</span>' +
-          '<span class="st">' + stars(pawn.tier) + ' · ' + st.hp + '/' + st.atk + '</span>' +
-        '</div>';
+          '<span class="st">' + stars(pawn.tier) + ' · ' +
+            Math.round(st.hp * R.mul) + '/' + Math.round(st.atk * R.mul) + '</span>' +
+        '</div>' +
+        (pawn.rar ? '<i class="rtag">' + R.tag + '</i>' : "");
       cell.setAttribute("role", "button");
       cell.setAttribute("aria-label", t.name + " " + stars(pawn.tier));
       cell.tabIndex = 0;
@@ -2127,13 +2269,14 @@ const fieldEl = $("#field");
 const forwardOf = (p) => (p.n === 1 ? 1 : -1);
 const goalOf    = (p) => (p.n === 1 ? 100 : 0);
 
-function spawnUnit(p, typeKey, tier, lane){
+function spawnUnit(p, typeKey, tier, lane, rar){
   const t = TYPES[typeKey], st = statsOf(typeKey, tier);
+  const R = RARITY[rar || 0];
   const vary = rnd(0.94, 1.06);                       /* 개체마다 미세한 능력 편차 */
   const u = {
-    id:S.uid++, owner:p, type:typeKey, tier:tier,
-    maxHp:Math.round(st.hp * vary * p.bHp), hp:Math.round(st.hp * vary * p.bHp),
-    atk:Math.round(st.atk * vary),
+    id:S.uid++, owner:p, type:typeKey, tier:tier, rar:rar || 0,
+    maxHp:Math.round(st.hp * vary * p.bHp * R.mul), hp:Math.round(st.hp * vary * p.bHp * R.mul),
+    atk:Math.round(st.atk * vary * R.mul),
     spd:t.spd, range:t.range, aspd:t.aspd, splash:t.splash || 0, heal:!!t.heal,
     cd:rnd(0, 0.4),
     pos:p.n === 1 ? 1 : 99,
@@ -2147,6 +2290,8 @@ function spawnUnit(p, typeKey, tier, lane){
   el.innerHTML =
     '<div class="unit-body">' + unitArt(typeKey, tier) + '<span class="unit-tier">' + stars(tier) + '</span></div>' +
     '<div class="unit-hp"><i style="width:100%"></i></div>';
+  el.style.setProperty("--rar", R.color);
+  if (u.rar >= 1) el.classList.add("rar", "r" + u.rar);
   el.style.left = u.x + "%";
   el.style.top  = (100 - u.pos) + "%";
   fieldEl.appendChild(el);
@@ -2399,9 +2544,11 @@ let warnBars = [];
    시간표를 따라가면 잘하는 사람에겐 시시하고 못하는 사람에겐 가혹해진다.
    평균은 갓 뽑은 ★1들이 희석시키므로 최고 등급과 머릿수로 잰다. */
 function playerPower(){
+  /* 레어도도 전력이다. 등급만 보면 신화 ★2 를 일반 ★2 로 착각한다 */
+  const eff = (t, r) => t + (r || 0) * 0.55;
   let top = 1, n = 0;
-  for (const u of S.units) if (u.owner === S.p1 && u.hp > 0){ n++; if (u.tier > top) top = u.tier; }
-  for (const pw of S.p1.board) if (pw){ n++; if (pw.tier > top) top = pw.tier; }
+  for (const u of S.units) if (u.owner === S.p1 && u.hp > 0){ n++; top = Math.max(top, eff(u.tier, u.rar)); }
+  for (const pw of S.p1.board) if (pw){ n++; top = Math.max(top, eff(pw.tier, pw.rar)); }
   return { top:top, n:n };
 }
 
@@ -2468,7 +2615,7 @@ function releaseWave(){
   for (const d of w.drops){
     if (fieldCount(S.p2) >= capOf(S.p2)) break;
     const t = weightedType().key;
-    const u = spawnUnit(S.p2, t, d.tier, d.lane);
+    const u = spawnUnit(S.p2, t, d.tier, d.lane, rollRarity({ pitySR:0, pitySS:0 }));
     if (d.boss) makeBoss(u);
     if (d.tier > heavy) heavy = d.tier;
   }
@@ -2500,6 +2647,44 @@ function makeBoss(u){
   flash("foe");
   shake();
   sfx.boom();
+}
+
+/* ══════════ 대격변 : 스무 초쯤마다 판을 통째로 흔든다 ══════════
+   양쪽에 똑같이 떨어지므로 불공평하지 않고, 그저 모두가 휘둘린다. */
+const CHAOS = [
+  { icon:"🌟", name:"황금비",     desc:"10초간 캐는 골드 3배",
+    run:() => { for (const q of S.players) if (!q.ai) q.rushT = 10; } },
+  { icon:"💥", name:"대붕괴",     desc:"전장의 모든 유닛이 사라진다",
+    run:() => { for (const u of S.units) if (u.hp > 0) hurt(u, u.maxHp * 9, true); } },
+  { icon:"🎰", name:"광란의 소환", desc:"소환진에 무작위 유닛 셋",
+    run:() => { for (const q of S.players){ if (q.ai) continue;
+        for (let i = 0; i < 3; i++){ const sl = freeSlot(q); if (sl < 0) break;
+          q.board[sl] = makePawn(weightedType().key, comboTier(q), rollRarity(q)); }
+        renderBoard(q); } } },
+  { icon:"🔨", name:"대장간",     desc:"소환진 유닛의 레어도가 한 단계씩 오른다",
+    run:() => { for (const q of S.players){ if (q.ai) continue;
+        for (const pw of q.board) if (pw) pw.rar = clamp((pw.rar || 0) + 1, 0, RARITY.length - 1);
+        renderBoard(q); } } },
+  { icon:"☠", name:"역병",       desc:"전장 모든 유닛의 체력이 절반이 된다",
+    run:() => { for (const u of S.units) if (u.hp > 0) hurt(u, u.hp * 0.5, false); } },
+  { icon:"🎁", name:"축복의 비",  desc:"바로 축복을 한 장 더 고른다",
+    run:() => { for (const q of S.players) if (!q.ai){ q.drafts++; offerDraft(q); } } }
+];
+
+function fireChaos(){
+  const c = CHAOS[irnd(0, CHAOS.length - 1)];
+  S.chaosN++;
+  const el = document.createElement("div");
+  el.className = "chaos";
+  el.innerHTML = '<b>' + c.icon + " " + c.name + '</b><em>' + c.desc + '</em>';
+  fieldEl.appendChild(el);
+  setTimeout(() => el.remove(), 2100);
+  flash("luck");
+  shake();
+  sfx.jack();
+  for (let l = 0; l < LANES; l++) burst(laneX(l), 50, "#A97BFF", 14, 1.6);
+  c.run();
+  S.chaosT = rnd(20, 30);
 }
 
 /* ══════════ 운빨 장치 : 전리품 상자 ══════════ */
@@ -2660,10 +2845,18 @@ function showOddsTable(p){
       row("↳ 행운 소환 (등급 +1)", pct(ODDS.lucky + p.bLuck)) +
       row("↳ 초월 소환 (등급 +2)", pct(ODDS.supreme + p.bLuck * 0.4)) +
 
+      '<h3>레어도 <em>매 소환마다 굴린다</em></h3>' +
+      RARITY.map((R, i) => row(
+        '<span style="color:' + R.color + '">' + R.tag + " " + R.name + '</span> (능력 ×' + R.mul.toFixed(2) + ')',
+        pct(rarityOdds()[i]), i >= 3)).join("") +
+      row("천장 — 영웅 이상 확정까지", (PITY_SR - p.pitySR) + "회") +
+      row("천장 — 전설 이상 확정까지", (PITY_SSR - p.pitySS) + "회", true) +
+
       '<h3>합성</h3>' +
       row("🌟 대성공 — 두 등급 점프", pct(ODDS.jackpot + p.bMerge), true) +
       row("👥 복제 — 한 마리 더", pct(ODDS.clone + p.bMerge * 0.5)) +
       row("🧬 변이 — 다른 종류로", pct(ODDS.mutate)) +
+      row("⬆ 레어도 승급", pct(0.10 + p.bMerge * 0.5), true) +
 
       '<h3>전투 · 퀴즈</h3>' +
       row("💥 치명타 (피해 2배)", pct(ODDS.crit + p.bCrit)) +
@@ -2821,6 +3014,11 @@ function loop(now){
     }
   }
 
+  /* 대격변 */
+  S.chaosT -= dt;
+  if (S.chaosT <= 0) fireChaos();
+  for (const q of S.players) if (q.rushT > 0) q.rushT -= dt;
+
   /* 전리품 상자 */
   if (S.loot){
     S.loot.life -= dt;
@@ -2887,6 +3085,9 @@ function statBlock(p, label){
     '<div class="stat"><b>' + p.merges + '</b><span>합성</span></div>' +
     '<div class="stat"><b>' + p.kills + '</b><span>처치</span></div>' +
     '<div class="stat"><b>' + p.avenged + '</b><span>설욕</span></div>' +
+    '<div class="stat"><b style="color:' + RARITY[p.bestRar].color + '">' + RARITY[p.bestRar].tag +
+      '</b><span>최고 레어도</span></div>' +
+    '<div class="stat"><b>' + p.pulls + '</b><span>소환 횟수</span></div>' +
     '<div class="stat"><b>' + p.ults + '</b><span>총공격</span></div>' +
     '<div class="stat"><b>' + p.luckyHits + '</b><span>행운 발동</span></div>' +
     '<div class="stat"><b>' + Math.ceil(p.hp) + '</b><span>남은 넥서스</span></div>';
