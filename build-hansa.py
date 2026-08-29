@@ -91,7 +91,7 @@ def scope_block(css, root):
 # ── learn ─────────────────────────────────────────────────────────
 Ls, Lj, Lbody = split(read("learn.html"))
 Ms, Mj, Mbody = split(read("monsters.html"))
-assert len(Lj) == 1 and len(Mj) == 3, (len(Lj), len(Mj))
+assert len(Lj) == 1 and len(Mj) >= 1, (len(Lj), len(Mj))   # 몬스터는 단계마다 <script> 가 는다
 
 L_IDS = {"app": "Lapp", "back": "Lback", "title": "Ltitle", "view": "Lview",
          "dock": "Ldock", "find": "Lfind", "theme": "Ltheme", "clk": "Lclk"}

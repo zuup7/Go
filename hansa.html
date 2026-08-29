@@ -1136,6 +1136,47 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-mon .hrow .hv{font-family:var(--f-px);font-size:11px;color:var(--amber);flex-shrink:0}
 .a-mon .hrow .hv.none{color:var(--tx3);font-size:9px}
 
+
+/* ══════ 4단계: 먼저 온 쪽 · 오늘의 한 판 ══════ */
+.a-mon .mode.m11 .ic{background:rgba(72,211,172,.16);color:var(--jade)}
+
+/* ── 먼저 온 쪽 ── */
+.a-mon .duel{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.a-mon .dcd{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:104px;
+  padding:14px 15px;background:var(--surf);border:var(--bd) solid var(--line);
+  box-shadow:inset -3px -3px 0 rgba(10,7,14,.45),inset 3px 3px 0 rgba(255,255,255,.12),
+             var(--sh) var(--sh) 0 rgba(10,7,14,.5)}
+.a-mon .dcd:active:not([disabled]){transform:translate(var(--sh),var(--sh));
+  box-shadow:inset 3px 3px 0 rgba(10,7,14,.45)}
+.a-mon .dcd .no{font-family:var(--f-px);font-size:13px;color:var(--tx3);flex-shrink:0;width:20px;text-align:center}
+.a-mon .dcd .nm{flex:1;min-width:0;font-family:var(--f-d);font-size:21px;line-height:1.4;color:var(--tx)}
+.a-mon .dcd .yy{font-family:var(--f-px);font-size:13px;flex-shrink:0;padding:6px 7px;
+  border:2px solid var(--line);background:var(--bg2);color:var(--tx3);visibility:hidden}
+.a-mon .dcd.show .yy{visibility:visible}
+.a-mon .dcd.dwin{border-color:var(--jade);background:var(--jade-g)}
+.a-mon .dcd.dwin .yy{background:var(--jade);color:#0F2A24;border-color:var(--line)}
+.a-mon .dcd.dlose{border-color:var(--crim);background:var(--crim-g)}
+.a-mon .vs{display:flex;align-items:center;gap:10px;margin:2px 0}
+.a-mon .vs i{flex:1;height:4px;background:repeating-linear-gradient(90deg,var(--line2) 0 3px,transparent 3px 7px)}
+.a-mon .vs b{font-family:var(--f-px);font-size:11px;color:var(--amber)}
+.a-mon .dhint{font-size:13.5px;color:var(--tx2);line-height:1.7;margin-top:12px}
+
+/* ── 오늘의 한 판 ── */
+.a-mon .chal{display:flex;align-items:center;gap:13px;width:100%;text-align:left;min-height:76px;
+  background:linear-gradient(100deg,rgba(245,198,60,.18),transparent 70%),var(--surf);
+  border:var(--bd) solid var(--line);padding:12px 14px;margin-bottom:14px;
+  box-shadow:var(--sh) var(--sh) 0 rgba(10,7,14,.5)}
+.a-mon .chal:active{transform:translate(2px,2px);box-shadow:2px 2px 0 rgba(10,7,14,.5)}
+.a-mon .chal .dd{width:52px;height:52px;flex-shrink:0;border:2px solid var(--line);background:var(--bg2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.a-mon .chal .dd b{font-family:var(--f-px);font-size:14px;color:var(--amber);line-height:1}
+.a-mon .chal .dd small{font-family:var(--f-px);font-size:6.5px;color:var(--tx3);line-height:1.6}
+.a-mon .chal .tx{flex:1;min-width:0}
+.a-mon .chal .tx b{display:block;font-family:var(--f-d);font-size:17px;line-height:1.4}
+.a-mon .chal .tx small{display:block;font-size:12.5px;color:var(--tx2);line-height:1.55}
+.a-mon .chal.done{background:var(--surf)}
+.a-mon .chal.done .dd b{color:var(--jade)}
+
 </style>
 <script>
 /* ══ 「한국사 첫 수업」 ══ */
@@ -3832,7 +3873,13 @@ function render(){
   extraEl.innerHTML="";
   view.scrollTop=0; window.scrollTo(0,0);
   (VIEWS[s.n])(s.a);
-  titleReal.textContent=(s.n==="play"&&s.a&&s.a.mode==="story") ? "/MAP/BOSS" : (PATH[s.n]||"/");
+  var pth=PATH[s.n]||"/";
+  if(s.n==="play"&&s.a){
+    if(s.a.mode==="story")pth="/MAP/BOSS";
+    else if(s.a.mode==="chal")pth="/CHALLENGE";
+    else if(s.a.mode==="sv")pth="/SURVIVAL";
+  }
+  titleReal.textContent=pth;
 }
 
 /* 데스크톱 시계 */
@@ -5356,6 +5403,293 @@ VIEWS.home=vHome;
 
 s3init(); save();
 /* 부팅이 이미 홈을 그렸으면 새 모드가 붙도록 한 번 더 그린다 (2단계와 같다) */
+if(stack.length===1&&stack[0].n==="home")render();
+
+
+/* ═══════════════════════════════════════════════════════════
+   4단계 — 먼저 온 쪽 · 오늘의 한 판
+   앞 단계들과 같은 방식으로 감싸기만 한다.
+   ═══════════════════════════════════════════════════════════ */
+
+function s4init(){
+  if(!S.best)S.best={};
+  if(S.best.first==null)S.best.first=0;      /* 먼저 온 쪽 최고 점수 */
+  if(!S.chal||S.chal.d!==today())S.chal={d:today(),done:0,ok:0,n:0};
+}
+
+/* ── 사건 ↔ 연도 목록. 연도는 채점에만 쓰고 문제로 내지 않는다 ── */
+var EVENTS=null;
+function eventList(){
+  if(EVENTS)return EVENTS;
+  var out=[];
+  var dup=function(t){
+    for(var i=0;i<out.length;i++){
+      var a=out[i].t;
+      if(a===t||a.indexOf(t)===0||t.indexOf(a)===0)return true;   /* 「대한인 국민회」/「… 결성」 */
+    }
+    return false;
+  };
+  var add=function(t,y,u){
+    t=(t||"").trim();
+    if(!t||!/^\d{4}$/.test(String(y))||dup(t))return;
+    out.push({t:t,y:+y,u:u});
+  };
+  QUESTIONS.forEach(function(q){
+    if(/-yr$/.test(q.id)){
+      var m=q.question.match(/[「『]([^」』]+)[」』]/);
+      if(m)add(m[1],q.choices[q.answer],q.unit);
+    }
+  });
+  QUESTIONS.forEach(function(q){
+    if(q.type!=="order")return;
+    q.choices.forEach(function(c){ var p=c.split("|"); if(p.length===2)add(p[1],p[0],q.unit); });
+  });
+  EVENTS=out;
+  return out;
+}
+
+/* ═══════════ 먼저 온 쪽 ═══════════ */
+var DUEL_TIME=60,F=null,duelTimer=null,duelAdv=null;
+function duelPair(){
+  var p=eventList();
+  for(var t=0;t<60;t++){
+    var a=p[Math.floor(Math.random()*p.length)],b=p[Math.floor(Math.random()*p.length)];
+    if(a!==b&&a.y!==b.y)return Math.random()<0.5?[a,b]:[b,a];
+  }
+  return [p[0],p[1]];
+}
+function vFirst(){
+  if(!F||F.over){
+    F={pair:duelPair(),score:0,combo:0,maxCombo:0,ok:0,n:0,left:DUEL_TIME,answered:false,over:false};
+  }
+  if(duelTimer)clearInterval(duelTimer);
+  duelTimer=setInterval(function(){
+    /* 화면을 떠났는데 시계가 계속 돌면 남의 화면 위에 결과를 그려 버린다 */
+    if(!F||F.over||stack[stack.length-1].n!=="first"){clearInterval(duelTimer);duelTimer=null;return;}
+    F.left--;
+    var t=document.getElementById("dT");
+    if(t){t.textContent=Math.max(0,F.left)+"초";t.classList.toggle("warn",F.left<=10);}
+    if(F.left<=0)duelEnd();
+  },1000);
+  paintDuel();
+}
+function paintDuel(){
+  if(F.over)return paintDuelEnd();
+  var a=F.pair[0],b=F.pair[1];
+  view.innerHTML=
+    '<div class="hud"><span class="timer'+(F.left<=10?" warn":"")+'" id="dT">'+F.left+'초</span>'+
+      (F.combo>=2?'<span class="combo">'+ICON.fire+' '+F.combo+'연속</span>':'')+
+      '<span style="flex:1"></span><span class="score">'+F.score+'</span></div>'+
+    '<div class="qcard"><div class="qtext" style="font-size:19px">둘 중 <b style="color:var(--amber)">먼저</b> 일어난 일은?</div>'+
+      '<p class="dhint">연도를 몰라도 돼. 어느 쪽이 앞인지만 고르면 돼.</p></div>'+
+    '<div class="duel" id="duel">'+
+      '<button class="dcd" data-i="0"><span class="no">A</span><span class="nm">'+esc(a.t)+'</span>'+
+        '<span class="yy">'+a.y+'</span></button>'+
+      '<div class="vs"><i></i><b>VS</b><i></i></div>'+
+      '<button class="dcd" data-i="1"><span class="no">B</span><span class="nm">'+esc(b.t)+'</span>'+
+        '<span class="yy">'+b.y+'</span></button>'+
+    '</div><div class="grow"></div>';
+  Array.prototype.forEach.call(view.querySelectorAll(".dcd"),function(btn){
+    btn.onclick=function(){duelPick(+btn.dataset.i);};
+  });
+}
+function duelPick(i){
+  if(F.answered||F.over)return;
+  F.answered=true; F.n++;
+  var cards=view.querySelectorAll(".dcd");
+  var first=F.pair[0].y<F.pair[1].y?0:1;
+  var ok=i===first;
+  Array.prototype.forEach.call(cards,function(c,k){
+    c.disabled=true; c.classList.add("show");
+    c.classList.add(k===first?"dwin":"dlose");   /* .win 은 셸의 창 클래스라 못 쓴다 */
+  });
+  markDay();
+  if(ok){
+    F.ok++; F.combo++; if(F.combo>F.maxCombo)F.maxCombo=F.combo;
+    var gain=50+Math.min(F.combo,10)*10;
+    F.score+=gain; pop("+"+gain);
+    buzz(16); flash("rgba(72,211,172,.26)");
+  }else{
+    F.combo=0; F.left=Math.max(1,F.left-3);      /* 틀리면 3초를 잃는다 */
+    buzz([25,45,25]); flash("rgba(255,110,124,.3)");
+    var t=document.getElementById("dT"); if(t)t.textContent=F.left+"초";
+  }
+  /* 다음 짝으로 넘기는 예약. 화면을 떠났으면 그리지 않는다 */
+  duelAdv=setTimeout(function(){
+    duelAdv=null;
+    if(!F||F.over||stack[stack.length-1].n!=="first")return;
+    F.pair=duelPair(); F.answered=false; paintDuel();
+  },ok?460:820);
+}
+function duelEnd(){
+  if(!F||F.over)return;
+  F.over=true;
+  if(duelTimer){clearInterval(duelTimer);duelTimer=null;}
+  s4init();
+  var better=F.score>(S.best.first||0);
+  if(better)S.best.first=F.score;
+  missionBump("first"); save();
+  paintDuelEnd();
+  if(better)toast("★ 새 기록 "+F.score+"점");
+}
+function paintDuelEnd(){
+  view.innerHTML=
+    '<div class="result"><div class="big">'+F.score+'</div>'+
+      '<div class="sub">'+F.n+'번 중 '+F.ok+'개 맞힘 · 최고 '+(S.best.first||0)+'점</div></div>'+
+    '<div class="rgrid">'+stat(F.ok+" / "+F.n,"정답")+stat(F.maxCombo,"최고 콤보")+
+      stat(eventList().length,"사건 수")+'</div>'+
+    '<div class="sect">이럴 때 강해져</div>'+
+    '<p class="note">순서를 아는 것이 곧 흐름을 아는 것이다. 「연표 세우기」로 이어서 해 보면 좋다.</p>'+
+    '<div class="grow"></div>'+
+    '<div class="sticky"><div class="btnrow">'+
+      '<button class="btn ghost" id="dHome">홈으로</button>'+
+      '<button class="btn" id="dAgain">한 판 더</button></div></div>';
+  document.getElementById("dHome").onclick=function(){F=null;stack=[{n:"home"}];render();};
+  document.getElementById("dAgain").onclick=function(){F=null;go("first",null,true);};
+}
+
+/* ═══════════ 오늘의 한 판 ═══════════ */
+var CHAL_N=10;
+function chalQueue(){
+  /* 날짜로 고정한다 — 같은 날이면 누구나 같은 열 문제 */
+  var p=QUESTIONS.filter(function(q){
+    return usable(q)&&(q.type==="mc"||q.type==="ox"||q.type==="source");
+  });
+  var t=today(),out=[],used={};
+  for(var i=0;out.length<CHAL_N&&i<CHAL_N*40;i++){
+    var k=hash("chal"+t+"#"+i)%p.length;
+    if(used[k])continue;
+    used[k]=1; out.push(p[k]);
+  }
+  return out;
+}
+function chalLabel(){
+  var d=new Date();
+  return {m:d.getMonth()+1,d:d.getDate()};
+}
+function chalBar(){
+  s4init();
+  var c=S.chal,l=chalLabel();
+  return '<button class="chal'+(c.done?" done":"")+'" id="toChal">'+
+    '<span class="dd"><b>'+(c.done?c.ok+"/"+c.n:l.d)+'</b><small>'+(c.done?"CLEAR":"DAY")+'</small></span>'+
+    '<span class="tx"><b>오늘의 한 판</b><small>'+
+      (c.done?"오늘 몫은 끝냈어. 내일 새 열 문제가 나와.":l.m+"월 "+l.d+"일의 문제 "+CHAL_N+"개 · 하루 한 번")+
+    '</small></span><span class="chev">'+ICON.chev+'</span></button>';
+}
+
+/* ═══════════ 기존 함수 감싸기 ═══════════ */
+/* 화면을 벗어날 때 4단계 시계도 함께 멈춘다 */
+var _stopAll4=stopAll;
+stopAll=function(){
+  _stopAll4();
+  if(duelTimer){clearInterval(duelTimer);duelTimer=null;}
+  if(duelAdv){clearTimeout(duelAdv);duelAdv=null;}
+  if(pairTimer){clearInterval(pairTimer);pairTimer=null;}
+};
+
+var _vPlay4=vPlay;
+vPlay=function(a){
+  if(a&&a.mode==="chal"){
+    if(!G||G.key!==JSON.stringify(a)){
+      G={key:JSON.stringify(a),mode:"chal",unit:null,queue:chalQueue(),i:0,score:0,
+         combo:0,maxCombo:0,ok:0,log:[],left:0,done:false,answered:false};
+    }
+    return paintQ();
+  }
+  _vPlay4(a);
+};
+
+var _finish4=finish;
+finish=function(){
+  if(G&&G.mode==="chal"){
+    s4init();
+    S.chal={d:today(),done:1,ok:G.ok,n:G.log.length};
+    missionBump("chal"); save();
+  }
+  _finish4();
+};
+
+var _vResult4=vResult;
+vResult=function(){
+  _vResult4();
+  s4init();
+  if(G.mode==="chal"){
+    var r=view.querySelector(".result");
+    if(r)r.insertAdjacentHTML("beforeend",
+      '<div class="sub" style="margin-top:6px">오늘의 한 판 · 내일 새 문제가 나와</div>');
+    var ag=document.getElementById("again");
+    if(ag){ ag.textContent="홈으로"; ag.className="btn";
+      ag.onclick=function(){ G=null; stack=[{n:"home"}]; render(); }; }
+  }
+};
+
+var _vDaily4=(typeof vDaily==="function")?vDaily:null;
+if(_vDaily4){
+  vDaily=function(){
+    _vDaily4();
+    /* 출석·미션 화면 맨 위에도 오늘의 한 판을 올린다 */
+    var box=document.createElement("div");
+    box.innerHTML=chalBar();
+    view.insertBefore(box.firstChild,view.firstChild);
+    var t=document.getElementById("toChal");
+    if(t)t.onclick=function(){ G=null; go("play",{mode:"chal"}); };
+  };
+  VIEWS.daily=vDaily;
+}
+
+var _vHome4=vHome;
+vHome=function(){
+  _vHome4();
+  s4init();
+  /* 맨 위에 오늘의 한 판 */
+  var box=document.createElement("div");
+  box.innerHTML=chalBar();
+  view.insertBefore(box.firstChild,view.firstChild);
+  document.getElementById("toChal").onclick=function(){ G=null; go("play",{mode:"chal"}); };
+
+  /* 「한 판 더」 칸에 먼저 온 쪽을 붙인다 */
+  var modes=view.querySelectorAll(".modes");
+  var last=modes[modes.length-1];
+  if(last){
+    var b=document.createElement("button");
+    b.className="mode m11";
+    b.innerHTML='<span class="ic">'+ICON.duel+'</span>'+
+      '<span><b>먼저 온 쪽</b><small>둘 중 먼저 일어난 일 고르기. 60초 안에 최대한 많이.</small></span>'+
+      '<span class="cnt">'+(S.best.first?S.best.first+"점":DUEL_TIME+"초")+'</span>';
+    b.onclick=function(){ F=null; go("first"); };
+    last.appendChild(b);
+  }
+};
+VIEWS.home=vHome;
+
+ICON.duel='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h6M4 17h6M14 7h6M14 17h6"/><path d="M7 4v6M17 14v6"/><path d="M10.5 12h3"/></svg>';
+
+MISSIONS.push(
+  {id:"m_first",n:"먼저 온 쪽 한 판 끝내기",goal:1,k:"first"},
+  {id:"m_chal",n:"오늘의 한 판 끝내기",goal:1,k:"chal"}
+);
+
+VIEWS.first=vFirst; VIEWS.play=vPlay; VIEWS.result=vResult;
+PATH.first="/DUEL"; PATH.chal="/CHALLENGE";
+
+/* 명예의 전당에 한 줄 더 */
+var _vHall4=vHall;
+vHall=function(){
+  _vHall4();
+  s4init();
+  var hof=view.querySelector(".hof");
+  if(hof){
+    var row=document.createElement("div");
+    row.className="hrow";
+    row.innerHTML='<span class="hn">먼저 온 쪽<br><small style="color:var(--tx3);font-size:12px">최고 점수</small></span>'+
+      '<span class="hv'+(S.best.first?"":" none")+'">'+(S.best.first?S.best.first+"점":"아직 없음")+'</span>';
+    hof.appendChild(row);
+  }
+};
+VIEWS.hall=vHall;
+
+s4init(); save();
+/* 부팅이 이미 홈을 그렸으면 새 요소가 붙도록 한 번 더 그린다 */
 if(stack.length===1&&stack[0].n==="home")render();
 
 
