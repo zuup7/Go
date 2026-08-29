@@ -1177,6 +1177,42 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-mon .chal.done{background:var(--surf)}
 .a-mon .chal.done .dd b{color:var(--jade)}
 
+
+/* ══════ 5단계: 시대 방어전 (아케이드) ══════ */
+.a-mon .mode.m12 .ic{background:rgba(255,110,124,.16);color:var(--crim)}
+
+/* 화면이 넓으면 모드 카드를 두 줄로 — 열두 개가 세로로 늘어지지 않게 */
+@media(min-width:560px){
+  .a-mon .modes{display:grid;grid-template-columns:1fr 1fr;align-items:stretch}
+  .a-mon .mode{min-height:88px}
+}
+
+.a-mon .ivgoal{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-top:4px;
+  background:var(--surf);border:var(--bd) solid var(--line);
+  box-shadow:var(--sh) var(--sh) 0 rgba(10,7,14,.5)}
+.a-mon .ivgoal .gl{font-family:var(--f-px);font-size:7.5px;color:var(--tx3);line-height:1.8;flex-shrink:0}
+.a-mon .ivgoal .gn{font-family:var(--f-d);font-size:19px;color:var(--amber);line-height:1.35;flex:1;min-width:0}
+.a-mon .ivgoal .gc{font-family:var(--f-px);font-size:11px;color:var(--jade);flex-shrink:0}
+.a-mon .ivwrap{margin-top:10px;border:var(--bd) solid var(--line);background:var(--bg2);
+  box-shadow:var(--sh) var(--sh) 0 rgba(10,7,14,.5);line-height:0;position:relative}
+.a-mon .ivwrap{display:flex;justify-content:center}
+.a-mon .ivwrap canvas{display:block;max-width:100%;height:auto;touch-action:none;cursor:crosshair}
+.a-mon .ivhud{display:flex;align-items:center;gap:10px;padding:2px 0 4px}
+.a-mon .ivhud .lv{display:flex;gap:4px;padding:6px 9px;border:2px solid var(--line);background:var(--bg2)}
+.a-mon .ivhud .lv i{width:14px;height:14px;background:var(--crim);display:block;
+  clip-path:polygon(50% 100%,10% 58%,10% 26%,30% 8%,50% 24%,70% 8%,90% 26%,90% 58%)}
+.a-mon .ivhud .lv i.off{background:var(--surf3)}
+.a-mon .ivhud .wv{font-family:var(--f-px);font-size:9px;color:var(--tx2);line-height:1.7}
+.a-mon .ivhud .sc{font-family:var(--f-px);font-size:13px;color:var(--amber);margin-left:auto}
+.a-mon .ivtip{font-size:13px;color:var(--tx2);line-height:1.7;margin-top:10px}
+.a-mon .ivover{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,7,14,.88);
+  padding:18px;text-align:center;line-height:1.6;overflow-y:auto}
+.a-mon .ivover b{display:block;font-family:var(--f-px);font-size:16px;color:var(--amber);line-height:1.5}
+.a-mon .ivover small{display:block;font-size:13.5px;color:var(--tx2);margin-top:9px}
+.a-mon .ivover .miss{margin-top:12px;text-align:left;display:flex;flex-direction:column;gap:5px}
+.a-mon .ivover .miss em{font-style:normal;font-size:12.5px;color:var(--tx2);line-height:1.5}
+.a-mon .ivover .miss em b{display:inline;font-family:var(--f-b);font-size:12.5px;color:var(--crim)}
+
 </style>
 <script>
 /* ══ 「한국사 첫 수업」 ══ */
@@ -5690,6 +5726,448 @@ VIEWS.hall=vHall;
 
 s4init(); save();
 /* 부팅이 이미 홈을 그렸으면 새 요소가 붙도록 한 번 더 그린다 */
+if(stack.length===1&&stack[0].n==="home")render();
+
+
+/* ═══════════════════════════════════════════════════════════
+   5단계 — 시대 방어전
+   진짜 아케이드 한 판인데, 이기는 열쇠는 손이 아니라 시대 감각이다.
+   내려오는 침략자마다 사건 이름이 붙어 있고, 이번 물결의 시대에
+   해당하는 것만 쏴야 한다. 엉뚱한 걸 쏘면 총이 잠깐 멈춘다.
+   ═══════════════════════════════════════════════════════════ */
+
+function s5init(){
+  if(!S.best)S.best={};
+  if(S.best.iv==null)S.best.iv=0;          /* 최고 점수 */
+  if(S.best.ivWave==null)S.best.ivWave=0;  /* 넘긴 물결 */
+}
+
+var IV=null,ivRAF=null,ivKeys=null,ivLast=0;
+var IV_VW=64,IV_VH=104;                    /* 가로 64칸 격자에 그린다 */
+
+/* 8×8 픽셀 침략자 — 사건 id 로 모양이 정해져 같은 사건은 늘 같은 놈 */
+function ivSprite(id){
+  var s=hash(id)||1,rows=[];
+  var rnd=function(){ s=(Math.imul(s,1103515245)+12345)>>>0; return (s>>>16)&1; };
+  for(var y=0;y<8;y++){
+    var half=[];
+    for(var x=0;x<4;x++)half.push(y===0||y===7 ? (x>0?rnd():0) : rnd());
+    rows.push(half.concat(half.slice().reverse()));
+  }
+  rows[3][2]=0; rows[3][5]=0;              /* 눈은 언제나 뚫려 있게 */
+  rows[4][3]=1; rows[4][4]=1;
+  return rows;
+}
+
+/* ── 시대별 사건 이름. 「설명 → 사건명」 문제의 정답을 쓴다 ── */
+var IV_POOL=null;
+function ivPool(){
+  if(IV_POOL)return IV_POOL;
+  var by={};
+  QUESTIONS.forEach(function(q){
+    if(q.type!=="mc"||!/-ev$/.test(q.id))return;
+    var t=q.choices[q.answer];
+    if(!t||t.length>13)return;             /* 이름표에 안 들어가는 건 뺀다 */
+    (by[q.unit]=by[q.unit]||[]).push({id:q.id,t:t,u:q.unit});
+  });
+  IV_POOL=by;
+  return by;
+}
+function ivUnits(){
+  var by=ivPool();
+  return UNITS.filter(function(u){return (by[u.id]||[]).length>=5;});
+}
+
+function ivWave(w){
+  var by=ivPool(),us=ivUnits();
+  var tgt=IV.order[(w-1)%IV.order.length];
+  var mine=shuffle(by[tgt.id]).slice(0,4);
+  var others=[];
+  us.forEach(function(u){ if(u.id!==tgt.id)others=others.concat(by[u.id]); });
+  var deco=shuffle(others).slice(0,5);
+  var all=shuffle(mine.map(function(x){return {e:x,hit:1};})
+            .concat(deco.map(function(x){return {e:x,hit:0};})));
+  var a=[];
+  for(var i=0;i<all.length;i++){
+    var c=i%3,r=Math.floor(i/3);
+    a.push({x:2+c*20,y:4+r*19,w:19,h:16,e:all[i].e,tgt:all[i].hit,
+            sp:ivSprite(all[i].e.id),hue:MON_HUE[hash(all[i].e.id)%MON_HUE.length],
+            alive:1,flash:0});
+  }
+  IV.tgt=tgt;
+  return a;
+}
+
+function ivStart(){
+  var us=shuffle(ivUnits());
+  IV={vw:IV_VW,vh:IV_VH,px:IV_VW/2,pw:9,ph:5,order:us,tgt:us[0],
+      bullets:[],ebul:[],aliens:[],dir:1,
+      stepAcc:0,fireAcc:0,eFireAcc:0,jam:0,
+      lives:3,score:0,wave:1,kills:0,miss:[],
+      over:false,msg:null,msgT:0,inv:0,target:null};
+  IV.aliens=ivWave(1);
+}
+
+function vInvade(){
+  s5init();
+  if(!IV||IV.over)ivStart();
+  view.innerHTML=
+    '<div class="ivhud"><span class="lv" id="ivL"></span>'+
+      '<span class="wv" id="ivW">WAVE 1</span>'+
+      '<span class="sc" id="ivS">0</span></div>'+
+    '<div class="ivgoal"><span class="gl">SHOOT<br>ONLY</span>'+
+      '<span class="gn" id="ivG">–</span><span class="gc" id="ivC2">0/4</span></div>'+
+    '<div class="ivwrap"><canvas id="ivC"></canvas><div id="ivO"></div></div>'+
+    '<p class="ivtip">화면을 끌어 좌우로 움직여. 총알은 알아서 나가.<br>'+
+      '<b style="color:var(--amber)">위에 뜬 시대의 사건만</b> 쏴. 엉뚱한 걸 쏘면 총이 잠깐 멈춰.<br>'+
+      '하나라도 바닥에 닿으면 목숨이 준다. 최고 '+(S.best.iv||0)+'점</p>'+
+    '<div class="btnrow" style="margin-top:14px">'+
+      '<button class="btn ghost" id="ivHome">그만두기</button>'+
+      '<button class="btn" id="ivRe">다시</button></div>'+
+    '<div class="grow"></div>';
+  document.getElementById("ivHome").onclick=function(){ ivStop(); IV=null; stack=[{n:"home"}]; render(); };
+  document.getElementById("ivRe").onclick=function(){ ivStop(); ivStart(); ivBind(); ivLast=0; ivLoop(0); };
+  ivBind();
+  ivLast=0; ivLoop(0);
+}
+
+function ivBind(){
+  var cv=document.getElementById("ivC");
+  if(!cv)return;
+  var move=function(e){
+    var r=cv.getBoundingClientRect();
+    var cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    IV.target=Math.max(IV.pw/2,Math.min(IV.vw-IV.pw/2,cx/r.width*IV.vw));
+  };
+  var drag=false;
+  cv.addEventListener("pointerdown",function(e){drag=true;
+    try{cv.setPointerCapture(e.pointerId);}catch(x){} move(e); e.preventDefault();});
+  cv.addEventListener("pointermove",function(e){if(drag)move(e);});
+  cv.addEventListener("pointerup",function(){drag=false;});
+  cv.addEventListener("pointercancel",function(){drag=false;});
+
+  if(!ivKeys){
+    ivKeys={l:false,r:false};
+    ivKeys.down=function(e){
+      if(!IV||stack[stack.length-1].n!=="invade")return;
+      if(e.key==="ArrowLeft"){ivKeys.l=true;e.preventDefault();}
+      if(e.key==="ArrowRight"){ivKeys.r=true;e.preventDefault();}
+      if(e.key===" "){ivFire();e.preventDefault();}
+    };
+    ivKeys.up=function(e){
+      if(e.key==="ArrowLeft")ivKeys.l=false;
+      if(e.key==="ArrowRight")ivKeys.r=false;
+    };
+    document.addEventListener("keydown",ivKeys.down);
+    document.addEventListener("keyup",ivKeys.up);
+  }
+}
+function ivStop(){
+  if(ivRAF){cancelAnimationFrame(ivRAF);ivRAF=null;}
+  if(ivKeys){
+    document.removeEventListener("keydown",ivKeys.down);
+    document.removeEventListener("keyup",ivKeys.up);
+    ivKeys=null;
+  }
+}
+function ivFire(){
+  if(!IV||IV.over||IV.jam>0||IV.bullets.length>=3)return;
+  IV.bullets.push({x:IV.px,y:IV.vh-9,w:1,h:3});
+}
+
+function ivLoop(t){
+  ivRAF=null;
+  if(!IV||stack[stack.length-1].n!=="invade")return ivStop();
+  /* 합친 앱에서 다른 앱으로 갈아 끼우면 이 화면이 DOM 에서 떨어진다. 그동안은 쉰다 —
+     보고 있지도 않은데 침략자가 내려와 죽는 건 억울하다 */
+  if(!document.getElementById("ivC")){ ivLast=t; ivRAF=requestAnimationFrame(ivLoop); return; }
+  var dt=Math.min(50,t-ivLast||16); ivLast=t;
+  if(!IV.over)ivStep(dt);
+  ivDraw();
+  ivRAF=requestAnimationFrame(ivLoop);
+}
+
+function ivStep(dt){
+  var v=IV;
+  if(v.jam>0)v.jam-=dt;
+  if(ivKeys&&(ivKeys.l||ivKeys.r)){
+    v.px+=(ivKeys.r?1:-1)*dt*0.045;
+    v.target=null;
+  }else if(v.target!=null){
+    v.px+=(v.target-v.px)*Math.min(1,dt*0.02);
+  }
+  v.px=Math.max(v.pw/2,Math.min(v.vw-v.pw/2,v.px));
+
+  v.fireAcc+=dt;
+  if(v.fireAcc>300){ v.fireAcc=0; ivFire(); }
+
+  v.bullets.forEach(function(b){b.y-=dt*0.075;});
+  v.bullets=v.bullets.filter(function(b){return b.y>-4;});
+  v.ebul.forEach(function(b){b.y+=dt*0.03;});
+  v.ebul=v.ebul.filter(function(b){return b.y<v.vh;});
+
+  var live=v.aliens.filter(function(a){return a.alive;});
+  var left=live.filter(function(a){return a.tgt;}).length;
+
+  /* 내려오는 걸음 — 남은 목표가 적을수록 빨라진다 */
+  var step=Math.max(260,900-(v.wave-1)*70-(4-left)*90);
+  v.stepAcc+=dt;
+  if(v.stepAcc>=step){
+    v.stepAcc=0;
+    var minX=999,maxX=-999;
+    live.forEach(function(a){ if(a.x<minX)minX=a.x; if(a.x+a.w>maxX)maxX=a.x+a.w; });
+    if((v.dir>0&&maxX+2>v.vw)||(v.dir<0&&minX-2<0)){
+      v.dir*=-1;
+      live.forEach(function(a){a.y+=3;});
+    }else{
+      live.forEach(function(a){a.x+=2*v.dir;});
+    }
+  }
+
+  v.eFireAcc+=dt;
+  if(v.eFireAcc>Math.max(700,1600-v.wave*140)&&live.length){
+    v.eFireAcc=0;
+    var pick=live[Math.floor(Math.random()*live.length)];
+    v.ebul.push({x:pick.x+pick.w/2,y:pick.y+pick.h,w:1,h:3});
+  }
+
+  /* 맞았나 */
+  v.bullets.forEach(function(b){
+    if(b.dead)return;
+    for(var i=0;i<live.length;i++){
+      var a=live[i];
+      if(!a.alive)continue;
+      if(b.x>=a.x&&b.x<=a.x+a.w&&b.y<=a.y+a.h&&b.y+b.h>=a.y){
+        b.dead=1;
+        if(a.tgt){
+          a.alive=0; v.kills++;
+          v.score+=100+Math.min(10,v.wave)*20; buzz(12);
+        }else{
+          /* 엉뚱한 걸 쐈다 — 총이 잠깐 멈춘다 */
+          a.flash=420; v.jam=900; v.bullets=[];
+          v.miss.push(a.e);
+          v.msg="그건 · "+(UMAP[a.e.u]?UMAP[a.e.u].name:"다른 시대"); v.msgT=1000; v.msgBad=1;
+          buzz([25,45,25]); flash("rgba(255,110,124,.28)");
+        }
+        break;
+      }
+    }
+  });
+  v.bullets=v.bullets.filter(function(b){return !b.dead;});
+  live.forEach(function(a){ if(a.flash>0)a.flash-=dt; });
+
+  if(v.inv>0)v.inv-=dt;
+  var hitMe=function(){
+    if(v.inv>0)return false;
+    v.lives--; v.inv=1200; v.ebul=[]; buzz([30,50,30]);
+    flash("rgba(255,110,124,.32)");
+    if(v.lives<=0){ ivEnd(); return true; }
+    return false;
+  };
+  v.ebul.forEach(function(b){
+    if(b.y+b.h>=v.vh-v.ph-1&&Math.abs(b.x-v.px)<=v.pw/2+1){ b.dead=1; hitMe(); }
+  });
+  v.ebul=v.ebul.filter(function(b){return !b.dead;});
+  if(v.over)return;
+
+  if(live.some(function(a){return a.y+a.h>=v.vh-v.ph-1;})){
+    if(hitMe())return;
+    ivNext(true);
+    return;
+  }
+  if(!left)ivNext(false);
+}
+
+function ivNext(forced){
+  var v=IV;
+  if(!forced){
+    v.score+=200+v.wave*50;
+    if(v.wave%2===0)grantItem();           /* 두 물결마다 아이템 하나 */
+  }
+  v.wave++;
+  v.aliens=ivWave(v.wave);
+  v.dir=1; v.stepAcc=0; v.bullets=[]; v.ebul=[]; v.jam=0;
+  v.msg=forced?"뚫렸다":"WAVE "+v.wave; v.msgT=1100; v.msgBad=forced?1:0;
+}
+
+function ivEnd(){
+  var v=IV; v.over=true;
+  s5init(); markDay();
+  var better=v.score>(S.best.iv||0);
+  if(better)S.best.iv=v.score;
+  if(v.wave>(S.best.ivWave||0))S.best.ivWave=v.wave;
+  missionBump("invade"); save();
+  /* 헷갈린 것 정리 — 이게 이 판의 배움이다 */
+  var seen={},ms=[];
+  v.miss.forEach(function(e){ if(seen[e.id])return; seen[e.id]=1; ms.push(e); });
+  var o=document.getElementById("ivO");
+  if(o)o.innerHTML='<div class="ivover"><div><b>GAME OVER</b>'+
+    '<small>'+v.score+'점 · WAVE '+v.wave+' · 막은 사건 '+v.kills+'개<br>'+
+    (better?'<span style="color:var(--jade)">새 기록!</span>':'최고 '+(S.best.iv||0)+'점')+'</small>'+
+    (ms.length
+      ? '<div class="miss"><em style="color:var(--tx3)">헷갈린 것</em>'+
+        ms.slice(0,5).map(function(e){
+          return '<em><b>'+esc(e.t)+'</b> — '+esc(UMAP[e.u]?UMAP[e.u].name:"")+'</em>';
+        }).join("")+'</div>'
+      : '<div class="miss"><em style="color:var(--jade)">시대를 한 번도 헷갈리지 않았어.</em></div>')+
+    '</div></div>';
+  if(better)toast("★ 새 기록 "+v.score+"점");
+}
+
+/* ── 캔버스 ── */
+function ivWrap(g,txt,maxW){
+  var out=[],cur="";
+  for(var i=0;i<txt.length;i++){
+    var t=cur+txt.charAt(i);
+    if(g.measureText(t).width>maxW&&cur){ out.push(cur); cur=txt.charAt(i); }
+    else cur=t;
+    if(out.length===2)break;
+  }
+  if(out.length<2&&cur)out.push(cur);
+  return out;
+}
+
+function ivDraw(){
+  var cv=document.getElementById("ivC");
+  if(!cv)return;
+  var v=IV,box=cv.parentNode.getBoundingClientRect();
+  /* 세로가 화면을 다 먹지 않게 — 넓은 화면에서는 폭을 줄여 가운데 둔다 */
+  var maxH=Math.max(300,Math.min(600,(window.innerHeight||700)*0.58));
+  var W=Math.max(180,Math.min(Math.round(box.width),Math.round(maxH*v.vw/v.vh)));
+  var U=W/v.vw,H=Math.round(v.vh*U);
+  var dpr=Math.min(2,window.devicePixelRatio||1);
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){
+    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+    cv.style.width=W+"px"; cv.style.height=H+"px";
+  }
+  var g=cv.getContext("2d");
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.imageSmoothingEnabled=false;
+  var R=function(x,y,w,h,c){ g.fillStyle=c;
+    g.fillRect(Math.round(x*U),Math.round(y*U),Math.max(1,Math.round(w*U)),Math.max(1,Math.round(h*U))); };
+
+  g.fillStyle="#150E1B"; g.fillRect(0,0,W,H);
+  for(var i=0;i<24;i++){
+    var sx=(i*29)%v.vw, sy=(i*17)%(v.vh-14);
+    R(sx,sy,1,1,(i+Math.floor(Date.now()/400))%5?"#2B1F33":"#4A3B57");
+  }
+  R(0,v.vh-2,v.vw,1,"#3B2C47");
+
+  var fs=Math.max(9,Math.round(2.5*U));
+  g.font="700 "+fs+"px 'Gothic A1','Apple SD Gothic Neo',sans-serif";
+  g.textAlign="center"; g.textBaseline="middle";
+
+  v.aliens.forEach(function(a){
+    if(!a.alive)return;
+    var bad=a.flash>0;
+    var c=bad?"#FF6E7C":"hsl("+a.hue+",62%,66%)",d=bad?"#B23C46":"hsl("+a.hue+",50%,42%)";
+    var ax=a.x+6;                                   /* 8칸 몸통을 19칸 칸 안에 가운데로 */
+    for(var y=0;y<8;y++)for(var x=0;x<8;x++)
+      if(a.sp[y][x])R(ax+x,a.y+y,1,1,y>5?d:c);
+    /* 이름표 — 목표든 미끼든 생김새는 같아야 한다. 색으로 답을 알려 주면 게임이 아니다 */
+    var lines=ivWrap(g,a.e.t,(a.w-1.6)*U);
+    var lh=fs*1.15, padY=fs*0.42;
+    var plateTop=(a.y+8.6)*U, plateH=lh*lines.length+padY*2;
+    g.fillStyle=bad?"#3A1219":"#231A2C";
+    g.fillRect(Math.round(a.x*U),Math.round(plateTop),
+               Math.round(a.w*U),Math.round(plateH));
+    g.fillStyle="#3B2C47";
+    g.fillRect(Math.round(a.x*U),Math.round(plateTop),Math.round(a.w*U),2);
+    g.fillStyle=bad?"#FFC3C9":"#EDE4F2";
+    var cx=(a.x+a.w/2)*U;
+    lines.forEach(function(ln,k){ g.fillText(ln,cx,plateTop+padY+lh*(k+0.5)); });
+  });
+
+  v.bullets.forEach(function(b){ R(b.x,b.y,1,3,"#F5C63C"); });
+  v.ebul.forEach(function(b){ R(b.x,b.y,1,3,"#FF6E7C"); });
+
+  /* 나 — 펼친 책 모양 포탑. 지식으로 쏜다 */
+  if(!(v.inv>0&&Math.floor(Date.now()/110)%2)){
+    var px=Math.round(v.px-v.pw/2),py=v.vh-v.ph-1,mid=px+Math.floor(v.pw/2);
+    R(px,py+2,v.pw,3,v.jam>0?"#8B7A96":"#FBF3E2");
+    R(px,py+1,v.pw,1,"#E3D2AE");
+    R(px,py+4,v.pw,1,"#C89A18");
+    R(mid,py+1,1,4,"#2B1F33");
+    R(mid,py-1,1,2,v.jam>0?"#5A4A66":"#F5C63C");
+    R(mid-1,py,3,1,"#C89A18");
+  }
+
+  /* 알림은 침략자 아래 빈 자리에 판때기를 깔고 띄운다 — 이름표와 겹치면 둘 다 안 읽힌다 */
+  if(v.msgT>0){
+    v.msgT-=16;
+    var mfs=Math.round(4.2*U);
+    g.font="700 "+mfs+"px 'Do Hyeon','Gothic A1',sans-serif";
+    var mw=g.measureText(v.msg).width+mfs*1.1, my=H*0.74;
+    g.fillStyle=v.msgBad?"#3A1219":"#231A2C";
+    g.fillRect(Math.round(W/2-mw/2),Math.round(my-mfs*0.9),Math.round(mw),Math.round(mfs*1.8));
+    g.fillStyle=v.msgBad?"#FF6E7C":"#F5C63C";
+    g.fillRect(Math.round(W/2-mw/2),Math.round(my-mfs*0.9),Math.round(mw),2);
+    g.fillText(v.msg,W/2,my);
+  }
+
+  var L=document.getElementById("ivL");
+  if(L){
+    var sHtml="";for(var k=0;k<3;k++)sHtml+='<i'+(k<v.lives?"":' class="off"')+'></i>';
+    if(L.innerHTML!==sHtml)L.innerHTML=sHtml;
+  }
+  var Wl=document.getElementById("ivW"); if(Wl)Wl.textContent="WAVE "+v.wave;
+  var Sc=document.getElementById("ivS"); if(Sc)Sc.textContent=v.score;
+  var Gl=document.getElementById("ivG");
+  if(Gl&&v.tgt&&Gl.textContent!==v.tgt.name)Gl.textContent=v.tgt.name;
+  var Cc=document.getElementById("ivC2");
+  if(Cc){
+    var done=4-v.aliens.filter(function(a){return a.alive&&a.tgt;}).length;
+    var txt=done+"/4";
+    if(Cc.textContent!==txt)Cc.textContent=txt;
+  }
+}
+
+/* ═══════════ 기존 함수 감싸기 ═══════════ */
+var _stopAll5=stopAll;
+stopAll=function(){ _stopAll5(); ivStop(); };
+
+var _vHome5=vHome;
+vHome=function(){
+  _vHome5();
+  s5init();
+  var modes=view.querySelectorAll(".modes");
+  var last=modes[modes.length-1];
+  if(last){
+    var b=document.createElement("button");
+    b.className="mode m12";
+    b.innerHTML='<span class="ic">'+ICON.invade+'</span>'+
+      '<span><b>시대 방어전</b><small>진짜 아케이드. 이번 시대의 사건만 골라 쏜다.</small></span>'+
+      '<span class="cnt">'+(S.best.iv?S.best.iv+"점":"목숨 3")+'</span>';
+    b.onclick=function(){ IV=null; go("invade"); };
+    last.appendChild(b);
+  }
+};
+VIEWS.home=vHome;
+
+var _vHall5=vHall;
+vHall=function(){
+  _vHall5();
+  s5init();
+  var hof=view.querySelector(".hof");
+  if(hof){
+    var row=document.createElement("div");
+    row.className="hrow";
+    row.innerHTML='<span class="hn">시대 방어전<br><small style="color:var(--tx3);font-size:12px">최고 점수 · 물결</small></span>'+
+      '<span class="hv'+(S.best.iv?"":" none")+'">'+
+      (S.best.iv?S.best.iv+"점 / W"+(S.best.ivWave||1):"아직 없음")+'</span>';
+    hof.appendChild(row);
+  }
+};
+VIEWS.hall=vHall;
+
+ICON.invade='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5v3M17 5v3"/><rect x="5" y="8" width="14" height="8" rx="1"/><path d="M9 12h.01M15 12h.01"/><path d="M5 16l-2 3M19 16l2 3M10 16v3M14 16v3"/></svg>';
+
+MISSIONS.push({id:"m_invade",n:"시대 방어전 한 판 하기",goal:1,k:"invade"});
+
+VIEWS.invade=vInvade;
+PATH.invade="/DEFEND";
+
+s5init(); save();
 if(stack.length===1&&stack[0].n==="home")render();
 
 
