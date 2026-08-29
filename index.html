@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#2B1F33">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="연표 스프린트">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Do+Hyeon&family=Gothic+A1:wght@400;700;800&display=swap">
+<link id="fontCss" rel="stylesheet" media="print" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Do+Hyeon&family=Gothic+A1:wght@400;700;800&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════
@@ -83,11 +83,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .bar .ttl{flex:1;min-width:0;font-family:var(--f-px);font-size:9.5px;letter-spacing:.03em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   padding:5px 7px;background:repeating-linear-gradient(90deg,#3B2C47 0 3px,transparent 3px 6px)}
-.ib{width:30px;height:30px;flex-shrink:0;background:var(--panel);border:2px solid var(--ink);
-  position:relative;box-shadow:inset -2px -2px 0 var(--panel-d),inset 2px 2px 0 #fff;
-  display:grid;place-items:center;color:var(--ink);font-family:var(--f-px);font-size:9px}
-.ib::after{content:"";position:absolute;inset:-8px}  /* 보이는 크기는 30px, 손가락 영역은 46px */
-.ib:active{box-shadow:inset 2px 2px 0 var(--panel-d);transform:translate(1px,1px)}
 .body{flex:1;display:flex;flex-direction:column;gap:12px;padding:13px;min-width:0}
 @media(min-width:560px){.body{padding:16px}}
 
@@ -149,7 +144,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .q{font-family:var(--f-h);font-size:23px;line-height:1.5}
 .q.sm{font-size:19px}
 .d{color:var(--ink-2);font-size:15.5px;line-height:1.78;margin-top:11px}
-.d b,.hi{color:var(--ink);font-weight:700;background:var(--yel);padding:1px 4px;
+.d b{color:var(--ink);font-weight:700;background:var(--yel);padding:1px 4px;
   box-decoration-break:clone;-webkit-box-decoration-break:clone}
 mark{background:var(--yel);color:var(--ink);padding:1px 4px;font-weight:700}
 
@@ -292,9 +287,6 @@ mark{background:var(--yel);color:var(--ink);padding:1px 4px;font-weight:700}
   box-shadow:inset -3px -3px 0 var(--yel-d),inset 3px 3px 0 #FFF0B8}
 .nb[aria-current="true"]{color:var(--yel)}
 .nb:active .g{transform:translate(1px,1px)}
-.nb .badge{position:absolute;top:-3px;right:calc(50% - 30px);min-width:19px;height:19px;
-  background:var(--red);border:2px solid var(--ink);color:#fff;font-family:var(--f-px);font-size:7px;
-  display:grid;place-items:center;padding:0 2px;transform:none}
 
 /* 통계 타일 */
 .stat{background:var(--panel);border:2px solid var(--ink);padding:10px 11px;
@@ -312,7 +304,6 @@ mark{background:var(--yel);color:var(--ink);padding:1px 4px;font-weight:700}
 .sect::after{content:"";flex:1;height:5px;
   background:repeating-linear-gradient(90deg,var(--yel) 0 3px,transparent 3px 6px)}
 .hint{font-size:13px;color:var(--ink-2);line-height:1.7}
-.scroll-x{overflow-x:auto}
 input[type=date],input[type=number]{
   font:inherit;font-family:var(--f-b);font-size:15px;padding:9px 10px;
   border:var(--bd) solid var(--ink);background:var(--cream);color:var(--ink);width:100%;
@@ -322,6 +313,14 @@ input[type=date],input[type=number]{
 .setrow:last-child{border-bottom:none}
 .setrow>span{color:var(--ink-2)}
 .setrow>div{flex-shrink:0;width:150px}
+
+/* ── 긴 목록은 화면에 들어올 때만 배치한다 ──────────────────────
+   치트키 26장·연표 105줄처럼 한 화면을 넘는 목록은, 안 보이는 부분까지
+   배치하느라 화면 전환이 느려진다. content-visibility 로 화면 밖은
+   건너뛰게 하고, contain-intrinsic-size 로 자리만 잡아 둔다.
+   (한 번 그려진 뒤에는 실제 높이를 기억해서 스크롤이 튀지 않는다) */
+.mn,.cmp{content-visibility:auto;contain-intrinsic-size:auto 220px}
+.rl{content-visibility:auto;contain-intrinsic-size:auto 74px}
 </style>
 
 <div class="osbar">
@@ -380,6 +379,16 @@ input[type=date],input[type=number]{
 
 
 <script>
+/* 글꼴이 늦게 와도 글은 바로 보이게 —
+   링크를 media="print" 로 걸어 렌더를 막지 않고, 다 받은 뒤에 갈아 끼운다.
+   망이 느리거나 막혀 있으면 대체 글꼴로 그냥 쓴다 (기다리지 않는다) */
+(function(){
+  var l=document.getElementById("fontCss");
+  if(!l)return;
+  if(l.sheet){l.media="all";return;}
+  l.addEventListener("load",function(){l.media="all";},{once:true});
+})();
+
 /* ==========================================================================
    DATA — 고1 한국사 (2022 개정 교육과정 기준)
    FACT: [단원, 연도, 사건명, 설명, 빈칸키워드(설명 안에 반드시 포함)]
@@ -808,10 +817,18 @@ function rankOf(xp){var r=RANKS[0],nx=null;
 
 /* ---------- 학습 풀 ---------- */
 function inScope(u){return S.units.indexOf(u)>=0;}
+/* 단원별 항목은 바뀌지 않는다 — 한 번 묶어 두고 계속 쓴다 */
+var BY_UNIT=null;
+function byUnit(id){
+  if(!BY_UNIT){
+    BY_UNIT={};
+    FACTS.concat(OX).forEach(function(x){ (BY_UNIT[x.u]=BY_UNIT[x.u]||[]).push(x); });
+  }
+  return BY_UNIT[id]||[];
+}
 function poolFacts(){return FACTS.filter(function(f){return inScope(f.u);});}
 function poolOx(){return OX.filter(function(o){return inScope(o.u);});}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
-function pick(a,n){return shuffle(a).slice(0,n);}
 
 function buildQueue(){
   var t=dayNo(),ids=[],due=[],fresh=[];
@@ -871,10 +888,9 @@ function paintTop(){
 function paintMastery(){
   var box=document.getElementById("mastery");if(!box)return;
   box.innerHTML=UNITS.filter(function(u){return inScope(u.id);}).map(function(u){
-    var fs=FACTS.filter(function(f){return f.u===u.id;});
-    var os=OX.filter(function(o){return o.u===u.id;});
-    var all=fs.length+os.length,got=0;
-    fs.concat(os).forEach(function(x){var r=S.srs[x.id];if(r)got+=Math.min(4,r.b);});
+    var xs=byUnit(u.id);
+    var all=xs.length,got=0;
+    xs.forEach(function(x){var r=S.srs[x.id];if(r)got+=Math.min(4,r.b);});
     var pct=Math.round(got/(all*4)*100);
     /* 초록·황토·빨강 세 색은 정상 시야에서도 구분이 어려워(ΔE 기준 미달) 길이 하나로만 나타내고,
        약한 단원은 글자로 짚어 준다 */
@@ -1086,9 +1102,13 @@ function renderOrder(g,done){
 /* ---------- 모드: 연표 ---------- */
 function viewTimeline(){
   var fs=poolFacts(),body="",n=0;
+  /* 단원마다 전체를 다시 훑지 않고 한 번에 묶는다 */
+  var by={};
+  fs.forEach(function(f){ (by[f.u]=by[f.u]||[]).push(f); });
   UNITS.forEach(function(u){
-    var g=fs.filter(function(f){return f.u===u.id;}).sort(function(a,b){return a.y-b.y;});
-    if(!g.length)return;
+    var g=by[u.id];
+    if(!g||!g.length)return;
+    g=g.slice().sort(function(a,b){return a.y-b.y;});
     n+=g.length;
     body+='<div class="sect" style="margin-top:20px">'+u.short+' · '+u.bk+'</div><div class="rail-line">'+
       g.map(function(f){

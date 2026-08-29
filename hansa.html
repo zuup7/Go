@@ -5,7 +5,7 @@
 <meta name="apple-mobile-web-app-title" content="한국사 기말">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Do+Hyeon&family=Gothic+A1:wght@400;500;700;800;900&display=swap">
+<link id="fontCss" rel="stylesheet" media="print" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Do+Hyeon&family=Gothic+A1:wght@400;500;700;800;900&display=swap">
 <style>
 /* ══════════════════════════════════════════════════════════════
    HANSA OS — 두 앱이 한 데스크톱 위에서 돌아간다.
@@ -196,14 +196,14 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   display:grid;place-items:center;padding:0 2px}
 
 /* ── 공통 픽셀 부품 ── */
-.a-learn .card,.a-learn .hero,.a-learn .paper,.a-learn .wcard,.a-learn .rv,.a-learn .sum,.a-learn .peek,.a-learn .wsum,.a-learn .itm,.a-learn .msn,.a-learn .exbar,.a-learn .wbar,.a-learn .lsn,.a-learn .mn,.a-learn .tlr{
+.a-learn .card,.a-learn .hero,.a-learn .paper,.a-learn .wcard,.a-learn .rv,.a-learn .sum,.a-learn .peek,.a-learn .wsum,.a-learn .exbar,.a-learn .wbar,.a-learn .lsn,.a-learn .tlr{
   background:var(--cream);border:var(--bd) solid var(--ink);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28)}
 .a-learn .card{padding:16px 15px;margin-bottom:0;animation:in .18s steps(3)}
 @keyframes in{from{opacity:0;transform:translate(0,6px)}to{opacity:1;transform:none}}
 .a-learn .card + .card{margin-top:12px}
 
 /* 버튼 — 눌리는 느낌이 핵심 */
-.a-learn .cta,.a-learn .chip,.a-learn .tw,.a-learn .qopt,.a-learn .o5,.a-learn .ans,.a-learn .gbtn,.a-learn .ob{
+.a-learn .cta,.a-learn .chip,.a-learn .tw,.a-learn .qopt,.a-learn .o5,.a-learn .ans,.a-learn .ob{
   border:var(--bd) solid var(--ink);background:var(--panel);color:var(--ink);
   box-shadow:inset -3px -3px 0 rgba(43,31,51,.2),inset 3px 3px 0 rgba(255,255,255,.85),
              var(--sh) var(--sh) 0 rgba(43,31,51,.28);
@@ -233,7 +233,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .a-learn .note{font-size:13.5px;line-height:1.7;color:var(--ink-2)}
 .a-learn .note b{background:var(--yel);padding:1px 4px}
-.a-learn .eyebrow,.a-learn .part,.a-learn .step,.a-learn .tt,.a-learn .lb,.a-learn .t,.a-learn .pts,.a-learn .gg,.a-learn .tn,.a-learn .tv,.a-learn .pc,.a-learn .n,.a-learn .wn,.a-learn .big,.a-learn .v,.a-learn .num,.a-learn .kx,.a-learn .yr,.a-learn .k,.a-learn .sub{font-feature-settings:normal}
 .a-learn .eyebrow{font-family:var(--f-px);font-size:8px;letter-spacing:.06em;color:var(--ink-3);margin-bottom:9px;line-height:1.7}
 .a-learn .part{font-family:var(--f-px);font-size:8.5px;letter-spacing:.05em;color:var(--cream);
   margin:18px 0 9px;background:var(--ink);padding:7px 9px;display:flex;align-items:center;gap:8px;
@@ -571,6 +570,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .mbox{background:var(--cream);border:var(--bd) solid var(--ink);padding:18px 17px;max-width:360px;
   width:100%;box-shadow:6px 6px 0 rgba(21,14,27,.6);animation:st .25s steps(3)}
 
+/* ── 긴 목록은 화면에 들어올 때만 배치한다 ──────────────────────
+   치트키 26장·연표 105줄처럼 한 화면을 넘는 목록은, 안 보이는 부분까지
+   배치하느라 화면 전환이 느려진다. content-visibility 로 화면 밖은
+   건너뛰게 하고, contain-intrinsic-size 로 자리만 잡아 둔다.
+   (한 번 그려진 뒤에는 실제 높이를 기억해서 스크롤이 튀지 않는다) */
+.a-learn .tlr{content-visibility:auto;contain-intrinsic-size:auto 62px}
+.a-learn .rv{content-visibility:auto;contain-intrinsic-size:auto 120px}
+.a-learn .wcard{content-visibility:auto;contain-intrinsic-size:auto 96px}
+.a-learn .hit{content-visibility:auto;contain-intrinsic-size:auto 86px}
+
 </style>
 <style>
 /* ── 「오답 몬스터」 ── */
@@ -851,6 +860,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-mon .note{font-size:12.5px;color:var(--tx3);line-height:1.6;word-break:keep-all}
 .a-mon .hidden{display:none!important}
 
+/* ── 긴 목록은 화면에 들어올 때만 배치한다 ──────────────────────
+   치트키 26장·연표 105줄처럼 한 화면을 넘는 목록은, 안 보이는 부분까지
+   배치하느라 화면 전환이 느려진다. content-visibility 로 화면 밖은
+   건너뛰게 하고, contain-intrinsic-size 로 자리만 잡아 둔다.
+   (한 번 그려진 뒤에는 실제 높이를 기억해서 스크롤이 튀지 않는다) */
+.a-mon .dcard{content-visibility:auto;contain-intrinsic-size:auto 118px}
+.a-mon .mcard{content-visibility:auto;contain-intrinsic-size:auto 132px}
+.a-mon .rrow{content-visibility:auto;contain-intrinsic-size:auto 70px}
+
 
 /* ══════ 2단계 ══════ */
 .a-mon .mode.m5 .ic{background:rgba(255,180,67,.14);color:var(--amber)}
@@ -1108,7 +1126,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-mon .pcard.up{background:var(--surf2)}
 .a-mon .pcard.hit{background:var(--jade-g);border-color:var(--jade);
   box-shadow:inset -3px -3px 0 rgba(10,7,14,.3),inset 3px 3px 0 rgba(255,255,255,.1)}
-.a-mon .pcard.miss{background:var(--crim-g);border-color:var(--crim)}
 .a-mon .pcard[disabled]{cursor:default}
 .a-mon .pbar{display:flex;align-items:center;gap:10px;padding:2px 0 4px}
 .a-mon .pbar .t{font-family:var(--f-px);font-size:11px;padding:7px 10px;border:2px solid var(--line);
@@ -1178,44 +1195,26 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-mon .chal.done .dd b{color:var(--jade)}
 
 
-/* ══════ 5단계: 시간을 달리다 (갈림길 러너) ══════ */
-.a-mon .mode.m12 .ic{background:rgba(255,110,124,.16);color:var(--crim)}
-
-/* 화면이 넓으면 모드 카드를 두 줄로 — 열세 개가 세로로 늘어지지 않게 */
+/* 모드가 열둘이라 세로로 늘어진다 — 넓은 화면에서는 두 줄로 */
 @media(min-width:560px){
   .a-mon .modes{display:grid;grid-template-columns:1fr 1fr;align-items:stretch}
   .a-mon .mode{min-height:88px}
 }
 
-.a-mon .rnhud{display:flex;align-items:center;gap:10px;padding:2px 0 6px}
-.a-mon .rnhud .lv{display:flex;gap:4px;padding:6px 9px;border:2px solid var(--line);background:var(--bg2)}
-.a-mon .rnhud .lv i{width:14px;height:14px;background:var(--crim);display:block;
-  clip-path:polygon(50% 100%,10% 58%,10% 26%,30% 8%,50% 24%,70% 8%,90% 26%,90% 58%)}
-.a-mon .rnhud .lv i.off{background:var(--surf3)}
-.a-mon .rnhud .sp{font-family:var(--f-px);font-size:9px;color:var(--tx2);line-height:1.7}
-.a-mon .rnhud .sc{font-family:var(--f-px);font-size:13px;color:var(--amber);margin-left:auto}
-.a-mon .rnask{display:flex;align-items:center;gap:11px;padding:11px 13px;margin-bottom:8px;
-  background:var(--surf);border:var(--bd) solid var(--line);
-  box-shadow:var(--sh) var(--sh) 0 rgba(10,7,14,.5)}
-.a-mon .rnask .q{font-family:var(--f-px);font-size:7.5px;color:var(--tx3);line-height:1.8;flex-shrink:0}
-.a-mon .rnask .n{font-family:var(--f-d);font-size:21px;color:var(--amber);line-height:1.3;flex:1;min-width:0}
-.a-mon .rnask .cb{font-family:var(--f-px);font-size:10px;color:var(--jade);flex-shrink:0}
-.a-mon .rnwrap{border:var(--bd) solid var(--line);background:#150E1B;position:relative;
-  box-shadow:var(--sh) var(--sh) 0 rgba(10,7,14,.5);display:flex;justify-content:center;line-height:0}
-.a-mon .rnwrap canvas{display:block;max-width:100%;height:auto;touch-action:none;cursor:pointer}
-.a-mon .rntip{font-size:13px;color:var(--tx2);line-height:1.7;margin-top:10px}
-.a-mon .rnover{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,7,14,.9);
-  padding:18px;text-align:center;line-height:1.6;overflow-y:auto}
-.a-mon .rnover b{display:block;font-family:var(--f-px);font-size:16px;color:var(--amber);line-height:1.5}
-.a-mon .rnover small{display:block;font-size:13.5px;color:var(--tx2);margin-top:9px}
-.a-mon .rnover .miss{margin-top:12px;text-align:left;display:flex;flex-direction:column;gap:5px}
-.a-mon .rnover .miss em{font-style:normal;font-size:12.5px;color:var(--tx2);line-height:1.5}
-.a-mon .rnover .miss em b{display:inline;font-family:var(--f-b);font-size:12.5px;color:var(--crim)}
-
 </style>
 <script>
 /* ══ 「한국사 첫 수업」 ══ */
 (function(){
+
+/* 글꼴이 늦게 와도 글은 바로 보이게 —
+   링크를 media="print" 로 걸어 렌더를 막지 않고, 다 받은 뒤에 갈아 끼운다.
+   망이 느리거나 막혀 있으면 대체 글꼴로 그냥 쓴다 (기다리지 않는다) */
+(function(){
+  var l=document.getElementById("fontCss");
+  if(!l)return;
+  if(l.sheet){l.media="all";return;}
+  l.addEventListener("load",function(){l.media="all";},{once:true});
+})();
 
 const LESSONS=[
 {id:"L1",u:"s1",part:"세계는 어떻게 돌아갔나",title:"두 번의 큰 전쟁, 그 첫 번째",sc:"globe",
@@ -3405,6 +3404,16 @@ window.__hansaHome.learn=function(){ L=null; stack=[{n:"home"}]; render(); };
 /* ══ 「오답 몬스터」 ══ */
 (function(){
 
+/* 글꼴이 늦게 와도 글은 바로 보이게 —
+   링크를 media="print" 로 걸어 렌더를 막지 않고, 다 받은 뒤에 갈아 끼운다.
+   망이 느리거나 막혀 있으면 대체 글꼴로 그냥 쓴다 (기다리지 않는다) */
+(function(){
+  var l=document.getElementById("fontCss");
+  if(!l)return;
+  if(l.sheet){l.media="all";return;}
+  l.addEventListener("load",function(){l.media="all";},{once:true});
+})();
+
 
 /* ═══════════════════════════════════════════════════════════
    단원 메타 — QUESTIONS 의 unit / era 값이 여기에 대응한다
@@ -4633,15 +4642,16 @@ function toast(t){
   var e=document.createElement("div");e.className="toast";e.textContent=t;
   document.body.appendChild(e);setTimeout(function(){e.remove();},2100);
 }
-function cardModal(f){
+function cardModal(f,then){
   var m=document.createElement("div");m.className="modal";
   m.innerHTML='<div class="mbox"><div class="gr" style="color:'+GRADE[f.g].c+'">'+f.g+'</div>'+
     '<div class="pf" style="border-color:'+GRADE[f.g].c+'">'+portrait(f,140)+'</div>'+
     '<div class="nm">'+esc(f.n)+'</div><div class="ds">'+esc(f.d)+'</div>'+
     '<button class="btn" id="mok">받기</button></div>';
   document.body.appendChild(m);
-  m.querySelector("#mok").onclick=function(){m.remove();};
-  m.onclick=function(e){if(e.target===m)m.remove();};
+  var close=function(){ m.remove(); if(then)then(); };
+  m.querySelector("#mok").onclick=close;
+  m.onclick=function(e){if(e.target===m)close();};
   buzz([12,40,12]);
 }
 
@@ -4965,13 +4975,11 @@ vResult=function(){
   var pend=(G&&G.pending)||[];
   _vResult();
   if(pend.length){
+    /* 카드를 하나씩 이어서 띄운다. 예전엔 document 에 클릭 리스너를 걸었는데,
+       카드를 안 닫고 화면을 떠나면 그대로 남아 엉뚱한 데서 다시 튀어나왔다 */
     var i=0;
-    var show=function(){ if(i<pend.length)cardModal(pend[i++]); };
+    var show=function(){ if(i<pend.length)cardModal(pend[i++],function(){setTimeout(show,180);}); };
     setTimeout(show,420);
-    document.addEventListener("click",function h(e){
-      if(e.target&&e.target.id==="mok"){ setTimeout(show,180);
-        if(i>=pend.length)document.removeEventListener("click",h); }
-    });
   }
 };
 VIEWS.result=vResult;
@@ -5725,370 +5733,6 @@ VIEWS.hall=vHall;
 
 s4init(); save();
 /* 부팅이 이미 홈을 그렸으면 새 요소가 붙도록 한 번 더 그린다 */
-if(stack.length===1&&stack[0].n==="home")render();
-
-
-/* ═══════════════════════════════════════════════════════════
-   5단계 — 시간을 달리다
-   멈출 수 없는 러너. 갈림길마다 두 시대의 문이 달려온다.
-   위에 뜬 사건이 어느 시대 것인지, 달리면서 골라 들어가야 한다.
-   ═══════════════════════════════════════════════════════════ */
-
-function s5init(){
-  if(!S.best)S.best={};
-  if(S.best.run==null)S.best.run=0;        /* 최고 점수 */
-  if(S.best.runGate==null)S.best.runGate=0;/* 지나온 갈림길 */
-}
-
-var RN=null,rnRAF=null,rnKeys=null,rnLast=0;
-var RN_VW=64,RN_VH=104;
-var RN_RUNY=88;                            /* 달리는 사람이 서 있는 줄 */
-
-/* 문패에 들어가야 하니 시대 이름을 짧게 줄인다 */
-var RN_SHORT={s1:"세계사",s2:"무단 통치",s3:"문화 정치",s4:"민족 말살",
-              s5:"1910년대",s6:"3·1 운동",s7:"임시 정부",s8:"무장 투쟁"};
-function rnShort(u){ return RN_SHORT[u]||(UMAP[u]?UMAP[u].name:u); }
-
-/* 사건 이름은 「설명 → 사건명」 문제의 정답에서 뽑는다 */
-var RN_POOL=null;
-function rnPool(){
-  if(RN_POOL)return RN_POOL;
-  var by={};
-  QUESTIONS.forEach(function(q){
-    if(q.type!=="mc"||!/-ev$/.test(q.id))return;
-    var t=q.choices[q.answer];
-    if(!t||t.length>14)return;
-    (by[q.unit]=by[q.unit]||[]).push({id:q.id,t:t,u:q.unit});
-  });
-  RN_POOL=by;
-  return by;
-}
-function rnUnits(){
-  var by=rnPool();
-  return UNITS.filter(function(u){return (by[u.id]||[]).length>=3;}).map(function(u){return u.id;});
-}
-
-function rnGate(y){
-  var us=rnUnits(),by=rnPool();
-  var a=us[Math.floor(Math.random()*us.length)];
-  var b=a; while(b===a)b=us[Math.floor(Math.random()*us.length)];
-  var e=by[a][Math.floor(Math.random()*by[a].length)];
-  var corr=Math.random()<0.5?0:1;
-  return {y:y,e:e,opts:corr===0?[a,b]:[b,a],corr:corr,done:0,res:null,flash:0};
-}
-
-function rnStart(){
-  RN={vw:RN_VW,vh:RN_VH,lane:0,x:RN_VW*0.25,
-      speed:0.032,dist:0,score:0,combo:0,maxCombo:0,lives:3,gates:0,miss:[],
-      objs:[],stars:[],over:false,shake:0,msg:null,msgT:0,inv:0,frame:0,frameAcc:0,hitPause:0};
-  RN.objs.push(rnGate(-24));
-  rnFill();
-}
-/* 문 사이사이에 별을 뿌린다 — 갈림길만 있으면 사이가 심심하다 */
-function rnFill(){
-  var last=RN.objs.length?RN.objs[RN.objs.length-1].y:0;
-  while(last>-260){
-    var y=last-58;
-    for(var k=0;k<2;k++)
-      RN.stars.push({y:y+18+k*16,lane:Math.random()<0.5?0:1,got:0});
-    RN.objs.push(rnGate(y));
-    last=y;
-  }
-}
-
-function vRunner(){
-  s5init();
-  if(!RN||RN.over)rnStart();
-  view.innerHTML=
-    '<div class="rnhud"><span class="lv" id="rnL"></span>'+
-      '<span class="sp" id="rnD">0m</span><span class="sc" id="rnS">0</span></div>'+
-    '<div class="rnask"><span class="q">WHICH<br>ERA?</span>'+
-      '<span class="n" id="rnQ">–</span><span class="cb" id="rnC">0</span></div>'+
-    '<div class="rnwrap"><canvas id="rnCv"></canvas><div id="rnO"></div></div>'+
-    '<p class="rntip">화면 <b style="color:var(--amber)">왼쪽·오른쪽 탭</b>(PC 는 ← →)으로 길을 바꿔. '+
-      '위에 뜬 사건이 <b>어느 시대 것인지</b> 골라 그 문으로 달려 들어가.<br>'+
-      '별은 주우면 점수. 달릴수록 빨라져. 최고 '+(S.best.run||0)+'점</p>'+
-    '<div class="btnrow" style="margin-top:14px">'+
-      '<button class="btn ghost" id="rnHome">그만두기</button>'+
-      '<button class="btn" id="rnRe">다시</button></div>'+
-    '<div class="grow"></div>';
-  document.getElementById("rnHome").onclick=function(){ rnStop(); RN=null; stack=[{n:"home"}]; render(); };
-  document.getElementById("rnRe").onclick=function(){ rnStop(); rnStart(); rnBind(); rnLast=0; rnLoop(0); };
-  rnBind();
-  rnLast=0; rnLoop(0);
-}
-
-function rnMove(d){
-  if(!RN||RN.over)return;
-  var n=Math.max(0,Math.min(1,RN.lane+d));
-  if(n!==RN.lane){ RN.lane=n; buzz(8); }
-}
-function rnBind(){
-  var cv=document.getElementById("rnCv");
-  if(!cv)return;
-  cv.addEventListener("pointerdown",function(e){
-    e.preventDefault();
-    var r=cv.getBoundingClientRect();
-    rnMove((e.clientX-r.left)<r.width/2?-1:1);
-  });
-  if(!rnKeys){
-    rnKeys={};
-    rnKeys.down=function(e){
-      if(!RN||stack[stack.length-1].n!=="runner")return;
-      if(e.key==="ArrowLeft"){rnMove(-1);e.preventDefault();}
-      if(e.key==="ArrowRight"){rnMove(1);e.preventDefault();}
-    };
-    document.addEventListener("keydown",rnKeys.down);
-  }
-}
-function rnStop(){
-  if(rnRAF){cancelAnimationFrame(rnRAF);rnRAF=null;}
-  if(rnKeys){ document.removeEventListener("keydown",rnKeys.down); rnKeys=null; }
-}
-
-function rnLoop(t){
-  rnRAF=null;
-  if(!RN||stack[stack.length-1].n!=="runner")return rnStop();
-  /* 합친 앱에서 다른 앱으로 갈아 끼우면 이 화면이 DOM 에서 떨어진다. 그동안은 쉰다 */
-  if(!document.getElementById("rnCv")){ rnLast=t; rnRAF=requestAnimationFrame(rnLoop); return; }
-  var dt=Math.min(50,t-rnLast||16); rnLast=t;
-  if(!RN.over)rnStep(dt);
-  rnDraw();
-  rnRAF=requestAnimationFrame(rnLoop);
-}
-
-function rnStep(dt){
-  var v=RN;
-  if(v.hitPause>0){ v.hitPause-=dt; dt*=0.25; }   /* 넘어진 직후 잠깐 느려진다 */
-  if(v.inv>0)v.inv-=dt;
-  if(v.shake>0)v.shake-=dt;
-  if(v.msgT>0)v.msgT-=dt;
-
-  /* 달릴수록 빨라진다 */
-  v.speed=Math.min(0.072,0.032+v.dist*0.000024);
-  var dy=v.speed*dt;
-  v.dist+=dy;
-  v.frameAcc+=dt*(0.4+v.speed*14);
-  if(v.frameAcc>90){ v.frameAcc=0; v.frame=1-v.frame; }
-
-  var lx=v.vw*0.25,rx=v.vw*0.75,want=v.lane?rx:lx;
-  v.x+=(want-v.x)*Math.min(1,dt*0.022);
-
-  v.objs.forEach(function(o){o.y+=dy; if(o.flash>0)o.flash-=dt;});
-  v.stars.forEach(function(s){s.y+=dy;});
-
-  /* 별 줍기 */
-  v.stars.forEach(function(s){
-    if(s.got)return;
-    if(Math.abs(s.y-RN_RUNY)<4&&s.lane===v.lane){
-      s.got=1; v.score+=20; buzz(6);
-    }
-  });
-  v.stars=v.stars.filter(function(s){return s.y<v.vh+10;});
-
-  /* 갈림길 통과 */
-  v.objs.forEach(function(o){
-    if(o.done||o.y<RN_RUNY-1)return;
-    o.done=1; v.gates++;
-    var ok=v.lane===o.corr;
-    o.res=ok?"ok":"no"; o.flash=520;
-    if(ok){
-      v.combo++; if(v.combo>v.maxCombo)v.maxCombo=v.combo;
-      var gain=100+Math.min(10,v.combo)*20;
-      v.score+=gain; pop("+"+gain);
-      buzz(14); flash("rgba(72,211,172,.22)");
-    }else{
-      v.combo=0; v.miss.push(o.e);
-      v.msg="그건 · "+rnShort(o.e.u); v.msgT=1300;
-      v.shake=380; v.hitPause=520; buzz([30,60,30]); flash("rgba(255,110,124,.3)");
-      if(v.inv<=0){ v.lives--; v.inv=900; if(v.lives<=0)return rnEnd(); }
-    }
-  });
-  if(v.over)return;
-  v.objs=v.objs.filter(function(o){return o.y<v.vh+16;});
-  rnFill();
-}
-
-function rnNextGate(){
-  for(var i=0;i<RN.objs.length;i++)if(!RN.objs[i].done)return RN.objs[i];
-  return null;
-}
-
-function rnEnd(){
-  var v=RN; v.over=true;
-  s5init(); markDay();
-  var better=v.score>(S.best.run||0);
-  if(better)S.best.run=v.score;
-  if(v.gates>(S.best.runGate||0))S.best.runGate=v.gates;
-  missionBump("runner"); save();
-  var seen={},ms=[];
-  v.miss.forEach(function(e){ if(seen[e.id])return; seen[e.id]=1; ms.push(e); });
-  var o=document.getElementById("rnO");
-  if(o)o.innerHTML='<div class="rnover"><div><b>넘어졌다</b>'+
-    '<small>'+v.score+'점 · '+Math.round(v.dist)+'m · 갈림길 '+v.gates+'개 · 최고 콤보 '+v.maxCombo+'<br>'+
-    (better?'<span style="color:var(--jade)">새 기록!</span>':'최고 '+(S.best.run||0)+'점')+'</small>'+
-    (ms.length
-      ? '<div class="miss"><em style="color:var(--tx3)">헷갈린 것</em>'+
-        ms.slice(0,5).map(function(e){
-          return '<em><b>'+esc(e.t)+'</b> — '+esc(UMAP[e.u]?UMAP[e.u].name:"")+'</em>';
-        }).join("")+'</div>'
-      : '<div class="miss"><em style="color:var(--jade)">한 번도 안 틀렸어.</em></div>')+
-    '</div></div>';
-  if(better)toast("★ 새 기록 "+v.score+"점");
-}
-
-function rnDraw(){
-  var cv=document.getElementById("rnCv");
-  if(!cv)return;
-  var v=RN,box=cv.parentNode.getBoundingClientRect();
-  var maxH=Math.max(300,Math.min(620,(window.innerHeight||700)*0.6));
-  var W=Math.max(180,Math.min(Math.round(box.width),Math.round(maxH*v.vw/v.vh)));
-  var U=W/v.vw,H=Math.round(v.vh*U);
-  var dpr=Math.min(2,window.devicePixelRatio||1);
-  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){
-    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
-    cv.style.width=W+"px"; cv.style.height=H+"px";
-  }
-  var g=cv.getContext("2d");
-  g.setTransform(dpr,0,0,dpr,0,0);
-  g.imageSmoothingEnabled=false;
-  var sh=v.shake>0?(Math.random()-0.5)*Math.min(3,v.shake/120):0;
-  g.translate(sh*U,0);
-  var R=function(x,y,w,h,c){ g.fillStyle=c;
-    g.fillRect(Math.round(x*U),Math.round(y*U),Math.max(1,Math.round(w*U)),Math.max(1,Math.round(h*U))); };
-
-  g.fillStyle="#150E1B"; g.fillRect(-8,0,W+16,H);
-
-  /* 흐르는 길 — 줄무늬가 속도에 따라 길어진다. 이게 달리는 느낌을 만든다 */
-  R(2,0,60,v.vh,"#1E1526");
-  R(1,0,1,v.vh,"#3B2C47"); R(62,0,1,v.vh,"#3B2C47");
-  var streak=2+ (v.speed-0.032)/0.04*8;           /* 2 → 10칸 */
-  var gap=streak+5, off=v.dist%gap;
-  for(var y=-gap;y<v.vh+gap;y+=gap){
-    R(31.3,y+off,1.4,streak,"#3A2B49");           /* 가운데 차선 */
-    R(13,y+off-gap*0.4,0.8,streak*0.7,"#2A2036");  /* 옆 줄무늬 */
-    R(50,y+off+gap*0.2,0.8,streak*0.7,"#2A2036");
-  }
-
-  /* 별 */
-  v.stars.forEach(function(s){
-    if(s.got||s.y<-4||s.y>v.vh+4)return;
-    var cx=(s.lane?v.vw*0.75:v.vw*0.25)-1.5;
-    R(cx+1,s.y-1.5,1,4,"#F5C63C"); R(cx,s.y-0.5,3,1,"#F5C63C");
-    R(cx+0.5,s.y-1,2,2,"#FFF0B8");
-  });
-
-  /* 갈림길 문 */
-  var fs=Math.max(10,Math.round(2.9*U));
-  g.textAlign="center"; g.textBaseline="middle";
-  v.objs.forEach(function(o){
-    if(o.y<-14||o.y>v.vh+6)return;
-    for(var i=0;i<2;i++){
-      var x=i?33:3,w=28;
-      var bg="#241C2E",bd="#5A4A66",tx="#EDE4F2",post="#4A3B57";
-      if(o.flash>0&&o.done){
-        if(i===o.corr){ bg="#12352C"; bd="#48D3AC"; tx="#9BF0D0"; post="#48D3AC"; }
-        else{ bg="#3A1219"; bd="#FF6E7C"; tx="#FFC3C9"; post="#FF6E7C"; }
-      }
-      R(x,o.y-9,w,9,bg);                           /* 문 안쪽 */
-      R(x,o.y-11,w,2,bd);                          /* 상인방 */
-      R(x,o.y-11,2,11,post); R(x+w-2,o.y-11,2,11,post);   /* 기둥 */
-      R(x+2,o.y-0.9,w-4,0.9,bd);                   /* 문턱 */
-      g.font="700 "+fs+"px 'Gothic A1','Apple SD Gothic Neo',sans-serif";
-      g.fillStyle=tx;
-      g.fillText(rnShort(o.opts[i]),(x+w/2)*U,(o.y-4.8)*U);
-    }
-  });
-
-  /* 달리는 사람 */
-  if(!(v.inv>0&&Math.floor(Date.now()/90)%2)){
-    var f=v.frame,bob=f?0:-0.5;                  /* 통통 튀는 느낌 */
-    var px=v.x-4,py=RN_RUNY-12+bob;
-    R(px+1.4,py+11.4,5,0.7,"rgba(0,0,0,.45)");   /* 그림자 */
-    R(px+2.4,py+0.8,3.2,3.2,"#F0D6B8");          /* 얼굴 */
-    R(px+2.2,py,3.6,1.2,"#2B1F33");              /* 머리 */
-    R(px+1.6,py+4,5.2,4.6,"#3D6BB5");            /* 몸통 */
-    R(px+1.6,py+4,5.2,0.8,"#5B87CC");
-    R(px+0.2,py+4.4,1.4,f?3.4:2.2,f?"#F0D6B8":"#2E5794");   /* 팔 */
-    R(px+6.4,py+4.4,1.4,f?2.2:3.4,f?"#2E5794":"#F0D6B8");
-    R(px+1.8,py+8.4,1.7,f?3:1.9,"#2B1F33");      /* 다리 */
-    R(px+4.6,py+8.4,1.7,f?1.9:3,"#2B1F33");
-    R(px+1.5,py+(f?11.2:10.1),2.3,1,"#FBF3E2");  /* 신발 */
-    R(px+4.3,py+(f?10.1:11.2),2.3,1,"#FBF3E2");
-  }
-  R(2,RN_RUNY+1,60,0.6,"rgba(245,198,60,.25)");  /* 판정선 */
-
-  if(v.msgT>0){
-    var mfs=Math.round(4.2*U);
-    g.font="700 "+mfs+"px 'Do Hyeon','Gothic A1',sans-serif";
-    var mw=g.measureText(v.msg).width+mfs*1.1,my=H*0.62;
-    g.fillStyle="#3A1219";
-    g.fillRect(Math.round(W/2-mw/2),Math.round(my-mfs*0.9),Math.round(mw),Math.round(mfs*1.8));
-    g.fillStyle="#FF6E7C";
-    g.fillRect(Math.round(W/2-mw/2),Math.round(my-mfs*0.9),Math.round(mw),2);
-    g.fillText(v.msg,W/2,my);
-  }
-  g.setTransform(dpr,0,0,dpr,0,0);
-
-  var L=document.getElementById("rnL");
-  if(L){ var h="";for(var k=0;k<3;k++)h+='<i'+(k<v.lives?"":' class="off"')+'></i>';
-    if(L.innerHTML!==h)L.innerHTML=h; }
-  var D=document.getElementById("rnD");
-  if(D)D.textContent=Math.round(v.dist)+"m";
-  var Sc=document.getElementById("rnS"); if(Sc)Sc.textContent=v.score;
-  var nx=rnNextGate();
-  var Q=document.getElementById("rnQ");
-  if(Q&&nx&&Q.textContent!==nx.e.t)Q.textContent=nx.e.t;
-  var C=document.getElementById("rnC");
-  if(C){ var ct=v.combo>=2?v.combo+"연속":""; if(C.textContent!==ct)C.textContent=ct; }
-}
-
-/* ═══════════ 기존 함수 감싸기 ═══════════ */
-var _stopAll5=stopAll;
-stopAll=function(){ _stopAll5(); rnStop(); };
-
-var _vHome5=vHome;
-vHome=function(){
-  _vHome5();
-  s5init();
-  var modes=view.querySelectorAll(".modes");
-  var last=modes[modes.length-1];
-  if(last){
-    var b=document.createElement("button");
-    b.className="mode m12";
-    b.innerHTML='<span class="ic">'+ICON.run+'</span>'+
-      '<span><b>시간을 달리다</b><small>멈출 수 없는 러너. 갈림길마다 맞는 시대의 문으로.</small></span>'+
-      '<span class="cnt">'+(S.best.run?S.best.run+"점":"목숨 3")+'</span>';
-    b.onclick=function(){ RN=null; go("runner"); };
-    last.appendChild(b);
-  }
-};
-VIEWS.home=vHome;
-
-var _vHall5=vHall;
-vHall=function(){
-  _vHall5();
-  s5init();
-  var hof=view.querySelector(".hof");
-  if(hof){
-    var row=document.createElement("div");
-    row.className="hrow";
-    row.innerHTML='<span class="hn">시간을 달리다<br><small style="color:var(--tx3);font-size:12px">최고 점수 · 갈림길</small></span>'+
-      '<span class="hv'+(S.best.run?"":" none")+'">'+
-      (S.best.run?S.best.run+"점 / "+(S.best.runGate||0)+"개":"아직 없음")+'</span>';
-    hof.appendChild(row);
-  }
-};
-VIEWS.hall=vHall;
-
-ICON.run='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4.5" r="2"/><path d="M9 21l2.5-5 3-2-1-4"/><path d="M13.5 10L10 12l-1 3"/><path d="M14.5 10l3 2 2 4"/><path d="M4 9h3"/><path d="M3 13h4"/></svg>';
-
-MISSIONS.push({id:"m_runner",n:"시간을 달리다 한 판 하기",goal:1,k:"runner"});
-
-VIEWS.runner=vRunner;
-PATH.runner="/RUN";
-
-s5init(); save();
 if(stack.length===1&&stack[0].n==="home")render();
 
 

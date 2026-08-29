@@ -5,7 +5,7 @@
 <meta name="apple-mobile-web-app-title" content="한국사 첫 수업">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Do+Hyeon&family=Gothic+A1:wght@400;700;800&display=swap">
+<link id="fontCss" rel="stylesheet" media="print" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Do+Hyeon&family=Gothic+A1:wght@400;700;800&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════
@@ -107,14 +107,14 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   display:grid;place-items:center;padding:0 2px}
 
 /* ── 공통 픽셀 부품 ── */
-.card,.hero,.paper,.wcard,.rv,.sum,.peek,.wsum,.itm,.msn,.exbar,.wbar,.lsn,.mn,.tlr{
+.card,.hero,.paper,.wcard,.rv,.sum,.peek,.wsum,.exbar,.wbar,.lsn,.tlr{
   background:var(--cream);border:var(--bd) solid var(--ink);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28)}
 .card{padding:16px 15px;margin-bottom:0;animation:in .18s steps(3)}
 @keyframes in{from{opacity:0;transform:translate(0,6px)}to{opacity:1;transform:none}}
 .card + .card{margin-top:12px}
 
 /* 버튼 — 눌리는 느낌이 핵심 */
-.cta,.chip,.tw,.qopt,.o5,.ans,.gbtn,.ob{
+.cta,.chip,.tw,.qopt,.o5,.ans,.ob{
   border:var(--bd) solid var(--ink);background:var(--panel);color:var(--ink);
   box-shadow:inset -3px -3px 0 rgba(43,31,51,.2),inset 3px 3px 0 rgba(255,255,255,.85),
              var(--sh) var(--sh) 0 rgba(43,31,51,.28);
@@ -144,7 +144,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .note{font-size:13.5px;line-height:1.7;color:var(--ink-2)}
 .note b{background:var(--yel);padding:1px 4px}
-.eyebrow,.part,.step,.tt,.lb,.t,.pts,.gg,.tn,.tv,.pc,.n,.wn,.big,.v,.num,.kx,.yr,.k,.sub{font-feature-settings:normal}
 .eyebrow{font-family:var(--f-px);font-size:8px;letter-spacing:.06em;color:var(--ink-3);margin-bottom:9px;line-height:1.7}
 .part{font-family:var(--f-px);font-size:8.5px;letter-spacing:.05em;color:var(--cream);
   margin:18px 0 9px;background:var(--ink);padding:7px 9px;display:flex;align-items:center;gap:8px;
@@ -481,6 +480,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   padding:18px;overflow-y:auto}
 .mbox{background:var(--cream);border:var(--bd) solid var(--ink);padding:18px 17px;max-width:360px;
   width:100%;box-shadow:6px 6px 0 rgba(21,14,27,.6);animation:st .25s steps(3)}
+
+/* ── 긴 목록은 화면에 들어올 때만 배치한다 ──────────────────────
+   치트키 26장·연표 105줄처럼 한 화면을 넘는 목록은, 안 보이는 부분까지
+   배치하느라 화면 전환이 느려진다. content-visibility 로 화면 밖은
+   건너뛰게 하고, contain-intrinsic-size 로 자리만 잡아 둔다.
+   (한 번 그려진 뒤에는 실제 높이를 기억해서 스크롤이 튀지 않는다) */
+.tlr{content-visibility:auto;contain-intrinsic-size:auto 62px}
+.rv{content-visibility:auto;contain-intrinsic-size:auto 120px}
+.wcard{content-visibility:auto;contain-intrinsic-size:auto 96px}
+.hit{content-visibility:auto;contain-intrinsic-size:auto 86px}
 </style>
 
 <div class="osbar">
@@ -503,6 +512,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 </div>
 
 <script>
+/* 글꼴이 늦게 와도 글은 바로 보이게 —
+   링크를 media="print" 로 걸어 렌더를 막지 않고, 다 받은 뒤에 갈아 끼운다.
+   망이 느리거나 막혀 있으면 대체 글꼴로 그냥 쓴다 (기다리지 않는다) */
+(function(){
+  var l=document.getElementById("fontCss");
+  if(!l)return;
+  if(l.sheet){l.media="all";return;}
+  l.addEventListener("load",function(){l.media="all";},{once:true});
+})();
+
 const LESSONS=[
 {id:"L1",u:"s1",part:"세계는 어떻게 돌아갔나",title:"두 번의 큰 전쟁, 그 첫 번째",sc:"globe",
  hook:"한국사 시간에 왜 갑자기 유럽 이야기가 나올까? 그 전쟁이 끝나면서 나온 말 한마디가, 1919년 서울 거리를 뒤덮은 만세 소리의 불씨가 되기 때문이야.",

@@ -317,7 +317,7 @@ HEAD = """<title>한국사 기말 — HANSA OS</title>
 <meta name="apple-mobile-web-app-title" content="한국사 기말">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Do+Hyeon&family=Gothic+A1:wght@400;500;700;800;900&display=swap">
+<link id="fontCss" rel="stylesheet" media="print" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Do+Hyeon&family=Gothic+A1:wght@400;500;700;800;900&display=swap">
 """
 
 TASKBAR = """<div class="osbar">
