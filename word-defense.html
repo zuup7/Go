@@ -113,20 +113,44 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   position:absolute;left:0;right:0;top:50%;height:1px;z-index:2;
   background:repeating-linear-gradient(90deg,var(--edge) 0 8px,transparent 8px 16px);
 }
-#warn{
-  position:absolute;left:0;right:0;top:0;z-index:13;height:19px;pointer-events:none;
-  display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:2px 3px 0;
+/* 출격 대기열 : 내 것은 그대로, 적 것은 개수만 */
+.queue{
+  position:absolute;left:0;right:0;z-index:11;height:27px;pointer-events:none;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 5px;
 }
-#cabinet.mode-duo #warn{display:none}
-#warn > i{position:relative;border-radius:5px;display:grid;place-items:center}
-#warn > i.hot{background:rgba(255,61,110,.14);border:1px solid rgba(255,61,110,.55)}
-#warn > i.hot.main{background:rgba(255,61,110,.26);border-color:var(--foe);animation:warnpulse .7s ease-in-out infinite}
-#warn > i b{font-family:var(--hud);font-size:7.5px;color:#FFC9D6;font-weight:400}
-#warn > i s{
-  position:absolute;left:1px;right:1px;bottom:1px;height:2px;border-radius:1px;
-  background:var(--foe);transform-origin:left center;text-decoration:none;
+.queue[data-p="1"]{bottom:3px}
+.queue[data-p="2"]{top:3px}
+.queue > i{
+  display:flex;align-items:center;justify-content:center;gap:2px;
+  border-radius:9px;font-style:normal;
 }
-@keyframes warnpulse{50%{background:rgba(255,61,110,.42)}}
+.queue > i.has{background:rgba(7,10,20,.72);border:1px dashed var(--edge)}
+.queue[data-p="1"] > i.has{border-color:var(--ally-deep)}
+.queue[data-p="2"] > i.has{border-color:var(--foe-deep)}
+.queue > i.bossq{border-color:var(--gold);background:rgba(255,216,77,.16)}
+.queue > i > i{display:block;width:17px;height:17px;filter:drop-shadow(0 0 3px var(--rar,transparent))}
+.queue > i > i.hidden{
+  display:grid;place-items:center;width:15px;height:15px;border-radius:50%;
+  background:rgba(255,61,110,.22);border:1px solid var(--foe);
+  font-family:var(--hud);font-size:7px;color:#FFC9D6;
+}
+.queue > i > b{font-family:var(--hud);font-size:7.5px;color:#FFC9D6}
+.queue > i.has:active{background:rgba(7,10,20,.95)}
+
+/* 다음 출격까지 */
+#round{position:absolute;left:0;right:0;top:50%;z-index:3;pointer-events:none}
+#roundBar{
+  position:absolute;left:0;right:0;top:0;height:2px;
+  background:linear-gradient(90deg,var(--luck),var(--gold));
+  transform-origin:left center;opacity:.7;
+}
+#roundNum{
+  position:absolute;left:50%;top:-9px;transform:translateX(-50%);
+  font-family:var(--hud);font-size:8.5px;color:var(--dim);
+  padding:2px 7px;border-radius:999px;background:rgba(7,10,20,.85);border:1px solid var(--edge);
+}
+#roundNum.soon{color:var(--gold);border-color:var(--gold);animation:soonbeat .5s ease-in-out infinite}
+@keyframes soonbeat{50%{transform:translateX(-50%) scale(1.14)}}
 
 .lanes{
   position:absolute;inset:0;z-index:1;pointer-events:none;
@@ -139,8 +163,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   position:absolute;left:0;right:0;height:34%;z-index:16;
   display:none;grid-template-columns:repeat(3,1fr);gap:5px;padding:5px;
 }
-.dropzones[data-p="1"]{bottom:0;--team:var(--ally);--team-rgb:56,232,200}
-.dropzones[data-p="2"]{top:0;  --team:var(--foe); --team-rgb:255,61,110}
+.dropzones[data-p="1"]{bottom:31px;--team:var(--ally);--team-rgb:56,232,200}
+.dropzones[data-p="2"]{top:31px;  --team:var(--foe); --team-rgb:255,61,110}
 .dropzones[data-p="2"] .dz{place-items:end center;padding:0 0 6px}
 .dropzones.on{display:grid;animation:dzin .16s ease-out}
 @keyframes dzin{from{opacity:0}to{opacity:1}}
@@ -168,10 +192,10 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 #flash{
   position:absolute;inset:0;z-index:58;pointer-events:none;opacity:0;
-  background:radial-gradient(circle at 50% 50%, rgba(var(--fc,255,216,77),.42), transparent 72%);
+  background:radial-gradient(circle at 50% 50%, rgba(var(--fc,255,216,77),.26), transparent 72%);
 }
 #flash.go{animation:flashgo .34s ease-out}
-@keyframes flashgo{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+@keyframes flashgo{0%{opacity:0}18%{opacity:.85}100%{opacity:0}}
 
 .side.hot .nexus{box-shadow:inset 0 0 22px rgba(255,197,61,.22)}
 .side.hot .goldBox{border-color:rgba(255,197,61,.5)}
@@ -252,8 +276,6 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   background:rgba(7,10,20,.9);border:1px solid rgba(255,216,77,.6);
   font-family:var(--display);font-size:8.5px;color:var(--gold);text-shadow:0 1px 2px #000;
 }
-#warn > i.boss{background:rgba(255,216,77,.22);border-color:var(--gold)}
-#warn > i.boss b{color:#FFE8A8}
 
 .unit-tier{
   position:absolute;bottom:-5px;right:-6px;
@@ -314,8 +336,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   display:none;justify-content:center;gap:4px;
 }
 .synbar.on{display:flex}
-.synbar[data-p="1"]{bottom:24px}
-.synbar[data-p="2"]{top:24px}
+.synbar[data-p="1"]{bottom:33px}
+.synbar[data-p="2"]{top:33px}
 #cabinet.mode-duo:not(.same-facing) .synbar[data-p="2"]{transform:rotate(180deg)}
 .synbar i{
   display:flex;align-items:center;gap:3px;font-style:normal;
@@ -466,12 +488,12 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   padding:9px 18px;border-radius:14px;text-align:center;
   background:rgba(7,10,20,.94);border:1px solid var(--luck);
   box-shadow:0 0 30px rgba(169,123,255,.55);
-  animation:chaosin 2.1s ease-out forwards;
+  animation:chaosin 1.8s ease-out forwards;
 }
 .chaos b{font-family:var(--display);font-size:17px;color:var(--luck);letter-spacing:.04em}
 .chaos em{font-style:normal;font-size:11.5px;color:var(--ink)}
 @keyframes chaosin{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}
   10%{opacity:1;transform:translate(-50%,-50%) scale(1.07)}
   18%{transform:translate(-50%,-50%) scale(1)}
   80%{opacity:1}
@@ -774,7 +796,9 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
     <canvas id="grid"></canvas>
     <div class="lanes" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="midline"></div>
-    <div id="warn" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="queue" data-p="2" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="queue" data-p="1" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div id="round"><b id="roundNum">12</b><s id="roundBar"></s></div>
     <div class="dropzones" data-p="2"></div>
     <div class="dropzones" data-p="1"></div>
     <div class="synbar" data-p="2" aria-hidden="true"></div>
@@ -835,7 +859,10 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
         <b>★3과 ★5에서 유닛이 진화</b>해 아예 다른 모습이 된다<br />
         <em>5초 안에 이어 합성하면 연쇄 보너스</em>가 붙는다<br />
         <em>낮은 확률로 대성공(2단계 점프)이나 복제가 터진다</em><br />
-        유닛을 탭하면 전장에 <b>세 갈래 길</b>이 열린다. 골라서 내보낸다<br />
+        유닛을 탭하면 <b>세 갈래 길</b>이 열린다. 고르면 그 길에 <em>예약</em>된다<br />
+        예약은 바로 안 나간다. <b>12초마다 양쪽이 동시에 공개되며 진격</b>한다<br />
+        <em>적 대기열은 개수만 보인다.</em> 무엇이 오는지는 나가봐야 안다<br />
+        대기열을 탭하면 <b>물릴 수 있다</b>. 마지막 순간까지 바꿀 수 있다<br />
         길은 서로 막지 않는다. <b>뚫린 길은 그대로 넥서스로 이어진다</b><br />
         넥서스는 코앞을 <b>통째로 포격한다</b>. 눌러앉으면 녹는다<br />
         <em>한 번에 몰아쳐야 뚫린다</em> — 그래서 ⚡ 총공격이 승부처다<br />
@@ -1434,7 +1461,7 @@ const SUMMON_COST = 30, DICE_COST = 25, NEXUS_HP = 1700, START_GOLD = 60;
 const NEXUS_RANGE = 26, NEXUS_CD = 1.0, NEXUS_SPLASH = 0.6;
 /* 포격은 고정 피해가 아니라 상대 덩치에 비례한다 — ★5라고 버티지 못하게 */
 const nexusHit = (u) => 42 + u.maxHp * 0.10;
-const WARN_LEAD = 3.5;                      /* 적 웨이브를 몇 초 전에 예고할지 */
+const ROUND_TIME = 12;                      /* 준비 시간 — 이 동안 몰래 배치하고 한꺼번에 나간다 */
 /* ── 레어도 ─────────────────────────────────────
    등급(★)은 합성으로 올리는 실력, 레어도는 뽑는 순간에만 굴리는 운.
    신화 ★1 이 일반 ★3 과 맞먹으니 한 방에 판이 뒤집힌다. ── */
@@ -1538,6 +1565,7 @@ function makePlayer(n, isAI, slots){
     bLuck:0, bMerge:0, bCrit:0, bAtk:1, bHp:1, bSpd:1, bGold:0, bBounty:1,
     bNexus:1, bRage:1, bSlots:0, bRegen:0, regenT:0, blessings:[], drafts:0, nextDraft:12,
     board:new Array(slots).fill(null), sel:-1, sel2:-1, chain:0, lastMergeT:-99,
+    queue:[[], [], []],
     quizIndex:-1, quizLocked:false, lockTimer:null, recent:[], missed:{}, revenge:[], avenged:0,
     lvHit:[0,0,0], lvMiss:[0,0,0],
     solved:0, misses:0, merges:0, deployed:0, luckyHits:0,
@@ -1555,7 +1583,7 @@ function freshState(mode){
     p1:p1, p2:p2, players:[p1, p2],
     units:[], uid:1,
     elapsed:0, lastT:0, paused:false, chaosT:rnd(20, 30), chaosN:0,
-    aiTimer:0.6, aiInterval:4.2, wave:null, lastLane:null, aiLevel:1, waveNo:0,
+    roundT:ROUND_TIME, roundNo:0, lastLane:null, aiLevel:1,
     lootTimer:rnd(12, 20), loot:null
   };
 }
@@ -1626,6 +1654,17 @@ function buildSide(p){
   if (d.odds) d.odds.addEventListener("click", () => showOddsTable(p));
   p.dom = d;
   d.who.textContent = p.name;
+
+  /* 대기열 : 자기 것은 탭해서 물릴 수 있다 */
+  const oldQ = document.querySelector('.queue[data-p="' + p.n + '"]');
+  const fresh = oldQ.cloneNode(false);
+  fresh.innerHTML = "<i></i><i></i><i></i>";
+  oldQ.replaceWith(fresh);
+  qEl[p.n] = fresh;
+  if (!p.ai){
+    fresh.style.pointerEvents = "auto";
+    [...fresh.children].forEach((cell, l) => cell.addEventListener("click", () => unqueue(p, l)));
+  }
 
   /* 전장에 붙는 출격 구역은 판마다 새로 만들어 이전 판의 핸들러를 버린다 */
   p.zones = document.querySelector('.dropzones[data-p="' + p.n + '"]');
@@ -1888,11 +1927,7 @@ function takeBlessing(p, b){
 function reveal(p, key, tier, rar){
   if (p.ai || rar <= 0) return;
   const R = RARITY[rar];
-  if (rar === 1){
-    say(p, "R  " + TYPES[key].name + " " + stars(tier), "ally");
-    blip(880, .08, "triangle", .04);
-    return;
-  }
+  if (rar === 1){ blip(880, .07, "triangle", .035); return; }
   const host = p.dom.board ? p.dom.board.parentNode : fieldEl;
   const el = document.createElement("div");
   el.className = "reveal";
@@ -1905,7 +1940,7 @@ function reveal(p, key, tier, rar){
   setTimeout(() => el.remove(), rar >= 4 ? 1250 : rar >= 3 ? 1050 : 850);
 
   flash(rar >= 3 ? "gold" : "luck");
-  for (let l = 0; l < LANES; l++) burst(laneX(l), p.n === 1 ? 12 : 88, R.color, 6 + rar * 4, 1 + rar * 0.25);
+  burst(laneX(1), p.n === 1 ? 14 : 86, R.color, 5 + rar * 3, 1 + rar * 0.2);
   if (rar >= 3){ shake(); sfx.jack(); }
   else { blip(660, .09, "square", .05); setTimeout(() => blip(1180, .12, "square", .05), 90); }
   if (rar >= 4) announce("🎆 신화 등장! " + TYPES[key].name, "foe");
@@ -1942,6 +1977,15 @@ function unleash(p){
   p.rage = 0; p.ults++;
   renderRage(p);
   spreadOut(p);
+  /* 총공격은 준비 시간을 무시하고 지금 당장 내보낸다 */
+  for (let l = 0; l < LANES; l++){
+    for (const it of p.queue[l]){
+      if (fieldCount(p) >= capOf(p)) break;
+      spawnUnit(p, it.type, it.tier, l, it.rar);
+    }
+    p.queue[l] = [];
+  }
+  drawQueue(p);
   p.atkMul = 1.45; p.spdMul = 1.5; p.buffT = ULT_SECONDS;
   flash("gold");
   for (let l = 0; l < LANES; l++) burst(laneX(l), p.n === 1 ? 8 : 92, "#FFD84D", 14, 1.5);
@@ -2168,23 +2212,41 @@ function doMerge(p, from, to){
   if (tier >= MAX_TIER) say(p, "👑 최고 등급 " + TYPES[a.type].name + " " + stars(MAX_TIER) + " 완성!", "gold");
 }
 
+/* 배치는 예약일 뿐이다. 준비 시간이 끝나야 한꺼번에 나간다 */
 function deploy(p, i, lane){
   const pawn = p.board[i];
   if (!pawn) return false;
-  if (fieldCount(p) >= capOf(p)){
-    say(p, "전장이 꽉 찼다 " + capOf(p) + "/" + capOf(p), "foe");
+  if (fieldCount(p) + queued(p) >= capOf(p)){
+    say(p, "자리가 없다 " + capOf(p) + "/" + capOf(p), "foe");
     return false;
   }
   p.board[i] = null;
   if (p.sel === i) p.sel = -1;
   if (p.sel2 === i) p.sel2 = -1;
-  spawnUnit(p, pawn.type, pawn.tier, lane, pawn.rar);
+  p.queue[clamp(lane == null ? 1 : lane, 0, LANES - 1)].push({
+    type:pawn.type, tier:pawn.tier, rar:pawn.rar || 0
+  });
   p.deployed++;
   renderBoard(p);
   showZones(p); showMerge(p);
-  burst(laneX(lane == null ? 1 : lane), p.n === 1 ? 3 : 97, p.n === 1 ? "#38E8C8" : "#FF3D6E", 10, 0.85);
-  blip(560 + pawn.tier * 60, .07, "triangle", .045);
+  drawQueue(p);
+  blip(500 + pawn.tier * 50, .06, "triangle", .04);
   return true;
+}
+
+/* 예약을 물린다 — 계획이니 되돌릴 수 있어야 한다 */
+function unqueue(p, lane){
+  if (!S.running || S.paused) return;
+  const q = p.queue[lane];
+  if (!q.length) return;
+  const slot = freeSlot(p);
+  if (slot < 0){ say(p, "소환진이 가득 차 물릴 수 없다", "foe"); return; }
+  const it = q.pop();
+  p.board[slot] = makePawn(it.type, it.tier, it.rar);
+  p.deployed--;
+  renderBoard(p, slot, "born");
+  drawQueue(p);
+  blip(340, .06, "sine", .04);
 }
 
 /* 소환진에서 고른 유닛을 어느 길로 보낼지 — 전장에 열리는 세 갈래 */
@@ -2206,7 +2268,7 @@ function spreadOut(p){
   let lane = irnd(0, LANES - 1), any = false;
   for (let i = 0; i < p.board.length; i++){
     if (!p.board[i]) continue;
-    if (fieldCount(p) >= capOf(p)) break;
+    if (fieldCount(p) + queued(p) >= capOf(p)) break;
     if (deploy(p, i, lane)){ lane = (lane + 1) % LANES; any = true; }
   }
   if (any) blip(700, .1, "triangle", .05);
@@ -2346,10 +2408,7 @@ function hurt(target, dmg, crit){
   floatText(target.x, target.pos, Math.round(dmg), crit);
   if (crit){
     sparkAt(target.x, target.pos);
-    burst(target.x, target.pos, "#FFD84D", 9, 1.1);
-    if (dmg > 160) shake();
-  } else if (chance(0.5)){
-    burst(target.x, target.pos, "#FFFFFF", 3, 0.55);
+    burst(target.x, target.pos, "#FFD84D", 5, 1.0);
   }
 }
 
@@ -2500,7 +2559,7 @@ function stepBattle(dt){
       p.dom.core.classList.remove("fire"); void p.dom.core.offsetWidth;
       p.dom.core.classList.add("fire");
       volley(p);
-      for (let l = 0; l < LANES; l++) burst(laneX(l), line, p.n === 1 ? "#38E8C8" : "#FF3D6E", 4, 0.7);
+      burst(laneX(tgt.lane), line, p.n === 1 ? "#38E8C8" : "#FF3D6E", 3, 0.6);
       blip(680, .07, "square", .03);
     }
   }
@@ -2509,7 +2568,7 @@ function stepBattle(dt){
     const u = S.units[i];
     if (u.hp <= 0){
       sparkAt(u.x, u.pos);
-      burst(u.x, u.pos, u.owner.n === 1 ? "#38E8C8" : "#FF3D6E", 16, 1.25);
+      burst(u.x, u.pos, u.owner.n === 1 ? "#38E8C8" : "#FF3D6E", 9, 1.1);
       const killer = u.owner.foe;                      /* 쓰러뜨린 쪽이 현상금을 챙긴다 */
       if (S.running && !killer.ai){
         const bounty = Math.round((u.boss ? 90 + u.tier * 25 : 4 + u.tier * 3) * killer.bBounty);
@@ -2535,31 +2594,50 @@ function stepBattle(dt){
 }
 
 /* ══════════ 적 AI (혼자 하기 전용) ══════════ */
-const warnEl = $("#warn");
-let warnBars = [];
+/* ══════════ 출격 라운드 ══════════
+   유닛은 즉시 나가지 않는다. 레인에 예약해 두었다가 준비 시간이 끝나면
+   양쪽이 한꺼번에 공개되며 진격한다. 상대 대기열은 개수만 보인다. */
+const qEl = { 1:null, 2:null };
 
-/* 적은 다음 수를 미리 보여준다 — 막을 시간이 있어야 선택이 의미를 갖는다.
-   한 길에 주력을 몰되 나머지 길도 함께 두드려서, 비워둔 길이 공짜가 되지 않게 한다. */
+function queued(p){
+  return p.queue[0].length + p.queue[1].length + p.queue[2].length;
+}
+function drawQueue(p){
+  const box = qEl[p.n];
+  if (!box) return;
+  const hide = p.ai;                       /* AI 배치만 감춘다. 2인전은 한 화면이라 숨길 수 없다 */
+  for (let l = 0; l < LANES; l++){
+    const cell = box.children[l], q = p.queue[l];
+    cell.innerHTML = q.length
+      ? (hide
+          ? '<i class="hidden">?</i><b>\u00d7' + q.length + '</b>'
+          : q.map((it) => '<i' + (it.boss ? ' class="boss"' : '') + ' style="--rar:' +
+              RARITY[it.rar || 0].color + '">' + unitArt(it.type, it.tier) + '</i>').join(""))
+      : "";
+    cell.classList.toggle("has", q.length > 0);
+    cell.classList.toggle("bossq", q.some((it) => it.boss));
+  }
+}
+function drawQueues(){ for (const p of S.players) drawQueue(p); }
+
 /* 플레이어가 지금 굴리는 전력을 재서 적이 그 언저리를 따라오게 한다.
-   시간표를 따라가면 잘하는 사람에겐 시시하고 못하는 사람에겐 가혹해진다.
-   평균은 갓 뽑은 ★1들이 희석시키므로 최고 등급과 머릿수로 잰다. */
+   레어도도 전력이다 — 등급만 보면 신화 ★2 를 일반 ★2 로 착각한다. */
 function playerPower(){
-  /* 레어도도 전력이다. 등급만 보면 신화 ★2 를 일반 ★2 로 착각한다 */
   const eff = (t, r) => t + (r || 0) * 0.55;
   let top = 1, n = 0;
   for (const u of S.units) if (u.owner === S.p1 && u.hp > 0){ n++; top = Math.max(top, eff(u.tier, u.rar)); }
   for (const pw of S.p1.board) if (pw){ n++; top = Math.max(top, eff(pw.tier, pw.rar)); }
+  for (const q of S.p1.queue) for (const it of q){ n++; top = Math.max(top, eff(it.tier, it.rar)); }
   return { top:top, n:n };
 }
 
-function planWave(){
+/* 적은 라운드가 시작될 때 배치를 마친다 — 개수는 보이지만 정체는 모른다 */
+function aiPlan(){
   const min = S.elapsed / 60;
   const pw = playerPower();
-  /* 축복으로 커진 몫만큼 적도 함께 자란다 — 안 그러면 축복이 곧 승리가 된다 */
   const boon = S.p1.blessings.length;
   S.p2.bAtk = 1 + boon * 0.09;
   S.p2.bHp  = 1 + boon * 0.11;
-  /* 최고 등급보다 한 단계 아래를 겨누되, 한 번에 튀지 않게 서서히 따라붙는다 */
   S.aiLevel += (Math.max(1, pw.top - 0.72 + boon * 0.12) - S.aiLevel) * 0.4;
   const lvl = S.aiLevel + min * 0.3;
   const pickTier = () => clamp(Math.round(lvl + rnd(-0.5, 0.8)), 1, MAX_TIER);
@@ -2568,67 +2646,46 @@ function planWave(){
   S.lastLane = main;
   const others = shuffle([0, 1, 2].filter((l) => l !== main));
 
-  /* 플레이어가 대군을 굴리면 머릿수로 맞선다. 절반은 주력 길에 몰아넣는다 */
-  const count = clamp(2 + Math.floor(pw.n / 3), 2, 6);
-  const drops = [];
+  let count = clamp(2 + Math.floor(pw.n / 3), 2, 5);
+  const room = capOf(S.p2) - fieldCount(S.p2);
+  count = clamp(count, 0, Math.max(0, room));
+
   for (let i = 0; i < count; i++){
     const lane = (i % 2 === 0) ? main : others[(i >> 1) % others.length];
     const tier = lane === main ? pickTier() : clamp(pickTier() - (chance(0.5) ? 1 : 0), 1, MAX_TIER);
-    drops.push({ lane:lane, tier:tier });
+    S.p2.queue[lane].push({ type:weightedType().key, tier:tier, rar:rollRarity({ pitySR:0, pitySS:0 }) });
   }
-
-  /* 네 번째 물결마다 이름 붙은 보스가 한 길을 밀고 내려온다 */
-  S.waveNo++;
-  if (S.waveNo % 5 === 0){
-    drops.length = 0;
-    drops.push({ lane:main, tier:clamp(Math.round(lvl + 0.8), 2, MAX_TIER), boss:true });
-    if (chance(0.6)) drops.push({ lane:others[0], tier:clamp(pickTier() - 1, 1, MAX_TIER) });
+  /* 다섯 라운드마다 보스가 섞인다 */
+  if (S.roundNo > 0 && S.roundNo % 5 === 0 && room > 0){
+    S.p2.queue[main].push({ type:weightedType().key, tier:clamp(Math.round(lvl + 0.8), 2, MAX_TIER), rar:2, boss:true });
+    say(S.p1, "👑 다음 출격에 보스가 섞였다", "foe");
   }
-
-  S.wave = { drops:drops, main:main, t:WARN_LEAD };
-  drawWarn();
-  blip(S.waveNo % 5 === 0 ? 180 : 300, .16, "sawtooth", .04);
+  drawQueue(S.p2);
 }
-function drawWarn(){
-  warnBars = [];
-  for (let l = 0; l < LANES; l++){
-    const cell = warnEl.children[l];
-    const ds = (S && S.wave) ? S.wave.drops.filter((d) => d.lane === l) : [];
-    if (ds.length){
-      let top = 1;
-      for (const d of ds) if (d.tier > top) top = d.tier;
-      cell.className = "hot" + (S.wave.main === l ? " main" : "");
-      const boss = ds.some((d) => d.boss);
-      if (boss) cell.className += " boss";
-      cell.innerHTML = '<b>' + (boss ? "👑 " : "") + stars(top) +
-        (ds.length > 1 ? " \u00d7" + ds.length : "") + '</b><s></s>';
-      warnBars.push($("s", cell));
-    } else {
-      cell.className = "";
-      cell.innerHTML = "";
+
+function launchRound(){
+  let any = false;
+  for (const p of S.players){
+    for (let l = 0; l < LANES; l++){
+      for (const it of p.queue[l]){
+        if (fieldCount(p) >= capOf(p)) break;
+        const u = spawnUnit(p, it.type, it.tier, l, it.rar);
+        if (it.boss) makeBoss(u);
+        any = true;
+      }
+      p.queue[l] = [];
     }
   }
-}
-function releaseWave(){
-  const w = S.wave;
-  let heavy = 1;
-  for (const d of w.drops){
-    if (fieldCount(S.p2) >= capOf(S.p2)) break;
-    const t = weightedType().key;
-    const u = spawnUnit(S.p2, t, d.tier, d.lane, rollRarity({ pitySR:0, pitySS:0 }));
-    if (d.boss) makeBoss(u);
-    if (d.tier > heavy) heavy = d.tier;
+  drawQueues();
+  if (any){
+    announce("⚔ 출격!", "gold");
+    blip(520, .1, "triangle", .05);
   }
-  if (heavy >= 3) say(S.p1, "\u26a0 " + (w.main + 1) + "번 길에 " + stars(heavy) + " 진입!", "foe");
-  S.wave = null;
-  drawWarn();
-  /* 밀리고 있으면 숨 돌릴 틈을 준다 — 등급뿐 아니라 압박의 빈도도 따라간다 */
-  const ease = (capOf(S.p1) - fieldCount(S.p1)) * 0.24;
-  S.aiInterval = clamp(4.5 - S.elapsed / 75 + ease, 2.2, 5.6);
-  S.aiTimer = S.aiInterval * rnd(0.85, 1.15);           /* 간격에도 운이 섞인다 */
+  S.roundNo++;
+  S.roundT = ROUND_TIME;
+  if (S.mode === "solo") aiPlan();
+  if (S.roundNo % 3 === 0) fireChaos();          /* 대격변은 라운드 리듬에 맞춘다 */
 }
-
-
 
 const BOSS_NAMES = {
   sword:"강철의 군주", shield:"불괴의 성벽", archer:"그림자 사수",
@@ -2678,13 +2735,12 @@ function fireChaos(){
   el.className = "chaos";
   el.innerHTML = '<b>' + c.icon + " " + c.name + '</b><em>' + c.desc + '</em>';
   fieldEl.appendChild(el);
-  setTimeout(() => el.remove(), 2100);
+  setTimeout(() => el.remove(), 1800);
   flash("luck");
   shake();
   sfx.jack();
   for (let l = 0; l < LANES; l++) burst(laneX(l), 50, "#A97BFF", 14, 1.6);
   c.run();
-  S.chaosT = rnd(20, 30);
 }
 
 /* ══════════ 운빨 장치 : 전리품 상자 ══════════ */
@@ -2824,6 +2880,7 @@ function drawBest(){
 }
 
 /* ══════════ 확률표 ══════════ */
+const roundBar = $("#roundBar"), roundNum = $("#roundNum");
 const oddsPanel = $("#oddsPanel");
 function row(label, value, hi){
   return '<div class="orow"><span>' + label + '</span><b' + (hi ? ' class="hi"' : '') + '>' + value + '</b></div>';
@@ -2948,7 +3005,7 @@ function sizeGrid(){
 function drawGrid(dt){
   const dpr = window.devicePixelRatio || 1;
   const w = gridCv.width / dpr, h = gridCv.height / dpr;
-  gridOffset = (gridOffset + dt * 14) % 26;
+  gridOffset = (gridOffset + dt * 5) % 26;
   gtx.clearRect(0, 0, w, h);
   gtx.lineWidth = 1;
   gtx.strokeStyle = "rgba(38,48,90,.85)";
@@ -3001,22 +3058,13 @@ function loop(now){
     }
   }
 
-  /* 적 AI는 혼자 하기에서만 돈다 */
-  if (S.mode === "solo"){
-    if (S.wave){
-      S.wave.t -= dt;
-      const k = clamp(S.wave.t / WARN_LEAD, 0, 1);
-      for (const b of warnBars) b.style.transform = "scaleX(" + k + ")";
-      if (S.wave.t <= 0) releaseWave();
-    } else {
-      S.aiTimer -= dt;
-      if (S.aiTimer <= 0) planWave();
-    }
-  }
+  /* 출격 라운드 */
+  S.roundT -= dt;
+  roundBar.style.transform = "scaleX(" + clamp(S.roundT / ROUND_TIME, 0, 1) + ")";
+  roundNum.textContent = Math.max(0, Math.ceil(S.roundT));
+  roundNum.classList.toggle("soon", S.roundT <= 3);
+  if (S.roundT <= 0) launchRound();
 
-  /* 대격변 */
-  S.chaosT -= dt;
-  if (S.chaosT <= 0) fireChaos();
   for (const q of S.players) if (q.rushT > 0) q.rushT -= dt;
 
   /* 전리품 상자 */
@@ -3061,10 +3109,12 @@ function startGame(mode){
     }
   }
 
+  drawQueues();
+  if (mode === "solo") aiPlan();
+
   cab.classList.add("playing");
   cab.classList.remove("rage-p1", "rage-p2");
   S.paused = false;
-  drawWarn();
   fieldEl.classList.remove("paused");
   $("#pauseBtn").textContent = "⏸";
   document.querySelectorAll(".synbar").forEach((b) => { b.className = "synbar"; b.innerHTML = ""; });
