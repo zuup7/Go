@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""learn.html 과 monsters.html 을 한 파일(hansa.html)로 합친다.
+"""learn.html · monsters.html · index.html 을 한 파일(hansa.html)로 합친다.
 
-두 앱은 전역 이름·CSS 클래스·정적 id 가 겹친다. 그래서
-  · CSS 는 앱마다 .a-learn / .a-mon 아래로 밀어 넣고 (:root 변수 포함)
+세 앱은 전역 이름·CSS 클래스·정적 id 가 겹친다. 그래서
+  · CSS 는 앱마다 .a-learn / .a-mon / .a-sprint 아래로 밀어 넣고 (:root 변수 포함)
   · JS 는 통째로 IIFE 로 감싸 전역을 막고
-  · 겹치는 정적 id 는 앞에 L / M 을 붙이고
+  · 겹치는 정적 id 는 앞에 L / M / S 를 붙이고
   · 쉬지 않는 앱은 DOM 에서 떼어 둔다 (getElementById 가 못 찾게)
 """
 import io, re, sys
@@ -91,28 +91,38 @@ def scope_block(css, root):
 # ── learn ─────────────────────────────────────────────────────────
 Ls, Lj, Lbody = split(read("learn.html"))
 Ms, Mj, Mbody = split(read("monsters.html"))
-assert len(Lj) == 1 and len(Mj) >= 1, (len(Lj), len(Mj))   # 몬스터는 단계마다 <script> 가 는다
+Is, Ij, Ibody = split(read("index.html"))
+assert len(Lj) == 1 and len(Mj) >= 1 and len(Ij) >= 1, (len(Lj), len(Mj), len(Ij))
 
 L_IDS = {"app": "Lapp", "back": "Lback", "title": "Ltitle", "view": "Lview",
          "dock": "Ldock", "find": "Lfind", "theme": "Ltheme", "clk": "Lclk"}
 M_IDS = {"app": "Mapp", "back": "Mback", "title": "Mtitle", "view": "Mview",
          "barExtra": "Mextra", "flash": "Mflash", "mfLink": "MmfLink", "clk": "Mclk"}
+# 스프린트는 뿌리에 id 가 없어 우리가 하나 달아 준다 (셸이 떼었다 붙일 손잡이)
+I_IDS = {"clk": "Sclk", "winTtl": "SwinTtl", "cDday": "ScDday", "cStrk": "ScStrk",
+         "ringArc": "SringArc", "ringTx": "SringTx", "todayVal": "StodayVal",
+         "rankTx": "SrankTx", "xpFill": "SxpFill", "stage": "Sstage", "nav": "Snav",
+         "mastery": "Smastery", "railPick": "SrailPick"}
 
 def rename_ids(text, table):
     for a, b in table.items():
         text = text.replace('id="%s"' % a, 'id="%s"' % b)
         text = text.replace('getElementById("%s")' % a, 'getElementById("%s")' % b)
+        # querySelector("#cStrk .n") 처럼 선택자 문자열에 박힌 것도 같이 바꾼다
+        text = text.replace('"#%s"' % a, '"#%s"' % b)
+        text = text.replace('"#%s ' % a, '"#%s ' % b)
     return text
 
 Lbody = rename_ids(Lbody, L_IDS); Ljs = rename_ids(Lj[0], L_IDS)
 Mbody = rename_ids(Mbody, M_IDS); Mjs = "\n".join(rename_ids(x, M_IDS) for x in Mj)
+Ibody = rename_ids(Ibody, I_IDS); Ijs = "\n".join(rename_ids(x, I_IDS) for x in Ij)
 
 # 앱마다 붙어 있던 OS 표시줄은 셸이 대신한다
 def strip_osbar(body):
     out = re.sub(r'<div class="osbar">.*?</div>\s*(?=<div)', "", body, flags=re.S, count=1)
     assert 'class="osbar"' not in out, "osbar 제거 실패"
     return out.strip()
-Lbody = strip_osbar(Lbody); Mbody = strip_osbar(Mbody)
+Lbody = strip_osbar(Lbody); Mbody = strip_osbar(Mbody); Ibody = strip_osbar(Ibody)
 
 # 쉬는 앱은 뒤로가기·단축키에 반응하면 안 된다
 Ljs = Ljs.replace(
@@ -130,9 +140,10 @@ assert '__hansa!=="mon"' in Mjs
 # ── 합쳐 놓았으니 앱끼리 오갈 수 있어야 한다 ──────────────────────
 L_LINK_OLD = ("""    '<p class="note" style="margin-top:14px">배운 내용을 문제로 확인하고 싶으면 """
               """\u300c오답 몬스터\u300d로 넘어가면 돼. 여긴 처음 배우는 곳이야.</p>';""")
-L_LINK_NEW = ("""    '<div class="part">배운 걸 게임으로</div>'+
+L_LINK_NEW = ("""    '<div class="part">다른 앱으로</div>'+
     '<button class="cta ghost" data-hansa-go="mon">\u25b6 오답 몬스터 열기</button>'+
-    '<p class="note" style="margin-top:10px">여긴 처음 배우는 곳이야. 배운 내용을 문제로 확인하고 싶을 때 넘어가면 돼.</p>';""")
+    '<button class="cta ghost" data-hansa-go="sprint" style="margin-top:9px">\u25b6 연표 스프린트 열기</button>'+
+    '<p class="note" style="margin-top:10px">여긴 처음 배우는 곳이야. 배운 내용을 문제로 확인하고 싶으면 몬스터, 순서만 빠르게 돌리고 싶으면 스프린트로 넘어가면 돼.</p>';""")
 assert Ljs.count(L_LINK_OLD) == 1, "첫 수업 안내 문구를 못 찾음"
 Ljs = Ljs.replace(L_LINK_OLD, L_LINK_NEW)
 
@@ -141,6 +152,9 @@ M_LINK_NEW = ("""      UNITS.length+'개 · 문제 '+QUESTIONS.length+'개</p>'+
     '<div class="sect">모르는 게 나오면</div>'+
     '<button class="mode" data-hansa-go="learn" style="width:100%"><span class="ic" style="background:rgba(245,198,60,.16);color:var(--amber)">'+ICON.mc+'</span>'+
     '<span><b>한국사 첫 수업</b><small>개념부터 다시. 스무 번에 나눠 담은 교과서 \u2160단원.</small></span>'+
+    '<span class="cnt">\u203a</span></button>'+
+    '<button class="mode" data-hansa-go="sprint" style="width:100%"><span class="ic" style="background:rgba(72,211,172,.16);color:var(--jade)">'+ICON.tl+'</span>'+
+    '<span><b>연표 스프린트</b><small>순서만 빠르게. 플래시카드와 연표 정렬.</small></span>'+
     '<span class="cnt">\u203a</span></button>';""")
 assert Mjs.count(M_LINK_OLD) == 1, "몬스터 범위 문구를 못 찾음"
 Mjs = Mjs.replace(M_LINK_OLD, M_LINK_NEW, 1)
@@ -155,6 +169,43 @@ Mjs += """
 \n/* 셸이 부를 수 있게 홈으로 가는 길을 하나 내어 둔다 */
 window.__hansaHome=window.__hansaHome||{};
 window.__hansaHome.mon=function(){ stopAll(); G=null; stack=[{n:"home"}]; render(); };
+
+/* 앱을 갈아 끼우면 시계를 멈춰 둔다.
+   안 멈추면 다른 앱을 보는 동안 60초가 다 흘러 판이 혼자 끝나 버린다 */
+window.__hansaPause=window.__hansaPause||{};
+window.__hansaResume=window.__hansaResume||{};
+window.__hansaPause.mon=function(){
+  if(tickTimer){clearInterval(tickTimer);tickTimer=null;}
+  if(pairTimer){clearInterval(pairTimer);pairTimer=null;}
+  if(duelTimer){clearInterval(duelTimer);duelTimer=null;}
+  if(P&&!P.over)P.away=Date.now();      /* 짝 맞추기는 흐른 시간을 재니 떠난 때를 적어 둔다 */
+  speakStop();
+};
+window.__hansaResume.mon=function(){
+  var n=stack[stack.length-1].n;
+  if(n==="play"&&G&&G.mode==="ox"&&G.left>0)runClock();
+  if(n==="pair"&&P&&!P.over){
+    if(P.away){P.t0+=Date.now()-P.away;P.away=0;}
+    runPairTimer();
+  }
+  if(n==="first"&&F&&!F.over&&F.left>0)runDuelTimer();
+};
+"""
+
+I_LINK_OLD = """    '<div class="sect">출제 범위</div>'+"""
+I_LINK_NEW = ("""    '<div class="sect">다른 앱으로</div>'+
+    '<div class="tlsw" style="margin-bottom:14px">'+
+      '<button class="btn ghost" data-hansa-go="learn">첫 수업</button>'+
+      '<button class="btn ghost" data-hansa-go="mon">오답 몬스터</button>'+
+    '</div>'+
+    '<div class="sect">출제 범위</div>'+""")
+assert Ijs.count(I_LINK_OLD) == 1, "스프린트 「출제 범위」 앞자리를 못 찾음"
+Ijs = Ijs.replace(I_LINK_OLD, I_LINK_NEW, 1)
+
+Ijs += """
+\n/* 셸이 부를 수 있게 홈으로 가는 길을 하나 내어 둔다 */
+window.__hansaHome=window.__hansaHome||{};
+window.__hansaHome.sprint=function(){ go("today"); };
 """
 
 def rename_css_ids(css, table):
@@ -165,10 +216,11 @@ def rename_css_ids(css, table):
 
 Lcss = rename_css_ids(scope_block("\n".join(Ls), ".a-learn"), L_IDS)
 Mcss = rename_css_ids(scope_block("\n".join(Ms), ".a-mon"), M_IDS)
+Icss = rename_css_ids(scope_block("\n".join(Is), ".a-sprint"), I_IDS)
 
 SHELL_CSS = """
 /* ══════════════════════════════════════════════════════════════
-   HANSA OS — 두 앱이 한 데스크톱 위에서 돌아간다.
+   HANSA OS — 세 앱이 한 데스크톱 위에서 돌아간다.
    위쪽 작업 표시줄로 앱을 갈아 끼우고, 쉬는 앱은 DOM 에서 떼어 둔다.
    ══════════════════════════════════════════════════════════════ */
 :root{
@@ -204,7 +256,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .osbar .logo i{width:4px;height:12px;display:block;transform:skewX(-18deg)}
 .osbar .clk{flex-shrink:0;color:var(--yel);margin-left:auto}
 @media(max-width:520px){.osbar .clk{display:none}}
-.tsk{display:flex;gap:6px;min-width:0}
+.tsk{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.tsk::-webkit-scrollbar{display:none}
 .tb{position:relative;display:inline-flex;align-items:center;gap:7px;min-height:34px;
   padding:5px 10px 5px 6px;background:var(--panel);color:var(--ink);border:2px solid #150E1B;
   box-shadow:inset -2px -2px 0 var(--panel-d),inset 2px 2px 0 #fff;
@@ -233,9 +286,12 @@ SHELL_JS = r"""
     {k:"learn",el:document.getElementById("Lapp"),n:"첫 수업",
      ic:'<svg width="22" height="22" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="2" y="2" width="12" height="12" fill="#2B1F33"/><rect x="3" y="3" width="10" height="10" fill="#FBF3E2"/><rect x="7" y="3" width="2" height="10" fill="#2B1F33"/><rect x="4" y="5" width="3" height="1" fill="#2B1F33"/><rect x="9" y="5" width="3" height="1" fill="#2B1F33"/><rect x="4" y="7" width="3" height="1" fill="#2B1F33"/><rect x="9" y="7" width="3" height="1" fill="#2B1F33"/></svg>',
      key:"hansa-learn-v1"},
-    {k:"mon",el:document.getElementById("Mapp"),n:"오답 몬스터",
+    {k:"mon",el:document.getElementById("Mapp"),n:"몬스터",
      ic:'<svg width="22" height="22" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="2" width="10" height="11" fill="#2B1F33"/><rect x="4" y="3" width="8" height="9" fill="#B79EEC"/><rect x="5" y="6" width="2" height="3" fill="#2B1F33"/><rect x="9" y="6" width="2" height="3" fill="#2B1F33"/><rect x="3" y="13" width="2" height="1" fill="#2B1F33"/><rect x="7" y="13" width="2" height="1" fill="#2B1F33"/><rect x="11" y="13" width="2" height="1" fill="#2B1F33"/></svg>',
-     key:"hansa-monster-v1"}
+     key:"hansa-monster-v1"},
+    {k:"sprint",el:document.getElementById("Sapp"),n:"연표",
+     ic:'<svg width="22" height="22" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="2" y="2" width="12" height="12" fill="#2B1F33"/><rect x="3" y="3" width="10" height="10" fill="#FBF3E2"/><rect x="3" y="3" width="10" height="2" fill="#E0812C"/><rect x="5" y="7" width="6" height="1" fill="#2B1F33"/><rect x="5" y="9" width="6" height="1" fill="#2B1F33"/><rect x="5" y="11" width="4" height="1" fill="#2B1F33"/></svg>',
+     key:"hansa-sprint-v2"}
   ];
   APPS.forEach(function(a){
     SLOT[a.k]=document.createComment("app:"+a.k);
@@ -251,6 +307,7 @@ SHELL_JS = r"""
         Object.keys(S.due||{}).forEach(function(id){ if(S.done&&S.done[id]&&S.due[id].at<=t)due++; });
         return w+due;
       }
+      if(a.k==="sprint")return (S.wrong||[]).length;
       return Object.keys(S.monsters||{}).length;
     }catch(e){ return 0; }
   }
@@ -274,6 +331,8 @@ SHELL_JS = r"""
       try{ window.__hansaHome&&window.__hansaHome[k]&&window.__hansaHome[k](); }catch(e){}
       window.scrollTo(0,0); paint(); return;
     }
+    var prev=window.__hansa;
+    if(prev){ try{ window.__hansaPause&&window.__hansaPause[prev]&&window.__hansaPause[prev](); }catch(e){} }
     window.__hansa=k;
     APPS.forEach(function(a){
       if(a.k===k){
@@ -283,6 +342,7 @@ SHELL_JS = r"""
       }
     });
     try{ localStorage.setItem("hansa-app",k); }catch(e){}
+    try{ window.__hansaResume&&window.__hansaResume[k]&&window.__hansaResume[k](); }catch(e){}
     paint(); window.scrollTo(0,0);
   }
   window.__hansaSwitch=switchTo;
@@ -306,7 +366,7 @@ SHELL_JS = r"""
   var last="learn";
   try{ last=localStorage.getItem("hansa-app")||"learn"; }catch(e){}
   window.__hansa=null;
-  switchTo(last==="mon"?"mon":"learn");
+  switchTo(APPS.some(function(a){return a.k===last;})?last:"learn");
 })();
 """
 
@@ -333,10 +393,13 @@ out.append("<style>" + SHELL_CSS + "</style>\n")
 out.append(TASKBAR)
 out.append('<div class="a-learn pane" id="Lapp-wrap">\n' + Lbody + "\n</div>\n")
 out.append('<div class="a-mon pane" id="Mapp-wrap">\n' + Mbody + "\n</div>\n")
+out.append('<div class="a-sprint pane" id="Sapp">\n' + Ibody + "\n</div>\n")
 out.append("<style>\n/* ── 「한국사 첫 수업」 ── */\n" + Lcss + "\n</style>\n")
 out.append("<style>\n/* ── 「오답 몬스터」 ── */\n" + Mcss + "\n</style>\n")
+out.append("<style>\n/* ── 「연표 스프린트」 ── */\n" + Icss + "\n</style>\n")
 out.append("<script>\n/* ══ 「한국사 첫 수업」 ══ */\n(function(){\n" + Ljs + "\n})();\n</script>\n")
 out.append("<script>\n/* ══ 「오답 몬스터」 ══ */\n(function(){\n" + Mjs + "\n})();\n</script>\n")
+out.append("<script>\n/* ══ 「연표 스프린트」 ══ */\n(function(){\n" + Ijs + "\n})();\n</script>\n")
 out.append("<script>" + SHELL_JS + "</script>\n")
 
 io.open(SRC + "hansa.html", "w", encoding="utf-8").write("".join(out))

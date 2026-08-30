@@ -1004,7 +1004,14 @@ function vPlay(a){
 
 function startClock(){
   G.left=OX_TIME;
+  runClock();
+}
+/* 남은 시간은 그대로 두고 시계만 다시 돌린다 — 앱을 갈아 끼웠다 돌아왔을 때 쓴다 */
+function runClock(){
+  if(tickTimer)clearInterval(tickTimer);
   tickTimer=setInterval(function(){
+    /* 화면을 떠났는데 시계가 계속 돌면 남의 화면 위에 결과를 그려 버린다 */
+    if(!G||stack[stack.length-1].n!=="play"){clearInterval(tickTimer);tickTimer=null;return;}
     G.left--;
     var t=document.getElementById("clock");
     if(t){t.textContent=G.left+"초";t.classList.toggle("warn",G.left<=10);}
@@ -2375,6 +2382,14 @@ function pairPool(unit){
 }
 
 var PAIR_N=5,P=null,pairTimer=null;
+function runPairTimer(){
+  if(pairTimer)clearInterval(pairTimer);
+  pairTimer=setInterval(function(){
+    if(!P||P.over||stack[stack.length-1].n!=="pair"){clearInterval(pairTimer);pairTimer=null;return;}
+    P.secs=Math.round((Date.now()-P.t0)/1000);
+    var t=document.getElementById("pT"); if(t)t.textContent=P.secs+"초";
+  },1000);
+}
 function vPair(a){
   a=a||{};
   if(!P||P.key!==JSON.stringify(a)){
@@ -2390,12 +2405,7 @@ function vPair(a){
     view.innerHTML='<div class="empty"><p>짝을 지을 사건이 모자라요.<br>다른 단원을 골라 보세요.</p></div>';
     return;
   }
-  if(pairTimer)clearInterval(pairTimer);
-  pairTimer=setInterval(function(){
-    if(!P||P.over){clearInterval(pairTimer);pairTimer=null;return;}
-    P.secs=Math.round((Date.now()-P.t0)/1000);
-    var t=document.getElementById("pT"); if(t)t.textContent=P.secs+"초";
-  },1000);
+  runPairTimer();
   paintPair();
 }
 
@@ -2737,6 +2747,17 @@ function eventList(){
 
 /* ═══════════ 먼저 온 쪽 ═══════════ */
 var DUEL_TIME=60,F=null,duelTimer=null,duelAdv=null;
+function runDuelTimer(){
+  if(duelTimer)clearInterval(duelTimer);
+  duelTimer=setInterval(function(){
+    /* 화면을 떠났는데 시계가 계속 돌면 남의 화면 위에 결과를 그려 버린다 */
+    if(!F||F.over||stack[stack.length-1].n!=="first"){clearInterval(duelTimer);duelTimer=null;return;}
+    F.left--;
+    var t=document.getElementById("dT");
+    if(t){t.textContent=Math.max(0,F.left)+"초";t.classList.toggle("warn",F.left<=10);}
+    if(F.left<=0)duelEnd();
+  },1000);
+}
 function duelPair(){
   var p=eventList();
   for(var t=0;t<60;t++){
@@ -2749,15 +2770,7 @@ function vFirst(){
   if(!F||F.over){
     F={pair:duelPair(),score:0,combo:0,maxCombo:0,ok:0,n:0,left:DUEL_TIME,answered:false,over:false};
   }
-  if(duelTimer)clearInterval(duelTimer);
-  duelTimer=setInterval(function(){
-    /* 화면을 떠났는데 시계가 계속 돌면 남의 화면 위에 결과를 그려 버린다 */
-    if(!F||F.over||stack[stack.length-1].n!=="first"){clearInterval(duelTimer);duelTimer=null;return;}
-    F.left--;
-    var t=document.getElementById("dT");
-    if(t){t.textContent=Math.max(0,F.left)+"초";t.classList.toggle("warn",F.left<=10);}
-    if(F.left<=0)duelEnd();
-  },1000);
+  runDuelTimer();
   paintDuel();
 }
 function paintDuel(){
