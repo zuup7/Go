@@ -220,6 +220,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .cta.ghost:active{box-shadow:inset 3px 3px 0 var(--panel-d)}
 .a-learn .cta[disabled],.a-learn .chip[disabled]{opacity:.45;box-shadow:none;transform:none}
 .a-learn .row{display:flex;gap:10px}.a-learn .row>*{flex:1}
+.a-learn .row.back>#prev{flex:0 0 96px;font-size:14.5px;padding:12px 0}
+.a-learn .cta.wide{width:100%}
 .a-learn .sticky{margin-top:auto;padding:16px 0 4px;background:transparent}
 
 /* 제목 · 본문 */
@@ -412,6 +414,35 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   background:var(--yel);border:2px solid var(--ink);padding:4px 7px;display:inline-block}
 .a-learn .rv .b{font-size:14px;line-height:1.75;color:var(--ink-2)}
 .a-learn .rv em{font-style:normal;font-weight:800}
+.a-learn .peek .pb.cover>span:not(.cv){filter:blur(5px);user-select:none}
+.a-learn .peek .pb{position:relative}
+.a-learn .peek .pb .cv{display:none}
+.a-learn .peek .pb.cover .cv{display:block;font-family:var(--f-px);font-size:7.5px;color:var(--ink-3);
+  margin-top:7px;filter:none}
+/* 암기 장치: 가리고 떠올리기 */
+.a-learn .mmbar{display:flex;gap:7px;margin-bottom:11px;flex-wrap:wrap}
+.a-learn .mmbar .pill{font-family:var(--f-px);font-size:8px;line-height:1.7;padding:6px 7px;
+  background:var(--panel);border:2px solid var(--ink)}
+.a-learn .mmbar .pill.no{background:var(--red-l)}
+.a-learn .mmbar .pill.ok{background:var(--teal-l)}
+.a-learn .rv.mm{border-left:7px solid var(--panel-d)}
+.a-learn .rv.mm.m0{border-left-color:var(--red)}
+.a-learn .rv.mm.m1{border-left-color:var(--teal)}
+.a-learn .rv .mst{margin-left:7px;padding:2px 5px;border:2px solid var(--ink);font-size:7px}
+.a-learn .rv .mst.no{background:var(--red-l)}
+.a-learn .rv .mst.ok{background:var(--teal-l)}
+.a-learn .peekbtn{display:block;width:100%;text-align:left;min-height:52px;padding:11px 12px;
+  font-family:var(--f-b);font-size:14px;line-height:1.7;color:var(--ink-2);
+  background:repeating-linear-gradient(45deg,var(--panel) 0 7px,var(--panel-d) 7px 14px);
+  border:2px dashed var(--ink-3)}
+.a-learn .peekbtn:active{transform:translate(1px,1px)}
+.a-learn .peekbtn span{display:block;font-family:var(--f-px);font-size:7.5px;color:var(--ink-2);margin-top:5px}
+.a-learn .grade{display:flex;gap:8px;margin-top:11px}
+.a-learn .grade button{flex:1;min-height:42px;font-family:var(--f-h);font-size:14px;color:var(--ink);
+  background:var(--panel);border:2px solid var(--ink)}
+.a-learn .grade button:active{transform:translate(1px,1px)}
+.a-learn .grade .g0.on{background:var(--red-l);box-shadow:inset 0 0 0 2px var(--red)}
+.a-learn .grade .g1.on{background:var(--teal-l);box-shadow:inset 0 0 0 2px var(--teal)}
 
 /* 연표 — 시험 전날 한 장으로 훑는 화면 */
 .a-learn .tabs{display:flex;margin-bottom:14px;border:var(--bd) solid var(--ink);
@@ -434,10 +465,41 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   min-height:44px;padding:11px 12px;margin-bottom:8px;cursor:pointer;font:inherit}
 .a-learn .tlr:active{transform:translate(2px,2px);box-shadow:2px 2px 0 rgba(43,31,51,.28)}
 .a-learn .tlr .d{width:12px;height:12px;flex-shrink:0;margin-top:5px;background:var(--teal);border:2px solid var(--ink)}
-.a-learn .tlr.new .d{background:var(--panel)}
 .a-learn .tlr .x{flex:1;min-width:0}
 .a-learn .tlr .x b{display:block;font-family:var(--f-h);font-size:16.5px;line-height:1.5;color:var(--ink)}
 .a-learn .tlr .x small{display:block;font-size:12.5px;color:var(--ink-2);margin-top:3px;line-height:1.6}
+/* 연표: 시기 · 갈래 */
+.a-learn .tlmap{display:flex;align-items:stretch;gap:6px;margin-bottom:13px}
+.a-learn .tlmap .e{flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;
+  padding:8px 7px;background:var(--panel);border:var(--bd) solid var(--ink);text-align:center}
+.a-learn .tlmap .e b{font-family:var(--f-px);font-size:8.5px;line-height:1.6}
+.a-learn .tlmap .e small{font-family:var(--f-h);font-size:12px;color:var(--ink-2);line-height:1.45}
+.a-learn .tlmap .e0{background:var(--red-l)}.a-learn .tlmap .e1{background:var(--yel)}.a-learn .tlmap .e2{background:var(--blue-l)}
+.a-learn .tlmap .ar{align-self:center;font-family:var(--f-px);font-size:9px;color:var(--ink-3)}
+.a-learn .tle{display:flex;align-items:flex-start;gap:10px;margin:26px 0 12px;padding:10px 11px;
+  background:var(--ink);color:var(--cream);border:var(--bd) solid var(--ink);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.3)}
+.a-learn .tle>b{font-family:var(--f-px);font-size:10px;line-height:1.7;flex:0 0 auto;color:var(--yel)}
+.a-learn .tle span{flex:1;min-width:0}
+.a-learn .tle .t{display:block;font-family:var(--f-h);font-size:15.5px;line-height:1.5}
+.a-learn .tle small{display:block;font-size:12px;line-height:1.6;color:#CFC2D8;margin-top:2px}
+.a-learn .tlr.k-rule .d{background:var(--red)}
+.a-learn .tlr.k-resist .d{background:var(--teal)}
+.a-learn .tlr.k-world .d{background:var(--blue)}
+.a-learn .tlr.new .d{background:var(--panel)}
+.a-learn .tlr.k-rule{border-left:7px solid var(--red)}
+.a-learn .tlr.k-resist{border-left:7px solid var(--teal)}
+.a-learn .tlr.k-world{border-left:7px solid var(--blue)}
+.a-learn .tlr .x b{display:block}
+.a-learn .tlr .tg{display:inline-block;margin-left:7px;vertical-align:2px;font-family:var(--f-px);
+  font-size:7px;font-style:normal;padding:3px 4px;border:2px solid var(--ink);background:var(--panel)}
+.a-learn .tlr.k-rule .tg{background:var(--red-l)}
+.a-learn .tlr.k-resist .tg{background:var(--teal-l)}
+.a-learn .tlr.k-world .tg{background:var(--blue-l)}
+.a-learn .tlr .so{color:var(--ink);font-size:13.5px}
+.a-learn .tlr .src{color:var(--ink-3);font-size:11.5px}
+.a-learn .chip.k-rule.on{background:var(--red-l)}
+.a-learn .chip.k-resist.on{background:var(--teal-l)}
+.a-learn .chip.k-world.on{background:var(--blue-l)}
 .a-learn .empty{text-align:center;padding:38px 16px;color:var(--ink-3)}
 .a-learn .empty p{font-size:14.5px;line-height:1.8;max-width:30ch;margin:14px auto 0}
 
@@ -575,7 +637,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
    배치하느라 화면 전환이 느려진다. content-visibility 로 화면 밖은
    건너뛰게 하고, contain-intrinsic-size 로 자리만 잡아 둔다.
    (한 번 그려진 뒤에는 실제 높이를 기억해서 스크롤이 튀지 않는다) */
-.a-learn .tlr{content-visibility:auto;contain-intrinsic-size:auto 62px}
+.a-learn .tlr{content-visibility:auto;contain-intrinsic-size:auto 84px}
 .a-learn .rv{content-visibility:auto;contain-intrinsic-size:auto 120px}
 .a-learn .wcard{content-visibility:auto;contain-intrinsic-size:auto 96px}
 .a-learn .hit{content-visibility:auto;contain-intrinsic-size:auto 86px}
@@ -1332,7 +1394,7 @@ const LESSONS=[
 {id:"L5",u:"s2",part:"나라를 빼앗기다",title:"땅과 회사를 틀어쥐다",sc:"field",
  hook:"통치는 결국 돈이야. 일제가 가장 먼저 손댄 게 땅이었어. 그것도 '근대적 소유권을 확립한다'는 그럴듯한 명분을 달고.",
  cards:[
- {t:"fact",y:1912,n:"토지 조사 사업",b:"토지 소유자는 정해진 기간 안에 신고해야 소유권을 인정받았어. 이걸 <b>기한부 신고제</b>라고 해.",
+ {t:"fact",y:1910,n:"토지 조사 사업",b:"강점 직후부터 1918년까지 이어졌어. 토지 소유자는 정해진 기간 안에 신고해야 소유권을 인정받았지. 이걸 <b>기한부 신고제</b>라고 해. 근거 법령인 <b>토지 조사령</b>은 1912년에 나왔어.",
   why:"겉으로는 '지세를 공정하게 매기고 근대적 소유권을 세운다'고 했지만, 진짜 목적은 식민 통치 재정을 확보하고 일본인이 땅을 쉽게 사게 하려는 거였어.",
   so:"절차가 복잡하고 기간이 짧아서 신고를 놓친 땅이 많았어."},
  {t:"check",q:"토지 조사 사업의 신고 방식을 뭐라고 할까?",a:"기한부 신고제",hint:"기한 안에 신고해야 한다는 뜻이야"},
@@ -1419,7 +1481,7 @@ const LESSONS=[
  hook:"이번엔 땅이나 쌀이 아니야. 이름, 말, 정신 자체를 지우려고 했어. 왜 하필 1930년대부터였을까?",
  cards:[
  {t:"story",h:"전쟁이 커졌기 때문이야",b:"만주 사변(1931) 이후 일본은 침략 전쟁을 계속 넓혀 갔어. 전쟁에는 사람이 필요한데, 한국인을 전쟁터에 보내려면 먼저 '너희도 일본인'이라고 믿게 만들어야 했지. 민족 말살 통치는 <b>전쟁 동원을 위한 준비</b>였던 거야."},
- {t:"fact",y:1931,n:"내선일체와 일선동조론",b:"<b>내선일체</b>는 내지(일본)와 조선이 한몸이라는 뜻이고, <b>일선동조론</b>은 일본인과 한국인이 같은 조상에서 나왔다는 주장이야.",
+ {t:"fact",y:1937,n:"내선일체와 일선동조론",b:"<b>내선일체</b>는 내지(일본)와 조선이 한몸이라는 뜻이고, <b>일선동조론</b>은 일본인과 한국인이 같은 조상에서 나왔다는 주장이야.",
   why:"'우리는 원래 한 민족'이라고 믿게 만들려고.",
   so:"이 논리 위에서 황국 신민화 정책이 강요돼. 두 말의 뜻을 바꿔 내는 문제가 자주 나오니 구분해 두자."},
  {t:"check",q:"'일본인과 한국인이 같은 조상에서 나왔다'는 주장의 이름은?",a:"일선동조론",hint:"내선일체는 '한몸'이라는 뜻이야"},
@@ -1781,7 +1843,7 @@ const LESSONS=[
  {t:"compare",title:"이 표만 외우면 끝",l:{n:"조선 혁명군",p:["총사령관 <b>양세봉</b>","모체: 국민부 → 조선 혁명당","활동: <b>남</b>만주","<b>영</b>릉가(32) · <b>흥</b>경성(33)"]},
   r:{n:"한국 독립군",p:["총사령관 <b>지청천</b>","모체: 혁신 의회 → 한국 독립당","활동: <b>북</b>만주","<b>쌍</b>성보(32) · <b>동</b>경성 · <b>대</b>전자령(33)"]}},
  {t:"check",q:"대전자령 전투를 이끈 지휘관은?",a:"지청천",hint:"북만주의 한국 독립군이야"},
- {t:"fact",y:1934,n:"동북 항일 연군",b:"중국 공산당이 만주의 항일 유격대를 모아 <b>동북 인민 혁명군</b>을 만들었고, 여기에 많은 한인 사회주의자가 참여했어. 이 부대가 뒤에 <b>동북 항일 연군</b>으로 발전해.",
+ {t:"fact",y:1936,n:"동북 항일 연군",b:"중국 공산당이 만주의 항일 유격대를 모아 <b>동북 인민 혁명군</b>(1933)을 만들었고, 여기에 많은 한인 사회주의자가 참여했어. 이 부대가 1936년에 <b>동북 항일 연군</b>으로 발전해.",
   why:"사회주의 계열도 항일이라는 목표는 같았어.",
   so:"소속 한인 유격대원들은 민족주의자와 함께 <b>조국 광복회</b>를 조직했어(1936)."},
  {t:"chain",title:"만주 무장 투쟁 전체 흐름",items:["봉오동(1920.6) · 청산리(1920.10)","간도 참변 · 자유시 참변","3부 성립(1924)","미쓰야 협정(1925) → 3부 통합 운동(1929)","국민부 → 조선 혁명군 (양세봉)","혁신 의회 → 한국 독립군 (지청천)","한중 연합 작전 · 동북 항일 연군"]},
@@ -1844,7 +1906,8 @@ function plant(st,size){
   for(var i=0;i<pairs;i++){
     var y=106-h*(0.22+0.64*(i/Math.max(1,pairs-0.01)));
     var w=10+Math.min(st,14)*0.8-i*1.1, side=(i%2?1:-1);
-    g+='<path d="M60 '+y.toFixed(0)+' q '+(side*w).toFixed(0)+' -'+(w*0.72).toFixed(0)+' '+(side*w*1.5).toFixed(0)+' 2 q -'+(side*w*0.75).toFixed(0)+' '+(w*0.6).toFixed(0)+' -'+(side*w*1.5).toFixed(0)+' -2 z" fill="var(--jade)" opacity="'+(0.45+i*0.07).toFixed(2)+'"/>';
+    /* 왼쪽 잎은 값이 이미 음수다 — 앞에 빼기표를 또 붙이면 "--10" 이 되어 잎이 안 그려진다 */
+    g+='<path d="M60 '+y.toFixed(0)+' q '+(side*w).toFixed(0)+' '+(-w*0.72).toFixed(0)+' '+(side*w*1.5).toFixed(0)+' 2 q '+(-side*w*0.75).toFixed(0)+' '+(w*0.6).toFixed(0)+' '+(-side*w*1.5).toFixed(0)+' -2 z" fill="var(--jade)" opacity="'+(0.45+i*0.07).toFixed(2)+'"/>';
   }
   if(st>=12)
     g+='<path d="M60 '+(top+16).toFixed(0)+' q -16 -6 -22 -20 M60 '+(top+22).toFixed(0)+' q 16 -6 22 -18" stroke="var(--jade)" stroke-width="2.2" opacity=".6" '+o+'/>';
@@ -1895,8 +1958,8 @@ var S;
 function load(){
   try{var r=localStorage.getItem(KEY);
     S=r?JSON.parse(r):null;}catch(e){S=null;}
-  if(!S)S={done:{},pos:{},quiz:{},wrong:{},due:{},streak:0,last:0,dday:"",hist:[],theme:""};
-  ["done","pos","quiz","wrong","due"].forEach(function(k){if(!S[k])S[k]={};});
+  if(!S)S={done:{},pos:{},quiz:{},wrong:{},due:{},mem:{},streak:0,last:0,dday:"",hist:[],theme:""};
+  ["done","pos","quiz","wrong","due","mem"].forEach(function(k){if(!S[k])S[k]={};});
   if(!S.hist)S.hist=[]; if(S.dday==null)S.dday="";
   /* 옛 저장본: 마친 수업에 복습 일정이 없으면 내일로 잡아 준다 */
   Object.keys(S.done).forEach(function(k){ if(!S.due[k])S.due[k]={n:0,at:today()+1}; });
@@ -1981,7 +2044,7 @@ function vHome(){
   if(rc)html+='<div class="peek"><div class="pt">'+
     '<span class="lb">30초 복습 · '+esc(rc.l.title)+'</span>'+
     '<button class="re" id="peekRe" aria-label="다른 카드">↻</button></div>'+
-    '<div class="pb">'+rc.html+'</div></div>';
+    '<div class="pb cover" id="peekB">'+rc.html+'<span class="cv">눌러서 확인</span></div></div>';
   UNITS.forEach(function(u){
     var ls=LESSONS.filter(function(l){return l.u===u.id;});
     if(!ls.length)return;
@@ -2006,7 +2069,7 @@ function vHome(){
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<div class="part">복습</div>'+
     '<button class="cta ghost" id="goRev2">'+IC.book+' 암기 장치와 인과 사슬 모아 보기</button>'+
-    '<button class="cta ghost" id="goTL" style="margin-top:9px">&#9202; 흐름 한 장으로 훑기 ('+timeline().length+'개 사건)</button>'+
+    '<button class="cta ghost" id="goTL" style="margin-top:9px">&#9202; 연표 한 장으로 쭉 보기 ('+timeline().length+'개 사건)</button>'+
     '<div class="part">배운 걸 게임으로</div>'+
     '<button class="cta ghost" data-hansa-go="mon">▶ 오답 몬스터 열기</button>'+
     '<p class="note" style="margin-top:10px">여긴 처음 배우는 곳이야. 배운 내용을 문제로 확인하고 싶을 때 넘어가면 돼.</p>';
@@ -2025,6 +2088,9 @@ function vHome(){
   if(sd)sd.onclick=askDday;
   var pr=document.getElementById("peekRe");
   if(pr)pr.onclick=function(e){e.stopPropagation();vHome();};
+  /* 홈 복습 카드도 먼저 떠올려 보게 가려 둔다 */
+  var pb=document.getElementById("peekB");
+  if(pb)pb.onclick=function(){pb.classList.remove("cover");buzz(10);};
   ["goRev","goRev2"].forEach(function(i){var e=document.getElementById(i);
     if(e)e.onclick=function(){RVTAB="hint";go("review");};});
   var gt=document.getElementById("goTL");
@@ -2125,10 +2191,50 @@ function hud(){
     '<span class="track"><i style="width:'+(cur/tot*100)+'%"></i></span>'+
     '<span class="step">'+(cur+1)+' / '+tot+'</span></div>';
 }
+/* 되돌아갈 자리가 있나 — 첫 카드 앞으로는 못 간다 */
+function canBack(){
+  if(!L)return false;
+  if(L.phase==="card")return L.i>0||L.revealed;
+  if(L.phase==="quiz")return true;
+  return false;
+}
+/* 한 칸 뒤로. 퀴즈에서 뒤로 가면 그때 매긴 점수도 같이 되돌린다 */
+function goBack(){
+  if(!canBack())return;
+  buzz(10);
+  if(L.phase==="card"){
+    if(L.revealed){ L.revealed=false; return vLesson({id:L.id}); }   /* 답부터 다시 가린다 */
+    L.i--;
+  }else if(L.phase==="quiz"){
+    if(L.qi===0){ L.phase="card"; L.i=L.l.cards.length-1; }
+    else{
+      L.qi--;
+      var last=L.qlog.pop();
+      if(last&&last.ok)L.qok--;
+      L.combo=0;
+    }
+  }
+  L.revealed=false; L.answered=false;
+  S.pos[L.id]=L.i; save();
+  vLesson({id:L.id});
+}
+/* 「다음」 옆에 「이전」을 붙여 준다. 되돌아갈 자리가 없으면 다음만 */
 function nextBtn(label,fn){
-  var h='<div class="sticky"><button class="cta" id="nx">'+label+'</button></div>';
-  setTimeout(function(){var b=document.getElementById("nx");if(b)b.onclick=fn;},0);
+  var back=canBack();
+  var h='<div class="sticky">'+(back?'<div class="row back">':'')+
+        (back?'<button class="cta ghost" id="prev">← 이전</button>':'')+
+        '<button class="cta" id="nx">'+label+'</button>'+(back?'</div>':'')+'</div>';
+  setTimeout(function(){
+    var b=document.getElementById("nx");if(b)b.onclick=fn;
+    var p=document.getElementById("prev");if(p)p.onclick=goBack;
+  },0);
   return h;
+}
+/* 아직 고르기 전 화면 — 「이전」만 놓는다 */
+function backOnly(){
+  if(!canBack())return "";
+  setTimeout(function(){var p=document.getElementById("prev");if(p)p.onclick=goBack;},0);
+  return '<div class="sticky"><button class="cta ghost wide" id="prev">← 이전</button></div>';
 }
 function advance(){
   L.i++; L.revealed=false; L.answered=false;
@@ -2189,7 +2295,7 @@ function paintCard(){
        '<div class="two" id="two">'+c.c.map(function(x,i){
          return '<button class="tw" data-i="'+i+'">'+esc(x)+'</button>';}).join("")+'</div>'+
        '<div id="fb"></div></div>';
-    view.innerHTML=h;
+    view.innerHTML=h+backOnly();
     Array.prototype.forEach.call(view.querySelectorAll("#two .tw"),function(b){
       b.onclick=function(){
         if(L.answered)return; L.answered=true;
@@ -2201,6 +2307,7 @@ function paintCard(){
         if(ok)wClear(L.id,"p",L.i); else wAdd(L.id,"p",L.i,+b.dataset.i);
         document.getElementById("fb").innerHTML=
           '<div class="fb '+(ok?"ok":"no")+'"><span class="m">'+(ok?"맞아":"아냐")+'</span><span>'+c.e+'</span></div>';
+        var sk0=view.querySelector(".sticky"); if(sk0)sk0.remove();
         view.insertAdjacentHTML("beforeend",nextBtn("다음",advance));
       };
     });
@@ -2219,7 +2326,7 @@ function paintQuiz(){
     '<div style="margin-top:12px" id="opts">'+q.c.map(function(x,i){
       return '<button class="qopt" data-i="'+i+'"><span class="kx">'+"ABCD".charAt(i)+'</span><span>'+esc(x)+'</span></button>';
     }).join("")+'</div><div id="fb"></div>';
-  view.innerHTML=h;
+  view.innerHTML=h+backOnly();
   Array.prototype.forEach.call(view.querySelectorAll("#opts .qopt"),function(b){
     b.onclick=function(){
       if(L.answered)return; L.answered=true;
@@ -2239,6 +2346,7 @@ function paintQuiz(){
       buzz(ok?14:[20,40,20]); markDay();
       document.getElementById("fb").innerHTML=
         '<div class="fb '+(ok?"ok":"no")+'"><span class="m">'+(ok?"○":"×")+'</span><span>'+esc(q.e)+'</span></div>';
+      var sk1=view.querySelector(".sticky"); if(sk1)sk1.remove();
       view.insertAdjacentHTML("beforeend",nextBtn(
         L.qi+1>=l.quiz.length?"수업 마치기":"다음 문제",function(){
           L.qi++; L.answered=false;
@@ -2295,13 +2403,25 @@ function paintEnd(){
 /* ── 다시 훑기 ── */
 /* ── 연표: 수업 속 사실 카드를 연도순으로 한 장에 모은다 ── */
 var TL=null;
+/* 단원을 세 갈래로 나눈다 — 일제가 한 일 / 우리가 한 일 / 바깥 세계 */
+var TRACK={s1:"world",s2:"rule",s3:"rule",s4:"rule",s5:"resist",s6:"resist",s7:"resist",s8:"resist"};
+var TRACKN={rule:"일제",resist:"우리",world:"세계"};
+/* 시기 구분 — 통치 방식이 바뀐 두 지점(3·1 운동, 만주 사변)에서 끊는다 */
+var ERAS=[
+  {y:1919,n:"1910년대",t:"무단 통치",d:"헌병 경찰이 칼을 차고 다니고, 토지와 회사를 손에 넣던 때"},
+  {y:1930,n:"1920년대",t:"이른바 문화 통치",d:"3·1 운동에 놀란 일제가 겉모습만 바꾸고 쌀을 실어 가던 때"},
+  {y:9999,n:"1930~40년대",t:"민족 말살 · 전시 동원",d:"전쟁에 끌어들이려고 이름과 말까지 빼앗던 때"}
+];
+function eraOf(y){ for(var i=0;i<ERAS.length;i++) if(y<=ERAS[i].y) return i; return ERAS.length-1; }
 function timeline(){
   if(TL)return TL;
   TL=[];
   LESSONS.forEach(function(l){
     l.cards.forEach(function(c,i){
       if(c.t==="fact"&&c.y!=null)
-        TL.push({y:c.y,n:c.n,u:l.u,lid:l.id,ci:i,lt:l.title});
+        TL.push({y:c.y,n:c.n,u:l.u,lid:l.id,ci:i,lt:l.title,
+                 k:TRACK[l.u]||"world",
+                 so:(c.so||"").replace(/<[^>]+>/g,"")});
     });
   });
   /* 같은 해 안에서는 교과서 차례 그대로 둔다 (정렬이 안정적이라 그대로 남는다) */
@@ -2318,35 +2438,52 @@ function jumpCard(lid,ci){
 
 function vTimeline(){
   var all=timeline();
-  var rows=TLU?all.filter(function(r){return r.u===TLU;}):all;
+  var rows=TLU?all.filter(function(r){return r.k===TLU;}):all;
   /* 정확한 연도까지 외울 필요는 없다. 기본은 접어 두고, 필요할 때만 펴 본다 */
   var hide=(S.tlHide==null)?true:!!S.tlHide;
+  /* 설명을 접으면 사건 이름만 남는다 — 이름만 보고 내용을 떠올리는 연습용 */
+  var desc=(S.tlDesc==null)?true:!!S.tlDesc;
   var html=tabsHTML()+
-    '<p class="note" style="margin-bottom:13px">수업에 나온 사건 '+all.length+'개를 <b>일어난 순서대로</b> 세웠어. '+
-      '시험은 몇 년인지가 아니라 <b>무엇이 먼저였나</b>를 물어. 그래서 연도는 접어 뒀어 — '+
-      '궁금하면 「연도 펴기」를 누르거나 그 칸만 눌러 봐. '+
-      '네모가 <b style="color:var(--teal)">■</b> 로 찬 건 이미 배운 수업이고, 아무 줄이나 누르면 그 수업의 그 자리로 바로 가.</p>'+
+    '<div class="tlmap">'+ERAS.map(function(e,i){
+      return '<span class="e e'+i+'"><b>'+e.n+'</b><small>'+esc(e.t)+'</small></span>';
+    }).join('<span class="ar">→</span>')+'</div>'+
+    '<p class="note" style="margin-bottom:13px">Ⅰ단원에 나오는 사건 '+all.length+'개를 <b>일어난 순서대로</b> 한 줄에 세웠어. '+
+      '시험은 몇 년인지가 아니라 <b>무엇이 먼저였나</b>를 물어. 그래서 연도는 접어 뒀어. '+
+      '<b style="background:var(--red-l);color:var(--ink)">일제</b>가 한 일과 '+
+      '<b style="background:var(--teal-l);color:var(--ink)">우리</b>가 한 일이 어떻게 맞물리는지 보면서 쭉 내려 봐. '+
+      '아무 줄이나 누르면 그 수업의 그 자리로 바로 가.</p>'+
     '<div class="tlbar">'+
       '<button class="chip'+(hide?"":" on")+'" id="tlh">'+(hide?"연도 펴기":"연도 접기")+'</button>'+
+      '<button class="chip'+(desc?" on":"")+'" id="tld">'+(desc?"설명 접기":"설명 펴기")+'</button>'+
       '<span class="cnt">'+rows.length+' / '+all.length+'</span></div>'+
     '<div class="chips strip" id="tlu">'+
       '<button class="chip'+(TLU?"":" on")+'" data-u="">전체</button>'+
-      UNITS.filter(function(u){return all.some(function(r){return r.u===u.id;});})
-        .map(function(u){return '<button class="chip'+(TLU===u.id?" on":"")+'" data-u="'+u.id+'">'+esc(u.n)+'</button>';}).join("")+
+      ["rule","resist","world"].filter(function(k){return all.some(function(r){return r.k===k;});})
+        .map(function(k){return '<button class="chip k-'+k+(TLU===k?" on":"")+'" data-u="'+k+'">'+
+          (k==="rule"?"일제의 통치":k==="resist"?"우리의 저항":"바깥 세계")+'</button>';}).join("")+
     '</div>';
-  var cy=null;
+  var cy=null,ce=-1;
   rows.forEach(function(r,i){
+    var ei=eraOf(r.y);
+    if(ei!==ce){ ce=ei;
+      html+='<div class="tle"><b>'+ERAS[ei].n+'</b><span><b class="t">'+esc(ERAS[ei].t)+'</b>'+
+            '<small>'+esc(ERAS[ei].d)+'</small></span></div>'; }
     if(r.y!==cy){ cy=r.y;
       html+='<div class="tly'+(hide?" hid":"")+'"><b data-y="'+r.y+'">'+(hide?"·····":r.y)+'</b><i></i></div>'; }
-    html+='<button class="tlr'+(S.done[r.lid]?"":" new")+'" data-i="'+i+'">'+
-      '<span class="d"></span><span class="x"><b>'+esc(r.n)+'</b>'+
-      '<small>'+esc(r.lt)+'</small></span></button>';
+    html+='<button class="tlr k-'+r.k+(S.done[r.lid]?"":" new")+'" data-i="'+i+'">'+
+      '<span class="d"></span><span class="x">'+
+      '<b>'+esc(r.n)+'<em class="tg">'+TRACKN[r.k]+'</em></b>'+
+      (desc&&r.so?'<small class="so">'+esc(r.so)+'</small>':'')+
+      '<small class="src">수업 · '+esc(r.lt)+'</small></span></button>';
   });
   if(!rows.length)
-    html+='<div class="empty">'+scene("paper",56)+'<p>이 단원에는 연도가 붙은 사건이 없어.</p></div>';
+    html+='<div class="empty">'+scene("paper",56)+'<p>이 갈래에는 연도가 붙은 사건이 없어.</p></div>';
+  html+='<p class="note" style="margin:18px 0 4px">여기까지가 Ⅰ단원 전체 흐름이야. '+
+        '「설명 접기」를 누르면 사건 이름만 남아 — 이름만 보고 무슨 일이었는지 떠올려 보면 훨씬 잘 외워져.</p>';
   view.innerHTML=html;
   tabsBind();
   document.getElementById("tlh").onclick=function(){S.tlHide=!hide;save();vTimeline();};
+  document.getElementById("tld").onclick=function(){S.tlDesc=!desc;save();vTimeline();};
   Array.prototype.forEach.call(view.querySelectorAll("#tlu .chip"),function(b){
     b.onclick=function(){TLU=b.dataset.u;vTimeline();};});
   /* 가린 연도는 눌러서 하나씩만 까 본다 — 전체를 다시 켜지 않아도 되게 */
@@ -2368,6 +2505,52 @@ function tabsHTML(){
     }).join("")+'</div>';
 }
 
+/* ── 암기 장치: 그냥 읽는 대신 「가리고 떠올리기」로 바꾼다 ──
+   읽기만 하면 아는 것 같지만 시험지 앞에서는 안 나온다.
+   한 번 떠올려 보고 맞았는지 스스로 매기는 쪽이 훨씬 오래 남는다 */
+var MMHIDE=true, MMONLY=false;
+function stripTags(x){return String(x).replace(/<[^>]+>/g,"");}
+function memList(){
+  var out=[];
+  LESSONS.forEach(function(l){
+    if(!S.done[l.id])return;
+    l.cards.forEach(function(c,i){
+      if(c.t==="hint")
+        out.push({k:l.id+"#h"+i,lid:l.id,ci:i,lt:l.title,u:l.u,kind:"암기 장치",
+                  head:c.k,body:c.b,peek:""});
+      if(c.t==="chain")
+        out.push({k:l.id+"#c"+i,lid:l.id,ci:i,lt:l.title,u:l.u,kind:"인과 사슬",
+                  head:c.title,
+                  body:c.items.map(stripTags).join(" → "),
+                  peek:stripTags(c.items[0])+" → ?"});
+    });
+  });
+  /* 헷갈린 것부터 위로. 그다음 아직 안 매긴 것, 다 외운 것은 맨 아래 */
+  return out.sort(function(a,b){
+    var av=S.mem[a.k],bv=S.mem[b.k];
+    var ar=(av===0?0:av===1?2:1), br=(bv===0?0:bv===1?2:1);
+    return ar-br;
+  });
+}
+function memCard(it){
+  var v=S.mem[it.k];
+  var open=!MMHIDE;
+  return '<div class="rv mm'+(v===0?" m0":v===1?" m1":"")+'" data-k="'+it.k+'">'+
+    '<div class="t">'+esc(it.lt)+' · '+it.kind+
+      (v===0?'<em class="mst no">헷갈림</em>':v===1?'<em class="mst ok">기억함</em>':'')+'</div>'+
+    '<div class="k"'+(it.kind==="인과 사슬"?' style="font-size:16px;color:var(--jade)"':'')+'>'+esc(it.head)+'</div>'+
+    (open
+      ? '<div class="b">'+it.body+'</div>'
+      : '<button class="peekbtn" data-go="open">'+(it.peek?esc(it.peek)+'<span>… 나머지는?</span>'
+                                                          :'<span>속으로 떠올린 다음 눌러 봐</span>')+'</button>')+
+    (open?gradeHTML(v):'')+
+  '</div>';
+}
+function gradeHTML(v){
+  return '<div class="grade">'+
+    '<button class="g0'+(v===0?" on":"")+'" data-g="0">헷갈려</button>'+
+    '<button class="g1'+(v===1?" on":"")+'" data-g="1">기억났어</button></div>';
+}
 function vReview(){
   titleEl.textContent="다시 훑기";
   if(RVTAB==="time"){ vTimeline(); return; }
@@ -2377,24 +2560,61 @@ function vReview(){
     tabsBind();
     return;
   }
-  var html=tabsHTML()+'<p class="note" style="margin-bottom:16px">마친 수업 '+done.length+'개에서 뽑은 암기 장치와 인과 사슬이야. 시험 며칠 전에 이것만 훑어도 큰 도움이 돼.</p>';
-  UNITS.forEach(function(u){
-    var ls=done.filter(function(l){return l.u===u.id;});
-    if(!ls.length)return;
-    html+='<div class="part">'+esc(u.n)+'</div>';
-    ls.forEach(function(l){
-      l.cards.forEach(function(c){
-        if(c.t==="hint")
-          html+='<div class="rv"><div class="t">'+esc(l.title)+'</div><div class="k">'+esc(c.k)+'</div><div class="b">'+c.b+'</div></div>';
-        if(c.t==="chain")
-          html+='<div class="rv"><div class="t">'+esc(l.title)+'</div>'+
-            '<div class="k" style="font-size:16px;color:var(--jade)">'+esc(c.title)+'</div>'+
-            '<div class="b">'+c.items.map(function(x){return x.replace(/<[^>]+>/g,"");}).join(" → ")+'</div></div>';
-      });
-    });
-  });
+  var all=memList();
+  var no=all.filter(function(x){return S.mem[x.k]===0;}).length;
+  var ok=all.filter(function(x){return S.mem[x.k]===1;}).length;
+  var rest=all.length-no-ok;
+  var list=MMONLY?all.filter(function(x){return S.mem[x.k]!==1;}):all;
+  var html=tabsHTML()+
+    '<p class="note" style="margin-bottom:12px">마친 수업 '+done.length+'개에서 뽑은 암기 장치와 인과 사슬이야. '+
+      '<b>읽지 말고 먼저 떠올려 봐.</b> 가려 둔 칸을 누르기 전에 속으로 답한 다음, '+
+      '맞았는지 스스로 매기면 헷갈리는 것만 위로 올라와.</p>'+
+    '<div class="mmbar">'+
+      '<span class="pill no">헷갈림 '+no+'</span>'+
+      '<span class="pill ok">기억함 '+ok+'</span>'+
+      '<span class="pill">아직 '+rest+'</span></div>'+
+    '<div class="tlbar">'+
+      '<button class="chip'+(MMHIDE?" on":"")+'" id="mmh">'+(MMHIDE?"가리고 보기":"다 펴 놓기")+'</button>'+
+      '<button class="chip'+(MMONLY?" on":"")+'" id="mmo">'+(MMONLY?"전부 보기":"덜 외운 것만")+'</button>'+
+      '<span class="cnt">'+list.length+' / '+all.length+'</span></div>';
+  if(!list.length)
+    html+='<div class="empty">'+scene("book",56)+'<p>다 「기억함」으로 매겼어. 훌륭해.<br>「전부 보기」를 누르면 다시 볼 수 있어.</p></div>';
+  html+=list.map(memCard).join("");
+  html+='<p class="note" style="margin:16px 0 4px">시험 며칠 전엔 「덜 외운 것만」으로 좁혀서 이것만 돌리면 돼.</p>';
   view.innerHTML=html;
   tabsBind();
+  document.getElementById("mmh").onclick=function(){MMHIDE=!MMHIDE;vReview();};
+  document.getElementById("mmo").onclick=function(){MMONLY=!MMONLY;vReview();};
+  /* 한 칸만 건드린다 — 화면 전체를 다시 그리면 보던 자리를 잃는다.
+     view 에 위임을 걸면 화면을 다시 그릴 때마다 겹쳐 쌓이니 칸마다 직접 건다 */
+  var byKey={}; all.forEach(function(x){byKey[x.k]=x;});
+  Array.prototype.forEach.call(view.querySelectorAll(".rv.mm"),function(card){
+    var it=byKey[card.dataset.k]; if(it)bindMem(card,it);
+  });
+}
+function bindGrade(card,it){
+  Array.prototype.forEach.call(card.querySelectorAll(".grade button"),function(b){
+    b.onclick=function(){
+      var v=+b.dataset.g;
+      S.mem[it.k]=v; save(); buzz(v?14:[16,30,16]);
+      card.classList.remove("m0","m1"); card.classList.add(v?"m1":"m0");
+      Array.prototype.forEach.call(card.querySelectorAll(".grade button"),function(x){
+        x.classList.toggle("on",+x.dataset.g===v);});
+      var t=card.querySelector(".t"),old=t.querySelector(".mst");
+      if(old)old.remove();
+      t.insertAdjacentHTML("beforeend",v?'<em class="mst ok">기억함</em>':'<em class="mst no">헷갈림</em>');
+    };
+  });
+}
+function bindMem(card,it){
+  var op=card.querySelector("[data-go=open]");
+  if(op)op.onclick=function(){
+    buzz(10);
+    op.insertAdjacentHTML("afterend",'<div class="b">'+it.body+'</div>'+gradeHTML(S.mem[it.k]));
+    op.remove();
+    bindGrade(card,it);
+  };
+  bindGrade(card,it);
 }
 
 /* ── 오답 노트 화면 ── */
@@ -2828,7 +3048,7 @@ const EXAM=[
 {id:"x3m",u:"s3",type:"boki",q:"밑줄 친 '이 총독'이 표방한 정책에 대한 설명으로 옳은 것을 <보기>에서 고른 것은?\n\n3·1 운동 이후 새로 부임한 <u>이 총독</u>은 새로운 시정 방침을 발표하였다.",
  boki:["문관도 총독에 임명될 수 있도록 관제를 고쳤다.","헌병 경찰제를 보통 경찰제로 바꾸었다.","조선 태형령을 새로 제정하였다.","토지 조사 사업을 시작하였다."],
  c:["ㄱ, ㄴ","ㄱ, ㄷ","ㄴ, ㄷ","ㄴ, ㄹ","ㄷ, ㄹ"],a:0,
- e:"사이토 마코토다. 태형령(1912)과 토지 조사 사업(1912~18)은 앞선 무단 통치기 정책이다."}
+ e:"사이토 마코토다. 태형령(1912)과 토지 조사 사업(1910~18)은 앞선 무단 통치기 정책이다."}
 ,
 /* ───────── s4 · 민족 말살 통치와 전시 동원 ───────── */
 {id:"x4a",u:"s4",type:"boki",q:"민족 말살 통치기의 정책으로 옳은 것을 <보기>에서 고른 것은?",
@@ -3476,8 +3696,8 @@ const QUESTIONS=[
 {id:"s2-04-bl",unit:"s2",type:"mc",question:"[조선 태형령] 제13조에 본령은 　____　 적용한다고 못 박은 노골적인 차별 법령이다.",choices:["조선인에 한하여","동양 척식 주식회사","허가","한 번도 소집되지 않았다"],answer:0,explain:"조선 태형령 · 1912년",era:"칼을 찬 교사의 시대"},
 {id:"s2-05-ev",unit:"s2",type:"mc",question:"함부로 대중을 모아 청원한 자, 경찰의 지시를 어긴 자 등을 구류 또는 벌금에 처하도록 해 일상까지 통제했다.",choices:["경찰범 처벌 규칙","회사령 공포","우민화 교육","토지 조사 사업의 결과"],answer:0,explain:"경찰범 처벌 규칙 · 1912년",era:"칼을 찬 교사의 시대"},
 {id:"s2-05-bl",unit:"s2",type:"mc",question:"[경찰범 처벌 규칙] 함부로 대중을 모아 청원한 자, 경찰의 지시를 어긴 자 등을 　____　 또는 벌금에 처하도록 해 일상까지 통제했다.",choices:["허가","조선인에 한하여","구류","동양 척식 주식회사"],answer:2,explain:"경찰범 처벌 규칙 · 1912년",era:"칼을 찬 교사의 시대"},
-{id:"s2-06-ev",unit:"s2",type:"mc",question:"지세의 공정한 부과와 근대적 토지 소유권 확립을 명분으로 내세웠으나 식민 통치 재정을 확보하려는 의도였고, 정해진 기간 안에 신고해야 소유권을 인정받았다.",choices:["조선 태형령","우민화 교육","토지 조사령과 토지 조사 사업","토지 조사 사업의 결과"],answer:2,explain:"토지 조사령과 토지 조사 사업 · 1912년",era:"칼을 찬 교사의 시대"},
-{id:"s2-06-bl",unit:"s2",type:"mc",question:"[토지 조사령과 토지 조사 사업] 지세의 공정한 부과와 근대적 토지 소유권 확립을 명분으로 내세웠으나 식민 통치 재정을 확보하려는 의도였고, 정해진 　____　해야 소유권을 인정받았다.",choices:["기간 안에 신고","조선인에 한하여","동양 척식 주식회사","일왕에게 직속"],answer:0,explain:"토지 조사령과 토지 조사 사업 · 1912년",era:"칼을 찬 교사의 시대"},
+{id:"s2-06-ev",unit:"s2",type:"mc",question:"지세의 공정한 부과와 근대적 토지 소유권 확립을 명분으로 내세웠으나 식민 통치 재정을 확보하려는 의도였고, 정해진 기간 안에 신고해야 소유권을 인정받았다.",choices:["조선 태형령","우민화 교육","토지 조사령과 토지 조사 사업","토지 조사 사업의 결과"],answer:2,explain:"토지 조사 사업 · 1910~1918년 (근거 법령인 토지 조사령은 1912년)",era:"칼을 찬 교사의 시대"},
+{id:"s2-06-bl",unit:"s2",type:"mc",question:"[토지 조사령과 토지 조사 사업] 지세의 공정한 부과와 근대적 토지 소유권 확립을 명분으로 내세웠으나 식민 통치 재정을 확보하려는 의도였고, 정해진 　____　해야 소유권을 인정받았다.",choices:["기간 안에 신고","조선인에 한하여","동양 척식 주식회사","일왕에게 직속"],answer:0,explain:"토지 조사 사업 · 1910~1918년 (근거 법령인 토지 조사령은 1912년)",era:"칼을 찬 교사의 시대"},
 {id:"s2-07-ev",unit:"s2",type:"mc",question:"총독부는 지세 수입이 늘고 소유권이 불분명한 토지와 국공유지를 차지했으며, 그 땅은 동양 척식 주식회사나 일본인에게 헐값으로 넘어갔다.",choices:["헌병 경찰제","조선 태형령","회사령 공포","토지 조사 사업의 결과"],answer:3,explain:"토지 조사 사업의 결과 · 1918년",era:"칼을 찬 교사의 시대"},
 {id:"s2-07-bl",unit:"s2",type:"mc",question:"[토지 조사 사업의 결과] 총독부는 지세 수입이 늘고 소유권이 불분명한 토지와 국공유지를 차지했으며, 그 땅은 　____　나 일본인에게 헐값으로 넘어갔다.",choices:["일왕에게 직속","동양 척식 주식회사","즉결 심판권","반출"],answer:1,explain:"토지 조사 사업의 결과 · 1918년",era:"칼을 찬 교사의 시대"},
 {id:"s2-08-ev",unit:"s2",type:"mc",question:"회사 설립에 조선 총독의 허가를 받게 하고 총독의 명령만으로 해산까지 시킬 수 있었으며, 어업과 광업에도 허가제를 적용했다.",choices:["회사령 공포","중추원","경찰범 처벌 규칙","조선 총독부 설치"],answer:0,explain:"회사령 공포 · 1910년",era:"칼을 찬 교사의 시대"},
@@ -3701,9 +3921,9 @@ const QUESTIONS=[
 {id:"s8-15-ev",unit:"s8",type:"mc",question:"조선 혁명군은 사령관 양세봉이 전사한 뒤 세력이 약해졌으나 1930년대 후반까지 항일 투쟁을 이어 갔다.",choices:["양세봉 전사","쌍성보 전투","청산리 대첩","3부 통합 운동"],answer:0,explain:"양세봉 전사 · 1934년",era:"봉오동에서 대전자령까지"},
 {id:"s8-15-yr",unit:"s8",type:"mc",question:"「양세봉 전사」은(는) 몇 년의 일일까?",choices:["1933","1920","1929","1934"],answer:3,explain:"조선 혁명군은 사령관 양세봉이 전사한 뒤 세력이 약해졌으나 1930년대 후반까지 항일 투쟁을 이어 갔다.",era:"봉오동에서 대전자령까지"},
 {id:"s8-15-bl",unit:"s8",type:"mc",question:"[양세봉 전사] 조선 혁명군은 사령관 　____　이 전사한 뒤 세력이 약해졌으나 1930년대 후반까지 항일 투쟁을 이어 갔다.",choices:["양세봉","무장 해제","지청천","공화주의 자치 정부"],answer:0,explain:"양세봉 전사 · 1934년",era:"봉오동에서 대전자령까지"},
-{id:"s8-16-ev",unit:"s8",type:"mc",question:"중국 공산당이 만주의 항일 유격대를 규합해 편성했고 많은 한인 사회주의자가 참여했으며 이후 동북 항일 연군으로 발전했다.",choices:["동북 인민 혁명군","조선 혁명군 조직","간도 참변","훈춘 사건"],answer:0,explain:"동북 인민 혁명군 · 1934년",era:"봉오동에서 대전자령까지"},
-{id:"s8-16-yr",unit:"s8",type:"mc",question:"「동북 인민 혁명군」은(는) 몇 년의 일일까?",choices:["1932","1920","1934","1935"],answer:2,explain:"중국 공산당이 만주의 항일 유격대를 규합해 편성했고 많은 한인 사회주의자가 참여했으며 이후 동북 항일 연군으로 발전했다.",era:"봉오동에서 대전자령까지"},
-{id:"s8-16-bl",unit:"s8",type:"mc",question:"[동북 인민 혁명군] 중국 공산당이 만주의 항일 유격대를 규합해 편성했고 많은 한인 사회주의자가 참여했으며 이후 　____　으로 발전했다.",choices:["근거지","동북 항일 연군","양세봉","만주 군벌"],answer:1,explain:"동북 인민 혁명군 · 1934년",era:"봉오동에서 대전자령까지"},
+{id:"s8-16-ev",unit:"s8",type:"mc",question:"중국 공산당이 만주의 항일 유격대를 규합해 편성했고 많은 한인 사회주의자가 참여했으며 이후 동북 항일 연군으로 발전했다.",choices:["동북 인민 혁명군","조선 혁명군 조직","간도 참변","훈춘 사건"],answer:0,explain:"동북 인민 혁명군 · 1933년 (뒤에 동북 항일 연군으로)",era:"봉오동에서 대전자령까지"},
+{id:"s8-16-yr",unit:"s8",type:"mc",question:"「동북 인민 혁명군」은(는) 몇 년의 일일까?",choices:["1932","1920","1933","1935"],answer:2,explain:"중국 공산당이 만주의 항일 유격대를 규합해 편성했고 많은 한인 사회주의자가 참여했으며 이후 동북 항일 연군으로 발전했다.",era:"봉오동에서 대전자령까지"},
+{id:"s8-16-bl",unit:"s8",type:"mc",question:"[동북 인민 혁명군] 중국 공산당이 만주의 항일 유격대를 규합해 편성했고 많은 한인 사회주의자가 참여했으며 이후 　____　으로 발전했다.",choices:["근거지","동북 항일 연군","양세봉","만주 군벌"],answer:1,explain:"동북 인민 혁명군 · 1933년 (뒤에 동북 항일 연군으로)",era:"봉오동에서 대전자령까지"},
 {id:"s8-17-ev",unit:"s8",type:"mc",question:"동북 항일 연군에 속한 한인 유격대원들이 민족주의자와 함께 조직했다.",choices:["청산리 대첩","지청천의 중국 관내 이동","3부 통합 운동","조국 광복회"],answer:3,explain:"조국 광복회 · 1936년",era:"봉오동에서 대전자령까지"},
 {id:"s8-17-yr",unit:"s8",type:"mc",question:"「조국 광복회」은(는) 몇 년의 일일까?",choices:["1935","1930","1936","1925"],answer:2,explain:"동북 항일 연군에 속한 한인 유격대원들이 민족주의자와 함께 조직했다.",era:"봉오동에서 대전자령까지"},
 {id:"s8-17-bl",unit:"s8",type:"mc",question:"[조국 광복회] 　____　에 속한 한인 유격대원들이 민족주의자와 함께 조직했다.",choices:["최진동","동북 항일 연군","대전자령","공화주의 자치 정부"],answer:1,explain:"조국 광복회 · 1936년",era:"봉오동에서 대전자령까지"},

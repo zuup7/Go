@@ -160,6 +160,22 @@ mark{background:var(--yel);color:var(--ink);padding:1px 4px;font-weight:700}
   border:2px solid var(--ink)}
 .rl .t{font-family:var(--f-h);font-size:16px;padding-left:13px;line-height:1.5}
 .rl .s{font-size:13.5px;color:var(--ink-2);padding-left:13px;line-height:1.65}
+/* 연표: 전체 순서 보기 */
+.tlsw{display:flex;gap:8px;margin:4px 0 2px}
+.tlsw .btn{flex:1;font-size:14.5px;min-height:44px;padding:10px 8px}
+.era{display:flex;align-items:flex-start;gap:10px;margin:22px 0 8px;padding:9px 11px;
+  background:var(--ink);color:var(--cream);border:var(--bd) solid var(--ink)}
+.era b{font-family:var(--f-px);font-size:9.5px;line-height:1.7;color:var(--yel);flex:0 0 auto}
+.era span{font-family:var(--f-h);font-size:14px;line-height:1.55}
+.rl.k-rule .dot{background:var(--red)}
+.rl.k-resist .dot{background:var(--grn)}
+.rl.k-world .dot{background:var(--brand)}
+.rl.k-other .dot{background:var(--line-2)}
+.rl .tg{display:inline-block;margin-left:7px;vertical-align:2px;font-family:var(--f-px);
+  font-size:7px;font-style:normal;padding:3px 4px;border:2px solid var(--ink);background:var(--panel)}
+.rl.k-rule .tg{background:var(--red-soft)}
+.rl.k-resist .tg{background:var(--grn-soft)}
+.rl.k-world .tg{background:var(--brand-soft)}
 
 /* ── 선택지 · 버튼 ── */
 .opts{display:flex;flex-direction:column;gap:9px;margin-top:16px}
@@ -429,7 +445,7 @@ const RAW=[
 ["s2",1911,"우민화 교육","한국인을 식민 지배에 순응시키려 교육 체계를 보통 교육과 실업 교육 위주로 편성했고, 관리와 교사에게도 제복을 입고 칼을 차게 했다.","실업 교육"],
 ["s2",1912,"조선 태형령","제13조에 본령은 조선인에 한하여 적용한다고 못 박은 노골적인 차별 법령이다.","조선인에 한하여"],
 ["s2",1912,"경찰범 처벌 규칙","함부로 대중을 모아 청원한 자, 경찰의 지시를 어긴 자 등을 구류 또는 벌금에 처하도록 해 일상까지 통제했다.","구류"],
-["s2",1912,"토지 조사령과 토지 조사 사업","지세의 공정한 부과와 근대적 토지 소유권 확립을 명분으로 내세웠으나 식민 통치 재정을 확보하려는 의도였고, 정해진 기간 안에 신고해야 소유권을 인정받았다.","기간 안에 신고"],
+["s2",1910,"토지 조사 사업","강점 직후 시작해 1918년까지 이어졌고 근거 법령인 토지 조사령은 1912년에 나왔다. 지세의 공정한 부과와 근대적 토지 소유권 확립을 명분으로 내세웠으나 식민 통치 재정을 확보하려는 의도였고, 정해진 기간 안에 신고해야 소유권을 인정받았다.","기간 안에 신고"],
 ["s2",1918,"토지 조사 사업의 결과","총독부는 지세 수입이 늘고 소유권이 불분명한 토지와 국공유지를 차지했으며, 그 땅은 동양 척식 주식회사나 일본인에게 헐값으로 넘어갔다.","동양 척식 주식회사"],
 ["s2",1910,"회사령 공포","회사 설립에 조선 총독의 허가를 받게 하고 총독의 명령만으로 해산까지 시킬 수 있었으며, 어업과 광업에도 허가제를 적용했다.","허가"],
 ["s2",1914,"기간 시설 건설","철도·도로·항만·통신망을 새로 놓았는데 일본 상품의 유통을 넓히고 한국의 식량과 자원을 쉽게 반출하려는 의도였다.","반출"],
@@ -526,7 +542,7 @@ const RAW=[
 ["s8",1933,"대전자령 전투","한국 독립군이 험한 골짜기인 대전자령에 매복했다가 일본군의 후방이 고개를 넘을 때 일시에 공격해 크게 이겼다.","대전자령"],
 ["s8",1933,"동경성 전투와 흥경성 전투","한국 독립군은 동경성에서, 조선 혁명군은 흥경성에서 각각 일본군과 싸웠다.","동경성"],
 ["s8",1934,"양세봉 전사","조선 혁명군은 사령관 양세봉이 전사한 뒤 세력이 약해졌으나 1930년대 후반까지 항일 투쟁을 이어 갔다.","양세봉"],
-["s8",1934,"동북 인민 혁명군","중국 공산당이 만주의 항일 유격대를 규합해 편성했고 많은 한인 사회주의자가 참여했으며 이후 동북 항일 연군으로 발전했다.","동북 항일 연군"],
+["s8",1933,"동북 인민 혁명군","중국 공산당이 만주의 항일 유격대를 규합해 편성했고 많은 한인 사회주의자가 참여했으며 이후 동북 항일 연군으로 발전했다.","동북 항일 연군"],
 ["s8",1936,"조국 광복회","동북 항일 연군에 속한 한인 유격대원들이 민족주의자와 함께 조직했다.","동북 항일 연군"],
 ["s8",1935,"지청천의 중국 관내 이동","한국 독립군 지도부가 임시 정부의 요청으로 만리장성 이남으로 옮겼고, 지청천은 뒷날 한국광복군 창설을 주도했다.","한국광복군"],
 
@@ -1100,31 +1116,68 @@ function renderOrder(g,done){
 }
 
 /* ---------- 모드: 연표 ---------- */
+/* 시기 구분 — 통치 방식이 바뀐 두 지점(3·1 운동, 만주 사변)에서 끊는다.
+   범위 밖 단원까지 켜 두었을 때를 대비해 앞뒤로 한 칸씩 더 둔다 */
+var ERAS=[
+  {max:1909,n:"1910년 이전",t:"강점 이전"},
+  {max:1919,n:"1910년대",t:"무단 통치 — 헌병 경찰과 토지 조사"},
+  {max:1930,n:"1920년대",t:"이른바 문화 통치 — 겉모습만 바꾸고 쌀을 실어 가다"},
+  {max:1945,n:"1930~40년대",t:"민족 말살 · 전시 동원 — 이름과 말까지 빼앗다"},
+  {max:9999,n:"1945년 이후",t:"광복 이후"}
+];
+function eraOf(y){for(var i=0;i<ERAS.length;i++)if(y<=ERAS[i].max)return i;return ERAS.length-1;}
+var TRACK={s1:"world",s2:"rule",s3:"rule",s4:"rule",s5:"resist",s6:"resist",s7:"resist",s8:"resist"};
+var TRACKN={rule:"일제",resist:"우리",world:"세계",other:"그 밖"};
+function trackOf(u){return TRACK[u]||"other";}
+/* 기본은 「전체 순서」 — 단원 경계를 지우고 처음부터 끝까지 한 줄로 세운다 */
+var TLFLOW=true;
 function viewTimeline(){
-  var fs=poolFacts(),body="",n=0;
-  /* 단원마다 전체를 다시 훑지 않고 한 번에 묶는다 */
-  var by={};
-  fs.forEach(function(f){ (by[f.u]=by[f.u]||[]).push(f); });
-  UNITS.forEach(function(u){
-    var g=by[u.id];
-    if(!g||!g.length)return;
-    g=g.slice().sort(function(a,b){return a.y-b.y;});
-    n+=g.length;
-    body+='<div class="sect" style="margin-top:20px">'+u.short+' · '+u.bk+'</div><div class="rail-line">'+
-      g.map(function(f){
-        return '<div class="rl"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
-          '<div><div class="t">'+esc(f.t)+'</div><div class="s">'+f.d+'</div></div></div>';
-      }).join("")+'</div>';
-  });
+  var fs=poolFacts(),body="",n=fs.length;
+  if(TLFLOW){
+    var g=fs.slice().sort(function(a,b){return a.y-b.y;});
+    var ce=-1;
+    body+='<div class="rail-line">';
+    g.forEach(function(f){
+      var ei=eraOf(f.y);
+      if(ei!==ce){ ce=ei;
+        body+='<div class="era"><b>'+ERAS[ei].n+'</b><span>'+esc(ERAS[ei].t)+'</span></div>'; }
+      var k=trackOf(f.u);
+      body+='<div class="rl k-'+k+'"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
+        '<div><div class="t">'+esc(f.t)+'<em class="tg">'+TRACKN[k]+'</em></div>'+
+        '<div class="s">'+f.d+'</div></div></div>';
+    });
+    body+='</div>';
+  }else{
+    /* 단원마다 전체를 다시 훑지 않고 한 번에 묶는다 */
+    var by={};
+    fs.forEach(function(f){ (by[f.u]=by[f.u]||[]).push(f); });
+    UNITS.forEach(function(u){
+      var gg=by[u.id];
+      if(!gg||!gg.length)return;
+      gg=gg.slice().sort(function(a,b){return a.y-b.y;});
+      body+='<div class="sect" style="margin-top:20px">'+u.short+' · '+u.bk+'</div><div class="rail-line">'+
+        gg.map(function(f){
+          return '<div class="rl"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
+            '<div><div class="t">'+esc(f.t)+'</div><div class="s">'+f.d+'</div></div></div>';
+        }).join("")+'</div>';
+    });
+  }
   st().innerHTML='<div class="card"><div class="card-b">'+
     '<div class="q sm">연표 정렬 게임</div><p class="d" style="margin-top:6px">네 장의 카드를 순서대로 눌러 맞히세요. 순서 감각이 시험에서 제일 잘 나옵니다.</p>'+
     '<button class="btn wide" id="bPlay" style="margin-top:14px">한 판 시작</button></div></div>'+
-    '<div class="card"><div class="card-b" style="padding-top:4px">'+body+
+    '<div class="card"><div class="card-b" style="padding-top:4px">'+
+    '<div class="tlsw"><button class="btn'+(TLFLOW?"":" ghost")+'" id="tlF">전체 순서로 쭉</button>'+
+    '<button class="btn'+(TLFLOW?" ghost":"")+'" id="tlU">소단원별로</button></div>'+
+    (TLFLOW?'<p class="hint" style="margin:10px 0 4px">단원 경계를 지우고 '+n+'개 항목을 일어난 순서대로 한 줄에 세웠습니다. '+
+      '<b>일제</b>가 한 일과 <b>우리</b>가 한 일이 어떻게 맞물리는지 위에서 아래로 쭉 읽어 내려가세요.</p>':'')+
+    body+
     '<p class="hint" style="margin-top:18px">소단원 '+n+'개 항목</p></div></div>';
+  document.getElementById("tlF").onclick=function(){if(!TLFLOW){TLFLOW=true;viewTimeline();}};
+  document.getElementById("tlU").onclick=function(){if(TLFLOW){TLFLOW=false;viewTimeline();}};
   document.getElementById("bPlay").onclick=function(){
-    var g=makeOrder();
-    if(!g){st().innerHTML='<div class="card"><div class="card-b"><div class="empty"><p>단원을 더 선택하면 게임을 할 수 있어요.</p></div></div></div>';return;}
-    (function loop(gm){renderOrder(gm,function(){var n=makeOrder();if(n)loop(n);else viewTimeline();});})(g);
+    var gm=makeOrder();
+    if(!gm){st().innerHTML='<div class="card"><div class="card-b"><div class="empty"><p>단원을 더 선택하면 게임을 할 수 있어요.</p></div></div></div>';return;}
+    (function loop(g2){renderOrder(g2,function(){var nx=makeOrder();if(nx)loop(nx);else viewTimeline();});})(gm);
   };
 }
 
