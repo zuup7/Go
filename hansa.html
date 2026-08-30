@@ -104,7 +104,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn{
   --desk:#6E5A7D; --desk-d:#4A3B57; --desk-l:#8A7399;
   --cream:#FBF3E2; --panel:#F2E5C9; --panel-d:#E3D2AE;
-  --ink:#2B1F33; --ink-2:#5A4A66; --ink-3:#8B7A96;
+  --ink:#2B1F33; --ink-2:#5A4A66; --ink-3:#6E5C7A;
   --yel:#F5C63C; --yel-d:#C89A18;
   --org:#E0812C; --org-d:#B25F14;
   --red:#D2453B; --red-l:#F6DAD6;
@@ -115,7 +115,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   --f-b:"Gothic A1","Apple SD Gothic Neo",system-ui,sans-serif;
   --bd:3px; --sh:4px;
   /* 인라인 SVG(나무·장면·도장)가 쓰던 옛 이름을 새 팔레트로 잇는다 */
-  --jade:#2F8C7E; --ochre:#E0812C; --line2:#8B7A96;
+  --jade:#2F8C7E; --jade-d:#1D5C52; --ochre:#E0812C; --line2:#8B7A96;
   --bg2:#F2E5C9; --tx:#2B1F33; --tx2:#5A4A66; --f-d:"Do Hyeon","Gothic A1",sans-serif;
 }
 .a-learn *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;
@@ -196,7 +196,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   display:grid;place-items:center;padding:0 2px}
 
 /* ── 공통 픽셀 부품 ── */
-.a-learn .card,.a-learn .hero,.a-learn .paper,.a-learn .wcard,.a-learn .rv,.a-learn .sum,.a-learn .peek,.a-learn .wsum,.a-learn .exbar,.a-learn .wbar,.a-learn .lsn,.a-learn .tlr{
+.a-learn .card,.a-learn .hero,.a-learn .paper,.a-learn .wcard,.a-learn .rv,.a-learn .sum,.a-learn .peek,.a-learn .wsum,.a-learn .exbar,.a-learn .wbar,.a-learn .mbar,.a-learn .lsn,.a-learn .tlr{
   background:var(--cream);border:var(--bd) solid var(--ink);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28)}
 .a-learn .card{padding:16px 15px;margin-bottom:0;animation:in .18s steps(3)}
 @keyframes in{from{opacity:0;transform:translate(0,6px)}to{opacity:1;transform:none}}
@@ -367,18 +367,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   display:grid;place-items:center;color:var(--cream)}
 
 /* 배너들 */
-.a-learn .wbar,.a-learn .exbar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+.a-learn .wbar,.a-learn .exbar,.a-learn .mbar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
   min-height:70px;padding:11px 12px;margin-bottom:12px}
-.a-learn .wbar:active,.a-learn .exbar:active{transform:translate(var(--sh),var(--sh));box-shadow:none}
+.a-learn .wbar:active,.a-learn .exbar:active,.a-learn .mbar:active{transform:translate(var(--sh),var(--sh));box-shadow:none}
+.a-learn .mbar{background:var(--teal-l);border-color:var(--teal)}
+.a-learn .mbar .n{font-family:var(--f-px);font-size:16px;color:var(--teal);min-width:34px;text-align:center}
 .a-learn .wbar{background:var(--red-l);border-color:var(--red)}
 .a-learn .wbar .n{font-family:var(--f-px);font-size:16px;color:var(--red);min-width:34px;text-align:center}
 .a-learn .exbar{background:var(--blue-l);border-color:var(--blue)}
 .a-learn .exbar .ic{width:44px;height:44px;flex-shrink:0;border:2px solid var(--ink);background:var(--cream);
   display:grid;place-items:center;color:var(--blue)}
-.a-learn .wbar .tx,.a-learn .exbar .tx{flex:1;min-width:0}
-.a-learn .wbar .tx b,.a-learn .exbar .tx b{display:block;font-family:var(--f-h);font-size:15.5px;line-height:1.45}
-.a-learn .wbar .tx small,.a-learn .exbar .tx small{display:block;font-size:12px;color:var(--ink-2);line-height:1.6}
-.a-learn .wbar .ch,.a-learn .exbar .ch{flex-shrink:0;color:var(--ink-3)}
+.a-learn .wbar .tx,.a-learn .exbar .tx,.a-learn .mbar .tx{flex:1;min-width:0}
+.a-learn .wbar .tx b,.a-learn .exbar .tx b,.a-learn .mbar .tx b{display:block;font-family:var(--f-h);font-size:15.5px;line-height:1.45}
+.a-learn .wbar .tx small,.a-learn .exbar .tx small,.a-learn .mbar .tx small{display:block;font-size:12px;color:var(--ink-2);line-height:1.6}
+.a-learn .wbar .ch,.a-learn .exbar .ch,.a-learn .mbar .ch{flex-shrink:0;color:var(--ink-3)}
 
 /* 30초 복습 카드 */
 .a-learn .peek{padding:12px 13px;margin-bottom:12px;background:var(--panel)}
@@ -438,7 +440,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .peekbtn:active{transform:translate(1px,1px)}
 .a-learn .peekbtn span{display:block;font-family:var(--f-px);font-size:7.5px;color:var(--ink-2);margin-top:5px}
 .a-learn .grade{display:flex;gap:8px;margin-top:11px}
-.a-learn .grade button{flex:1;min-height:42px;font-family:var(--f-h);font-size:14px;color:var(--ink);
+.a-learn .grade button{flex:1;min-height:46px;font-family:var(--f-h);font-size:14px;color:var(--ink);
   background:var(--panel);border:2px solid var(--ink)}
 .a-learn .grade button:active{transform:translate(1px,1px)}
 .a-learn .grade .g0.on{background:var(--red-l);box-shadow:inset 0 0 0 2px var(--red)}
@@ -2040,6 +2042,11 @@ function vHome(){
   if(wc)html+='<button class="wbar" id="goWrong"><span class="n">'+wc+'</span>'+
     '<span class="tx"><b>다시 볼 문제 '+wc+'개</b><small>틀린 문제만 모아 뒀어. 맞히면 사라져.</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>';
+  /* 헷갈린다고 매겨 둔 암기 장치가 있으면 홈에서 바로 집어 준다 — 매기고 끝나면 소용없다 */
+  var mw=memList().filter(function(x){return S.mem[x.k]===0;}).length;
+  if(mw)html+='<button class="mbar" id="goMem"><span class="n">'+mw+'</span>'+
+    '<span class="tx"><b>헷갈린다고 매긴 것 '+mw+'개</b><small>덜 외운 암기 장치를 위로 모아 열어 줄게. 「기억났어」로 바꾸면 사라져.</small></span>'+
+    '<span class="ch">'+IC.chev+'</span></button>';
   var rc=peekCard();
   if(rc)html+='<div class="peek"><div class="pt">'+
     '<span class="lb">30초 복습 · '+esc(rc.l.title)+'</span>'+
@@ -2080,6 +2087,8 @@ function vHome(){
   if(gw)gw.onclick=function(){go("wrong");};
   var gd=document.getElementById("goDue");
   if(gd)gd.onclick=function(){RV=null;go("due");};
+  var gm=document.getElementById("goMem");
+  if(gm)gm.onclick=function(){S.mmOnly=true;save();RVTAB="hint";go("review");};
   var de=document.getElementById("ddEdit");
   if(de)de.onclick=askDday;
   var ge=document.getElementById("goExam");
@@ -2508,7 +2517,9 @@ function tabsHTML(){
 /* ── 암기 장치: 그냥 읽는 대신 「가리고 떠올리기」로 바꾼다 ──
    읽기만 하면 아는 것 같지만 시험지 앞에서는 안 나온다.
    한 번 떠올려 보고 맞았는지 스스로 매기는 쪽이 훨씬 오래 남는다 */
-var MMHIDE=true, MMONLY=false;
+/* 가리기·좁히기는 저장해 둔다 — 시험 직전엔 「덜 외운 것만」을 켜 두고 계속 쓰게 된다 */
+function mmHide(){return (S.mmHide==null)?true:!!S.mmHide;}
+function mmOnly(){return !!S.mmOnly;}
 function stripTags(x){return String(x).replace(/<[^>]+>/g,"");}
 function memList(){
   var out=[];
@@ -2534,11 +2545,11 @@ function memList(){
 }
 function memCard(it){
   var v=S.mem[it.k];
-  var open=!MMHIDE;
+  var open=!mmHide();
   return '<div class="rv mm'+(v===0?" m0":v===1?" m1":"")+'" data-k="'+it.k+'">'+
     '<div class="t">'+esc(it.lt)+' · '+it.kind+
       (v===0?'<em class="mst no">헷갈림</em>':v===1?'<em class="mst ok">기억함</em>':'')+'</div>'+
-    '<div class="k"'+(it.kind==="인과 사슬"?' style="font-size:16px;color:var(--jade)"':'')+'>'+esc(it.head)+'</div>'+
+    '<div class="k"'+(it.kind==="인과 사슬"?' style="font-size:16px;color:var(--jade-d)"':'')+'>'+esc(it.head)+'</div>'+
     (open
       ? '<div class="b">'+it.body+'</div>'
       : '<button class="peekbtn" data-go="open">'+(it.peek?esc(it.peek)+'<span>… 나머지는?</span>'
@@ -2564,7 +2575,8 @@ function vReview(){
   var no=all.filter(function(x){return S.mem[x.k]===0;}).length;
   var ok=all.filter(function(x){return S.mem[x.k]===1;}).length;
   var rest=all.length-no-ok;
-  var list=MMONLY?all.filter(function(x){return S.mem[x.k]!==1;}):all;
+  var hide=mmHide(),only=mmOnly();
+  var list=only?all.filter(function(x){return S.mem[x.k]!==1;}):all;
   var html=tabsHTML()+
     '<p class="note" style="margin-bottom:12px">마친 수업 '+done.length+'개에서 뽑은 암기 장치와 인과 사슬이야. '+
       '<b>읽지 말고 먼저 떠올려 봐.</b> 가려 둔 칸을 누르기 전에 속으로 답한 다음, '+
@@ -2574,8 +2586,8 @@ function vReview(){
       '<span class="pill ok">기억함 '+ok+'</span>'+
       '<span class="pill">아직 '+rest+'</span></div>'+
     '<div class="tlbar">'+
-      '<button class="chip'+(MMHIDE?" on":"")+'" id="mmh">'+(MMHIDE?"가리고 보기":"다 펴 놓기")+'</button>'+
-      '<button class="chip'+(MMONLY?" on":"")+'" id="mmo">'+(MMONLY?"전부 보기":"덜 외운 것만")+'</button>'+
+      '<button class="chip'+(hide?" on":"")+'" id="mmh">'+(hide?"가리고 보기":"다 펴 놓기")+'</button>'+
+      '<button class="chip'+(only?" on":"")+'" id="mmo">'+(only?"전부 보기":"덜 외운 것만")+'</button>'+
       '<span class="cnt">'+list.length+' / '+all.length+'</span></div>';
   if(!list.length)
     html+='<div class="empty">'+scene("book",56)+'<p>다 「기억함」으로 매겼어. 훌륭해.<br>「전부 보기」를 누르면 다시 볼 수 있어.</p></div>';
@@ -2583,8 +2595,8 @@ function vReview(){
   html+='<p class="note" style="margin:16px 0 4px">시험 며칠 전엔 「덜 외운 것만」으로 좁혀서 이것만 돌리면 돼.</p>';
   view.innerHTML=html;
   tabsBind();
-  document.getElementById("mmh").onclick=function(){MMHIDE=!MMHIDE;vReview();};
-  document.getElementById("mmo").onclick=function(){MMONLY=!MMONLY;vReview();};
+  document.getElementById("mmh").onclick=function(){S.mmHide=!hide;save();vReview();};
+  document.getElementById("mmo").onclick=function(){S.mmOnly=!only;save();vReview();};
   /* 한 칸만 건드린다 — 화면 전체를 다시 그리면 보던 자리를 잃는다.
      view 에 위임을 걸면 화면을 다시 그릴 때마다 겹쳐 쌓이니 칸마다 직접 건다 */
   var byKey={}; all.forEach(function(x){byKey[x.k]=x;});
