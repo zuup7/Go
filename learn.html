@@ -327,6 +327,29 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   background:var(--yel);border:2px solid var(--ink);padding:4px 7px;display:inline-block}
 .rv .b{font-size:14px;line-height:1.75;color:var(--ink-2)}
 .rv em{font-style:normal;font-weight:800}
+/* 노란 카드 위에서는 흐린 회색이 안 읽힌다 */
+.hintcard .eyebrow{color:var(--ink-2)}
+/* 서술형 연습 */
+.wbox{margin-bottom:12px}
+.wbox textarea{width:100%;padding:12px 13px;background:var(--cream);color:var(--ink);
+  border:var(--bd) solid var(--ink);box-shadow:inset 2px 2px 0 var(--panel-d);
+  font-family:var(--f-b);font-size:15.5px;line-height:1.85;resize:vertical;min-height:150px}
+.wbox textarea::placeholder{color:var(--ink-3)}
+.wkeys{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.wkey{display:inline-flex;align-items:center;gap:5px;min-height:46px;padding:8px 12px;
+  font-family:var(--f-h);font-size:14px;color:var(--ink-2);
+  background:var(--panel);border:2px solid var(--ink-3)}
+.wkey.on{color:var(--ink);background:var(--teal-l);border-color:var(--teal)}
+.wkey:active{transform:translate(1px,1px)}
+.wscore{margin-top:13px;padding:10px 12px;font-family:var(--f-px);font-size:13px;line-height:1.7;
+  border:2px solid var(--ink)}
+.wscore.ok{background:var(--teal-l)}
+.wscore.no{background:var(--red-l)}
+.wscore small{display:block;font-family:var(--f-b);font-size:13px;color:var(--ink-2);
+  margin-top:5px;line-height:1.7}
+.rv .wk{padding:1px 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.rv .wk.on{background:var(--teal-l)}
+.rv .wk.off{background:var(--red-l);box-shadow:inset 0 -2px 0 var(--red)}
 .peek .pb.cover>span:not(.cv){filter:blur(5px);user-select:none}
 .peek .pb{position:relative}
 .peek .pb .cv{display:none}
@@ -532,6 +555,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .hk{font-family:var(--f-px);font-size:7px;flex-shrink:0;padding:5px 5px;border:2px solid var(--ink);
   line-height:1.6;min-width:38px;text-align:center}
 .hk.c{background:var(--yel)} .hk.q{background:var(--teal-l)} .hk.e{background:var(--blue-l)}
+.hk.w{background:var(--red-l)}
 .ht{flex:1;min-width:0}
 .ht b{display:block;font-size:14.5px;font-weight:700;line-height:1.55}
 .ht small{display:block;font-size:12.5px;color:var(--ink-2);line-height:1.65;margin-top:3px}
@@ -1266,8 +1290,8 @@ var S;
 function load(){
   try{var r=localStorage.getItem(KEY);
     S=r?JSON.parse(r):null;}catch(e){S=null;}
-  if(!S)S={done:{},pos:{},quiz:{},wrong:{},due:{},mem:{},streak:0,last:0,dday:"",hist:[],theme:""};
-  ["done","pos","quiz","wrong","due","mem"].forEach(function(k){if(!S[k])S[k]={};});
+  if(!S)S={done:{},pos:{},quiz:{},wrong:{},due:{},mem:{},essay:{},streak:0,last:0,dday:"",hist:[],theme:""};
+  ["done","pos","quiz","wrong","due","mem","essay"].forEach(function(k){if(!S[k])S[k]={};});
   if(!S.hist)S.hist=[]; if(S.dday==null)S.dday="";
   /* 옛 저장본: 마친 수업에 복습 일정이 없으면 내일로 잡아 준다 */
   Object.keys(S.done).forEach(function(k){ if(!S.due[k])S.due[k]={n:0,at:today()+1}; });
@@ -1379,6 +1403,10 @@ function vHome(){
     '<span class="tx"><b>내신 실전 문제</b><small>&lt;보기&gt; 조합형 · 옳지 않은 것 · 순서 배열 · 단답형 '+EXAM.length+'문항'+
     ((S.exam&&S.exam.runs)?' · 최고 '+S.exam.best+'점':'')+'</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
+    '<button class="exbar" id="goEssay" style="margin-top:9px"><span class="ic">'+IC.book+'</span>'+
+    '<span class="tx"><b>서술형 연습</b><small>문장으로 답하는 '+ESSAY.length+'문항 · 채점 기준을 스스로 매겨 봐'+
+      ((typeof S.essay==="object"&&Object.keys(S.essay).length)?' · '+ESSAY.filter(wdone).length+'개 통과':'')+'</small></span>'+
+    '<span class="ch">'+IC.chev+'</span></button>'+
     '<div class="part">복습</div>'+
     '<button class="cta ghost" id="goRev2">'+IC.book+' 암기 장치와 인과 사슬 모아 보기</button>'+
     '<button class="cta ghost" id="goTL" style="margin-top:9px">&#9202; 연표 한 장으로 쭉 보기 ('+timeline().length+'개 사건)</button>'+
@@ -1396,6 +1424,8 @@ function vHome(){
   if(de)de.onclick=askDday;
   var ge=document.getElementById("goExam");
   if(ge)ge.onclick=function(){go("exam");};
+  var gy=document.getElementById("goEssay");
+  if(gy)gy.onclick=function(){W=null;go("essay");};
   var sd=document.getElementById("setDday");
   if(sd)sd.onclick=askDday;
   var pr=document.getElementById("peekRe");
@@ -2136,6 +2166,9 @@ function buildIndex(){
         ans:q.c[q.a],ex:q.e});
     });
   });
+  ESSAY.forEach(function(x){
+    IDX.push({t:"서술형",wid:x.id,head:x.q,body:x.keys.join(" ")+" "+x.model,sub:UMAP[x.u].n});
+  });
   EXAM.forEach(function(q){
     IDX.push({t:"내신",eid:q.id,head:q.q.split("\n")[0],
       body:(q.boki?q.boki.join(" "):"")+" "+q.c.join(" ")+" "+q.e,
@@ -2168,14 +2201,14 @@ function vFind(){
     (!FQ.trim()
       ? '<p class="note" style="margin-top:14px">수업 카드 '+LESSONS.reduce(function(a,l){return a+l.cards.length;},0)+
         '장, 퀴즈 '+LESSONS.reduce(function(a,l){return a+l.quiz.length;},0)+'문항, 내신 '+EXAM.length+
-        '문항을 한꺼번에 찾아. 수업 시간에 처음 듣는 말이 나오면 여기 쳐 봐.</p>'+
+        '문항, 서술형 '+ESSAY.length+'문항을 한꺼번에 찾아. 수업 시간에 처음 듣는 말이 나오면 여기 쳐 봐.</p>'+
         '<div class="part">이런 걸 찾아봐</div><div class="chips" id="sug">'+
         ["미쓰야 협정","산미 증식 계획","복벽주의","태화관","자유시 참변","황국 신민 서사"]
           .map(function(w){return '<button class="chip" data-w="'+w+'">'+w+'</button>';}).join("")+'</div>'
       : (!hits.length
         ? '<div class="empty">'+scene("paper",56)+'<p><b>'+esc(FQ)+'</b> 는 못 찾았어.<br>낱말을 줄여서 다시 쳐 봐.</p></div>'
         : '<div class="part">결과 '+hits.length+'개</div>'+hits.map(function(r,i){
-            return '<button class="hit" data-i="'+i+'"><span class="hk '+(r.t==="내신"?"e":(r.t==="퀴즈"?"q":"c"))+'">'+r.t+'</span>'+
+            return '<button class="hit" data-i="'+i+'"><span class="hk '+(r.t==="내신"?"e":(r.t==="퀴즈"?"q":(r.t==="서술형"?"w":"c")))+'">'+r.t+'</span>'+
               '<span class="ht"><b>'+hl(r.head,FQ)+'</b>'+
               (r.body?'<small>'+hl(r.body,FQ)+'</small>':'')+
               (r.sub?'<i>'+esc(r.sub)+'</i>':'')+'</span></button>';
@@ -2196,6 +2229,7 @@ function vFind(){
     b.onclick=function(){
       var r=hits[+b.dataset.i];
       if(r.t==="수업") jumpCard(r.lid,r.ci);
+      else if(r.t==="서술형"){ W=null; go("essayRun",{id:r.wid}); }
       else showHit(r);
     };
   });
@@ -2592,6 +2626,92 @@ const EXAM=[
 /* ═══════════════════════════════════════════
    내신 실전 — 학교 시험 유형 그대로
    ═══════════════════════════════════════════ */
+/* ══════════ 서술형 연습 ══════════
+   내신은 객관식만 나오지 않는다. 교과서 본문을 그대로 답이 되게 묶어 두고,
+   채점 기준(핵심어)을 몇 개나 넣었는지로 스스로 매기게 한다.
+   문장·핵심어·모범 답안 모두 교과서(8~33쪽) 본문 표현을 따랐다 */
+const ESSAY=[
+{id:"w1",u:"s1",q:"제1차 세계 대전이 끝난 뒤 제창된 민족 자결주의가 우리 민족의 독립운동에 어떤 영향을 주었는지 서술하시오.",
+ keys:["윌슨","민족 자결주의","파리 강화 회의","2·8 독립 선언","3·1 운동"],
+ model:"미국 대통령 윌슨이 제1차 세계 대전 뒤의 국제 질서를 논의하는 파리 강화 회의를 앞두고 민족 자결주의를 제창하자, 식민지와 약소민족은 독립의 희망을 품었다. 신한청년당은 김규식을 파리 강화 회의에 파견하였고, 도쿄 유학생들은 2·8 독립 선언을 발표하였다. 이 흐름이 3·1 운동으로 이어졌다. 다만 민족 자결주의는 실제로는 패전국의 식민지에만 적용되어 한국에 곧바로 적용되지는 않았다.",
+ tip:"「누가 → 어디서 → 그래서 우리 쪽에서 무엇이 일어났나」 순서로 쓰면 빠뜨리지 않는다."},
+{id:"w2",u:"s1",q:"대공황 이후 일본이 침략 전쟁을 확대해 간 과정을 순서대로 서술하시오.",
+ keys:["대공황","만주 사변","만주국","중일 전쟁","아시아·태평양 전쟁"],
+ model:"1929년 대공황으로 경제가 무너지자 일본은 대륙 침략에서 활로를 찾으려 하였다. 1931년 만주 사변을 일으켜 이듬해 만주국을 세웠고, 1937년 루거우차오 사건을 빌미로 중일 전쟁을 일으켰다. 1941년에는 하와이 진주만을 기습하여 아시아·태평양 전쟁으로 전선을 넓혔다.",
+ tip:"연도보다 순서가 중요하다. 공(29)-만(31)-중(37)-2차(39)-아태(41)."},
+
+{id:"w3",u:"s2",q:"1910년대 일제의 무단 통치가 구체적으로 어떤 방식으로 이루어졌는지 서술하시오.",
+ keys:["조선 총독부","헌병 경찰","즉결 심판","조선 태형령","제복","기본권"],
+ model:"일제는 조선 총독부를 세우고 입법·사법·행정권과 군사권을 모두 쥔 총독이 통치하게 하였다. 헌병이 일반 경찰 업무까지 맡는 헌병 경찰제를 두어 정식 재판 없이 구류·벌금·태형을 내리는 즉결 심판권을 행사하였고, 조선 태형령은 한국인에게만 적용하였다. 교사와 관리까지 제복을 입고 칼을 차게 하여 공포 분위기를 만들었으며, 언론·출판·집회·결사의 자유 등 기본권을 빼앗았다.",
+ tip:"기구(총독부) → 사람(헌병 경찰) → 법(태형령) → 분위기(제복) 순으로 쌓아 올린다."},
+{id:"w4",u:"s2",q:"토지 조사 사업의 목적과 그 결과를 서술하시오.",
+ keys:["기한부 신고제","지세","조선 총독부","동양 척식 주식회사","소작"],
+ model:"일제는 근대적 토지 소유권 확립을 내세웠지만, 실제 목적은 지세를 안정적으로 걷어 식민 통치의 재정을 마련하고 일본인의 토지 소유를 쉽게 하는 데 있었다. 정해진 기간 안에 신고해야 소유권을 인정하는 기한부 신고제를 실시하여, 절차를 모르거나 신고하지 못한 토지와 마을 공유지 등을 조선 총독부가 차지하였다. 이 토지는 동양 척식 주식회사와 일본인에게 헐값에 넘어갔고, 농민은 관습적으로 누리던 경작권을 잃고 기한부 계약 소작농으로 전락하였다.",
+ tip:"겉으로 내세운 목적과 실제 목적을 갈라 쓰면 배점을 다 받는다."},
+
+{id:"w5",u:"s3",q:"1920년대 일제의 이른바 '문화 통치'가 기만적이었다고 평가받는 까닭을 서술하시오.",
+ keys:["3·1 운동","문관","보통 경찰","치안 유지법","검열","친일파"],
+ model:"3·1 운동에 놀란 일제가 통치 방식만 바꾼 것이기 때문이다. 문관도 총독이 될 수 있도록 하였으나 실제로 임명된 적은 없었고, 헌병 경찰을 보통 경찰로 바꾸었지만 경찰관서와 경찰의 수는 오히려 크게 늘었다. 한국인의 신문 발행을 허용하였으나 검열·삭제·정간을 일삼았다. 또 치안 유지법을 만들어 독립운동을 탄압하고 친일파를 길러 민족을 분열시키려 하였다.",
+ tip:"「허용한 척한 것 ↔ 실제로 한 일」을 짝지어 쓰는 것이 채점 포인트다."},
+{id:"w6",u:"s3",q:"산미 증식 계획이 한국 농민의 삶에 끼친 영향을 서술하시오.",
+ keys:["쌀 부족","반출","식량 사정","수리 조합비","소작농","이주"],
+ model:"일본은 공업화로 도시 인구가 늘면서 쌀이 부족해지자 한국에서 산미 증식 계획을 실시해 부족한 쌀을 보충하려 하였다. 쌀 생산량은 늘었으나 목표에는 미치지 못하였는데도 일본으로의 반출은 예정대로 진행되어 한국의 식량 사정은 악화되었다. 비료 대금과 수리 조합비 등 증산 비용까지 농민에게 전가되어, 많은 자작농이 소작농이나 화전민·토막민으로 몰락하고 만주·연해주·일본 등지로 이주하기도 하였다.",
+ tip:"「늘었는데도 못 먹었다」가 이 문제의 핵심이다."},
+
+{id:"w7",u:"s4",q:"일제가 민족 말살 정책을 편 목적과 구체적인 내용을 서술하시오.",
+ keys:["중일 전쟁","내선일체","일선동조론","황국 신민 서사","신사 참배","일본식","조선어"],
+ model:"중일 전쟁 이후 한국인을 전쟁에 동원하려면 민족의식을 지워야 했기 때문이다. 일제는 내선일체와 일선동조론을 내세워 일본과 조선이 하나이며 뿌리가 같다고 선전하였다. 황국 신민 서사를 외우게 하고 신사 참배와 궁성 요배를 강요하였으며, 성과 이름도 일본식으로 바꾸도록 강요하였다. 학교에서는 조선어 과목을 사실상 없애고 일본어만 쓰게 하였다.",
+ tip:"목적(전쟁 동원)을 먼저 밝히고 수단을 나열해야 완성된 답이 된다."},
+{id:"w8",u:"s4",q:"국가 총동원법 제정 이후 인적·물적 자원이 어떻게 동원되었는지 서술하시오.",
+ keys:["국가 총동원법","지원병","징병","징용","여자 정신 근로령","위안부","공출"],
+ model:"일제는 1938년 국가 총동원법을 만들어 한국의 사람과 물자를 마음대로 동원하였다. 지원병제로 시작해 학도 지원병제와 징병제로 이어져 청년들을 전쟁터로 내몰았고, 국민 징용령으로 광산과 군수 공장에 끌고 갔다. 여자 정신 근로령으로 여성까지 동원하였으며, 많은 여성이 일본군 '위안부'로 끌려가 참혹한 피해를 입었다. 물자는 미곡과 금속을 공출하고 식량은 배급제로 통제하였다.",
+ tip:"사람(인적)과 물자(물적)를 나누어 쓰면 빠뜨리지 않는다."},
+
+{id:"w9",u:"s5",q:"1910년대 국내에서 활동한 독립 의군부와 대한 광복회를 비교하여 서술하시오.",
+ keys:["독립 의군부","임병찬","복벽주의","대한 광복회","박상진","공화주의"],
+ model:"독립 의군부는 임병찬이 고종의 밀지를 받아 조직한 단체로, 옛 왕정을 되돌리려는 복벽주의를 지향하며 국권 반환 요구서를 보내려 하였다. 대한 광복회는 박상진을 중심으로 군대식으로 조직된 비밀 결사로, 공화주의를 지향하며 군자금을 모으고 친일파를 처단하였으며 만주에 독립군 기지를 세우려 하였다.",
+ tip:"두 단체의 차이는 결국 「어떤 나라를 세울 것인가」다."},
+{id:"w10",u:"s5",q:"1910년대 국외에 세워진 독립운동 기지를 지역별로 서술하시오.",
+ keys:["서간도","신흥 강습소","북간도","명동 학교","연해주","신한촌","권업회"],
+ model:"서간도 삼원보에서는 경학사를 조직하고 신흥 강습소를 세워 독립군을 길렀으며, 이는 뒤에 신흥 무관 학교로 발전하였다. 북간도에서는 서전서숙과 명동 학교가 세워지고 간민회가 동포 사회를 이끌었으며, 대종교 인사들은 중광단을 조직하였다. 연해주 블라디보스토크에는 신한촌이 형성되고 권업회가 조직되었다. 상하이에서는 신규식 등이 동제사를 조직하였다.",
+ tip:"지역 → 단체 → 학교 순으로 한 덩어리씩 쓰면 외우기도 쉽다."},
+
+{id:"w11",u:"s6",q:"3·1 운동이 어떻게 전개되었는지 단계별로 서술하시오.",
+ keys:["민족 대표","태화관","탑골 공원","도시","농촌","무력","제암리"],
+ model:"민족 대표 33인은 태화관에서 독립 선언식을 하고 스스로 잡혀갔으며, 탑골 공원에서는 학생과 시민이 독립 선언서를 낭독하고 만세 시위를 벌였다. 처음에는 서울 등 도시에서 학생·상인·노동자가 주도하였고, 이어 철도와 장터를 따라 농촌으로 퍼져 장날을 이용한 시위가 잇따랐다. 일제가 무자비하게 진압하자 일부 지역에서는 경찰 관서와 헌병대를 습격하는 무력 투쟁으로 발전하였으며, 화성 제암리에서는 일본군의 학살이 벌어졌다.",
+ tip:"도시 → 농촌 → 무력화, 이 세 칸이 채점 기준이다."},
+{id:"w12",u:"s6",q:"3·1 운동이 국내와 국외에 끼친 영향을 나누어 서술하시오.",
+ keys:["대한민국 임시 정부","문화 통치","주체","5·4 운동","반제국주의"],
+ model:"국내에서는 독립운동을 이끌 구심점이 필요하다는 것을 깨달아 대한민국 임시 정부 수립으로 이어졌고, 일제는 무단 통치를 이른바 문화 통치로 바꾸었다. 또 학생·농민·노동자·여성 등으로 민족 운동의 주체가 크게 넓어졌다. 국외에서는 중국의 5·4 운동 등에 영향을 주어 반제국주의 민족 운동으로 평가받는다.",
+ tip:"국내 셋(임정·문화 통치·주체 확대), 국외 하나(5·4 운동)로 나눠 담는다."},
+
+{id:"w13",u:"s7",q:"여러 곳에 세워진 임시 정부가 하나로 통합된 과정과 그 성격을 서술하시오.",
+ keys:["대한 국민 의회","상하이","한성 정부","통합","삼권 분립","민주 공화제"],
+ model:"3·1 운동 뒤 연해주에 대한 국민 의회, 상하이에 임시 정부, 국내에 한성 정부가 각각 세워졌다. 1919년 9월 한성 정부의 법통을 잇되 외교 활동에 유리한 상하이에 자리를 두기로 하여 대한민국 임시 정부로 통합되었다. 임시 의정원·국무원·법원의 삼권 분립에 바탕을 둔 우리 역사 최초의 민주 공화제 정부였다.",
+ tip:"「법통은 한성, 위치는 상하이」 한 줄이면 통합 과정이 설명된다."},
+{id:"w14",u:"s7",q:"대한민국 임시 정부의 활동을 쓰고, 국민 대표 회의가 열리게 된 배경을 서술하시오.",
+ keys:["연통제","교통국","독립 공채","구미 위원부","독립신문","국민 대표 회의","창조파","개조파"],
+ model:"임시 정부는 국내와 연결하기 위해 비밀 행정망인 연통제와 통신 기관인 교통국을 두었고, 독립 공채를 발행하여 자금을 모았다. 미국에 구미 위원부를 두어 외교 활동을 폈으며 독립신문을 펴내 소식을 알렸다. 그러나 연통제와 교통국이 일제에 발각되고 외교 활동도 뚜렷한 성과를 내지 못하면서 노선을 둘러싼 갈등이 커졌고, 1923년 국민 대표 회의가 열려 새 정부를 세우자는 창조파와 임시 정부를 고쳐 쓰자는 개조파가 맞섰다.",
+ tip:"활동을 먼저 쭉 쓰고 「그러나」로 꺾어 배경을 잇는다."},
+
+{id:"w15",u:"s8",q:"봉오동 전투와 청산리 대첩의 전개 과정을 서술하시오.",
+ keys:["홍범도","대한 독립군","봉오동","훈춘 사건","김좌진","북로 군정서","청산리"],
+ model:"1920년 홍범도가 이끄는 대한 독립군 등 연합 부대가 봉오동에서 일본군을 크게 무찔렀다. 일제는 훈춘 사건을 조작하여 대규모 병력을 만주에 투입하였고, 이에 맞서 김좌진의 북로 군정서와 홍범도 부대 등 연합 부대가 청산리 일대의 백운평·어랑촌 등지에서 여러 날 동안 싸워 큰 승리를 거두었다.",
+ tip:"봉오동 → 훈춘 사건(구실) → 청산리, 가운데 고리를 빠뜨리지 않는다."},
+{id:"w16",u:"s8",q:"간도 참변과 자유시 참변 이후 만주의 독립군이 어떻게 재정비되었는지 서술하시오.",
+ keys:["간도 참변","자유시 참변","참의부","정의부","신민부","미쓰야 협정","3부 통합"],
+ model:"청산리 대첩에 대한 보복으로 일제가 간도 참변을 일으켜 한인 동포를 학살하였다. 독립군은 러시아 자유시로 이동하였으나 지휘권을 둘러싼 다툼 끝에 자유시 참변으로 큰 피해를 입었다. 만주로 돌아온 독립군은 참의부·정의부·신민부의 3부로 정비되어 군사 활동과 함께 동포 사회를 다스리는 자치 기능까지 맡았다. 일제가 만주 군벌과 미쓰야 협정을 맺어 활동이 어려워지자 3부 통합 운동이 일어났다.",
+ tip:"참변 둘 → 3부 → 미쓰야 협정 → 통합 운동, 사슬로 외운다."},
+{id:"w17",u:"s8",q:"1930년대 만주에서 한중 연합 작전이 이루어진 배경과 그 활동을 서술하시오.",
+ keys:["만주 사변","만주국","조선 혁명군","양세봉","영릉가","한국 독립군","지청천","쌍성보","대전자령"],
+ model:"1931년 일제가 만주를 침략하고 이듬해 만주국을 세우자 중국 내에서 일본에 대한 반감이 높아졌다. 이에 만주의 독립군은 항일 중국군과 연합하여 무장 투쟁을 전개하였다. 남만주에서는 양세봉이 이끄는 조선 혁명군이 영릉가 전투 등에서 일본군을 격퇴하였고, 북만주에서는 지청천이 이끄는 한국 독립군이 쌍성보 전투와 대전자령 전투에서 승리하였다. 이후 일본군의 공세로 항일 중국군의 활동이 위축되면서 무장 투쟁도 큰 제약을 받았다.",
+ tip:"남만주는 조선 혁명군·양세봉, 북만주는 한국 독립군·지청천. 짝으로 외운다."},
+{id:"w18",u:"s8",q:"사회주의 계열의 만주 항일 무장 투쟁이 어떻게 전개되었는지 서술하시오.",
+ keys:["중국 공산당","동북 인민 혁명군","동북 항일 연군","조국 광복회"],
+ model:"중국 공산당이 만주 일대의 항일 유격대를 규합하여 동북 인민 혁명군을 편성하자 많은 한인 사회주의자도 이에 가담하였다. 동북 인민 혁명군은 이후 동북 항일 연군으로 발전하였으며, 여기에 소속된 한인 유격대원들은 민족주의자와 함께 조국 광복회를 조직하여 활동하였다.",
+ tip:"인민 혁명군 → 항일 연군 → 조국 광복회. 이름이 바뀌는 순서가 곧 답이다."}
+];
+var WMAP={};ESSAY.forEach(function(x){WMAP[x.id]=x;});
 var EMAP={};EXAM.forEach(function(q){EMAP[q.id]=q;});
 var TYPE_NAME={mc5:"5지선다",boki:"<보기> 조합형",neg:"옳지 않은 것",order:"순서 배열",short:"단답형"};
 var BOKI=["ㄱ","ㄴ","ㄷ","ㄹ"];
@@ -2808,8 +2928,128 @@ function vExamResult(){
   document.getElementById("again").onclick=function(){X=null;go("exam",null,true);};
 }
 
+/* ══════════ 서술형 연습 화면 ══════════
+   객관식은 고르면 끝이지만 서술형은 「무엇을 안 썼는지」를 알아야 는다.
+   그래서 채점 기준(핵심어)을 그대로 보여 주고, 쓴 글에서 자동으로 찾아 표시한 뒤
+   빠진 것만 눈에 띄게 남긴다 */
+var W=null;
+function winit(){ if(!S.essay)S.essay={}; }
+function wnorm(x){ return String(x).toLowerCase().replace(/[\s·'"‘’“”()\[\]{}<>,.\-–—/]/g,""); }
+/* 핵심어는 "가|나" 로 대체 표현을 적을 수 있다 */
+function whit(text,key){
+  var t=wnorm(text);
+  return String(key).split("|").some(function(k){ return t.indexOf(wnorm(k))>=0; });
+}
+function wdone(x){ var r=S.essay[x.id]; return r&&r.best>=Math.ceil(x.keys.length*0.6); }
+
+function vEssayPick(){
+  titleEl.textContent="서술형 연습";
+  winit();
+  var done=ESSAY.filter(wdone).length;
+  var html=
+    '<div class="hero" style="padding-bottom:16px">'+
+      '<h1 style="font-size:21px">문장으로 답해 보자</h1>'+
+      '<p>내신은 고르는 문제만 나오지 않아. 교과서 본문이 그대로 답이 되는 '+ESSAY.length+'문항을 뽑았어. '+
+      '채점 기준(핵심어)을 몇 개나 넣었는지로 스스로 매기면 돼.</p>'+
+      '<div class="prog" style="margin-top:14px"><div class="bestbox"><b>'+done+'</b><small>기준 통과</small></div>'+
+      '<div class="pt"><b>'+ESSAY.length+'문항</b><small>핵심어를 60% 넘게 넣으면 통과</small></div></div>'+
+    '</div>';
+  UNITS.forEach(function(u){
+    var xs=ESSAY.filter(function(x){return x.u===u.id;});
+    if(!xs.length)return;
+    html+='<div class="part">'+esc(u.n)+'</div>';
+    xs.forEach(function(x){
+      var r=S.essay[x.id];
+      html+='<button class="lsn'+(wdone(x)?" done":"")+'" data-w="'+x.id+'">'+
+        '<span class="sc">'+IC.paper+'</span>'+
+        '<span class="tx"><b>'+esc(x.q.replace(/ 서술하시오\.$/,""))+'</b>'+
+        '<small>핵심어 '+x.keys.length+'개'+(r?' · 지난번 '+r.best+' / '+x.keys.length:'')+'</small></span>'+
+        '<span class="rt">'+(wdone(x)?'<span class="chk">'+IC.check+'</span>':IC.chev)+'</span></button>';
+    });
+  });
+  html+='<p class="note" style="margin-top:16px">종이에 써 보는 게 제일 좋지만, 시간이 없으면 머릿속으로 답한 뒤 '+
+        '핵심어만 맞춰 봐도 큰 도움이 돼.</p>';
+  view.innerHTML=html;
+  Array.prototype.forEach.call(view.querySelectorAll(".lsn"),function(b){
+    b.onclick=function(){ go("essayRun",{id:b.dataset.w}); };
+  });
+}
+
+function vEssayRun(a){
+  winit();
+  var x=WMAP[a.id]; if(!x)return go("essay",null,true);
+  if(!W||W.id!==a.id)W={id:a.id,text:"",shown:false,hit:{}};
+  titleEl.textContent="서술형";
+  var idx=ESSAY.indexOf(x),nx=ESSAY[idx+1];
+  var h='<div class="card"><div class="eyebrow">'+esc(UMAP[x.u].n)+' · 서술형</div>'+
+    '<div class="h sm">'+esc(x.q)+'</div>'+
+    '<div class="note" style="margin-top:9px">채점 기준 '+x.keys.length+'개</div></div>'+
+    '<div class="wbox"><textarea id="wta" rows="7" placeholder="여기에 답을 써 보자. 비워 두고 바로 기준만 봐도 돼.">'+esc(W.text)+'</textarea></div>';
+  if(!W.shown){
+    h+='<div class="card hintcard"><div class="eyebrow">먼저 이렇게</div><div class="bd">'+esc(x.tip)+'</div></div>';
+    h+=nextBtnW("채점 기준 보기",function(){
+      var ta=document.getElementById("wta"); W.text=ta?ta.value:"";
+      W.shown=true;
+      x.keys.forEach(function(k){ W.hit[k]=whit(W.text,k); });
+      buzz(12); vEssayRun(a);
+    });
+    view.innerHTML=h;
+    return;
+  }
+  var got=x.keys.filter(function(k){return W.hit[k];}).length;
+  var pass=got>=Math.ceil(x.keys.length*0.6);
+  h+='<div class="card"><div class="eyebrow">채점 기준 · 넣은 것을 눌러서 켜고 끄자</div>'+
+     '<div class="wkeys" id="wk">'+x.keys.map(function(k,i){
+       return '<button class="wkey'+(W.hit[k]?" on":"")+'" data-i="'+i+'">'+
+         (W.hit[k]?IC.check+' ':'')+esc(k.split("|")[0])+'</button>';
+     }).join("")+'</div>'+
+     '<div class="wscore '+(pass?"ok":"no")+'" id="wsc">'+got+' / '+x.keys.length+
+       '<small>'+(pass?"기준 통과. 빠진 것만 한 번 더 읽어 보자.":"조금 모자라. 모범 답안에서 빠진 말을 찾아 보자.")+'</small></div>'+
+     '</div>'+
+     '<div class="part">모범 답안</div>'+
+     '<div class="rv"><div class="b" id="wmd" style="font-size:15px;color:var(--ink)">'+wmark(x)+'</div></div>';
+  h+=nextBtnW(nx?"다음 문항":"목록으로",function(){
+    W=null; if(nx)go("essayRun",{id:nx.id},true); else go("essay",null,true);
+  });
+  view.innerHTML=h;
+  Array.prototype.forEach.call(view.querySelectorAll("#wk .wkey"),function(b){
+    b.onclick=function(){
+      var k=x.keys[+b.dataset.i];
+      W.hit[k]=!W.hit[k];
+      wsave(x);
+      vEssayRun(a);
+    };
+  });
+  wsave(x);
+}
+/* 모범 답안에서 핵심어를 짚어 준다 — 빠뜨린 것은 빨갛게 */
+function wmark(x){
+  var out=esc(x.model);
+  x.keys.forEach(function(k){
+    k.split("|").forEach(function(one){
+      var t=esc(one);
+      if(out.indexOf(t)<0)return;
+      out=out.split(t).join('<em class="wk '+(W.hit[k]?"on":"off")+'">'+t+'</em>');
+    });
+  });
+  return out;
+}
+function wsave(x){
+  var got=x.keys.filter(function(k){return W.hit[k];}).length;
+  var r=S.essay[x.id]||{best:0,tot:x.keys.length};
+  r.tot=x.keys.length; r.last=got; r.at=Date.now();
+  if(got>r.best)r.best=got;
+  S.essay[x.id]=r; save(); markDay();
+}
+/* 서술형 화면은 「이전」이 필요 없다 — 목록으로 돌아가면 되니까 */
+function nextBtnW(label,fn){
+  var h='<div class="sticky"><button class="cta" id="nx">'+label+'</button></div>';
+  setTimeout(function(){var b=document.getElementById("nx");if(b)b.onclick=fn;},0);
+  return h;
+}
 VIEWS={home:vHome,lesson:vLesson,review:vReview,wrong:vWrong,wquiz:vWQuiz,due:vDue,find:vFind,
-       exam:vExamPick,examRun:vExamRun,examResult:vExamResult};
+       exam:vExamPick,examRun:vExamRun,examResult:vExamResult,
+       essay:vEssayPick,essayRun:vEssayRun};
 load(); e2init(); save();
 
 stack=[{n:"home"}];
@@ -2858,7 +3098,8 @@ render();
                exam:"exam",examRun:"exam",examResult:"exam",review:"review"};
   var PATH={home:"/HOME",lesson:"/LESSON",review:"/REVIEW",wrong:"/WRONG",
             due:"/REVIEW/DUE",find:"/FIND",
-            wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT"};
+            wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT",
+            essay:"/ESSAY",essayRun:"/ESSAY/RUN"};
 
   var dockEl=document.getElementById("dock");
   function paintDock(){
