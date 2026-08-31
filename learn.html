@@ -26,7 +26,7 @@
   --f-b:"Gothic A1","Apple SD Gothic Neo",system-ui,sans-serif;
   --bd:3px; --sh:4px;
   /* 인라인 SVG(나무·장면·도장)가 쓰던 옛 이름을 새 팔레트로 잇는다 */
-  --jade:#2F8C7E; --jade-d:#1D5C52; --ochre:#E0812C; --line2:#8B7A96;
+  --jade:#2F8C7E; --jade-d:#1D5C52; --blue-d:#2A4D85; --red-d:#B0342C; --ochre:#E0812C; --line2:#8B7A96;
   --bg2:#F2E5C9; --tx:#2B1F33; --tx2:#5A4A66; --f-d:"Do Hyeon","Gothic A1",sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;
@@ -160,8 +160,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .ws{display:flex;gap:10px;align-items:flex-start;background:var(--panel);
   border:2px solid var(--ink);padding:11px 12px}
 .ws .lb{font-family:var(--f-h);font-size:14px;flex-shrink:0;width:46px;line-height:1.6}
-.ws.why{background:var(--blue-l)} .ws.why .lb{color:var(--blue)}
-.ws.so{background:var(--teal-l)} .ws.so .lb{color:var(--teal)}
+.ws.why{background:var(--blue-l)} .ws.why .lb{color:var(--blue-d)}
+.ws.so{background:var(--teal-l)} .ws.so .lb{color:var(--jade-d)}
 .ws p{font-size:14.5px;line-height:1.75;color:var(--ink-2);flex:1;min-width:0}
 
 /* 인과 사슬 */
@@ -210,8 +210,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .qopt.dim,.o5.dim,.ans.dim{opacity:.42;box-shadow:none}
 .qopt:disabled,.tw:disabled,.o5:disabled{cursor:default;transform:none}
 .kx,.num{font-family:var(--f-px);font-size:10px;color:var(--ink-3);flex-shrink:0;padding-top:3px}
-.qopt.ok .kx,.o5.pick .num{color:var(--teal)}
-.qopt.no .kx{color:var(--red)}
+.qopt.ok .kx,.o5.pick .num{color:var(--jade-d)}
+.qopt.no .kx{color:var(--red-d)}
 
 /* 정답/오답 배너 */
 .fb{border:var(--bd) solid var(--ink);padding:12px 13px;font-size:14.5px;line-height:1.75;
@@ -219,7 +219,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28)}
 .fb.ok{background:var(--teal-l)} .fb.no{background:var(--red-l)}
 .fb .m,.fb .em{font-family:var(--f-h);font-size:17px;flex-shrink:0;line-height:1.5}
-.fb.ok .m{color:var(--teal)} .fb.no .m{color:var(--red)}
+.fb.ok .m{color:var(--jade-d)} .fb.no .m{color:var(--red-d)}
 .fb b{background:var(--yel);padding:1px 4px}
 
 /* 비교표 */
@@ -229,7 +229,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .cmp>div+div{border-left:var(--bd) solid var(--ink)}
 .cmp h4{font-family:var(--f-h);font-size:15px;margin-bottom:8px;line-height:1.45;
   border-bottom:2px solid var(--ink);padding-bottom:5px}
-.cmp .a h4{color:var(--blue)} .cmp .b h4{color:var(--red)}
+.cmp .a h4{color:var(--blue-d)} .cmp .b h4{color:var(--red-d)}
 .cmp li{list-style:none;font-size:13px;line-height:1.6;color:var(--ink-2);padding-left:11px;
   position:relative;margin-bottom:5px}
 .cmp li::before{content:"";position:absolute;left:0;top:8px;width:5px;height:5px;background:var(--ink-3)}
@@ -282,9 +282,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   min-height:70px;padding:11px 12px;margin-bottom:12px}
 .wbar:active,.exbar:active,.mbar:active{transform:translate(var(--sh),var(--sh));box-shadow:none}
 .mbar{background:var(--teal-l);border-color:var(--teal)}
-.mbar .n{font-family:var(--f-px);font-size:16px;color:var(--teal);min-width:34px;text-align:center}
+.mbar .n{font-family:var(--f-px);font-size:16px;color:var(--jade-d);min-width:34px;text-align:center}
 .wbar{background:var(--red-l);border-color:var(--red)}
-.wbar .n{font-family:var(--f-px);font-size:16px;color:var(--red);min-width:34px;text-align:center}
+.wbar .n{font-family:var(--f-px);font-size:16px;color:var(--red-d);min-width:34px;text-align:center}
 .exbar{background:var(--blue-l);border-color:var(--blue)}
 .exbar .ic{width:44px;height:44px;flex-shrink:0;border:2px solid var(--ink);background:var(--cream);
   display:grid;place-items:center;color:var(--blue)}
@@ -327,6 +327,24 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   background:var(--yel);border:2px solid var(--ink);padding:4px 7px;display:inline-block}
 .rv .b{font-size:14px;line-height:1.75;color:var(--ink-2)}
 .rv em{font-style:normal;font-weight:800}
+/* 통치 ↔ 저항 대조표 */
+.face{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;align-items:start}
+.fcol{padding:9px 9px 10px;border:var(--bd) solid var(--ink);
+  box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.26)}
+.fcol.rule{background:var(--red-l)}
+.fcol.resist{background:var(--teal-l)}
+.fcol h4{font-family:var(--f-px);font-size:8px;line-height:1.7;margin-bottom:8px;color:var(--ink)}
+.fcol h4 i{font-style:normal;color:var(--ink-2)}
+.fc{display:block;width:100%;text-align:left;min-height:34px;padding:7px 8px;margin-bottom:5px;
+  font-family:var(--f-b);font-size:13px;line-height:1.5;color:var(--ink);
+  background:var(--cream);border:2px solid var(--ink)}
+.fc.new{background:var(--panel);color:var(--ink-2);border-style:dashed}
+.fc:active{transform:translate(1px,1px)}
+.fworld{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:9px;padding:8px 9px;
+  background:var(--blue-l);border:var(--bd) solid var(--ink);
+  box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.26)}
+.fworld>b{font-family:var(--f-px);font-size:8px;line-height:1.7;margin-right:2px}
+.fworld .fc{display:inline-block;width:auto;margin-bottom:0}
 /* 노란 카드 위에서는 흐린 회색이 안 읽힌다 */
 .hintcard .eyebrow{color:var(--ink-2)}
 /* 서술형 연습 */
@@ -441,7 +459,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 
 /* 오답 노트 */
 .wsum{display:flex;align-items:center;gap:13px;padding:14px 15px;margin-bottom:12px;background:var(--red-l)}
-.wsum .wn{font-family:var(--f-px);font-size:21px;color:var(--red);line-height:1}
+.wsum .wn{font-family:var(--f-px);font-size:21px;color:var(--red-d);line-height:1}
 .wsum .wt{flex:1;min-width:0}
 .wsum .wt b{display:block;font-family:var(--f-h);font-size:16px}
 .wsum .wt small{display:block;font-size:12.5px;color:var(--ink-2);line-height:1.65;margin-top:3px}
@@ -1835,6 +1853,47 @@ function vTimeline(){
     b.onclick=function(){var r=rows[+b.dataset.i];jumpCard(r.lid,r.ci);};});
 }
 
+/* ══════════ 통치 ↔ 저항 대조표 ══════════
+   Ⅰ단원은 「일제가 한 일(01)」과 「우리가 한 일(02·03)」이 나란히 놓인 단원이다.
+   시험은 그 둘을 같은 시기에 겹쳐 놓고 묻는다. 그래서 연표와 같은 자료로
+   시기 × 갈래 표를 세워 둔다 — 새로 적는 게 아니라 사실 카드에서 뽑아 쓴다 */
+function vFacing(){
+  var all=timeline(), rows=[];
+  var by={};
+  all.forEach(function(r,i){
+    r._i=i;
+    var k=eraOf(r.y)+"/"+r.k;
+    (by[k]=by[k]||[]).push(r);
+  });
+  var html=tabsHTML()+
+    '<p class="note" style="margin-bottom:14px">같은 시기에 <b style="background:var(--red-l);color:var(--ink)">일제가 한 일</b>과 '+
+      '<b style="background:var(--teal-l);color:var(--ink)">우리가 한 일</b>을 나란히 놓았어. '+
+      '시험은 「1920년대에 일제는 ○○을 했고 우리는 △△로 맞섰다」처럼 이 둘을 겹쳐서 물어. '+
+      '아무 칸이나 누르면 그 수업으로 가.</p>';
+  ERAS.forEach(function(e,ei){
+    var ru=by[ei+"/rule"]||[], re=by[ei+"/resist"]||[], wo=by[ei+"/world"]||[];
+    if(!ru.length&&!re.length&&!wo.length)return;
+    html+='<div class="tle"><b>'+e.n+'</b><span><b class="t">'+esc(e.t)+'</b>'+
+          '<small>'+esc(e.d)+'</small></span></div>'+
+      '<div class="face">'+
+        '<div class="fcol rule"><h4>일제가 한 일 <i>'+ru.length+'</i></h4>'+
+          ru.map(fchip).join("")+'</div>'+
+        '<div class="fcol resist"><h4>우리가 한 일 <i>'+re.length+'</i></h4>'+
+          re.map(fchip).join("")+'</div>'+
+      '</div>'+
+      (wo.length?'<div class="fworld"><b>바깥 세계</b>'+wo.map(fchip).join("")+'</div>':'');
+  });
+  html+='<p class="note" style="margin:18px 0 4px">한 칸이 비어 보이면 그 시기에 그쪽 사건이 적다는 뜻이야. '+
+        '1910년대 오른쪽이 유난히 긴 건 3·1 운동과 임시 정부가 다 여기 걸리기 때문이고.</p>';
+  view.innerHTML=html;
+  tabsBind();
+  Array.prototype.forEach.call(view.querySelectorAll(".fc"),function(b){
+    b.onclick=function(){ var r=all[+b.dataset.i]; jumpCard(r.lid,r.ci); };
+  });
+}
+function fchip(r){
+  return '<button class="fc'+(S.done[r.lid]?"":" new")+'" data-i="'+r._i+'">'+esc(r.n)+'</button>';
+}
 function tabsBind(){
   Array.prototype.forEach.call(view.querySelectorAll(".tb"),function(b){
     /* render 를 태워야 창 제목이 경로로 남는다 */
@@ -1842,7 +1901,7 @@ function tabsBind(){
 }
 function tabsHTML(){
   return '<div class="tabs" role="tablist">'+
-    [["hint","암기 장치"],["time","사건 흐름"]].map(function(t){
+    [["hint","암기 장치"],["time","사건 흐름"],["face","통치↔저항"]].map(function(t){
       return '<button class="tb" role="tab" data-t="'+t[0]+'" aria-selected="'+(RVTAB===t[0])+'">'+t[1]+'</button>';
     }).join("")+'</div>';
 }
@@ -1898,9 +1957,10 @@ function gradeHTML(v){
 function vReview(){
   titleEl.textContent="다시 훑기";
   if(RVTAB==="time"){ vTimeline(); return; }
+  if(RVTAB==="face"){ vFacing(); return; }
   var done=LESSONS.filter(function(l){return S.done[l.id];});
   if(!done.length){
-    view.innerHTML=tabsHTML()+'<div class="empty">'+scene("book",64)+'<p>아직 마친 수업이 없어.<br>수업을 하나라도 끝내면 그때 배운 암기 장치와 인과 사슬이 여기 모여.<br><br>연표 탭은 지금도 볼 수 있어.</p></div>';
+    view.innerHTML=tabsHTML()+'<div class="empty">'+scene("book",64)+'<p>아직 마친 수업이 없어.<br>수업을 하나라도 끝내면 그때 배운 암기 장치와 인과 사슬이 여기 모여.<br><br>사건 흐름과 통치↔저항 탭은 지금도 볼 수 있어.</p></div>';
     tabsBind();
     return;
   }
