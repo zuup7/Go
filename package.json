@@ -6,8 +6,9 @@
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test tests/*.test.js chartrun/tests/*.test.js",
-    "build": "node build.mjs && node build.mjs chartrun",
-    "build:chart": "node build.mjs chartrun"
+    "build": "node build.mjs && node build.mjs chartrun && node build.mjs chartrun --artifact",
+    "build:chart": "node build.mjs chartrun",
+    "build:artifact": "node build.mjs chartrun --artifact"
   },
   "license": "MIT"
 }
