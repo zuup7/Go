@@ -408,9 +408,51 @@ export function drawCutscene(ctx, t) {
   }
 }
 
+// ── 타이틀 배경 ─────────────────────────────────────────────
+/** 앞으로 만날 앨범 열일곱 장이 천천히 흘러간다 */
+export function drawTitle(ctx, time) {
+  const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
+  grad.addColorStop(0, '#12071f');
+  grad.addColorStop(1, '#2d0e3d');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  for (let i = 0; i < 40; i++) {
+    const x = (i * 97) % VIEW.w;
+    const y = (i * 53) % VIEW.h;
+    if (Math.sin(time * 1.7 + i) > 0) ctx.fillRect(x, y, 1, 1);
+  }
+
+  // 뒤편의 차트 막대
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = '#ff5d8f';
+  for (let i = 0; i < 20; i++) {
+    const h = 14 + Math.abs(Math.sin(time * 1.6 + i * 0.7)) * 62;
+    ctx.fillRect(i * 20 + 2, VIEW.h - h, 14, h);
+  }
+  ctx.restore();
+
+  for (let i = 0; i < ALBUMS.length; i++) {
+    const speed = 9 + (i % 5) * 4;
+    const size = 12 + (i % 3) * 5;
+    const x = ((i * 71 - time * speed) % (VIEW.w + 60)) + (VIEW.w + 60);
+    const y = 22 + ((i * 47) % (VIEW.h - 70)) + Math.sin(time * 1.2 + i) * 6;
+    ctx.save();
+    ctx.globalAlpha = 0.5 + (i % 3) * 0.16;
+    drawCoverAt(ctx, ALBUMS[i], (x % (VIEW.w + 60)) - 30, y, size);
+    ctx.restore();
+  }
+}
+
 // ── 전체 ────────────────────────────────────────────────────
 export function drawScene(ctx, game, time) {
   crisp(ctx);
+  if (game.scene === 'title') {
+    drawTitle(ctx, time);
+    return;
+  }
   if (game.scene === 'cutscene') {
     drawCutscene(ctx, game.cutsceneTime);
     return;
