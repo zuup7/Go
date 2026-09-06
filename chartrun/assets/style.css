@@ -1,9 +1,11 @@
 /* 차트런 — 픽셀 게임 껍데기. 캔버스는 정수배로만 키우고, 글자는 DOM 이 맡는다. */
 
 :root {
+  /* --view-w / --view-h 는 단위 없는 숫자다 (aspect-ratio 에 그대로 쓰려고) */
   --scale: 3;
-  --view-w: 384px;
-  --view-h: 224px;
+  --view-w: 384;
+  --view-h: 224;
+  --screen: min(calc(var(--view-w) * var(--scale) * 1px), 100%);
   --ink: #f2f0ff;
   --dim: #b3aecd;
   --bg: #0a0616;
@@ -11,7 +13,9 @@
   --hot: #ff5d8f;
   --good: #39ff9a;
   --warn: #ffd166;
-  --font: 'Galmuri11', 'Gowun Dodum', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  /* DotGothic16 은 진짜 도트 폰트라 숫자·영문(#37, STAGE 1)이 픽셀로 나온다.
+     한글은 안 들어있어서 자연스럽게 Gowun Dodum 으로 떨어진다. */
+  --font: 'DotGothic16', 'Gowun Dodum', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
 }
 
 * {
@@ -47,13 +51,17 @@ body {
   align-items: center;
   gap: 10px;
   padding: 12px;
+  width: 100%;
+  max-width: 100vw;
 }
 
 /* ── 화면 ─────────────────────────────────────────────── */
 .screen-wrap {
   position: relative;
-  width: calc(var(--view-w) * var(--scale));
-  height: calc(var(--view-h) * var(--scale));
+  /* 좁은 화면에서는 화면 너비에 맞춰 줄어든다 — 안 그러면 밖으로 삐져나간다 */
+  width: var(--screen);
+  aspect-ratio: var(--view-w) / var(--view-h);
+  height: auto;
   border: 3px solid #3a2358;
   border-radius: 6px;
   box-shadow:
@@ -324,8 +332,7 @@ canvas#game {
 /* ── 터치 조작 ────────────────────────────────────────── */
 .touch {
   display: none;
-  width: calc(var(--view-w) * var(--scale));
-  max-width: 100%;
+  width: var(--screen);
   justify-content: space-between;
   gap: 12px;
 }
@@ -373,6 +380,18 @@ kbd {
 @media (pointer: coarse), (max-width: 760px) {
   .touch {
     display: flex;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* 위아래 auto 여백이 남은 공간을 다 먹는다.
+     → 버튼은 엄지가 닿는 맨 아래로, 게임 화면은 그 위 공간의 한가운데로. */
+  .screen-wrap {
+    margin-block: auto;
   }
 
   .help {

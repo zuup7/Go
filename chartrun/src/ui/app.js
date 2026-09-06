@@ -121,15 +121,17 @@ function render() {
   hud.update(game);
 }
 
-// 화면 크기에 맞춰 정수배로만 키운다 — 그래야 픽셀이 안 뭉갠다
+// 자리가 넉넉하면 정수배로만 키운다 — 그래야 픽셀이 안 뭉갠다.
+// 폰처럼 좁은 화면에서는 정수배로 깎으면 화면이 너무 작아지니 그대로 채운다.
 function resize() {
   const pad = 24;
   const availableW = Math.min(window.innerWidth - pad, 1200);
-  const availableH = window.innerHeight - pad - (window.innerWidth < 760 ? 150 : 96);
-  const scale = Math.max(1, Math.floor(Math.min(availableW / VIEW.w, availableH / VIEW.h)));
+  const availableH = window.innerHeight - pad - (window.innerWidth < 760 ? 160 : 96);
+  const raw = Math.min(availableW / VIEW.w, availableH / VIEW.h);
+  const scale = raw >= 2 ? Math.floor(raw) : Math.max(0.5, raw);
   shell.style.setProperty('--scale', String(scale));
-  shell.style.setProperty('--view-w', `${VIEW.w}px`);
-  shell.style.setProperty('--view-h', `${VIEW.h}px`);
+  shell.style.setProperty('--view-w', String(VIEW.w));
+  shell.style.setProperty('--view-h', String(VIEW.h));
 }
 
 window.addEventListener('resize', resize);

@@ -39,13 +39,20 @@ export function createAudio(muted = false) {
   let sfxGain = null;
   let current = null;
   let timer = 0;
+  let blocked = false;
   let state = { muted };
 
   function ensure() {
-    if (ctx) return ctx;
+    if (ctx || blocked) return ctx;
     const Ctor = typeof AudioContext !== 'undefined' ? AudioContext : window.webkitAudioContext;
     if (!Ctor) return null;
-    ctx = new Ctor();
+    try {
+      ctx = new Ctor();
+    } catch {
+      // 제한된 iframe 등에서 막힐 수 있다. 소리만 포기하고 게임은 계속 돌아간다.
+      blocked = true;
+      return null;
+    }
     master = ctx.createGain();
     master.gain.value = state.muted ? 0 : 0.5;
     master.connect(ctx.destination);
@@ -180,7 +187,8 @@ export function createAudio(muted = false) {
     /** 첫 입력 때 부른다 */
     unlock() {
       ensure();
-      if (ctx?.state === 'suspended') ctx.resume();
+      // resume() 은 거절될 수 있다. 콘솔만 더럽히고 게임과는 상관없으니 삼킨다.
+      if (ctx?.state === 'suspended') ctx.resume().catch(() => {});
     },
     play(name) {
       if (state.muted) return;
