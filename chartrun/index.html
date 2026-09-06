@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>차트런</title>
+  <meta name="description" content="100위에서 시작해 1위까지 달리는 병맛 픽셀 러너. 앨범 17장이 길을 막는다." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%A4%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Galmuri11:wght@400;700&family=Gowun+Dodum&display=swap" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <div class="shell" id="shell">
+    <div class="screen-wrap">
+      <canvas id="game" width="384" height="224"></canvas>
+
+      <div class="ui" id="ui">
+        <div class="hud" id="hud">
+          <div class="hud-rank">
+            <span class="hud-label">음원차트</span>
+            <b id="rank">#100</b>
+            <span id="rank-title" class="hud-sub"></span>
+          </div>
+          <div class="hud-right">
+            <span id="plays">♪ 0</span>
+            <span id="chartouts">차트아웃 0</span>
+            <span id="time">0:00</span>
+          </div>
+        </div>
+
+        <div class="boss-bar" id="boss-bar" hidden>
+          <span id="boss-phase"></span>
+          <div class="boss-track"><i id="boss-fill"></i></div>
+        </div>
+
+        <div class="banner" id="banner" hidden></div>
+        <div class="center" id="center" hidden></div>
+        <div class="caption" id="caption" hidden></div>
+      </div>
+    </div>
+
+    <div class="touch" id="touch">
+      <div class="touch-left">
+        <button type="button" data-action="left" aria-label="왼쪽">◀</button>
+        <button type="button" data-action="right" aria-label="오른쪽">▶</button>
+      </div>
+      <div class="touch-right">
+        <button type="button" data-action="jump" aria-label="점프">점프</button>
+      </div>
+    </div>
+
+    <p class="help">
+      <kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>Space</kbd> 점프(길게 누르면 높이) ·
+      <kbd>R</kbd> 다시 · <kbd>Esc</kbd> 일시정지 · <kbd>M</kbd> 음소거
+    </p>
+    <noscript>이 게임을 즐기려면 자바스크립트가 필요합니다.</noscript>
+  </div>
+  <script type="module" src="src/ui/app.js"></script>
+</body>
+</html>
