@@ -2,7 +2,8 @@
 
 export const BOSS_NAME = '초합체 정규앨범';
 export const BOSS_TITLE = '《명반 名盤》';
-export const BOSS_MAX_HP = 12;
+// 페이즈당 3대. 12 였을 때는 밟기로만 깎아야 해서 3페이즈를 아무도 못 봤다.
+export const BOSS_MAX_HP = 9;
 
 /**
  * 페이즈. from 은 "남은 체력 비율이 이 값보다 크면 이 페이즈" 라는 뜻.
@@ -13,7 +14,9 @@ export const PHASES = [
     id: 1,
     from: 2 / 3,
     name: '회전 · 음표 탄막',
+    subtitle: '재생 버튼이 열릴 때를 노려라',
     color: '#ff5d8f',
+    micEvery: 5.0,
     fireEvery: 1.6,
     shots: 5,
     shotSpeed: 78,
@@ -28,7 +31,9 @@ export const PHASES = [
     id: 2,
     from: 1 / 3,
     name: '분열 · 4중 돌진',
+    subtitle: '조각이 가로지른다. 마이크를 놓치지 마라',
     color: '#ffc93c',
+    micEvery: 4.2,
     fireEvery: 1.15,
     shots: 7,
     shotSpeed: 95,
@@ -44,7 +49,9 @@ export const PHASES = [
     id: 3,
     from: -1,
     name: '사재기 · 총력전',
+    subtitle: '잡몹까지 부른다. 마지막이다',
     color: '#7c5cff',
+    micEvery: 3.4,
     fireEvery: 0.85,
     shots: 9,
     shotSpeed: 112,

@@ -2,7 +2,7 @@
 import { rankTitle } from '../core/chart.js';
 import { timeText } from '../core/util.js';
 import { STAGES } from '../data/stages.js';
-import { BOSS_NAME, BOSS_TITLE } from '../data/bossData.js';
+import { BOSS_NAME } from '../data/bossData.js';
 import { lineAt } from '../data/cutscene.js';
 
 const esc = (s) =>
@@ -18,6 +18,8 @@ export function createHud(root) {
     bossBar: root.querySelector('#boss-bar'),
     bossFill: root.querySelector('#boss-fill'),
     bossPhase: root.querySelector('#boss-phase'),
+    ammo: root.querySelector('#ammo'),
+    phaseCard: root.querySelector('#phase-card'),
     banner: root.querySelector('#banner'),
     center: root.querySelector('#center'),
     caption: root.querySelector('#caption'),
@@ -26,6 +28,7 @@ export function createHud(root) {
 
   let lastCenter = '';
   let lastCaption = '';
+  let lastPhaseCard = '';
 
   const setCenter = (html) => {
     if (html === lastCenter) return;
@@ -122,10 +125,21 @@ export function createHud(root) {
 
       const showBoss = game.scene === 'boss' && game.boss;
       el.bossBar.hidden = !showBoss;
+      el.bossPhase.hidden = !showBoss;
       if (showBoss) {
         const ratio = game.boss.hp / game.boss.maxHp;
         el.bossFill.style.width = `${Math.max(0, ratio * 100)}%`;
-        el.bossPhase.textContent = `${BOSS_NAME} ${BOSS_TITLE} · ${game.boss.phaseId}페이즈`;
+        el.bossPhase.textContent = `${game.boss.phaseId}페이즈`;
+      }
+      el.ammo.hidden = !(game.player?.ammo > 0);
+
+      const card = game.phaseCard
+        ? `<b>PHASE ${game.phaseCard.id}</b><span>${esc(game.phaseCard.name)} — ${esc(game.phaseCard.subtitle ?? '')}</span>`
+        : '';
+      if (card !== lastPhaseCard) {
+        lastPhaseCard = card;
+        el.phaseCard.innerHTML = card;
+        el.phaseCard.hidden = !card;
       }
 
       if (game.paused) {

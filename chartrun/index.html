@@ -17,6 +17,9 @@
       <canvas id="game" width="384" height="224"></canvas>
 
       <div class="ui" id="ui">
+        <!-- 보스 체력은 화면 맨 위 가장자리에 얇게만. 진짜 체력계는 캔버스 안 보스 아래에 그린다 -->
+        <div class="boss-bar" id="boss-bar" hidden><i id="boss-fill"></i></div>
+
         <div class="hud" id="hud">
           <div class="hud-rank">
             <span class="hud-label">음원차트</span>
@@ -24,17 +27,15 @@
             <span id="rank-title" class="hud-sub"></span>
           </div>
           <div class="hud-right">
+            <span id="boss-phase" hidden></span>
+            <span id="ammo" hidden>🎤 ×1</span>
             <span id="plays">♪ 0</span>
             <span id="chartouts">차트아웃 0</span>
             <span id="time">0:00</span>
           </div>
         </div>
 
-        <div class="boss-bar" id="boss-bar" hidden>
-          <span id="boss-phase"></span>
-          <div class="boss-track"><i id="boss-fill"></i></div>
-        </div>
-
+        <div class="phase-card" id="phase-card" hidden></div>
         <div class="banner" id="banner" hidden></div>
         <div class="center" id="center" hidden></div>
         <div class="caption" id="caption" hidden></div>
@@ -47,13 +48,14 @@
         <button type="button" data-action="right" aria-label="오른쪽">▶</button>
       </div>
       <div class="touch-right">
+        <button type="button" data-action="throw" id="throw-btn" hidden aria-label="마이크 던지기">🎤</button>
         <button type="button" data-action="jump" aria-label="점프">점프</button>
       </div>
     </div>
 
     <p class="help">
       <kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>Space</kbd> 점프(길게 누르면 높이) ·
-      <kbd>R</kbd> 다시 · <kbd>Esc</kbd> 일시정지 · <kbd>M</kbd> 음소거
+      <kbd>X</kbd> 마이크 던지기 · <kbd>R</kbd> 다시 · <kbd>Esc</kbd> 일시정지 · <kbd>M</kbd> 음소거
     </p>
     <noscript>이 게임을 즐기려면 자바스크립트가 필요합니다.</noscript>
   </div>

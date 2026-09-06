@@ -13,12 +13,28 @@ const ctx = (extra = {}) => ({
 });
 
 test('페이즈는 체력 비율로 갈린다', () => {
-  assert.equal(phaseFor(BOSS_MAX_HP).id, 1);
+  // 체력 9 = 페이즈당 3대
+  assert.equal(BOSS_MAX_HP, 9);
   assert.equal(phaseFor(9).id, 1);
-  assert.equal(phaseFor(8).id, 2, '2/3 지점은 2페이즈부터');
-  assert.equal(phaseFor(5).id, 2);
-  assert.equal(phaseFor(4).id, 3, '1/3 지점은 3페이즈부터');
+  assert.equal(phaseFor(7).id, 1);
+  assert.equal(phaseFor(6).id, 2, '2/3 지점은 2페이즈부터');
+  assert.equal(phaseFor(4).id, 2);
+  assert.equal(phaseFor(3).id, 3, '1/3 지점은 3페이즈부터');
   assert.equal(phaseFor(0).id, 3);
+});
+
+test('세 페이즈를 다 보려면 아홉 대면 된다 — 그래야 3페이즈까지 간다', () => {
+  const boss = createBoss(640);
+  const seen = new Set([1]);
+  for (let i = 0; i < BOSS_MAX_HP; i++) {
+    boss.vulnerable = true;
+    hitBoss(boss);
+    seen.add(boss.phaseId);
+    syncPhase(boss);
+    seen.add(boss.phaseId);
+  }
+  assert.deepEqual([...seen].sort(), [1, 2, 3], '한 판에 세 페이즈가 전부 나온다');
+  assert.equal(boss.state, 'defeated');
 });
 
 test('페이즈 정의가 셋이고 순서대로다', () => {
@@ -69,7 +85,7 @@ test('페이즈는 1 → 2 → 3 으로만 가고 되돌아가지 않는다', ()
 
 test('체력이 회복돼도 페이즈는 돌아가지 않는다', () => {
   const boss = createBoss(640);
-  boss.hp = 2;
+  boss.hp = 1;
   syncPhase(boss);
   assert.equal(boss.phaseId, 3);
   boss.hp = BOSS_MAX_HP;
@@ -108,7 +124,7 @@ test('1페이즈 공격에서 탄환이 나온다', () => {
 
 test('3페이즈에서는 잡몹 앨범을 부른다', () => {
   const boss = createBoss(640);
-  boss.hp = 3;
+  boss.hp = 2;
   syncPhase(boss);
   boss.state = 'attack';
   boss.timer = 999;
@@ -119,7 +135,7 @@ test('3페이즈에서는 잡몹 앨범을 부른다', () => {
 
 test('2페이즈부터 분열 조각이 생긴다', () => {
   const boss = createBoss(640);
-  boss.hp = 6;
+  boss.hp = 5;
   syncPhase(boss);
   boss.state = 'attack';
   boss.timer = 999;

@@ -40,6 +40,8 @@ export function createPlayer(spawn) {
     assist: newJumpAssist(),
     /** 파워업: 'none' | 'mic' (한 대 버팀) */
     power: 'none',
+    /** 보스전에서 주운 던질 마이크 (0 또는 1). 쓰면 없어진다 */
+    ammo: 0,
   };
 }
 
@@ -55,6 +57,7 @@ export function respawnPlayer(player, spawn) {
   player.onGround = false;
   player.assist = newJumpAssist();
   player.power = 'none';
+  player.ammo = 0;
 }
 
 /**

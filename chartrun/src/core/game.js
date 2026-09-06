@@ -5,9 +5,15 @@ import { createPlayer, respawnPlayer, updatePlayer, bounce, damagePlayer } from 
 import { spawnAlbum, updateAlbum, stompAlbum, updateShot } from './enemy.js';
 import { createCamera, updateCamera, shakeCamera } from './camera.js';
 import { rankAt, TOP_RANK } from './chart.js';
-import { createBoss, updateBoss, hitBoss, syncPhase, bossPhase } from './boss.js';
+import { createBoss, updateBoss, hitBoss, syncPhase, bossPhase, throwMic, updateThrown } from './boss.js';
 import { PHASE_LINES, BOSS_HURT_LINES, BOSS_DEFEAT_LINES } from '../data/bossData.js';
-import { DEATH_MESSAGES, PIT_MESSAGES, createTrapMemory, trapKey } from '../data/traps.js';
+import {
+  DEATH_MESSAGES,
+  PIT_MESSAGES,
+  ZONE_EFFECTS,
+  createTrapMemory,
+  trapKey,
+} from '../data/traps.js';
 import { CUTSCENE_LENGTH } from '../data/cutscene.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
@@ -18,6 +24,8 @@ export const VIEW = { w: 384, h: 224 };
 
 /** 가짜 발판이 무너지기까지 (짧아야 웃기다) */
 const CRUMBLE_TIME = 0.14;
+/** 무너지는 바닥은 잠깐 떨다 꺼진다 — 달리면 건널 수 있을 만큼만 */
+const FLOOR_CRUMBLE_TIME = 0.45;
 const DEATH_HOLD = 1.5;
 const CLEAR_HOLD = 2.6;
 const INTRO_HOLD = 2.0;
@@ -35,6 +43,12 @@ export function createGame(options = {}) {
     player: null,
     albums: [],
     shots: [],
+    /** 바닥에 떨어진 마이크(주울 것) 와 날아가는 마이크(던진 것) */
+    mics: [],
+    thrown: [],
+    /** 구간 효과 남은 시간(초). 0 이면 안 걸린 것 */
+    effects: { reversed: 0, blackout: 0 },
+    phaseCard: null,
     particles: [],
     texts: [],
     camera: createCamera(VIEW.w, VIEW.h),
@@ -92,6 +106,10 @@ function addText(game, x, y, text, color = '#fff') {
 function spawnEntities(game) {
   game.albums = game.world.albumSpawns.map((s) => spawnAlbum(s.id, s.x, s.y));
   game.shots = [];
+  game.mics = [];
+  game.thrown = [];
+  game.effects = { reversed: 0, blackout: 0 };
+  game.phaseCard = null;
   game.crumbling.clear();
   for (const p of game.world.pickups) p.taken = false;
   for (const f of game.world.fakeGoals) {
@@ -283,18 +301,25 @@ function handleBlocks(game, events) {
   }
 }
 
-function handleFakePlatforms(game, dt) {
+/** 밟으면 사라지는 칸들 — 가짜 발판(즉시)과 무너지는 바닥(잠깐 떨다가) */
+const CRUMBLING = {
+  [T.FAKE]: { time: CRUMBLE_TIME, kind: 'fakePlatform', text: '가짜 발판이었다' },
+  [T.CRUMBLE]: { time: FLOOR_CRUMBLE_TIME, kind: 'crumbleFloor', text: '바닥이 꺼졌다!' },
+};
+
+function handleCrumbling(game, dt) {
   const { player, world } = game;
-  // 밟고 있는 가짜 발판을 찾아 무너뜨린다
+  // 밟고 있는 칸이 무너질 것인지 본다
   if (player.onGround && !player.dead) {
     const ty = Math.floor((player.y + player.h + 1) / TILE);
     const tx0 = Math.floor(player.x / TILE);
     const tx1 = Math.floor((player.x + player.w - 0.001) / TILE);
     for (let tx = tx0; tx <= tx1; tx++) {
-      if (world.charAt(tx, ty) !== T.FAKE) continue;
+      const spec = CRUMBLING[world.charAt(tx, ty)];
+      if (!spec) continue;
       const key = trapKey(tx, ty);
       if (!game.crumbling.has(key)) {
-        game.crumbling.set(key, CRUMBLE_TIME);
+        game.crumbling.set(key, spec.time);
         emit(game, 'crumble', {});
       }
     }
@@ -307,12 +332,58 @@ function handleFakePlatforms(game, dt) {
     }
     game.crumbling.delete(key);
     const [tx, ty] = key.split(',').map(Number);
-    if (world.charAt(tx, ty) !== T.FAKE) continue;
+    const spec = CRUMBLING[world.charAt(tx, ty)];
+    if (!spec) continue;
     world.setChar(tx, ty, T.EMPTY);
     game.trapMemory.reveal(key);
     addParticles(game, tx * TILE + 8, ty * TILE + 8, 6, ['#c9c9c9', '#8a8a8a'], { speed: 40, life: 0.5 });
-    say(game, '가짜 발판이었다', 'bad', 1.4);
-    emit(game, 'trap', { kind: 'fakePlatform' });
+    say(game, spec.text, 'bad', 1.4);
+    emit(game, 'trap', { kind: spec.kind });
+  }
+}
+
+/** 지나가면 바닥에서 벽이 솟는다. 넘을 수 있는 두 칸 높이. */
+export const WALL_HEIGHT = 2;
+
+function handleRisingWalls(game, dt) {
+  const { player, world } = game;
+  for (const wall of world.risingWalls) {
+    if (!wall.risen) {
+      const cx = wall.tx * TILE + TILE / 2;
+      const near = Math.abs(player.x + player.w / 2 - cx) < 46;
+      if (!near || player.dead) continue;
+      wall.risen = true;
+      wall.t = 0;
+      for (let i = 0; i < WALL_HEIGHT; i++) world.setChar(wall.tx, wall.ty - i, T.RISEN);
+      game.trapMemory.reveal(trapKey(wall.tx, wall.ty));
+      shakeCamera(game.camera, 0.8);
+      addParticles(game, cx, wall.ty * TILE, 8, ['#e8ecf7', '#8b93a8'], { speed: 60, life: 0.5 });
+      say(game, '벽이 솟았다', 'warn', 1.4);
+      emit(game, 'trap', { kind: 'risingWall' });
+    } else {
+      wall.t = Math.min(1, wall.t + dt * 5);
+    }
+  }
+}
+
+/** 밟으면 잠깐 걸리는 구간 효과 (역재생 · 정전) */
+function handleZones(game, dt) {
+  const { player, world } = game;
+  for (const zone of world.zones) {
+    if (zone.fired || player.dead) continue;
+    const box = { x: zone.x, y: zone.y - TILE, w: TILE, h: TILE * 2 };
+    if (!overlaps(player, box)) continue;
+    zone.fired = true;
+    const spec = ZONE_EFFECTS[zone.kind];
+    game.effects[zone.kind] = spec.seconds;
+    game.trapMemory.reveal(trapKey(zone.tx, zone.ty));
+    say(game, spec.label, 'bad', 2);
+    shakeCamera(game.camera, 0.6);
+    emit(game, 'trap', { kind: zone.kind });
+  }
+  // 반드시 저절로 풀린다 — 영구히 걸리면 게임이 끝난다
+  for (const key of Object.keys(game.effects)) {
+    game.effects[key] = Math.max(0, game.effects[key] - dt);
   }
 }
 
@@ -418,11 +489,17 @@ function updateRank(game) {
 }
 
 // ── 장면별 갱신 ──────────────────────────────────────────────
+/** 역재생 구간에서는 좌우가 뒤바뀐다. 원본 input 은 건드리지 않는다. */
+const applyEffects = (game, input) =>
+  game.effects.reversed > 0 ? { ...input, left: input.right, right: input.left } : input;
+
 function updatePlay(game, input, dt) {
-  const events = updatePlayer(game.player, input, game.world, dt);
+  const events = updatePlayer(game.player, applyEffects(game, input), game.world, dt);
   if (events.jumped) emit(game, 'jump', {});
   handleBlocks(game, events);
-  handleFakePlatforms(game, dt);
+  handleCrumbling(game, dt);
+  handleRisingWalls(game, dt);
+  handleZones(game, dt);
   handlePopSpikes(game, dt);
   handleAlbums(game, dt);
   handleShots(game, dt);
@@ -441,9 +518,85 @@ function updatePlay(game, input, dt) {
   updateCamera(game.camera, game.player, game.world, dt);
 }
 
+/**
+ * 보스에게 한 대 먹인다. 밟기와 던지기가 같은 길을 쓴다.
+ * 실제로 들어갔으면 true.
+ */
+function damageBoss(game, opts = {}) {
+  const boss = game.boss;
+  if (!hitBoss(boss, opts)) return false;
+  game.score += 400;
+  game.defeated += 1;
+  shakeCamera(game.camera, 1);
+  addParticles(game, boss.x + boss.w / 2, boss.y + boss.h / 2, 16, ['#fff', '#ffd166', '#ff5d8f'], {
+    speed: 120,
+    life: 0.8,
+  });
+  emit(game, 'bosshit', {});
+
+  const changed = syncPhase(boss);
+  if (changed) {
+    const phase = bossPhase(boss);
+    game.phaseCard = { id: changed, name: phase.name, subtitle: phase.subtitle, life: 2.6 };
+    game.bossLine = { text: game.rng.pick(PHASE_LINES[changed] ?? ['…']), life: 3 };
+    game.flash = 1;
+    shakeCamera(game.camera, 1.6);
+    emit(game, 'phase', { phase: changed });
+  } else if (boss.hp > 0) {
+    game.bossLine = { text: game.rng.pick(BOSS_HURT_LINES), life: 2 };
+  } else {
+    game.bossLine = { text: game.rng.pick(BOSS_DEFEAT_LINES), life: 4 };
+    game.flash = 1;
+    emit(game, 'bossdown', {});
+  }
+  return true;
+}
+
+/** 보스가 흘린 마이크: 바닥에 떨어지고, 주우면 한 발 생긴다 */
+function handleMics(game, dt) {
+  const { player, world } = game;
+  game.mics = game.mics.filter((mic) => {
+    mic.life -= dt;
+    if (mic.life <= 0) return false;
+    if (!mic.landed) {
+      mic.vy = Math.min(mic.vy + 620 * dt, 300);
+      mic.y += mic.vy * dt;
+      const ty = Math.floor((mic.y + mic.h) / TILE);
+      const tx = Math.floor((mic.x + mic.w / 2) / TILE);
+      if (world.tileAt(tx, ty) === 'solid') {
+        mic.y = ty * TILE - mic.h;
+        mic.landed = true;
+      }
+    } else {
+      mic.bob += dt * 5;
+    }
+    if (!player.dead && player.ammo < 1 && overlaps(player, mic)) {
+      player.ammo = 1;
+      say(game, '🎤 마이크! X(또는 🎤 버튼)로 던져라', 'good', 2.4);
+      addParticles(game, mic.x + 5, mic.y + 5, 6, ['#ffd166', '#fff'], { speed: 50, life: 0.4 });
+      emit(game, 'power', {});
+      return false;
+    }
+    return true;
+  });
+}
+
+/** 던진 마이크가 보스에 맞으면 한 대. 맞으면 사라진다(1회용) */
+function handleThrown(game, dt, onHit) {
+  const boss = game.boss;
+  game.thrown = game.thrown.filter((mic) => {
+    if (!updateThrown(mic, game.world, dt)) return false;
+    if (boss && boss.state !== 'defeated' && overlaps(mic, boss)) {
+      onHit();
+      return false;
+    }
+    return true;
+  });
+}
+
 function updateBossScene(game, input, dt) {
   const boss = game.boss;
-  const events = updatePlayer(game.player, input, game.world, dt);
+  const events = updatePlayer(game.player, applyEffects(game, input), game.world, dt);
   if (events.jumped) emit(game, 'jump', {});
 
   const ctx = {
@@ -451,40 +604,27 @@ function updateBossScene(game, input, dt) {
     arenaWidth: game.world.pixelWidth,
     spawnShot: (shot) => game.shots.push({ wobble: 0, ...shot }),
     addAlbum: (album) => game.albums.push(album),
+    dropMic: (mic) => game.mics.push(mic),
   };
   updateBoss(boss, ctx, dt);
 
+  // 들고 있으면 던진다 — 한 발뿐이다
+  if (input.throwPressed && game.player.ammo > 0 && !game.player.dead) {
+    game.player.ammo = 0;
+    game.thrown.push(throwMic(game.player));
+    emit(game, 'throw', {});
+  }
+
+  handleMics(game, dt);
+  handleThrown(game, dt, () => damageBoss(game, { ranged: true }));
   handleAlbums(game, dt);
   handleShots(game, dt);
 
   if (boss.state !== 'defeated' && !game.player.dead) {
-    // 약점 밟기
+    // 약점 밟기 — 붙어야 해서 위험하지만 마이크를 기다릴 필요가 없다
     if (overlaps(game.player, boss)) {
       if (boss.vulnerable && isStomp(game.player, boss)) {
-        if (hitBoss(boss)) {
-          bounce(game.player, true);
-          game.score += 400;
-          game.defeated += 1;
-          shakeCamera(game.camera, 1);
-          addParticles(game, boss.x + boss.w / 2, boss.y + boss.h / 2, 16, ['#fff', '#ffd166', '#ff5d8f'], {
-            speed: 120,
-            life: 0.8,
-          });
-          emit(game, 'bosshit', {});
-          const changed = syncPhase(boss);
-          if (changed) {
-            game.bossLine = { text: game.rng.pick(PHASE_LINES[changed] ?? ['…']), life: 3 };
-            game.flash = 1;
-            shakeCamera(game.camera, 1.6);
-            emit(game, 'phase', { phase: changed });
-          } else if (boss.hp > 0) {
-            game.bossLine = { text: game.rng.pick(BOSS_HURT_LINES), life: 2 };
-          } else {
-            game.bossLine = { text: game.rng.pick(BOSS_DEFEAT_LINES), life: 4 };
-            game.flash = 1;
-            emit(game, 'bossdown', {});
-          }
-        }
+        if (damageBoss(game)) bounce(game.player, true);
       } else if (damagePlayer(game.player)) {
         killPlayer(game);
       }
@@ -506,6 +646,10 @@ function updateBossScene(game, input, dt) {
   if (game.bossLine) {
     game.bossLine.life -= dt;
     if (game.bossLine.life <= 0) game.bossLine = null;
+  }
+  if (game.phaseCard) {
+    game.phaseCard.life -= dt;
+    if (game.phaseCard.life <= 0) game.phaseCard = null;
   }
 
   if (boss.state === 'defeated' && boss.defeatedAt > 2.6) {

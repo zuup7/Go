@@ -26,9 +26,43 @@ export function createBoss(arenaWidth) {
     drift: 1,
     quarters: [],
     minionTimer: 0,
+    micTimer: 0,
     announce: null,
     defeatedAt: 0,
   };
+}
+
+/** 던져서 맞히는 마이크. 보스가 주기적으로 흘린다. */
+export const MIC_SIZE = 10;
+
+export function createMic(x, y) {
+  return { x, y, w: MIC_SIZE, h: MIC_SIZE, vy: 30, bob: 0, landed: false, life: 14 };
+}
+
+/** 손에 든 마이크를 던진다. 바라보는 쪽 위로 포물선을 그린다. */
+export function throwMic(player) {
+  return {
+    x: player.x + (player.dir > 0 ? player.w : -MIC_SIZE),
+    y: player.y - 2,
+    w: MIC_SIZE,
+    h: MIC_SIZE,
+    vx: player.dir * 190,
+    vy: -210,
+    spin: 0,
+    life: 3,
+  };
+}
+
+/** 날아가는 마이크 한 프레임. 살아있으면 true */
+export function updateThrown(mic, world, dt) {
+  mic.life -= dt;
+  mic.spin += dt * 16;
+  mic.vy += 520 * dt;
+  mic.x += mic.vx * dt;
+  mic.y += mic.vy * dt;
+  if (mic.life <= 0) return false;
+  if (mic.y > world.pixelHeight + 20) return false;
+  return mic.x > -30 && mic.x < world.pixelWidth + 30;
 }
 
 export const bossPhase = (boss) => PHASES.find((p) => p.id === boss.phaseId) ?? PHASES[0];
@@ -73,6 +107,14 @@ export function updateBoss(boss, ctx, dt) {
   }
 
   const phase = bossPhase(boss);
+
+  // 마이크를 흘린다 — 주워서 던지면 멀리서도 한 대 먹일 수 있다
+  boss.micTimer += dt;
+  if (boss.micTimer >= phase.micEvery) {
+    boss.micTimer = 0;
+    ctx.dropMic?.(createMic(boss.x + boss.w / 2 - MIC_SIZE / 2, boss.y + boss.h));
+  }
+
   boss.spin += dt * (1.2 + boss.phaseId * 0.5);
   boss.bob += dt;
   boss.hurtFlash = Math.max(0, boss.hurtFlash - dt);
@@ -176,9 +218,14 @@ function updateQuarters(boss, phase, ctx, dt) {
   }
 }
 
-/** 약점을 밟았다. 실제로 들어갔으면 true */
-export function hitBoss(boss) {
-  if (!boss.vulnerable || boss.state === 'defeated') return false;
+/**
+ * 보스에게 한 대. 실제로 들어갔으면 true.
+ * 밟기는 약점(재생 버튼)이 열렸을 때만, 던진 마이크는 언제든 통한다 —
+ * 그게 아이템을 주우러 갈 이유가 된다.
+ */
+export function hitBoss(boss, { ranged = false } = {}) {
+  if (boss.state === 'defeated') return false;
+  if (!ranged && !boss.vulnerable) return false;
   boss.hp = Math.max(0, boss.hp - 1);
   boss.hurtFlash = 0.35;
   boss.vulnerable = false;

@@ -8,6 +8,10 @@ const KEYMAP = {
   KeyW: 'jump',
   Space: 'jump',
   KeyZ: 'jump',
+  KeyX: 'throw',
+  KeyJ: 'throw',
+  ArrowDown: 'throw',
+  KeyS: 'throw',
   KeyR: 'restart',
   Escape: 'pause',
   KeyP: 'pause',
@@ -54,6 +58,7 @@ export function createInput(target = window) {
     right: false,
     jump: false,
     jumpPressed: false,
+    throwPressed: false,
     confirmPressed: false,
     restartPressed: false,
     pausePressed: false,
@@ -66,6 +71,7 @@ export function createInput(target = window) {
       input.right = held.has('right');
       input.jump = held.has('jump');
       input.jumpPressed = pressedNow.has('jump');
+      input.throwPressed = pressedNow.has('throw');
       input.confirmPressed = pressedNow.has('confirm') || pressedNow.has('jump');
       input.restartPressed = pressedNow.has('restart');
       input.pausePressed = pressedNow.has('pause');

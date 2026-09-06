@@ -46,6 +46,36 @@ export const TRAPS = {
     hint: '머리 위에서 떨어진다',
     revealedHint: '위 조심',
   },
+  crumbleFloor: {
+    char: ',',
+    label: '무너지는 바닥',
+    hint: '멀쩡한 땅인 척하다 발밑이 꺼진다',
+    revealedHint: '멈추면 꺼짐',
+  },
+  risingWall: {
+    char: '|',
+    label: '솟아오르는 벽',
+    hint: '지나가면 바닥에서 벽이 솟는다',
+    revealedHint: '여기서 벽 솟음',
+  },
+  reverseZone: {
+    char: 'R',
+    label: '역재생 구간',
+    hint: '잠깐 좌우가 뒤바뀐다',
+    revealedHint: '좌우 반대',
+  },
+  blackout: {
+    char: '@',
+    label: '정전',
+    hint: '스트리밍 서버가 나가고 화면이 깜깜해진다',
+    revealedHint: '곧 깜깜해짐',
+  },
+};
+
+/** 시간이 지나면 저절로 풀리는 구간 효과 (영구히 걸리면 게임이 끝난다) */
+export const ZONE_EFFECTS = {
+  reversed: { seconds: 4, label: '⟲ 역주행 중 — 좌우가 뒤바뀐다!' },
+  blackout: { seconds: 3.5, label: '💤 서버 다운 — 앞이 안 보인다!' },
 };
 
 export const TRAP_KINDS = Object.keys(TRAPS);
@@ -67,6 +97,8 @@ export const DEATH_MESSAGES = [
   '심의에서 반려되었다',
   '앨범 재고가 창고에 남았다',
   '차트에서 조용히 사라졌다',
+  '발밑이 꺼졌다',
+  '벽에 정면으로 부딪혔다',
 ];
 
 /** 구멍에 빠져 죽었을 때 */

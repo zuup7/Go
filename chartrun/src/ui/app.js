@@ -57,6 +57,9 @@ function handleEvent(name, data) {
     case 'power':
       audio.play('power');
       break;
+    case 'throw':
+      audio.play('jump');
+      break;
     case 'hurt':
       audio.play('hurt');
       break;
@@ -116,9 +119,14 @@ function update(dt) {
   updateGame(game, input, dt);
 }
 
+const throwBtn = document.getElementById('throw-btn');
+
 function render() {
   drawScene(ctx, game, time);
   hud.update(game);
+  // 던지기 버튼은 쓸 수 있을 때만 — 평소엔 자리만 차지한다
+  throwBtn.hidden = game.scene !== 'boss';
+  throwBtn.disabled = !(game.player?.ammo > 0);
 }
 
 // 자리가 넉넉하면 정수배로만 키운다 — 그래야 픽셀이 안 뭉갠다.

@@ -247,7 +247,7 @@ export function stompAlbum(e, ctx) {
   if (e.hp > 0) return 'hurt';
   e.alive = false;
   if (e.splitsLeft > 0) {
-    const size = Math.max(8, Math.round(e.w * 0.6));
+    const size = Math.max(14, Math.round(e.w * 0.6));
     for (let i = 0; i < 2; i++) {
       const child = spawnAlbum(e.id, e.x + (i === 0 ? -6 : e.w), e.y, {
         size,

@@ -9,6 +9,7 @@ import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC } from './sprit
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import { phaseAt } from '../data/cutscene.js';
+import { bossPhase } from '../core/boss.js';
 
 // ── 배경 ────────────────────────────────────────────────────
 function drawSky(ctx, stage, time) {
@@ -176,6 +177,39 @@ function drawTile(ctx, ch, x, y, stage, revealed, time, buried = false) {
       ctx.fillStyle = '#8b93a8';
       ctx.fillRect(x, y + TILE - 3, TILE, 3);
       break;
+    case T.CRUMBLE:
+      // 평범한 땅인 척한다. 밟히면 game 이 흔들림을 얹는다.
+      ctx.fillStyle = '#0a0512';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = dark;
+      ctx.fillRect(x, y + 1, TILE - 1, TILE - 1);
+      if (!buried) {
+        ctx.fillStyle = light;
+        ctx.fillRect(x, y, TILE, 3);
+      }
+      if (revealed) {
+        // 갈라진 금
+        ctx.strokeStyle = 'rgba(255,60,90,0.85)';
+        ctx.beginPath();
+        ctx.moveTo(x + 3, y + 4);
+        ctx.lineTo(x + 7, y + 9);
+        ctx.lineTo(x + 5, y + 13);
+        ctx.moveTo(x + 10, y + 5);
+        ctx.lineTo(x + 13, y + 12);
+        ctx.stroke();
+      }
+      break;
+    case T.RISEN:
+      ctx.fillStyle = '#0a0512';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#5c4a70';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = '#a58bc4';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(x + 3, y + 5, TILE - 6, 1);
+      ctx.fillRect(x + 3, y + 10, TILE - 6, 1);
+      break;
     case T.POPSPIKE:
       // 평범한 땅인 척한다
       ctx.fillStyle = '#0a0512';
@@ -210,7 +244,7 @@ function drawTiles(ctx, game, ox, oy, time) {
       if (ch === T.EMPTY) continue;
       const revealed = trapMemory.has(trapKey(tx, ty));
       const above = world.charAt(tx, ty - 1);
-      const buried = above === T.GROUND || above === T.POPSPIKE;
+      const buried = above === T.GROUND || above === T.POPSPIKE || above === T.CRUMBLE;
       drawTile(ctx, ch, tx * TILE - ox, ty * TILE - oy, world.stage, revealed, time, buried);
     }
   }
@@ -230,6 +264,33 @@ function drawFlag(ctx, x, y, time, color, alpha = 1) {
   ctx.lineTo(x + 9, y - TILE * 2 + 10);
   ctx.fill();
   ctx.restore();
+}
+
+/** 아직 안 솟은 벽은 한 번 당한 뒤에야 자리가 표시된다 */
+function drawWallHints(ctx, game, ox, oy, time) {
+  for (const wall of game.world.risingWalls) {
+    if (wall.risen || !game.trapMemory.has(trapKey(wall.tx, wall.ty))) continue;
+    ctx.save();
+    ctx.globalAlpha = 0.35 + Math.sin(time * 4) * 0.15;
+    ctx.strokeStyle = '#ff5d8f';
+    ctx.setLineDash([3, 3]);
+    ctx.strokeRect(wall.tx * TILE - ox + 0.5, (wall.ty - 1) * TILE - oy + 0.5, TILE - 1, TILE * 2 - 1);
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+}
+
+/** 구간 트리거 자리 — 이것도 한 번 당한 뒤에만 보인다 */
+function drawZoneHints(ctx, game, ox, oy, time) {
+  const colors = { reversed: '#39d0ff', blackout: '#ffd166' };
+  for (const zone of game.world.zones) {
+    if (!game.trapMemory.has(trapKey(zone.tx, zone.ty))) continue;
+    ctx.save();
+    ctx.globalAlpha = 0.3 + Math.sin(time * 3 + zone.tx) * 0.12;
+    ctx.fillStyle = colors[zone.kind] ?? '#fff';
+    ctx.fillRect(zone.x - ox + 2, zone.y - oy - TILE, TILE - 4, TILE * 2);
+    ctx.restore();
+  }
 }
 
 function drawPopSpikes(ctx, world, ox, oy) {
@@ -271,6 +332,23 @@ function drawPlayer(ctx, player, ox, oy, time) {
 }
 
 // ── 보스 ────────────────────────────────────────────────────
+/** 체력계는 보스 바로 아래에 붙여 그린다 — 화면 위에 판을 깔면 게임을 가린다 */
+function drawBossHealth(ctx, boss, ox, oy, color) {
+  const w = boss.w + 12;
+  const x = Math.round(boss.x - ox - 6);
+  const y = Math.round(boss.y - oy + boss.h + 4);
+  ctx.fillStyle = 'rgba(6,2,14,0.8)';
+  ctx.fillRect(x - 1, y - 1, w + 2, 7);
+  ctx.fillStyle = '#2a1740';
+  ctx.fillRect(x, y, w, 5);
+  const ratio = Math.max(0, boss.hp / boss.maxHp);
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, Math.round(w * ratio), 5);
+  // 남은 대수를 눈금으로 — 몇 대 남았는지 바로 읽힌다
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  for (let i = 1; i < boss.maxHp; i++) ctx.fillRect(x + Math.round((w * i) / boss.maxHp), y, 1, 5);
+}
+
 export function drawBoss(ctx, boss, ox, oy, time) {
   const cx = boss.x - ox + boss.w / 2;
   const cy = boss.y - oy + boss.h / 2;
@@ -294,7 +372,7 @@ export function drawBoss(ctx, boss, ox, oy, time) {
   for (let i = 0; i < ALBUMS.length; i++) {
     const angle = (i / ALBUMS.length) * Math.PI * 2;
     const d = r * 0.68;
-    drawCoverAt(ctx, ALBUMS[i], Math.cos(angle) * d - 4, Math.sin(angle) * d - 4, 8);
+    drawCoverAt(ctx, ALBUMS[i], Math.cos(angle) * d - 6, Math.sin(angle) * d - 6, 12);
   }
   ctx.restore();
 
@@ -321,17 +399,55 @@ export function drawBoss(ctx, boss, ox, oy, time) {
   }
   ctx.restore();
 
-  // 분열 조각
+  // 분열 조각 — 페이즈 색으로 테두리를 둘러 어느 페이즈인지 눈에 들어오게
+  const color = bossPhase(boss).color;
   for (const q of boss.quarters) {
     if (q.delay > 0) continue;
     ctx.save();
     ctx.translate(q.x - ox + q.w / 2, q.y - oy + q.h / 2);
     ctx.rotate(q.spin);
-    ctx.fillStyle = '#241a33';
+    ctx.fillStyle = color;
     ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h);
-    drawCoverAt(ctx, ALBUMS[(q.index * 4) % ALBUMS.length], -q.w / 2 + 2, -q.h / 2 + 2, q.w - 4);
+    ctx.fillStyle = '#241a33';
+    ctx.fillRect(-q.w / 2 + 1, -q.h / 2 + 1, q.w - 2, q.h - 2);
+    drawCoverAt(ctx, ALBUMS[(q.index * 4) % ALBUMS.length], -q.w / 2 + 3, -q.h / 2 + 3, q.w - 6);
     ctx.restore();
   }
+
+  if (boss.state !== 'defeated') drawBossHealth(ctx, boss, ox, oy, color);
+}
+
+/** 보스가 흘린 마이크(바닥)와 던진 마이크(공중) */
+function drawMics(ctx, game, ox, oy, time) {
+  for (const mic of game.mics) {
+    const bob = mic.landed ? Math.sin(mic.bob) * 1.5 : 0;
+    const blink = mic.life < 3 && Math.floor(time * 10) % 2 === 0;
+    if (blink) continue;
+    ctx.save();
+    ctx.translate(Math.round(mic.x - ox), Math.round(mic.y - oy + bob));
+    ctx.fillStyle = 'rgba(255,209,102,0.35)';
+    ctx.fillRect(-2, -2, mic.w + 4, mic.h + 4);
+    drawMicShape(ctx, mic.w);
+    ctx.restore();
+  }
+  for (const mic of game.thrown) {
+    ctx.save();
+    ctx.translate(Math.round(mic.x - ox) + mic.w / 2, Math.round(mic.y - oy) + mic.h / 2);
+    ctx.rotate(mic.spin);
+    ctx.translate(-mic.w / 2, -mic.h / 2);
+    drawMicShape(ctx, mic.w);
+    ctx.restore();
+  }
+}
+
+function drawMicShape(ctx, size) {
+  const s = size / 10;
+  ctx.fillStyle = '#d8dde8';
+  ctx.fillRect(3 * s, 0, 4 * s, 5 * s); // 헤드
+  ctx.fillStyle = '#8b93a8';
+  ctx.fillRect(4 * s, 5 * s, 2 * s, 5 * s); // 손잡이
+  ctx.fillStyle = '#ffd166';
+  ctx.fillRect(3 * s, 0, 4 * s, 2 * s);
 }
 
 // ── 합체 컷신 ───────────────────────────────────────────────
@@ -363,13 +479,13 @@ export function drawCutscene(ctx, t) {
       const angle = (i / ALBUMS.length) * Math.PI * 2 + t * (0.6 + swirlT * 4);
       const startR = 210;
       const radius = startR * (1 - gatherT) + (72 - 60 * mergeT) * gatherT;
-      const size = 16 - 8 * mergeT;
+      const size = 22 - 12 * mergeT;
       drawCoverAt(
         ctx,
         ALBUMS[i],
         cx + Math.cos(angle) * radius - size / 2,
         cy + Math.sin(angle) * radius * 0.72 - size / 2,
-        Math.max(4, size),
+        Math.max(6, size),
       );
     }
   }
@@ -398,7 +514,7 @@ export function drawCutscene(ctx, t) {
     for (let i = 0; i < ALBUMS.length; i++) {
       const angle = (i / ALBUMS.length) * Math.PI * 2;
       const d = r * 0.68;
-      drawCoverAt(ctx, ALBUMS[i], Math.cos(angle) * d - 4, Math.sin(angle) * d - 4, 8);
+      drawCoverAt(ctx, ALBUMS[i], Math.cos(angle) * d - 6, Math.sin(angle) * d - 6, 12);
     }
     ctx.restore();
     ctx.fillStyle = '#39ff9a';
@@ -436,7 +552,7 @@ export function drawTitle(ctx, time) {
 
   for (let i = 0; i < ALBUMS.length; i++) {
     const speed = 9 + (i % 5) * 4;
-    const size = 12 + (i % 3) * 5;
+    const size = 16 + (i % 3) * 6;
     const x = ((i * 71 - time * speed) % (VIEW.w + 60)) + (VIEW.w + 60);
     const y = 22 + ((i * 47) % (VIEW.h - 70)) + Math.sin(time * 1.2 + i) * 6;
     ctx.save();
@@ -470,6 +586,8 @@ export function drawScene(ctx, game, time) {
   drawParallax(ctx, stage, ox, time);
   drawTiles(ctx, game, ox, oy, time);
   drawPopSpikes(ctx, game.world, ox, oy);
+  drawWallHints(ctx, game, ox, oy, time);
+  drawZoneHints(ctx, game, ox, oy, time);
 
   // 체크포인트
   for (const cp of game.world.checkpoints) {
@@ -498,6 +616,7 @@ export function drawScene(ctx, game, time) {
     drawSprite(ctx, shot.boss ? SHOT_BOSS : SHOT, shot.x - ox, shot.y - oy + Math.sin(shot.wobble) * 1.5);
   }
 
+  drawMics(ctx, game, ox, oy, time);
   if (game.boss) drawBoss(ctx, game.boss, ox, oy, time);
 
   drawPlayer(ctx, game.player, ox, oy, time);
@@ -517,8 +636,45 @@ export function drawScene(ctx, game, time) {
   }
   ctx.globalAlpha = 1;
 
+  drawEffects(ctx, game, ox, oy, time);
+
   if (game.flash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${Math.min(0.85, game.flash * 0.6)})`;
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
+}
+
+/** 구간 효과 연출 — 정전은 내 주변만 남기고, 역재생은 화면을 물들인다 */
+function drawEffects(ctx, game, ox, oy, time) {
+  const { blackout, reversed } = game.effects;
+
+  if (blackout > 0) {
+    const cx = game.player.x - ox + game.player.w / 2;
+    const cy = game.player.y - oy + game.player.h / 2;
+    // 꺼질 때와 켜질 때 살짝 부드럽게
+    const strength = Math.min(1, blackout, 0.6 + Math.sin(time * 30) * 0.02);
+    const radius = 46 + Math.sin(time * 6) * 3;
+    const glow = ctx.createRadialGradient(cx, cy, radius * 0.35, cx, cy, radius);
+    glow.addColorStop(0, 'rgba(0,0,0,0)');
+    glow.addColorStop(1, `rgba(0,0,0,${0.96 * strength})`);
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    // 원 바깥은 완전히 덮는다 (그라디언트는 사각형 모서리까지 안 닿는다)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, VIEW.w, VIEW.h);
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2, true);
+    ctx.fillStyle = `rgba(0,0,0,${0.96 * strength})`;
+    ctx.fill('evenodd');
+    ctx.restore();
+  }
+
+  if (reversed > 0) {
+    ctx.fillStyle = `rgba(57,208,255,${0.12 + Math.sin(time * 8) * 0.05})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    // 왼쪽으로 흐르는 줄무늬 — 되감기는 느낌
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    const off = Math.floor(time * 90) % 24;
+    for (let x = -24; x < VIEW.w + 24; x += 24) ctx.fillRect(x - off, 0, 8, VIEW.h);
   }
 }

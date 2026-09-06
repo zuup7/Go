@@ -22,8 +22,8 @@ const step = (game, input = idle, frames = 1) => {
   for (let i = 0; i < frames; i++) updateGame(game, input, 1 / 60);
 };
 
-test('함정 7종이 정의돼 있고 글자가 겹치지 않는다', () => {
-  assert.equal(TRAP_KINDS.length, 7);
+test('함정 글자가 서로 겹치지 않는다', () => {
+  assert.ok(TRAP_KINDS.length >= 11, `함정이 ${TRAP_KINDS.length}종밖에 없다`);
   const chars = TRAP_KINDS.map((k) => TRAPS[k].char);
   assert.equal(new Set(chars).size, chars.length);
   for (const kind of TRAP_KINDS) {
