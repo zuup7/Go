@@ -21,6 +21,8 @@ export function spawnAlbum(id, x, y, overrides = {}) {
     vx: 0,
     vy: 0,
     dir: -1,
+    /** 배치된 자리. 여기서 너무 멀어지지 않게 순찰한다 */
+    homeX: x,
     hp: def.hp,
     alive: true,
     onGround: false,
@@ -161,7 +163,15 @@ const BEHAVIORS = {
       e.timer += dt;
       e.y = e.baseY + Math.sin(e.timer * 3) * 1.5;
       const overlapping = Math.abs(player.x + player.w / 2 - (e.x + e.w / 2)) < (e.def.dropRange ?? 28);
-      if (overlapping && player.y > e.y) e.state = 'fall';
+      if (overlapping && player.y > e.y) {
+        e.state = 'warn';
+        e.timer = e.def.dropWarn ?? 0.3;
+      }
+    } else if (e.state === 'warn') {
+      // 떨어지기 직전에 부르르 떤다 — 이게 없으면 지나가는 중에 무조건 맞는다
+      e.timer -= dt;
+      e.y = e.baseY + Math.sin(e.timer * 60) * 2;
+      if (e.timer <= 0) e.state = 'fall';
     } else {
       e.vy = Math.min(e.vy + GRAVITY * 1.35 * dt, MAX_FALL);
       const res = moveBody(e, e.vx * dt, e.vy * dt, world.tileAt);
@@ -186,12 +196,42 @@ const BEHAVIORS = {
   },
 };
 
+/**
+ * 배치된 자리에서 얼마나 벗어날 수 있는지.
+ * 이게 없으면 벽을 만날 때까지 하염없이 흘러가서 레벨 디자인이 무너진다.
+ * 돌진형·낙하형은 애초에 자리를 뜨는 게 역할이라 빠져 있다.
+ */
+const PATROL_RANGE = {
+  walker: 56,
+  shielder: 56,
+  splitter: 56,
+  shooter: 40,
+  flyer: 60,
+  hopper: 72,
+  spinner: 120,
+};
+
+function keepNearHome(e) {
+  const range = e.def.patrolRange ?? PATROL_RANGE[e.behavior];
+  if (!range) return;
+  if (e.x < e.homeX - range) {
+    e.x = e.homeX - range;
+    e.dir = 1;
+    e.vx = Math.abs(e.vx);
+  } else if (e.x > e.homeX + range) {
+    e.x = e.homeX + range;
+    e.dir = -1;
+    e.vx = -Math.abs(e.vx);
+  }
+}
+
 export function updateAlbum(e, ctx, dt) {
   // 찌그러짐은 죽은 뒤에도 마저 풀려야 한다 — 안 그러면 시체가 화면에 남는다
   e.squash = Math.max(0, e.squash - dt);
   if (!e.alive) return;
   const fn = BEHAVIORS[e.behavior] ?? BEHAVIORS.walker;
   fn(e, ctx, dt);
+  keepNearHome(e);
   // 구멍에 빠지면 조용히 퇴장
   if (e.y > ctx.world.pixelHeight + 40) e.alive = false;
 }

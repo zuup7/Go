@@ -320,7 +320,9 @@ function handlePopSpikes(game, dt) {
   const { player, world } = game;
   for (const spike of world.popSpikes) {
     const cx = spike.tx * TILE + TILE / 2;
-    const near = Math.abs(player.x + player.w / 2 - cx) < 30;
+    // 발밑에서 솟아야 웃기고, 또 알고 나면 뛰어넘을 수 있다.
+    // 멀리서 미리 솟으면 제자리 점프로 넘어야 해서 불합리해진다.
+    const near = Math.abs(player.x + player.w / 2 - cx) < 18;
     const sameFloor = Math.abs(player.y + player.h - spike.ty * TILE) < TILE * 2;
     if (!spike.popped && near && sameFloor && !player.dead) {
       spike.popped = true;

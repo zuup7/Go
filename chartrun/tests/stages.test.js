@@ -126,6 +126,24 @@ test('바닥의 가시 구간은 점프로 넘을 수 있는 폭이다', () => {
   }
 });
 
+test('낙하 앨범은 구멍 위가 아니라 착지할 땅 위에 걸어둔다', () => {
+  // 구멍 위에 매달아 두면 뛰어넘는 순간에만 떨어져서, 피할 방법 없이 밀어 떨어뜨리는 함정이 된다.
+  for (const stage of STAGES) {
+    const world = createWorld(stage);
+    for (const spawn of world.albumSpawns) {
+      if (ALBUM_BY_ID.get(spawn.id).behavior !== 'dropper') continue;
+      let landing = false;
+      for (let ty = spawn.ty + 1; ty < world.height; ty++) {
+        if (tileKind(world.charAt(spawn.tx, ty)) !== null) {
+          landing = true;
+          break;
+        }
+      }
+      assert.ok(landing, `${stage.id}: (${spawn.tx},${spawn.ty}) 낙하 앨범 아래가 허공이다`);
+    }
+  }
+});
+
 test('불쑥 가시는 딛고 설 바닥에만 심는다', () => {
   for (const stage of [...STAGES, BOSS_STAGE]) {
     const world = createWorld(stage);

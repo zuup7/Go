@@ -142,6 +142,32 @@ test('돌진형은 곧장 달려들지 않고 준비 동작을 거친다', () =>
   assert.ok(charger.x > startX, '준비가 끝나면 플레이어 쪽으로 돌진한다');
 });
 
+test('앨범들은 배치된 자리를 지킨다 — 스테이지 끝까지 흘러가지 않는다', () => {
+  const world = createWorld({
+    id: 'flat',
+    number: 1,
+    name: '',
+    icon: '',
+    subtitle: '',
+    sky: ['#000', '#111'],
+    ground: ['#222', '#333'],
+    // 벽 없이 길게 뻗은 평지 — 순찰 범위가 없으면 여기서 하염없이 흘러간다
+    rows: [...Array(12).fill(' '.repeat(60)), '#'.repeat(60), '#'.repeat(60)],
+  });
+  const player = { x: TILE * 30, y: TILE * 11, w: 10, h: 14 };
+  const ctx = { world, player, spawnShot: () => {}, addAlbum: () => {} };
+
+  for (const id of ['a01', 'a03', 'a06', 'a09', 'a02']) {
+    const album = spawnAlbum(id, TILE * 20, TILE * 11);
+    const home = album.homeX;
+    for (let i = 0; i < 60 * 30; i++) updateAlbum(album, ctx, 1 / 60);
+    assert.ok(
+      Math.abs(album.x - home) <= 130,
+      `${id}(${album.behavior}) 가 자리에서 ${Math.round(album.x - home)}px 이나 벗어났다`,
+    );
+  }
+});
+
 test('사격형은 시간이 지나면 탄환을 만든다', () => {
   const world = flatWorld();
   const shots = [];
@@ -174,5 +200,12 @@ test('낙하형은 머리 위에 올 때까지 기다린다', () => {
 
   ctx.player = { x: TILE * 5, y: TILE * 2 - 14, w: 10, h: 14 };
   updateAlbum(dropper, ctx, 1 / 60);
-  assert.notEqual(dropper.state, 'idle', '아래로 지나가면 떨어진다');
+  assert.equal(dropper.state, 'warn', '곧장 떨어지지 않고 먼저 떤다');
+
+  const y0 = dropper.y;
+  for (let i = 0; i < 10; i++) updateAlbum(dropper, ctx, 1 / 60);
+  assert.ok(Math.abs(dropper.y - y0) < 6, '예고 중에는 사실상 제자리');
+
+  for (let i = 0; i < 30; i++) updateAlbum(dropper, ctx, 1 / 60);
+  assert.ok(dropper.y > y0 + 8, '예고가 끝나면 떨어진다');
 });

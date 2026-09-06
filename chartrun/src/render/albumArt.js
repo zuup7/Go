@@ -194,9 +194,9 @@ export function drawAlbum(ctx, e, ox, oy, time) {
     ctx.fillRect(Math.round(size * 0.6) + look, eyeY + 1, 1, eyeW - 1);
   }
 
-  // 돌진 준비/돌진 중이면 화난 눈썹 — 준비 중에는 깜빡여서 예고가 된다
-  if (e.state === 'charge' || e.state === 'windup') {
-    const blinkWarn = e.state === 'windup' && Math.floor(time * 14) % 2 === 0;
+  // 덤비기 직전이면 화난 눈썹 — 준비 중에는 깜빡여서 예고가 된다
+  if (e.state === 'charge' || e.state === 'windup' || e.state === 'warn') {
+    const blinkWarn = e.state !== 'charge' && Math.floor(time * 14) % 2 === 0;
     ctx.fillStyle = blinkWarn ? '#ffffff' : '#ff2e63';
     ctx.fillRect(Math.round(size * 0.18), eyeY - 2, eyeW + 1, 1);
     ctx.fillRect(Math.round(size * 0.58), eyeY - 2, eyeW + 1, 1);
