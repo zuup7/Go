@@ -1,11 +1,19 @@
 // 의존성 없는 한 파일 빌드.
 // 모든 모듈 소스를 HTML 에 담고, 브라우저에서 blob URL 로 이어 붙여 실행한다.
+//
+//   node build.mjs            → 루트 프로젝트(Family Go!) 를 dist/play.html 로
+//   node build.mjs chartrun   → chartrun/ 프로젝트를 chartrun/dist/play.html 로
+//
+// 프로젝트는 index.html / assets/style.css / src/ui/app.js 구조만 지키면 된다.
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
-import { join, dirname, relative, resolve, posix } from 'node:path';
+import { join, posix } from 'node:path';
 
 const ROOT = process.cwd();
-const ENTRY = 'src/ui/app.js';
-const OUT = 'dist/play.html';
+const BASE = (process.argv[2] ?? '.').replace(/\/+$/, '');
+const at = (path) => (BASE === '.' ? path : posix.join(BASE, path));
+
+const ENTRY = at('src/ui/app.js');
+const OUT = at('dist/play.html');
 
 /** src 아래 모든 .js 수집 */
 async function collect(dir, found = []) {
@@ -43,7 +51,7 @@ function topoSort(entry, graph) {
   return order;
 }
 
-const files = await collect('src');
+const files = await collect(at('src'));
 const sources = new Map();
 const graph = new Map();
 for (const path of files) {
@@ -59,14 +67,20 @@ const bundle = order.map((path) => ({
   deps: (graph.get(path) ?? []).map((d) => [d.spec, d.path]),
 }));
 
-const css = await readFile(join(ROOT, 'assets/style.css'), 'utf8');
-const html = await readFile(join(ROOT, 'index.html'), 'utf8');
-const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? 'Family Go!';
+const css = await readFile(join(ROOT, at('assets/style.css')), 'utf8');
+const html = await readFile(join(ROOT, at('index.html')), 'utf8');
+
+const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? '게임';
+const description = html.match(/<meta\s+name="description"[\s\S]*?\/>/)?.[0] ?? '';
 // index.html 의 <link> 중 로컬 스타일시트만 빼고 그대로 옮긴다 (아이콘, 웹폰트)
 const links = [...html.matchAll(/<link\b[\s\S]*?\/>/g)]
   .map((m) => m[0].trim())
   .filter((tag) => !tag.includes('assets/style.css'))
   .join('\n');
+// <body> 안쪽을 그대로 쓰되, 모듈 진입 <script src> 만 걷어낸다 (아래에서 번들로 대체)
+const body = (html.match(/<body[^>]*>([\s\S]*)<\/body>/)?.[1] ?? '')
+  .replace(/<script\b[^>]*\bsrc=[^>]*>\s*<\/script>/g, '')
+  .trim();
 
 const payload = JSON.stringify(bundle).replaceAll('<\/', '<\\/').replaceAll('<script', '<\\script');
 
@@ -76,15 +90,14 @@ const out = `<!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>${title}</title>
-<meta name="description" content="가족을 만들고, 인생을 선택하며, 세대를 이어가는 나만의 이야기를 만들어보세요." />
+${description}
 ${links}
 <style>
 ${css}
 </style>
 </head>
 <body>
-<div id="app" class="app"><noscript>이 게임을 즐기려면 자바스크립트가 필요합니다.</noscript></div>
-<div id="modal-root"></div>
+${body}
 <script type="application/json" id="bundle">${payload}</script>
 <script type="module">
 // 번들된 모듈들을 순서대로 blob URL 로 만들어 연결한다.
@@ -104,6 +117,6 @@ await import(urls['${ENTRY}']);
 </html>
 `;
 
-await mkdir(join(ROOT, 'dist'), { recursive: true });
+await mkdir(join(ROOT, at('dist')), { recursive: true });
 await writeFile(join(ROOT, OUT), out, 'utf8');
 console.log(`${OUT} (${(out.length / 1024).toFixed(1)} KB, 모듈 ${bundle.length}개)`);
