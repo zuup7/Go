@@ -329,6 +329,111 @@ canvas#game {
   opacity: 0.3;
 }
 
+/* ── 버튼 위치 커스텀 ─────────────────────────────────── */
+/* 손 크기도 잡는 법도 사람마다 다르다. 끌어다 놓을 수 있게 한다. */
+/* 아래 .touch button 규칙(58×52)을 확실히 덮으려고 선택자를 한 단계 더 준다 */
+.touch button.pad-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--dim);
+  background: rgba(36, 19, 56, 0.45);
+  border: 1px solid rgba(160, 120, 220, 0.45);
+  border-radius: 8px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* 눕힌 화면에서는 이쪽 끝이 내비게이션 바다 — 버튼과 같은 만큼 들인다 */
+body.rotated .touch button.pad-edit {
+  right: 84px;
+}
+
+.pad-bar {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(6, 2, 14, 0.92);
+  border: 2px solid var(--warn);
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  max-width: calc(100% - 24px);
+  pointer-events: auto;
+  z-index: 4;
+}
+
+.pad-bar button {
+  flex: none;
+  width: auto;
+  height: auto;
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 5px 10px;
+  color: var(--ink);
+  background: #241338;
+  border: 1px solid #5a3382;
+  border-radius: 5px;
+  touch-action: none;
+}
+
+.pad-bar #pad-done {
+  background: var(--good);
+  border-color: var(--good);
+  color: #06210f;
+}
+
+/* 자리를 직접 정해둔 상태 — 묶음 상자를 걷어내고 버튼마다 좌표를 준다.
+   position: static 이 핵심이다. display: contents 만으로는 브라우저에 따라
+   묶음 상자가 "기준 상자(containing block)" 로 남아서, 버튼이 화면 전체가 아니라
+   묶음 안에서 좌표를 잡는다 — 그러면 엉뚱한 자리로 날아간다. */
+body.custom-pads .touch-left,
+body.custom-pads .touch-right {
+  position: static;
+  display: contents;
+}
+
+body.custom-pads .touch button[data-action] {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+/* 편집 중 */
+body.pad-editing .touch {
+  background: rgba(4, 2, 10, 0.55);
+}
+
+body.pad-editing .touch button[data-action] {
+  outline: 2px dashed var(--warn);
+  outline-offset: 2px;
+  opacity: 0.95;
+}
+
+body.pad-editing .touch button[data-action][disabled] {
+  opacity: 0.7;
+}
+
+/* 편집 중에는 손잡이가 숨으므로 편집 바만 남는다 */
+body.pad-editing .touch button.pad-edit {
+  display: none;
+}
+
+.touch button.is-moving {
+  outline-color: var(--good);
+  background: var(--hot);
+}
+
 /* 세로로 든 폰에서 화면을 통째로 돌렸을 때 뜨는 안내 */
 .rotate-note {
   position: absolute;

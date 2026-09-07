@@ -9,6 +9,7 @@ import { createHud } from '../render/hud.js';
 import { crisp } from '../render/pixel.js';
 import { preloadAlbumArt } from '../render/albumArt.js';
 import { ALBUMS } from '../data/albums.js';
+import { createTouchLayout } from './touchLayout.js';
 
 const canvas = document.getElementById('game');
 const ctx = crisp(canvas.getContext('2d'));
@@ -137,6 +138,8 @@ function render() {
 // "가로로 돌려주세요" 라고만 써두면 아무 일도 안 일어난다.
 const coarsePointer = window.matchMedia('(pointer: coarse)');
 const rotateNote = document.getElementById('rotate-note');
+/** 버튼 자리 관리자 (아래에서 만들어 넣는다) */
+let padsRef = null;
 
 function resize() {
   const handheld = coarsePointer.matches;
@@ -162,6 +165,9 @@ function resize() {
   shell.style.setProperty('--scale', String(scale));
   shell.style.setProperty('--view-w', String(VIEW.w));
   shell.style.setProperty('--view-h', String(VIEW.h));
+
+  // 가로↔세로가 바뀌면 좌표계가 달라진다. 그 모드에 저장해둔 자리를 다시 얹는다.
+  padsRef?.apply();
 }
 
 window.addEventListener('resize', resize);
@@ -175,6 +181,18 @@ touchRoot.addEventListener('pointerdown', () => audio.unlock(), { once: true });
 
 const loop = createLoop({ update, render });
 loop.start();
+
+// 버튼 자리 바꾸기. 편집하는 동안에는 게임을 세운다 — 옮기다가 죽으면 억울하다.
+const pads = createTouchLayout({
+  root: touchRoot,
+  isRotated: () => document.body.classList.contains('rotated'),
+  onEdit: (on) => {
+    if (on) loop.stop();
+    else loop.start();
+  },
+});
+pads.apply();
+padsRef = pads;
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
