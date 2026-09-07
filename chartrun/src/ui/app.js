@@ -129,24 +129,49 @@ function render() {
   throwBtn.disabled = !(game.player?.ammo > 0);
 }
 
-// 자리가 넉넉하면 정수배로만 키운다 — 그래야 픽셀이 안 뭉갠다.
-// 폰처럼 좁은 화면에서는 정수배로 깎으면 화면이 너무 작아지니 그대로 채운다.
+// 화면 맞추기.
+//
+// 손으로 잡는 기기(pointer: coarse)에서는 게임이 화면을 꽉 채운다. 조작 버튼은
+// 화면 아래에 자리를 차지하지 않고 좌우 여백과 구석에 겹쳐 뜬다.
+// 세로로 들고 있으면 화면을 통째로 90도 돌린다 — 회전 잠금을 켜둔 사람이 많아서,
+// "가로로 돌려주세요" 라고만 써두면 아무 일도 안 일어난다.
+const coarsePointer = window.matchMedia('(pointer: coarse)');
+const rotateNote = document.getElementById('rotate-note');
+
 function resize() {
-  const pad = 24;
-  const availableW = Math.min(window.innerWidth - pad, 1200);
-  const availableH = window.innerHeight - pad - (window.innerWidth < 760 ? 160 : 96);
-  const raw = Math.min(availableW / VIEW.w, availableH / VIEW.h);
-  const scale = raw >= 2 ? Math.floor(raw) : Math.max(0.5, raw);
+  const handheld = coarsePointer.matches;
+  const rotated = handheld && window.innerHeight > window.innerWidth;
+  document.body.classList.toggle('handheld', handheld);
+  document.body.classList.toggle('rotated', rotated);
+  rotateNote.hidden = !rotated;
+
+  // 돌려놓은 화면에서는 가로·세로가 뒤바뀐다
+  const viewW = rotated ? window.innerHeight : window.innerWidth;
+  const viewH = rotated ? window.innerWidth : window.innerHeight;
+
+  let scale;
+  if (handheld) {
+    scale = Math.min(viewW / VIEW.w, viewH / VIEW.h);
+  } else {
+    // 자리가 넉넉하면 정수배로만 키운다 — 그래야 픽셀이 안 뭉갠다
+    const pad = 24;
+    const raw = Math.min(Math.min(viewW - pad, 1200) / VIEW.w, (viewH - pad - 96) / VIEW.h);
+    scale = raw >= 2 ? Math.floor(raw) : Math.max(0.5, raw);
+  }
+
   shell.style.setProperty('--scale', String(scale));
   shell.style.setProperty('--view-w', String(VIEW.w));
   shell.style.setProperty('--view-h', String(VIEW.h));
 }
 
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
+coarsePointer.addEventListener?.('change', resize);
 resize();
 
-bindTouchButtons(document.getElementById('touch'), input);
-document.getElementById('touch').addEventListener('pointerdown', () => audio.unlock(), { once: true });
+const touchRoot = document.getElementById('touch');
+bindTouchButtons(touchRoot, input);
+touchRoot.addEventListener('pointerdown', () => audio.unlock(), { once: true });
 
 const loop = createLoop({ update, render });
 loop.start();

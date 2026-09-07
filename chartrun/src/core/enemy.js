@@ -134,10 +134,16 @@ const BEHAVIORS = {
   },
 
   shooter(e, ctx, dt) {
-    walkStep(e, ctx.world, dt, e.def.speed, true);
     e.timer += dt;
-    if (e.timer >= (e.def.fireEvery ?? 2)) {
+    const every = e.def.fireEvery ?? 2;
+    // 쏘기 직전에는 멈춰 서서 눈썹을 번쩍인다. 돌진형·낙하형과 같은 규칙이다 —
+    // 예고 없이 날아오는 탄은 피할 방법이 없어서 트롤이 아니라 그냥 불합리하다.
+    const warn = e.def.fireWarn ?? 0.42;
+    e.state = e.timer >= every - warn ? 'windup' : 'idle';
+    walkStep(e, ctx.world, dt, e.state === 'windup' ? 0 : e.def.speed, true);
+    if (e.timer >= every) {
       e.timer = 0;
+      e.state = 'idle';
       faceToward(e, ctx.player);
       const speed = e.def.shotSpeed ?? 80;
       const spread = e.def.shotSpread ?? 1;

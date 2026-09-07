@@ -183,6 +183,38 @@ test('사격형은 시간이 지나면 탄환을 만든다', () => {
   assert.ok(shots[0].vx > 0, '플레이어 쪽으로 날아간다');
 });
 
+test('사격형도 쏘기 전에 반드시 예고한다', () => {
+  // 예고 없이 날아오는 탄은 피할 방법이 없다. 돌진형·낙하형과 같은 규칙을 지킨다.
+  const world = flatWorld();
+  const shots = [];
+  const shooter = spawnAlbum('a04', TILE * 4, TILE);
+  const ctx = {
+    world,
+    player: { x: TILE * 10, y: TILE, w: 10, h: 14 },
+    spawnShot: (s) => shots.push(s),
+    addAlbum: () => {},
+  };
+
+  let warnFrames = 0;
+  for (let i = 0; i < 60 * 4; i++) {
+    updateAlbum(shooter, ctx, 1 / 60);
+    if (shots.length) break;
+    if (shooter.state === 'windup') warnFrames += 1;
+  }
+  assert.ok(shots.length >= 1, '탄환이 나오긴 해야 한다');
+  assert.ok(warnFrames >= 18, `예고가 ${warnFrames}프레임뿐 — 눈으로 보고 반응할 수 없다`);
+});
+
+test('예고 중에는 사격형이 멈춰 선다', () => {
+  const world = flatWorld();
+  const shooter = spawnAlbum('a04', TILE * 4, TILE);
+  const ctx = { world, player: { x: TILE * 10, y: TILE, w: 10, h: 14 }, spawnShot: () => {}, addAlbum: () => {} };
+  while (shooter.state !== 'windup') updateAlbum(shooter, ctx, 1 / 60);
+  const x0 = shooter.x;
+  updateAlbum(shooter, ctx, 1 / 60);
+  assert.equal(shooter.x, x0, '겨누는 동안에는 안 걷는다');
+});
+
 test('탄환은 벽에 닿으면 사라진다', () => {
   const world = flatWorld();
   const shot = { x: TILE * 2, y: TILE * 2 + 4, w: 6, h: 6, vx: 0, vy: 100, life: 5 };

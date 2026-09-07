@@ -14,7 +14,16 @@ export const PLAYER = {
   jumpV: 320,
   /** 점프 키를 일찍 떼면 높이가 이만큼으로 깎인다 */
   jumpCut: 0.42,
-  maxFall: 420,
+  /** 정점 근처(속도가 이 아래)에서는 중력을 덜 준다 — 뜬 채로 겨눌 틈이 생긴다 */
+  apexBand: 60,
+  apexGravity: 0.58,
+  /** 내려올 때는 더 빨리 — 붕 뜨는 느낌이 사라지고 착지가 딱 떨어진다 */
+  fallGravity: 1.45,
+  /** 가던 방향과 반대를 누르면 더 빨리 꺾인다 */
+  turnBoost: 2.1,
+  /** 천장 모서리를 이만큼 이하로 스치면 옆으로 밀어 통과시킨다 */
+  cornerNudge: 5,
+  maxFall: 460,
   stompBounce: 210,
   /** 피격 후 무적 시간(초) */
   invulnTime: 1.2,
@@ -71,9 +80,10 @@ export function updatePlayer(player, input, world, dt) {
   player.animTime += dt;
   player.invuln = Math.max(0, player.invuln - dt);
 
-  // 좌우 이동 — 공중에서는 살짝 둔하게
-  const accel = player.onGround ? PLAYER.accel : PLAYER.airAccel;
+  // 좌우 이동 — 공중에서는 살짝 둔하게, 반대로 꺾을 때는 더 빠르게
   const want = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+  const turning = want !== 0 && player.vx * want < 0;
+  const accel = (player.onGround ? PLAYER.accel : PLAYER.airAccel) * (turning ? PLAYER.turnBoost : 1);
   if (want !== 0) {
     player.vx = approach(player.vx, want * PLAYER.maxSpeed, accel * dt);
     player.dir = want;
@@ -91,9 +101,14 @@ export function updatePlayer(player, input, world, dt) {
   const cut = -PLAYER.jumpV * PLAYER.jumpCut;
   if (!input.jump && player.vy < cut) player.vy = cut;
 
-  player.vy = Math.min(player.vy + PLAYER.gravity * dt, PLAYER.maxFall);
+  // 중력은 구간마다 다르다. 올라갈 때는 그대로, 정점에서는 가볍게, 내려올 때는 무겁게.
+  // 같은 높이를 뛰면서도 체공이 짧아져서 "붕 뜬다"는 느낌이 사라진다.
+  let gravity = PLAYER.gravity;
+  if (player.vy > 0) gravity *= PLAYER.fallGravity;
+  if (!player.onGround && Math.abs(player.vy) < PLAYER.apexBand) gravity *= PLAYER.apexGravity;
+  player.vy = Math.min(player.vy + gravity * dt, PLAYER.maxFall);
 
-  const res = moveBody(player, player.vx * dt, player.vy * dt, world.tileAt);
+  const res = moveBody(player, player.vx * dt, player.vy * dt, world.tileAt, PLAYER.cornerNudge);
   player.onGround = res.hitGround || groundedAt(player, world.tileAt);
 
   // 머리로 블록 치기

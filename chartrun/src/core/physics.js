@@ -39,7 +39,15 @@ function stepX(body, dx, tileAt, res) {
   }
 }
 
-function stepY(body, dy, tileAt, res) {
+/** 그 칸 줄(column)이 몸통 높이 내내 비어 있는가 */
+function columnClear(tx, body, tileAt) {
+  const ty0 = Math.floor(body.y / TILE);
+  const ty1 = Math.floor((body.y + body.h - EPS) / TILE);
+  for (let ty = ty0; ty <= ty1; ty++) if (tileAt(tx, ty) === SOLID) return false;
+  return true;
+}
+
+function stepY(body, dy, tileAt, res, corner) {
   if (!dy) return;
   const prevBottom = body.y + body.h;
   body.y += dy;
@@ -61,25 +69,47 @@ function stepY(body, dy, tileAt, res) {
     }
   } else {
     const ty = Math.floor(body.y / TILE);
+    let hit = -1;
     for (let tx = tx0; tx <= tx1; tx++) {
       if (tileAt(tx, ty) === SOLID) {
-        body.y = (ty + 1) * TILE;
-        body.vy = 0;
-        res.hitCeil = true;
-        res.ceilTile = { tx, ty };
+        hit = tx;
+        break;
+      }
+    }
+    if (hit < 0) return;
+
+    // 모서리 보정 — 머리 귀퉁이가 몇 픽셀 걸린 것뿐이면 옆으로 밀어 통과시킨다.
+    // 이게 없으면 블록 모서리에 스쳐서 점프가 죽는데, 플레이어 눈에는 그냥 억울하다.
+    if (corner > 0 && tx1 > tx0) {
+      // 밀려날 칸. 몸이 걸치는 모든 줄이 비어 있어야 한다 —
+      // 천장만 보고 밀면 그 아래 벽 속으로 밀어넣게 된다.
+      const other = hit === tx0 ? tx1 : tx0;
+      const overlap = hit === tx0 ? (tx0 + 1) * TILE - body.x : body.x + body.w - tx1 * TILE;
+      if (overlap <= corner && columnClear(other, body, tileAt)) {
+        body.x = hit === tx0 ? (tx0 + 1) * TILE : tx1 * TILE - body.w;
+        res.cornered = true;
         return;
       }
     }
+
+    body.y = (ty + 1) * TILE;
+    body.vy = 0;
+    res.hitCeil = true;
+    res.ceilTile = { tx: hit, ty };
   }
 }
 
-/** body 를 (dx, dy) 만큼 옮기고 부딪힌 면을 알려준다 */
-export function moveBody(body, dx, dy, tileAt) {
+/**
+ * body 를 (dx, dy) 만큼 옮기고 부딪힌 면을 알려준다.
+ * corner: 천장 모서리를 이 픽셀 이하로 스쳤을 때 옆으로 밀어 통과시킨다 (0 이면 끔).
+ */
+export function moveBody(body, dx, dy, tileAt, corner = 0) {
   const res = {
     hitLeft: false,
     hitRight: false,
     hitGround: false,
     hitCeil: false,
+    cornered: false,
     groundTile: null,
     ceilTile: null,
   };
@@ -89,7 +119,7 @@ export function moveBody(body, dx, dy, tileAt) {
   const sy = dy / steps;
   for (let i = 0; i < steps; i++) {
     stepX(body, sx, tileAt, res);
-    stepY(body, sy, tileAt, res);
+    stepY(body, sy, tileAt, res, corner);
   }
   return res;
 }
@@ -113,7 +143,7 @@ export function groundedAt(body, tileAt) {
  * 함께 본다 — 마리오처럼 관대한 조작감이 여기서 나온다.
  */
 export const COYOTE_FRAMES = 6;
-export const BUFFER_FRAMES = 6;
+export const BUFFER_FRAMES = 8;
 
 export function updateJumpAssist(state, { onGround, jumpPressed }) {
   state.coyote = onGround ? COYOTE_FRAMES : Math.max(0, state.coyote - 1);
