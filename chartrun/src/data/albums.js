@@ -1,6 +1,7 @@
 // ★ 앨범 적 17종.
 //
-// 나중에 진짜 앨범 사진을 받으면 `name` 과 `art` 두 줄만 고치면 된다.
+// `name` 은 레벨을 편집할 때 어느 놈인지 부르려고 두는 이름이고 화면에는 안 나온다.
+// 나중에 진짜 앨범 사진을 받으면 `art` 한 줄만 고치면 된다.
 //   art: 'assets/albums/a01.png'  →  그 그림이 커버 자리에 그대로 들어간다.
 //   art: null                     →  아래 `cover` 패턴을 코드로 그린다.
 // 행동·충돌·수치는 그림과 완전히 분리돼 있어서 사진을 넣어도 게임은 그대로다.
@@ -40,18 +41,15 @@ export const ALBUMS = [
   album({
     id: 'a01',
     name: '데뷔 싱글',
-    title: '《안녕 나야》',
     stage: 1,
     behavior: 'walker',
     palette: ['#241a2e', '#ff5d8f', '#ffd6e8'],
     cover: 'stripes',
     speed: 22,
-    taunt: '신인이 어디서 감히',
   }),
   album({
     id: 'a02',
     name: '리메이크 앨범',
-    title: '《그때 그 노래》',
     stage: 1,
     behavior: 'hopper',
     palette: ['#1d2b2b', '#5ad1a5', '#e8fff6'],
@@ -59,12 +57,10 @@ export const ALBUMS = [
     speed: 20,
     jumpPower: 190,
     hopEvery: 1.4,
-    taunt: '내 노래 아직도 나오지?',
   }),
   album({
     id: 'a03',
     name: '여름 시즌송',
-    title: '《바다가자》',
     stage: 1,
     behavior: 'flyer',
     palette: ['#12304d', '#3fc1ff', '#fff7a8'],
@@ -72,12 +68,10 @@ export const ALBUMS = [
     speed: 24,
     amplitude: 22,
     period: 2.6,
-    taunt: '여름엔 나야 나',
   }),
   album({
     id: 'a04',
     name: '감성 발라드',
-    title: '《비 오는 날엔》',
     stage: 1,
     behavior: 'shooter',
     palette: ['#241f33', '#8f7bd6', '#ffeaf7'],
@@ -85,14 +79,12 @@ export const ALBUMS = [
     speed: 12,
     fireEvery: 2.2,
     shotSpeed: 70,
-    taunt: '눈물 쏙 빼줄게',
   }),
 
   // ── 스테이지 2 · 음악방송 스튜디오 ────────────────────────────
   album({
     id: 'a05',
     name: '아이돌 컴백작',
-    title: '《COMEBACK》',
     stage: 2,
     behavior: 'charger',
     palette: ['#2a1030', '#ff3b7f', '#ffe066'],
@@ -100,34 +92,28 @@ export const ALBUMS = [
     speed: 26,
     chargeSpeed: 130,
     chargeRange: 110,
-    taunt: '팬덤 화력 보여줄까',
   }),
   album({
     id: 'a06',
     name: '클럽 리믹스',
-    title: '《BOOM BOOM》',
     stage: 2,
     behavior: 'spinner',
     palette: ['#171a3a', '#7c5cff', '#39ffd0'],
     cover: 'checker',
     speed: 78,
-    taunt: '뿜뿜',
   }),
   album({
     id: 'a07',
     name: '조명 아래 라이브',
-    title: '《LIVE ON》',
     stage: 2,
     behavior: 'dropper',
     palette: ['#2b220f', '#ffc93c', '#fff3c4'],
     cover: 'radial',
     dropRange: 26,
-    taunt: '조명은 나한테만',
   }),
   album({
     id: 'a08',
     name: '컴필레이션',
-    title: '《모음집 Vol.9》',
     stage: 2,
     behavior: 'splitter',
     palette: ['#20262e', '#8ad3ff', '#ffffff'],
@@ -135,26 +121,22 @@ export const ALBUMS = [
     speed: 30,
     size: 24,
     splitInto: 2,
-    taunt: '나 혼자 열일곱 곡이야',
   }),
 
   // ── 스테이지 3 · 스트리밍 서버 내부 ───────────────────────────
   album({
     id: 'a09',
     name: '알고리즘 추천',
-    title: '《너를 위한 믹스》',
     stage: 3,
     behavior: 'shielder',
     palette: ['#0f2027', '#2ec4b6', '#e0fbfc'],
     cover: 'checker',
     speed: 30,
     stompable: false,
-    taunt: '네 취향은 내가 정해',
   }),
   album({
     id: 'a10',
     name: '새벽 자작곡',
-    title: '《새벽 3시》',
     stage: 3,
     behavior: 'flyer',
     palette: ['#191a3a', '#6c7bff', '#c9d6ff'],
@@ -162,12 +144,10 @@ export const ALBUMS = [
     speed: 42,
     amplitude: 34,
     period: 1.8,
-    taunt: '아무도 안 듣지만 감성 있어',
   }),
   album({
     id: 'a11',
     name: '랩 믹스테잎',
-    title: '《FLEX》',
     stage: 3,
     behavior: 'shooter',
     palette: ['#231400', '#ff8c1a', '#ffe9c7'],
@@ -176,12 +156,10 @@ export const ALBUMS = [
     fireEvery: 1.4,
     shotSpeed: 95,
     shotSpread: 3,
-    taunt: '플렉스 해버렸지 뭐야',
   }),
   album({
     id: 'a12',
     name: '광고 삽입곡',
-    title: '《15초의 기적》',
     stage: 3,
     behavior: 'charger',
     palette: ['#2d0f1b', '#ff2e63', '#fff5cc'],
@@ -189,25 +167,21 @@ export const ALBUMS = [
     speed: 30,
     chargeSpeed: 165,
     chargeRange: 140,
-    taunt: '15초면 충분해',
   }),
   album({
     id: 'a13',
     name: '드라마 OST',
-    title: '《운명처럼》',
     stage: 3,
     behavior: 'dropper',
     palette: ['#2b1524', '#ff7eb6', '#ffe9f4'],
     cover: 'face',
     dropRange: 34,
-    taunt: '이 장면에서 울었잖아',
   }),
 
   // ── 스테이지 4 · 차트 정상 계단 ───────────────────────────────
   album({
     id: 'a14',
     name: '밀리언셀러',
-    title: '《ALL TIME》',
     stage: 4,
     behavior: 'walker',
     palette: ['#2b2411', '#d4af37', '#fff8dc'],
@@ -216,12 +190,10 @@ export const ALBUMS = [
     hp: 2,
     size: 24,
     score: 200,
-    taunt: '판매량으로 눌러줄게',
   }),
   album({
     id: 'a15',
     name: '트로트 대작',
-    title: '《한잔해》',
     stage: 4,
     behavior: 'hopper',
     palette: ['#301616', '#ff6b35', '#ffe8b6'],
@@ -230,24 +202,20 @@ export const ALBUMS = [
     jumpPower: 270,
     hopEvery: 1.0,
     score: 200,
-    taunt: '한 잔 하고 가',
   }),
   album({
     id: 'a16',
     name: '페스티벌 헤드라이너',
-    title: '《ENCORE》',
     stage: 4,
     behavior: 'spinner',
     palette: ['#101d3d', '#00e5ff', '#ff4dd8'],
     cover: 'noise',
     speed: 112,
     score: 200,
-    taunt: '앙코르! 앙코르!',
   }),
   album({
     id: 'a17',
     name: '레전드 명반',
-    title: '《불멸》',
     stage: 4,
     behavior: 'shielder',
     palette: ['#1a1a1a', '#c0c0c0', '#ffffff'],
@@ -257,7 +225,6 @@ export const ALBUMS = [
     size: 24,
     stompable: false,
     score: 300,
-    taunt: '역사에 남는 건 나야',
   }),
 ];
 

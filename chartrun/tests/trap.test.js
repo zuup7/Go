@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TRAPS, TRAP_KINDS, DEATH_MESSAGES, PIT_MESSAGES, createTrapMemory, trapKey } from '../src/data/traps.js';
-import { createGame, updateGame, startRun, loadStage, say, VIEW } from '../src/core/game.js';
+import { TRAPS, TRAP_KINDS, createTrapMemory, trapKey } from '../src/data/traps.js';
+import { createGame, updateGame, startRun, loadStage, VIEW } from '../src/core/game.js';
 import { emptySave, mergeRun, serialize, deserialize } from '../src/core/save.js';
 import { T } from '../src/core/world.js';
 import { STAGES } from '../src/data/stages.js';
@@ -26,14 +26,6 @@ test('함정 글자가 서로 겹치지 않는다', () => {
   assert.ok(TRAP_KINDS.length >= 11, `함정이 ${TRAP_KINDS.length}종밖에 없다`);
   const chars = TRAP_KINDS.map((k) => TRAPS[k].char);
   assert.equal(new Set(chars).size, chars.length);
-  for (const kind of TRAP_KINDS) {
-    assert.ok(TRAPS[kind].label && TRAPS[kind].hint, `${kind}: 설명이 없다`);
-  }
-});
-
-test('병맛 사망 문구가 넉넉하다', () => {
-  assert.ok(DEATH_MESSAGES.length >= 10);
-  assert.ok(PIT_MESSAGES.length >= 2);
 });
 
 test('함정 기억 — 한 번 당하면 표시된다', () => {
@@ -95,7 +87,6 @@ test('죽으면 차트아웃이 늘고 체크포인트에서 부활한다', () =
   step(game, press({ restartPressed: true }));
   assert.equal(game.scene, 'death');
   assert.equal(game.chartOuts, before + 1);
-  assert.ok(game.deathMessage.length > 0);
 
   step(game, idle, 120);
   assert.equal(game.scene, 'play', '알아서 다시 시작한다');
@@ -215,11 +206,12 @@ test('화면 크기는 4:2.33 저해상도', () => {
   assert.equal(VIEW.h, 224);
 });
 
-test('배너 문구는 시간이 지나면 사라진다', () => {
+test('화면에 문구를 띄우는 장치가 아예 없다', () => {
+  // 대사·배너를 다시 들이면 여기서 걸린다. 화면 글자는 HUD 의 숫자뿐이다.
   const game = createGame({ seed: 10 });
   startRun(game);
-  say(game, '테스트 문구', 'info', 0.5);
-  assert.ok(game.banner);
   step(game, idle, 60);
-  assert.equal(game.banner, null);
+  assert.equal(game.banner, undefined, '배너가 되살아났다');
+  assert.equal(game.bossLine, undefined, '보스 대사가 되살아났다');
+  assert.equal(game.deathMessage, undefined, '사망 문구가 되살아났다');
 });

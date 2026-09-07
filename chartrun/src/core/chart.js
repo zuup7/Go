@@ -25,12 +25,3 @@ export function rankAt(stage, t) {
 /** 순위 표시용 문자열 */
 export const rankText = (rank) => `#${rank}`;
 
-/** 순위에 따라 붙는 병맛 칭호 */
-export function rankTitle(rank) {
-  if (rank <= 1) return '차트 1위 🏆';
-  if (rank <= 3) return '탑3 진입!';
-  if (rank <= 10) return '차트인 성공';
-  if (rank <= 30) return '역주행 중';
-  if (rank <= 60) return '입소문 타는 중';
-  return '아무도 모르는 신인';
-}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rankAt, rankTitle, CHART_SEGMENTS, TOP_RANK } from '../src/core/chart.js';
+import { rankAt, CHART_SEGMENTS, TOP_RANK } from '../src/core/chart.js';
 
 test('첫 스테이지는 100위에서 시작한다', () => {
   assert.equal(rankAt(0, 0), 100);
@@ -34,8 +34,3 @@ test('진행률이 범위를 벗어나도 안전하다', () => {
   assert.equal(rankAt(-3, 0), 100);
 });
 
-test('순위 칭호', () => {
-  assert.match(rankTitle(TOP_RANK), /1위/);
-  assert.equal(rankTitle(2), '탑3 진입!');
-  assert.equal(rankTitle(100), '아무도 모르는 신인');
-});

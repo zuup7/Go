@@ -1,10 +1,7 @@
-// 한글이 또렷하게 나와야 해서 HUD 와 화면 문구는 캔버스가 아니라 DOM 으로 그린다.
-import { rankTitle } from '../core/chart.js';
+// 화면에 나오는 글자는 여기가 전부고, 전부 "정보"다 —
+// 순위, 재생수, 차트아웃 횟수, 시간, 스테이지 번호. 대사나 농담은 두지 않는다.
 import { timeText } from '../core/util.js';
 import { STAGES } from '../data/stages.js';
-import { BOSS_NAME } from '../data/bossData.js';
-import { lineAt, lineAtIn } from '../data/cutscene.js';
-import { BOSS_CUTS } from '../data/bossCutscenes.js';
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -12,7 +9,6 @@ const esc = (s) =>
 export function createHud(root) {
   const el = {
     rank: root.querySelector('#rank'),
-    rankTitle: root.querySelector('#rank-title'),
     plays: root.querySelector('#plays'),
     chartOuts: root.querySelector('#chartouts'),
     time: root.querySelector('#time'),
@@ -20,16 +16,11 @@ export function createHud(root) {
     bossFill: root.querySelector('#boss-fill'),
     bossPhase: root.querySelector('#boss-phase'),
     ammo: root.querySelector('#ammo'),
-    bossSay: root.querySelector('#boss-say'),
-    banner: root.querySelector('#banner'),
     center: root.querySelector('#center'),
-    caption: root.querySelector('#caption'),
     hud: root.querySelector('#hud'),
   };
 
   let lastCenter = '';
-  let lastCaption = '';
-  let lastSay = '';
 
   const setCenter = (html) => {
     if (html === lastCenter) return;
@@ -38,61 +29,44 @@ export function createHud(root) {
     el.center.hidden = !html;
   };
 
-  const setCaption = (html) => {
-    if (html === lastCaption) return;
-    lastCaption = html;
-    el.caption.innerHTML = html;
-    el.caption.hidden = !html;
-  };
-
   function centerFor(game) {
     switch (game.scene) {
       case 'title':
         return `
           <div class="panel title-panel">
-            <p class="eyebrow">병맛 픽셀 러너</p>
             <h1>차트런</h1>
-            <p class="tagline">100위에서 시작해 1위까지 달린다.<br />앨범 17장이 길을 막는다.</p>
             <p class="press">아무 키나 / 점프 버튼으로 시작</p>
-            <p class="record">최고 기록 #${game.save.bestRank} · 누적 차트아웃 ${game.save.chartOuts}</p>
+            <p class="record">BEST #${game.save.bestRank}</p>
           </div>`;
       case 'stageIntro': {
         const stage = STAGES[game.stageIndex];
         return `
           <div class="panel">
-            <p class="eyebrow">STAGE ${stage.number}</p>
-            <h2>${stage.icon} ${esc(stage.name)}</h2>
-            <p class="tagline">${esc(stage.subtitle)}</p>
+            <p class="stage-icon">${esc(stage.icon)}</p>
+            <h2>STAGE ${stage.number}</h2>
           </div>`;
       }
       case 'death':
-        return `
-          <div class="panel death">
-            <h2>차트아웃!</h2>
-            <p class="tagline">${esc(game.deathMessage)}</p>
-            <p class="press">체크포인트에서 다시 (목숨은 무한)</p>
-          </div>`;
+        return '<div class="panel death"><h2>차트아웃</h2></div>';
       case 'stageClear': {
         const stage = STAGES[game.stageIndex];
         return `
           <div class="panel good">
-            <h2>${stage.icon} ${esc(stage.name)} 통과</h2>
-            <p class="tagline">현재 순위 <b>#${game.rank}</b> · ${esc(rankTitle(game.rank))}</p>
+            <h2>STAGE ${stage.number} ✓</h2>
+            <p class="big-rank">#${game.rank}</p>
           </div>`;
       }
       case 'ending': {
         const e = game.ending ?? {};
         return `
           <div class="panel ending">
-            <p class="eyebrow">음원차트 실시간</p>
             <h1>#1</h1>
-            <h2>당신의 노래</h2>
             <ul class="stats">
-              <li><span>걸린 시간</span><b>${timeText(e.timeMs ?? 0)}</b></li>
-              <li><span>차트아웃</span><b>${e.chartOuts ?? 0}회</b></li>
-              <li><span>물리친 앨범</span><b>${e.defeated ?? 0}장</b></li>
-              <li><span>모은 재생수</span><b>${e.plays ?? 0}</b></li>
-              <li><span>점수</span><b>${(e.score ?? 0).toLocaleString('ko-KR')}</b></li>
+              <li><span>TIME</span><b>${timeText(e.timeMs ?? 0)}</b></li>
+              <li><span>차트아웃</span><b>${e.chartOuts ?? 0}</b></li>
+              <li><span>물리친 앨범</span><b>${e.defeated ?? 0}</b></li>
+              <li><span>재생수</span><b>${e.plays ?? 0}</b></li>
+              <li><span>SCORE</span><b>${(e.score ?? 0).toLocaleString('ko-KR')}</b></li>
             </ul>
             <p class="press">아무 키나 누르면 처음으로</p>
           </div>`;
@@ -102,30 +76,14 @@ export function createHud(root) {
     }
   }
 
-  // 큰 대사창은 컷신 전용이다. 싸우는 중의 짧은 대사는 위쪽 말풍선(#boss-say)이 맡는다.
-  function captionFor(game) {
-    if (game.scene === 'cutscene') return dialogue(lineAt(game.cutsceneTime));
-    if (game.bossCut) {
-      const cut = BOSS_CUTS[game.bossCut.id];
-      return cut ? dialogue(lineAtIn(cut.timeline, game.bossCut.t)) : '';
-    }
-    return '';
-  }
-
-  function dialogue(line) {
-    if (!line) return '';
-    const boss = line.speaker === BOSS_NAME ? ' boss' : '';
-    return `<div class="dialogue${boss}"><b>${esc(line.speaker)}</b><p>${esc(line.text)}</p></div>`;
-  }
-
   return {
     update(game) {
       const rank = game.scene === 'title' ? game.save.bestRank : game.rank;
       el.rank.textContent = `#${rank}`;
-      el.rankTitle.textContent = rankTitle(rank);
       el.plays.textContent = `♪ ${game.plays}`;
-      el.chartOuts.textContent = `차트아웃 ${game.chartOuts}`;
+      el.chartOuts.textContent = `✕ ${game.chartOuts}`;
       el.time.textContent = timeText(game.elapsedMs);
+
       // 컷신 중에는 HUD 를 걷는다 — 좁은 화면에서 큰 제목과 겹친다
       const inCut = game.scene === 'cutscene' || !!game.bossCut;
       el.hud.hidden = game.scene === 'title' || inCut;
@@ -136,36 +94,12 @@ export function createHud(root) {
       if (showBoss) {
         const ratio = game.boss.hp / game.boss.maxHp;
         el.bossFill.style.width = `${Math.max(0, ratio * 100)}%`;
-        el.bossPhase.textContent = `${game.boss.phaseId}페이즈`;
+        el.bossPhase.textContent = `PHASE ${game.boss.phaseId}`;
       }
       el.ammo.hidden = inCut || !(game.player?.ammo > 0);
 
-      // 컷신 중에는 말풍선을 지운다 — 큰 대사창과 겹쳐 두 번 말하는 꼴이 된다
-      const say =
-        game.bossLine && !game.bossCut
-          ? `<b>${esc(BOSS_NAME)}</b>${esc(game.bossLine.text)}`
-          : '';
-      if (say !== lastSay) {
-        lastSay = say;
-        el.bossSay.innerHTML = say;
-        el.bossSay.hidden = !say;
-      }
-
-      if (game.paused) {
-        setCenter('<div class="panel"><h2>일시정지</h2><p class="press">Esc 로 계속</p></div>');
-      } else {
-        setCenter(centerFor(game));
-      }
-      setCaption(captionFor(game));
-
-      if (game.banner) {
-        el.banner.hidden = false;
-        el.banner.textContent = game.banner.text;
-        el.banner.dataset.kind = game.banner.kind;
-        el.banner.style.opacity = String(Math.min(1, game.banner.life / 0.4));
-      } else {
-        el.banner.hidden = true;
-      }
+      if (game.paused) setCenter('<div class="panel"><h2>PAUSE</h2></div>');
+      else setCenter(centerFor(game));
     },
   };
 }

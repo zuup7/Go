@@ -50,7 +50,7 @@ for (const [id, cut] of Object.entries(BOSS_CUTS)) {
     }
     assert.equal(t[t.length - 1].kind, 'end', `${id}: 끝 표시가 없다`);
     assert.ok(bossCutLength(id) > 1, `${id}: 너무 짧아 읽을 수가 없다`);
-    assert.ok(t.some((s) => s.kind === 'line'), `${id}: 대사가 하나도 없다`);
+    assert.equal(t.filter((s) => s.kind === 'line').length, 0, `${id}: 대사가 남아 있다`);
   });
 }
 
@@ -77,7 +77,7 @@ test('연출 순서가 뜻대로 짜여 있다', () => {
 });
 
 // ── 싸움 중의 대사 ──────────────────────────────────────────
-test('그냥 한 대 맞으면 짧은 대사만 뜨고 컷신은 안 뜬다', () => {
+test('그냥 한 대 맞아서는 컷신이 끼어들지 않는다', () => {
   const game = bossGame();
   run(game, 0.5);
   const before = game.boss.hp;
@@ -91,9 +91,7 @@ test('그냥 한 대 맞으면 짧은 대사만 뜨고 컷신은 안 뜬다', ()
   run(game, 0.2);
 
   assert.ok(game.boss.hp < before, '한 대는 들어가야 한다');
-  assert.equal(game.bossCut, null, '보통 피격에 큰 컷신이 끼면 화면이 가려진다');
-  assert.ok(game.bossLine, '작은 말풍선용 대사는 선다');
-  assert.ok(game.bossLine.life <= 1.2, '피격 대사는 짧게 — 길면 화면에 계속 남는다');
+  assert.equal(game.bossCut, null, '보통 피격에 컷신이 끼면 싸움이 계속 끊긴다');
 });
 
 // ── 전환 컷신 ───────────────────────────────────────────────
@@ -123,7 +121,6 @@ test('페이즈가 바뀌면 컷신이 서고, 그동안 싸움이 통째로 멈
   assert.equal(game.player.dead, false, '컷신 보다가 죽으면 안 된다');
   assert.equal(game.scene, 'boss');
   assert.equal(game.shots.length, shots + 1, '탄도 멈춰 있어야 한다');
-  assert.equal(game.bossLine, null, '컷신 중에는 말풍선이 겹치지 않는다');
 });
 
 test('컷신은 반드시 저절로 풀린다 — 안 풀리면 게임이 영영 멈춘다', () => {

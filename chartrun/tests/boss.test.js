@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBoss, updateBoss, hitBoss, syncPhase, bossPhase, bossHealthRatio } from '../src/core/boss.js';
 import { BOSS_MAX_HP, PHASES, phaseFor } from '../src/data/bossData.js';
-import { CUTSCENE, CUTSCENE_LENGTH, lineAt, phaseAt } from '../src/data/cutscene.js';
+import { CUTSCENE, CUTSCENE_LENGTH, phaseAt } from '../src/data/cutscene.js';
 
 const ctx = (extra = {}) => ({
   player: { x: 100, y: 150, w: 10, h: 14 },
@@ -156,7 +156,7 @@ test('쓰러진 뒤에는 더 때릴 수 없다', () => {
 test('컷신은 gather 로 시작해 end 로 끝난다', () => {
   assert.equal(CUTSCENE[0].kind, 'gather');
   assert.equal(CUTSCENE[CUTSCENE.length - 1].kind, 'end');
-  assert.ok(CUTSCENE_LENGTH > 10, '너무 짧으면 합체가 안 보인다');
+  assert.ok(CUTSCENE_LENGTH > 6, '너무 짧으면 합체가 안 보인다');
 });
 
 test('컷신 시각이 항상 앞으로만 간다', () => {
@@ -172,12 +172,8 @@ test('컷신에 합체와 등장 연출이 들어있다', () => {
   }
 });
 
-test('대사는 다음 대사가 나올 때까지 유지된다', () => {
-  assert.equal(lineAt(0), null);
-  const first = lineAt(1.5);
-  assert.ok(first && first.text.length > 0);
-  assert.equal(lineAt(2.0).text, first.text, '아직 다음 대사 전');
-  assert.notEqual(lineAt(3.0).text, first.text, '다음 대사로 넘어감');
+test('컷신에 대사가 없다 — 보면 아는 연출로만 간다', () => {
+  assert.equal(CUTSCENE.filter((s) => s.kind === 'line').length, 0);
 });
 
 test('연출 단계 조회', () => {

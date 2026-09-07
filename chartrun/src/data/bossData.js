@@ -1,7 +1,5 @@
-// 최종 보스 《초합체 정규앨범 — 명반(名盤)》 의 수치와 대사.
+// 최종 보스 — 앨범 열일곱 장이 합쳐진 원반. 수치만 둔다.
 
-export const BOSS_NAME = '초합체 정규앨범';
-export const BOSS_TITLE = '《명반 名盤》';
 // 페이즈당 3대. 12 였을 때는 밟기로만 깎아야 해서 3페이즈를 아무도 못 봤다.
 export const BOSS_MAX_HP = 9;
 
@@ -13,8 +11,6 @@ export const PHASES = [
   {
     id: 1,
     from: 2 / 3,
-    name: '회전 · 음표 탄막',
-    subtitle: '재생 버튼이 열릴 때를 노려라',
     color: '#ff5d8f',
     micEvery: 5.0,
     fireEvery: 1.6,
@@ -25,13 +21,10 @@ export const PHASES = [
     descendTo: 118,
     minionEvery: 0,
     quarters: 0,
-    line: '너 따위가 1위를 넘봐?',
   },
   {
     id: 2,
     from: 1 / 3,
-    name: '분열 · 4중 돌진',
-    subtitle: '조각이 가로지른다. 마이크를 놓치지 마라',
     color: '#ffc93c',
     micEvery: 4.2,
     fireEvery: 1.15,
@@ -43,13 +36,10 @@ export const PHASES = [
     minionEvery: 0,
     quarters: 4,
     quarterSpeed: 150,
-    line: '한 장이 아니야. 나는 열일곱 장이다!',
   },
   {
     id: 3,
     from: -1,
-    name: '사재기 · 총력전',
-    subtitle: '잡몹까지 부른다. 마지막이다',
     color: '#7c5cff',
     micEvery: 3.4,
     fireEvery: 0.85,
@@ -62,28 +52,7 @@ export const PHASES = [
     minions: ['a01', 'a06', 'a02'],
     quarters: 4,
     quarterSpeed: 185,
-    line: '순위는 돈으로 사는 거야!',
   },
-];
-
-/** 페이즈가 바뀔 때 뜨는 대사 */
-export const PHASE_LINES = {
-  2: ['이 정도로 될 줄 알았어?', '갈라져도 나는 나야.'],
-  3: ['좋아, 정정당당은 여기까지.', '음원 사재기 들어간다!'],
-};
-
-/** 보스를 때렸을 때 나오는 비명 */
-export const BOSS_HURT_LINES = [
-  '재생수가... 줄어든다...!',
-  '이럴 리가 없어',
-  '내 팬덤은 어디 갔지',
-  '한 장만 더 팔았어도',
-  '스밍이 끊긴다',
-];
-
-export const BOSS_DEFEAT_LINES = [
-  '좋은... 노래였어...',
-  '이제 네 차례다, 신인.',
 ];
 
 /** 남은 체력 비율로 페이즈를 고른다 */

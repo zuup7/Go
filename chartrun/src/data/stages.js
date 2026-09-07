@@ -455,9 +455,7 @@ export const STAGES = [
   {
     id: 'stage1',
     number: 1,
-    name: '인디 신인의 거리',
     icon: '🎤',
-    subtitle: '아무도 나를 모른다',
     sky: ['#170d2b', '#3f2266'],
     far: '#2a1547',
     ground: ['#c77dff', '#2a1240'],
@@ -466,9 +464,7 @@ export const STAGES = [
   {
     id: 'stage2',
     number: 2,
-    name: '음악방송 스튜디오',
     icon: '📺',
-    subtitle: '조명은 아직 내 것이 아니다',
     sky: ['#07131f', '#154a70'],
     far: '#0d2d47',
     ground: ['#57d0ff', '#0d2740'],
@@ -477,9 +473,7 @@ export const STAGES = [
   {
     id: 'stage3',
     number: 3,
-    name: '스트리밍 서버 내부',
     icon: '💾',
-    subtitle: '숫자가 사람을 이긴다',
     sky: ['#02120d', '#0a4030'],
     far: '#06291f',
     ground: ['#4dffb8', '#062c21'],
@@ -488,9 +482,7 @@ export const STAGES = [
   {
     id: 'stage4',
     number: 4,
-    name: '차트 정상 계단',
     icon: '🪜',
-    subtitle: '한 칸만 더',
     sky: ['#25060f', '#6e1533'],
     far: '#450c20',
     ground: ['#ff8fa3', '#3d0a1c'],
@@ -501,9 +493,7 @@ export const STAGES = [
 export const BOSS_STAGE = {
   id: 'boss',
   number: 5,
-  name: '1위 앞',
   icon: '👑',
-  subtitle: '앨범들이 하나가 된다',
   sky: ['#12000f', '#4a0040'],
   far: '#2b0724',
   ground: ['#ff6be0', '#2b0724'],

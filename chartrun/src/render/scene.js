@@ -8,7 +8,7 @@ import { drawSprite, crisp } from './pixel.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC } from './sprites.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
-import { phaseAt, phaseAtIn } from '../data/cutscene.js';
+import { phaseAt, phaseAtIn, CUT_AT } from '../data/cutscene.js';
 import { BOSS_CUTS } from '../data/bossCutscenes.js';
 import { drawBigTextCentered } from './bigtext.js';
 import { bossPhase } from '../core/boss.js';
@@ -472,9 +472,12 @@ export function drawCutscene(ctx, t) {
   }
   ctx.restore();
 
-  const gatherT = Math.min(1, t / 4.2);
-  const swirlT = phase === 'gather' ? 0 : Math.min(1, (t - 4.2) / 2);
-  const mergeT = ['merge', 'flash', 'reveal'].includes(phase) ? Math.min(1, (t - 6.2) / 2.4) : 0;
+  // 시각은 전부 CUT_AT 에서 온다 — 타임라인만 고쳐도 그림이 따라온다
+  const gatherT = Math.min(1, t / CUT_AT.swirl);
+  const swirlT = phase === 'gather' ? 0 : Math.min(1, (t - CUT_AT.swirl) / (CUT_AT.merge - CUT_AT.swirl));
+  const mergeT = ['merge', 'flash', 'reveal'].includes(phase)
+    ? Math.min(1, (t - CUT_AT.merge) / (CUT_AT.reveal - CUT_AT.merge))
+    : 0;
 
   if (phase !== 'reveal') {
     for (let i = 0; i < ALBUMS.length; i++) {
@@ -493,12 +496,12 @@ export function drawCutscene(ctx, t) {
   }
 
   if (phase === 'flash') {
-    ctx.fillStyle = `rgba(255,255,255,${1 - Math.min(1, (t - 8.6) / 0.5)})`;
+    ctx.fillStyle = `rgba(255,255,255,${1 - Math.min(1, (t - CUT_AT.flash) / 0.5)})`;
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   }
 
   if (phase === 'reveal' || phase === 'end') {
-    const grow = Math.min(1, (t - 9) / 1.2);
+    const grow = Math.min(1, (t - CUT_AT.reveal) / 1.2);
     const r = 20 + 44 * grow;
     drawBossDisc(ctx, cx, cy, r, t * 1.4);
     ctx.fillStyle = '#39ff9a';
@@ -598,15 +601,15 @@ function drawCracks(ctx, cx, cy, r, p) {
 function drawPhase2Cut(ctx, t, phase, time) {
   const r = 40;
   if (phase === 'split' || phase === 'title') {
-    const p = Math.min(1, (t - 1.9) / 1.1);
+    const p = Math.min(1, (t - 1.8) / 1.1);
     drawQuarters(ctx, CUT_CX, CUT_CY, r, p * p * (3 - 2 * p), time);
   } else {
     const amp = phase === 'crack' ? 3 : 1.4;
     drawBossDisc(ctx, CUT_CX + Math.sin(time * 57) * amp, CUT_CY + Math.cos(time * 63) * amp, r, time * 0.8);
-    if (phase === 'crack') drawCracks(ctx, CUT_CX, CUT_CY, r, Math.min(1, (t - 1.2) / 0.7));
+    if (phase === 'crack') drawCracks(ctx, CUT_CX, CUT_CY, r, Math.min(1, (t - 1.0) / 0.7));
   }
     // 조각들이 빠져나가 텅 빈 한가운데에 박는다
-  if (phase === 'title') drawCutTitle(ctx, 'PHASE 2', t - 3.4, 4, 92);
+  if (phase === 'title') drawCutTitle(ctx, 'PHASE 2', t - 3.2, 4, 92);
 }
 
 function drawQuarters(ctx, cx, cy, r, p, time) {
@@ -643,7 +646,7 @@ function drawPhase3Cut(ctx, t, phase, time) {
   }
   drawFakeChart(ctx, t, phase, time);
     // 조작된 차트 위에 도장처럼 찍는다
-  if (phase === 'title') drawCutTitle(ctx, 'PHASE 3', t - 4.0, 4, 92);
+  if (phase === 'title') drawCutTitle(ctx, 'PHASE 3', t - 3.8, 4, 92);
 }
 
 function drawFakeChart(ctx, t, phase, time) {
@@ -651,7 +654,7 @@ function drawFakeChart(ctx, t, phase, time) {
   const w = VIEW.w - 124;
   const rowH = 21;
   const top = 34;
-  const slide = Math.min(1, (t - 1.1) / 0.45);
+  const slide = Math.min(1, (t - 0.9) / 0.45);
 
   ctx.save();
   ctx.translate((1 - slide) * VIEW.w, 0);
@@ -661,7 +664,7 @@ function drawFakeChart(ctx, t, phase, time) {
   ctx.lineWidth = 1;
   ctx.strokeRect(x - 7.5, top - 9.5, w + 15, rowH * 6 + 15);
 
-  const rig = phase === 'chart' ? 0 : Math.min(1, (t - 2.6) / 1.0);
+  const rig = phase === 'chart' ? 0 : Math.min(1, (t - 2.2) / 1.0);
   // 원래 1~5위였던 줄들이 한 칸씩 밀려 내려간다
   for (let i = 0; i < 5; i++) {
     drawChartRow(ctx, x, top + (i + rig) * rowH, w, `${i + 1 + Math.round(rig)}`, ALBUMS[i], 0.9 - i * 0.11, '#7c5cff');
@@ -712,14 +715,14 @@ function scatterAt(i, spread, time) {
 
 function drawEndingCut(ctx, t, phase, time) {
   if (phase === 'crack') {
-    const p = Math.min(1, t / 1.8);
+    const p = Math.min(1, t / 1.6);
     drawBossDisc(ctx, CUT_CX + Math.sin(time * 70) * p * 3, CUT_CY, 40, time * 0.6);
     drawCracks(ctx, CUT_CX, CUT_CY, 40, p);
     return;
   }
 
   if (phase === 'burst') {
-    const p = Math.min(1, (t - 1.8) / 0.8);
+    const p = Math.min(1, (t - 1.6) / 0.8);
     ctx.save();
     ctx.fillStyle = `rgba(255,255,255,${(1 - p) * 0.9})`;
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
@@ -727,8 +730,8 @@ function drawEndingCut(ctx, t, phase, time) {
   }
 
   // 앨범 열일곱 장: 흩어진 자리 → 차트 줄
-  const spread = phase === 'burst' ? Math.min(1, (t - 1.8) / 0.8) : 1;
-  const line = ['chartline', 'empty', 'climb', 'crown'].includes(phase) ? Math.min(1, (t - 4.4) / 1.4) : 0;
+  const spread = phase === 'burst' ? Math.min(1, (t - 1.6) / 0.8) : 1;
+  const line = ['chartline', 'empty', 'climb', 'crown'].includes(phase) ? Math.min(1, (t - 4.0) / 1.4) : 0;
   const ease = line * line * (3 - 2 * line);
 
   if (line > 0) drawChartFrame(ctx, ease);
@@ -788,7 +791,7 @@ function drawTopRow(ctx, t, phase, time, ease) {
   drawBigTextCentered(ctx, '1', CHART_X + 10, y - 1, 2, '#ffd166', null);
 
   if (phase === 'climb' || phase === 'crown') {
-    const p = phase === 'crown' ? 1 : Math.min(1, (t - 8.4) / 1.0);
+    const p = phase === 'crown' ? 1 : Math.min(1, (t - 7.6) / 1.0);
     const px = CHART_X + 40;
     const py = VIEW.h - 30 + (y + 1 - (VIEW.h - 30)) * p;
     drawSprite(ctx, playerFrame({ onGround: p >= 1, vx: 0 }), px, py);
@@ -796,7 +799,7 @@ function drawTopRow(ctx, t, phase, time, ease) {
   }
   ctx.restore();
 
-  if (phase === 'crown') drawCutTitle(ctx, '#1', t - 9.4, 5, 6);
+  if (phase === 'crown') drawCutTitle(ctx, '#1', t - 8.8, 5, 6);
 }
 
 function drawCrown(ctx, x, y, time) {

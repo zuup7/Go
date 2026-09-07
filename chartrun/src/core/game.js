@@ -6,10 +6,7 @@ import { spawnAlbum, updateAlbum, stompAlbum, updateShot } from './enemy.js';
 import { createCamera, updateCamera, shakeCamera } from './camera.js';
 import { rankAt, TOP_RANK } from './chart.js';
 import { createBoss, updateBoss, hitBoss, syncPhase, bossPhase, throwMic, updateThrown } from './boss.js';
-import { BOSS_HURT_LINES } from '../data/bossData.js';
 import {
-  DEATH_MESSAGES,
-  PIT_MESSAGES,
   ZONE_EFFECTS,
   createTrapMemory,
   trapKey,
@@ -63,10 +60,7 @@ export function createGame(options = {}) {
     defeated: 0,
     rank: 100,
     elapsedMs: 0,
-    deathMessage: '',
-    banner: null,
     boss: null,
-    bossLine: null,
     paused: false,
     muted: save.muted,
     flash: 0,
@@ -77,10 +71,6 @@ export function createGame(options = {}) {
 }
 
 const emit = (game, name, data) => game.onEvent(name, data ?? {});
-
-export function say(game, text, kind = 'info', life = 2.2) {
-  game.banner = { text, kind, life, max: life };
-}
 
 function addParticles(game, x, y, count, colors, opts = {}) {
   for (let i = 0; i < count; i++) {
@@ -148,7 +138,6 @@ export function loadBoss(game) {
   game.scene = 'boss';
   game.sceneTime = 0;
   game.rank = 2;
-  game.bossLine = { text: bossPhase(game.boss).line, life: 3 };
   emit(game, 'boss', {});
 }
 
@@ -163,10 +152,9 @@ export function startRun(game) {
 }
 
 // ── 죽음과 부활 ──────────────────────────────────────────────
-function killPlayer(game, messages = DEATH_MESSAGES) {
+function killPlayer(game) {
   if (game.scene === 'death') return;
   game.chartOuts += 1;
-  game.deathMessage = game.rng.pick(messages);
   game.scene = 'death';
   game.sceneTime = 0;
   shakeCamera(game.camera, 1.2);
@@ -174,7 +162,7 @@ function killPlayer(game, messages = DEATH_MESSAGES) {
     speed: 110,
     life: 0.9,
   });
-  emit(game, 'death', { message: game.deathMessage });
+  emit(game, 'death', {});
 }
 
 function reviveAtCheckpoint(game) {
@@ -215,7 +203,6 @@ function handleAlbums(game, dt) {
       const result = stompAlbum(album, ctx);
       if (result === 'blocked') {
         // 위에 가시가 박힌 앨범 — 밟은 쪽이 죽는다
-        say(game, `${album.def.name}: ${album.def.taunt}`, 'bad');
         if (damagePlayer(player)) killPlayer(game);
         continue;
       }
@@ -230,10 +217,8 @@ function handleAlbums(game, dt) {
         addText(game, album.x, album.y, `+${album.def.score}`, album.def.palette[2]);
       }
     } else if (damagePlayer(player)) {
-      say(game, `${album.def.name} ${album.def.title}: ${album.def.taunt}`, 'bad');
       killPlayer(game);
     } else {
-      say(game, '마이크를 놓쳤다!', 'warn', 1.4);
       emit(game, 'hurt', {});
     }
   }
@@ -278,7 +263,6 @@ function handleBlocks(game, events) {
     world.setChar(tx, ty, T.USED);
     if (game.player.power === 'none') {
       game.player.power = 'mic';
-      say(game, '🎤 마이크를 얻었다! 한 대는 버틴다', 'good');
       emit(game, 'power', {});
     } else {
       game.plays += 3;
@@ -292,21 +276,19 @@ function handleBlocks(game, events) {
     const album = spawnAlbum('a06', tx * TILE, ty * TILE - TILE);
     album.vy = -120;
     game.albums.push(album);
-    say(game, '낚였다! 아이템이 아니라 리믹스였다', 'bad');
     shakeCamera(game.camera, 0.6);
     emit(game, 'trap', { kind: 'baitBlock' });
   } else if (ch === T.INVISIBLE) {
     world.setChar(tx, ty, T.GROUND);
     game.trapMemory.reveal(key);
-    say(game, '뭐야 이거… 보이지도 않는 벽이', 'warn');
     emit(game, 'trap', { kind: 'invisibleBlock' });
   }
 }
 
 /** 밟으면 사라지는 칸들 — 가짜 발판(즉시)과 무너지는 바닥(잠깐 떨다가) */
 const CRUMBLING = {
-  [T.FAKE]: { time: CRUMBLE_TIME, kind: 'fakePlatform', text: '가짜 발판이었다' },
-  [T.CRUMBLE]: { time: FLOOR_CRUMBLE_TIME, kind: 'crumbleFloor', text: '바닥이 꺼졌다!' },
+  [T.FAKE]: { time: CRUMBLE_TIME, kind: 'fakePlatform' },
+  [T.CRUMBLE]: { time: FLOOR_CRUMBLE_TIME, kind: 'crumbleFloor' },
 };
 
 function handleCrumbling(game, dt) {
@@ -339,7 +321,6 @@ function handleCrumbling(game, dt) {
     world.setChar(tx, ty, T.EMPTY);
     game.trapMemory.reveal(key);
     addParticles(game, tx * TILE + 8, ty * TILE + 8, 6, ['#c9c9c9', '#8a8a8a'], { speed: 40, life: 0.5 });
-    say(game, spec.text, 'bad', 1.4);
     emit(game, 'trap', { kind: spec.kind });
   }
 }
@@ -360,7 +341,6 @@ function handleRisingWalls(game, dt) {
       game.trapMemory.reveal(trapKey(wall.tx, wall.ty));
       shakeCamera(game.camera, 0.8);
       addParticles(game, cx, wall.ty * TILE, 8, ['#e8ecf7', '#8b93a8'], { speed: 60, life: 0.5 });
-      say(game, '벽이 솟았다', 'warn', 1.4);
       emit(game, 'trap', { kind: 'risingWall' });
     } else {
       wall.t = Math.min(1, wall.t + dt * 5);
@@ -379,7 +359,6 @@ function handleZones(game, dt) {
     const spec = ZONE_EFFECTS[zone.kind];
     game.effects[zone.kind] = spec.seconds;
     game.trapMemory.reveal(trapKey(zone.tx, zone.ty));
-    say(game, spec.label, 'bad', 2);
     shakeCamera(game.camera, 0.6);
     emit(game, 'trap', { kind: zone.kind });
   }
@@ -427,7 +406,6 @@ function handleFakeGoal(game, dt) {
     if (!fake.fleeing && Math.abs(dx) < 52) {
       fake.fleeing = true;
       game.trapMemory.reveal(trapKey(fake.tx, fake.ty));
-      say(game, '골이 도망갔다', 'bad');
       emit(game, 'trap', { kind: 'fakeGoal' });
     }
     if (fake.fleeing) {
@@ -458,7 +436,6 @@ function handleCheckpoints(game) {
     if (!overlaps(game.player, box)) continue;
     cp.taken = true;
     game.checkpoint = { x: cp.x, y: cp.y };
-    say(game, '💿 체크포인트 · 여기서 다시 시작', 'good');
     emit(game, 'checkpoint', {});
   }
 }
@@ -477,10 +454,6 @@ function updateParticles(game, dt) {
     t.y -= 24 * dt;
   }
   game.texts = game.texts.filter((t) => t.life > 0);
-  if (game.banner) {
-    game.banner.life -= dt;
-    if (game.banner.life <= 0) game.banner = null;
-  }
   game.flash = Math.max(0, game.flash - dt * 2);
 }
 
@@ -513,7 +486,7 @@ function updatePlay(game, input, dt) {
 
   if (events.fell) {
     game.player.dead = true;
-    killPlayer(game, PIT_MESSAGES);
+    killPlayer(game);
   } else if (events.hazard && damagePlayer(game.player)) {
     killPlayer(game);
   }
@@ -540,7 +513,6 @@ function finishRun(game) {
 function startBossCut(game, id) {
   if (!id) return;
   game.bossCut = { id, t: 0, length: bossCutLength(id) };
-  game.bossLine = null;
   emit(game, 'cutscene', { id });
 }
 
@@ -568,9 +540,6 @@ function damageBoss(game, opts = {}) {
     shakeCamera(game.camera, 1.6);
     emit(game, 'phase', { phase: changed });
   } else if (boss.hp > 0) {
-    game.bossLine = { text: game.rng.pick(BOSS_HURT_LINES), life: 1.2 };
-  } else {
-    game.bossLine = null;
     game.flash = 1;
     emit(game, 'bossdown', {});
   }
@@ -597,7 +566,6 @@ function handleMics(game, dt) {
     }
     if (!player.dead && player.ammo < 1 && overlaps(player, mic)) {
       player.ammo = 1;
-      say(game, '🎤 마이크! X(또는 🎤 버튼)로 던져라', 'good', 2.4);
       addParticles(game, mic.x + 5, mic.y + 5, 6, ['#ffd166', '#fff'], { speed: 50, life: 0.4 });
       emit(game, 'power', {});
       return false;
@@ -676,14 +644,9 @@ function updateBossScene(game, input, dt) {
 
   if (events.fell) {
     game.player.dead = true;
-    killPlayer(game, PIT_MESSAGES);
+    killPlayer(game);
   } else if (events.hazard && damagePlayer(game.player)) {
     killPlayer(game);
-  }
-
-  if (game.bossLine) {
-    game.bossLine.life -= dt;
-    if (game.bossLine.life <= 0) game.bossLine = null;
   }
 
   // 쓰러지고 잠깐 뒤 엔딩 컷신으로 넘어간다

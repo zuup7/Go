@@ -25,7 +25,7 @@ test('모든 앨범이 정의된 행동과 커버를 쓴다', () => {
     assert.ok(COVERS.includes(album.cover), `${album.id}: 모르는 커버 ${album.cover}`);
     assert.equal(album.palette.length, 3, `${album.id}: 팔레트는 3색`);
     assert.ok(album.stage >= 1 && album.stage <= 4, `${album.id}: 스테이지 범위`);
-    assert.ok(album.name && album.taunt, `${album.id}: 이름과 대사 필요`);
+    assert.ok(album.name, `${album.id}: 레벨 편집용 이름이 없다`);
   }
 });
 
