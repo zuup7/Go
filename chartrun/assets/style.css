@@ -402,6 +402,17 @@ body.rotated .shell {
   transform-origin: center center;
 }
 
+/* 눕힌 화면에서는 앱이 화면 위아래에 얹는 것들(아티팩트 뷰어의 닫기 X, 안드로이드
+   내비게이션 바)이 shell 기준으로는 "좌우 끝"이 된다. 조작 버튼을 구석까지 붙이면
+   그 밑으로 들어가서, 점프하려다 게임이 닫힌다. 그만큼 안으로 들인다. */
+body.rotated .touch-left {
+  left: 84px;
+}
+
+body.rotated .touch-right {
+  right: 84px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rotate-note {
     animation: none;
