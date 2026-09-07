@@ -5,11 +5,11 @@ import { cameraOffset } from '../core/camera.js';
 import { trapKey } from '../data/traps.js';
 import { drawAlbum, drawCoverAt } from './albumArt.js';
 import { drawSprite, crisp } from './pixel.js';
-import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC } from './sprites.js';
+import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import { phaseAt, phaseAtIn, CUT_AT } from '../data/cutscene.js';
-import { BOSS_CUTS } from '../data/bossCutscenes.js';
+import { BOSS_CUTS, PHASE2_AT, PHASE3_AT, ENDING_AT } from '../data/bossCutscenes.js';
 import { drawBigTextCentered } from './bigtext.js';
 import { bossPhase } from '../core/boss.js';
 
@@ -837,15 +837,15 @@ function drawCracks(ctx, cx, cy, r, p) {
 function drawPhase2Cut(ctx, t, phase, time) {
   const r = 40;
   if (phase === 'split' || phase === 'title') {
-    const p = Math.min(1, (t - 1.8) / 1.1);
+    const p = Math.min(1, (t - PHASE2_AT.split) / 1.1);
     drawQuarters(ctx, CUT_CX, CUT_CY, r, p * p * (3 - 2 * p), time);
   } else {
     const amp = phase === 'crack' ? 3 : 1.4;
     drawBossDisc(ctx, CUT_CX + Math.sin(time * 57) * amp, CUT_CY + Math.cos(time * 63) * amp, r, time * 0.8);
-    if (phase === 'crack') drawCracks(ctx, CUT_CX, CUT_CY, r, Math.min(1, (t - 1.0) / 0.7));
+    if (phase === 'crack') drawCracks(ctx, CUT_CX, CUT_CY, r, Math.min(1, (t - PHASE2_AT.crack) / 0.7));
   }
     // 조각들이 빠져나가 텅 빈 한가운데에 박는다
-  if (phase === 'title') drawCutTitle(ctx, 'PHASE 2', t - 3.2, 4, 92);
+  if (phase === 'title') drawCutTitle(ctx, 'PHASE 2', t - PHASE2_AT.title, 4, 92);
 }
 
 function drawQuarters(ctx, cx, cy, r, p, time) {
@@ -882,7 +882,7 @@ function drawPhase3Cut(ctx, t, phase, time) {
   }
   drawFakeChart(ctx, t, phase, time);
     // 조작된 차트 위에 도장처럼 찍는다
-  if (phase === 'title') drawCutTitle(ctx, 'PHASE 3', t - 3.8, 4, 92);
+  if (phase === 'title') drawCutTitle(ctx, 'PHASE 3', t - PHASE3_AT.title, 4, 92);
 }
 
 function drawFakeChart(ctx, t, phase, time) {
@@ -890,7 +890,7 @@ function drawFakeChart(ctx, t, phase, time) {
   const w = VIEW.w - 124;
   const rowH = 21;
   const top = 34;
-  const slide = Math.min(1, (t - 0.9) / 0.45);
+  const slide = Math.min(1, (t - PHASE3_AT.chart) / 0.45);
 
   ctx.save();
   ctx.translate((1 - slide) * VIEW.w, 0);
@@ -900,7 +900,7 @@ function drawFakeChart(ctx, t, phase, time) {
   ctx.lineWidth = 1;
   ctx.strokeRect(x - 7.5, top - 9.5, w + 15, rowH * 6 + 15);
 
-  const rig = phase === 'chart' ? 0 : Math.min(1, (t - 2.2) / 1.0);
+  const rig = phase === 'chart' ? 0 : Math.min(1, (t - PHASE3_AT.rig) / 1.0);
   // 원래 1~5위였던 줄들이 한 칸씩 밀려 내려간다
   for (let i = 0; i < 5; i++) {
     drawChartRow(ctx, x, top + (i + rig) * rowH, w, `${i + 1 + Math.round(rig)}`, ALBUMS[i], 0.9 - i * 0.11, '#7c5cff');
@@ -949,16 +949,191 @@ function scatterAt(i, spread, time) {
   };
 }
 
+// ── 엔딩 2부: 결혼식 ────────────────────────────────────────
+// 차트 순위표가 그대로 결혼식장이 된다. 줄 서 있던 앨범들이 하객이 되고,
+// 1위 자리는 꽃 아치 아래가 된다.
+
+const WEDDING = ['aisle', 'bride', 'vow', 'ring', 'kiss'];
+const isWedding = (phase) => WEDDING.includes(phase);
+
+/** 0→1 로 부드럽게 */
+const ease = (p) => {
+  const q = Math.min(1, Math.max(0, p));
+  return q * q * (3 - 2 * q);
+};
+
+/** 꽃 아치 — 분홍·흰 꽃송이를 반원으로 얹는다 */
+function drawArch(ctx, cx, cy, r, grow) {
+  ctx.save();
+  ctx.globalAlpha *= grow;
+  // 기둥 둘
+  ctx.fillStyle = '#5b8f4a';
+  ctx.fillRect(cx - r - 3, cy - 4, 4, 46);
+  ctx.fillRect(cx + r - 1, cy - 4, 4, 46);
+  // 아치를 따라 꽃
+  const n = 15;
+  for (let i = 0; i <= n; i++) {
+    const a = Math.PI + (i / n) * Math.PI;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r * 0.85;
+    if (i / n > grow) break;
+    ctx.fillStyle = '#4f8a42';
+    ctx.fillRect(Math.round(x) - 2, Math.round(y) - 2, 5, 5);
+    ctx.fillStyle = i % 3 === 0 ? '#fff6ef' : '#ff9ec4';
+    ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 3, 3);
+  }
+  ctx.restore();
+}
+
+/** 흩날리는 꽃잎 */
+function drawPetals(ctx, time, amount) {
+  ctx.save();
+  for (let i = 0; i < 34; i++) {
+    if (i / 34 > amount) break;
+    const speed = 14 + noise(i, 21) * 22;
+    const x = (noise(i, 22) * VIEW.w + Math.sin(time * 0.8 + i) * 12) % VIEW.w;
+    const y = ((time * speed + noise(i, 23) * 240) % (VIEW.h + 20)) - 10;
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = i % 4 === 0 ? '#fff6ef' : i % 4 === 1 ? '#ffd166' : '#ff9ec4';
+    ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
+  }
+  ctx.restore();
+}
+
+/** 버진로드와 양옆에 늘어선 하객(앨범 열일곱 장) */
+function drawVenue(ctx, t, time, grow) {
+  const floor = CHART_TOP + 3 * CHART_ROW;
+  ctx.save();
+  ctx.globalAlpha *= grow;
+
+  // 붉은 카펫
+  ctx.fillStyle = '#8e2340';
+  ctx.fillRect(0, floor, VIEW.w, 26);
+  ctx.fillStyle = '#c33a5c';
+  ctx.fillRect(0, floor + 2, VIEW.w, 20);
+  ctx.fillStyle = '#ffd166';
+  ctx.fillRect(0, floor + 2, VIEW.w, 1);
+  ctx.fillRect(0, floor + 21, VIEW.w, 1);
+
+  // 하객 — 카펫 양옆에 줄지어 앉는다
+  for (let i = 0; i < ALBUMS.length; i++) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const rank = Math.floor(i / 2);
+    const x = VIEW.w / 2 + side * (58 + rank * 34);
+    const bob = Math.sin(time * 3 + i) * 1.5;
+    drawCoverAt(ctx, ALBUMS[i], x - 7, floor - 18 + bob, 14);
+  }
+  ctx.restore();
+  return floor;
+}
+
+/** 왕관 쓴 주인공과 연갈색 말티푸 공주 */
+function drawCouple(ctx, t, phase, time, floor) {
+  const cx = VIEW.w / 2;
+  const standY = floor - 12;
+
+  // 신부는 오른쪽에서 걸어 들어와 가운데에 선다
+  const walk = ease((t - ENDING_AT.bride) / (ENDING_AT.vow - ENDING_AT.bride));
+  const brideX = phase === 'aisle' ? VIEW.w + 20 : VIEW.w + 20 + (cx + 10 - (VIEW.w + 20)) * walk;
+  // 신랑은 반대쪽으로 조금 물러나 자리를 만든다
+  const groomX = cx - 22 + (phase === 'aisle' ? 0 : 0);
+
+  // 걷는 동안에는 살짝 통통 튄다
+  const hop = phase === 'bride' ? Math.abs(Math.sin(time * 7)) * 2 : 0;
+
+  drawSprite(ctx, playerFrame({ onGround: true, vx: 0 }), groomX, standY - 4);
+  drawCrown(ctx, groomX + 1, standY - 13, time);
+  // 나비넥타이
+  ctx.fillStyle = '#2b1d12';
+  ctx.fillRect(Math.round(groomX) + 4, Math.round(standY) + 3, 4, 2);
+
+  drawSprite(ctx, BRIDE, Math.round(brideX), Math.round(standY - 6 - hop));
+
+  // 반지가 둘 사이에 떠오른다
+  if (phase === 'ring' || phase === 'kiss') {
+    const rise = ease((t - ENDING_AT.ring) / 0.8);
+    const y = standY - 4 - rise * 16 + Math.sin(time * 3) * 1.5;
+    drawSprite(ctx, RING, cx - 3, Math.round(y));
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = '#fff6ef';
+    for (let i = 0; i < 6; i++) {
+      const a = time * 2.5 + (i / 6) * Math.PI * 2;
+      if (Math.sin(a * 3) < 0) continue;
+      ctx.fillRect(Math.round(cx + Math.cos(a) * 12), Math.round(y + 3 + Math.sin(a) * 9), 1, 1);
+    }
+    ctx.restore();
+  }
+
+  // 마지막엔 커다란 하트
+  if (phase === 'kiss') {
+    const pop = ease((t - ENDING_AT.kiss) / 0.5);
+    drawHeart(ctx, cx, standY - 26, 10 * pop, time);
+  }
+}
+
+/** 픽셀 하트 */
+function drawHeart(ctx, cx, cy, r, time) {
+  if (r <= 0) return;
+  const beat = 1 + Math.sin(time * 5) * 0.08;
+  const s = r * beat;
+  ctx.save();
+  ctx.fillStyle = '#ff4d7d';
+  ctx.beginPath();
+  ctx.arc(cx - s * 0.5, cy - s * 0.3, s * 0.55, 0, Math.PI * 2);
+  ctx.arc(cx + s * 0.5, cy - s * 0.3, s * 0.55, 0, Math.PI * 2);
+  ctx.moveTo(cx - s, cy - s * 0.1);
+  ctx.lineTo(cx, cy + s);
+  ctx.lineTo(cx + s, cy - s * 0.1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ff9ec4';
+  ctx.fillRect(Math.round(cx - s * 0.55), Math.round(cy - s * 0.5), Math.max(1, Math.round(s * 0.25)), 2);
+  ctx.restore();
+}
+
+/** 축포 — 마지막에 터진다 */
+function drawConfetti(ctx, t, time) {
+  const since = t - ENDING_AT.kiss;
+  if (since < 0) return;
+  ctx.save();
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * Math.PI * 2 + noise(i, 31) * 0.6;
+    const speed = 40 + noise(i, 32) * 90;
+    const x = VIEW.w / 2 + Math.cos(a) * speed * since;
+    const y = VIEW.h / 2 + Math.sin(a) * speed * since * 0.7 + since * since * 40;
+    if (y > VIEW.h) continue;
+    ctx.globalAlpha = Math.max(0, 1 - since / 3);
+    ctx.fillStyle = ['#ffd166', '#ff9ec4', '#7ee0a0', '#8fbaff', '#fff6ef'][i % 5];
+    ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
+  }
+  ctx.restore();
+}
+
+/** 결혼식 전체 */
+function drawWedding(ctx, t, phase, time) {
+  const grow = ease((t - ENDING_AT.aisle) / 1.0);
+  const floor = drawVenue(ctx, t, time, grow);
+  drawArch(ctx, VIEW.w / 2, CHART_TOP + CHART_ROW, 40, ease((t - ENDING_AT.aisle) / 1.4));
+  drawCouple(ctx, t, phase, time, floor);
+  drawPetals(ctx, time, phase === 'aisle' ? grow * 0.5 : 1);
+  if (phase === 'kiss') drawConfetti(ctx, t, time);
+}
+
 function drawEndingCut(ctx, t, phase, time) {
+  if (isWedding(phase)) {
+    drawWedding(ctx, t, phase, time);
+    return;
+  }
   if (phase === 'crack') {
-    const p = Math.min(1, t / 1.6);
+    const p = Math.min(1, t / ENDING_AT.burst);
     drawBossDisc(ctx, CUT_CX + Math.sin(time * 70) * p * 3, CUT_CY, 40, time * 0.6);
     drawCracks(ctx, CUT_CX, CUT_CY, 40, p);
     return;
   }
 
   if (phase === 'burst') {
-    const p = Math.min(1, (t - 1.6) / 0.8);
+    const p = Math.min(1, (t - ENDING_AT.burst) / 0.8);
     ctx.save();
     ctx.fillStyle = `rgba(255,255,255,${(1 - p) * 0.9})`;
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
@@ -966,8 +1141,8 @@ function drawEndingCut(ctx, t, phase, time) {
   }
 
   // 앨범 열일곱 장: 흩어진 자리 → 차트 줄
-  const spread = phase === 'burst' ? Math.min(1, (t - 1.6) / 0.8) : 1;
-  const line = ['chartline', 'empty', 'climb', 'crown'].includes(phase) ? Math.min(1, (t - 4.0) / 1.4) : 0;
+  const spread = phase === 'burst' ? Math.min(1, (t - ENDING_AT.burst) / 0.8) : 1;
+  const line = ['chartline', 'empty', 'climb', 'crown'].includes(phase) ? Math.min(1, (t - ENDING_AT.chartline) / 1.4) : 0;
   const ease = line * line * (3 - 2 * line);
 
   if (line > 0) drawChartFrame(ctx, ease);
@@ -1027,7 +1202,7 @@ function drawTopRow(ctx, t, phase, time, ease) {
   drawBigTextCentered(ctx, '1', CHART_X + 10, y - 1, 2, '#ffd166', null);
 
   if (phase === 'climb' || phase === 'crown') {
-    const p = phase === 'crown' ? 1 : Math.min(1, (t - 7.6) / 1.0);
+    const p = phase === 'crown' ? 1 : Math.min(1, (t - ENDING_AT.climb) / 1.0);
     const px = CHART_X + 40;
     const py = VIEW.h - 30 + (y + 1 - (VIEW.h - 30)) * p;
     drawSprite(ctx, playerFrame({ onGround: p >= 1, vx: 0 }), px, py);
@@ -1035,7 +1210,7 @@ function drawTopRow(ctx, t, phase, time, ease) {
   }
   ctx.restore();
 
-  if (phase === 'crown') drawCutTitle(ctx, '#1', t - 8.8, 5, 6);
+  if (phase === 'crown') drawCutTitle(ctx, '#1', t - ENDING_AT.crown, 5, 6);
 }
 
 function drawCrown(ctx, x, y, time) {

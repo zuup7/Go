@@ -115,3 +115,50 @@ export const DISC = sprite(
   ],
   { d: '#39d0ff', w: '#eaf8ff', k: '#20182e' },
 );
+
+// ── 엔딩의 강아지 공주 ───────────────────────────────────────
+// 연갈색 말티푸. 티아라와 면사포를 썼다. 16×16.
+const BRIDE_PAL = {
+  g: '#ffd166', // 티아라
+  w: '#fff6ef', // 면사포
+  f: '#dcb98d', // 연갈색 털
+  d: '#b98f5c', // 그늘진 털·귀
+  e: '#2b1d12', // 눈
+  n: '#7a5638', // 주둥이
+  p: '#ff9ec4', // 코
+};
+
+export const BRIDE = sprite(
+  [
+    '.....gg.gg......',
+    '....gggggggg....',
+    '...wffffffffw...',
+    '..wwdffffffdww..',
+    '..wwdffffffdww..',
+    '..wwdfeffefdww..',
+    '..wwdffffffdww..',
+    '...wdfnnnnfdw...',
+    '...wwdfppfdww...',
+    '....wffffffw....',
+    '....ffffffff....',
+    '...ffffffffff...',
+    '...ffffffffff...',
+    '...ff......ff...',
+    '...dd......dd...',
+    '................',
+  ],
+  BRIDE_PAL,
+);
+
+/** 결혼반지 — 엔딩에서 둘 사이에 떠오른다 */
+export const RING = sprite(
+  [
+    '..ww..',
+    '.wggw.',
+    'wg..gw',
+    'wg..gw',
+    '.wggw.',
+    '..ww..',
+  ],
+  { w: '#fff6ef', g: '#ffd166' },
+);

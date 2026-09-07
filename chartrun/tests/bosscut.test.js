@@ -3,7 +3,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, loadBoss, updateGame } from '../src/core/game.js';
 import { hitBoss, syncPhase } from '../src/core/boss.js';
-import { BOSS_CUTS, PHASE2_CUT, PHASE3_CUT, ENDING_CUT, bossCutLength, cutForPhase } from '../src/data/bossCutscenes.js';
+import {
+  BOSS_CUTS,
+  PHASE2_CUT,
+  PHASE3_CUT,
+  ENDING_CUT,
+  PHASE2_AT,
+  PHASE3_AT,
+  ENDING_AT,
+  bossCutLength,
+  cutForPhase,
+} from '../src/data/bossCutscenes.js';
 
 const idle = (over = {}) => ({
   left: false,
@@ -54,6 +64,20 @@ for (const [id, cut] of Object.entries(BOSS_CUTS)) {
   });
 }
 
+test('그리는 쪽이 읽는 시각표가 타임라인과 같다', () => {
+  // 시각을 그림 코드에 또 적어두면 타임라인만 고쳤을 때 조용히 어긋난다.
+  for (const [at, timeline] of [
+    [PHASE2_AT, PHASE2_CUT],
+    [PHASE3_AT, PHASE3_CUT],
+    [ENDING_AT, ENDING_CUT],
+  ]) {
+    for (const step of timeline) {
+      if (step.kind === 'line') continue;
+      assert.equal(at[step.kind], step.at, `${step.kind} 시각이 어긋났다`);
+    }
+  }
+});
+
 test('전환 컷신은 페이즈 2·3 에만 붙는다', () => {
   assert.equal(cutForPhase(1), null, '1페이즈는 싸움 시작이라 전환이 없다');
   assert.equal(cutForPhase(2), 'phase2');
@@ -69,10 +93,12 @@ test('연출 순서가 뜻대로 짜여 있다', () => {
     PHASE3_CUT.filter((s) => s.kind !== 'line').map((s) => s.kind),
     ['shake', 'chart', 'rig', 'title', 'end'],
   );
-  // 엔딩: 터지고 → 흩어지고 → 줄 서고 → 1위 자리가 비고 → 올라서고 → 왕관
+  // 엔딩 1부: 터지고 → 흩어지고 → 줄 서고 → 1위 자리가 비고 → 올라서고 → 왕관
+  // 엔딩 2부: 차트가 식장이 되고 → 공주가 들어오고 → 마주 서고 → 반지 → 하트
   assert.deepEqual(
     ENDING_CUT.filter((s) => s.kind !== 'line').map((s) => s.kind),
-    ['crack', 'burst', 'scatter', 'chartline', 'empty', 'climb', 'crown', 'end'],
+    ['crack', 'burst', 'scatter', 'chartline', 'empty', 'climb', 'crown',
+      'aisle', 'bride', 'vow', 'ring', 'kiss', 'end'],
   );
 });
 
