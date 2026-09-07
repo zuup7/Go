@@ -309,6 +309,8 @@ test('마이크 아홉 번이면 보스가 쓰러진다 — 3페이즈까지 실
     game.thrown.push(mic);
     step(game);
     seen.add(game.boss.phaseId);
+    // 페이즈가 바뀌면 전환 컷신이 싸움을 멈춘다 — 여기선 대미지만 세므로 건너뛴다
+    game.bossCut = null;
   }
   assert.deepEqual([...seen].sort(), [1, 2, 3]);
   assert.equal(game.boss.state, 'defeated');

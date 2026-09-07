@@ -8,7 +8,9 @@ import { drawSprite, crisp } from './pixel.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC } from './sprites.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
-import { phaseAt } from '../data/cutscene.js';
+import { phaseAt, phaseAtIn } from '../data/cutscene.js';
+import { BOSS_CUTS } from '../data/bossCutscenes.js';
+import { drawBigTextCentered } from './bigtext.js';
 import { bossPhase } from '../core/boss.js';
 
 // ── 배경 ────────────────────────────────────────────────────
@@ -498,29 +500,316 @@ export function drawCutscene(ctx, t) {
   if (phase === 'reveal' || phase === 'end') {
     const grow = Math.min(1, (t - 9) / 1.2);
     const r = 20 + 44 * grow;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(t * 1.4);
-    ctx.fillStyle = '#14101d';
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    for (let i = 1; i <= 5; i++) {
-      ctx.beginPath();
-      ctx.arc(0, 0, (r * i) / 6, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    for (let i = 0; i < ALBUMS.length; i++) {
-      const angle = (i / ALBUMS.length) * Math.PI * 2;
-      const d = r * 0.68;
-      drawCoverAt(ctx, ALBUMS[i], Math.cos(angle) * d - 6, Math.sin(angle) * d - 6, 12);
-    }
-    ctx.restore();
+    drawBossDisc(ctx, cx, cy, r, t * 1.4);
     ctx.fillStyle = '#39ff9a';
     ctx.beginPath();
     ctx.arc(cx, cy, 10 * grow, 0, Math.PI * 2);
     ctx.fill();
+  }
+}
+
+/** 열일곱 장이 한 장이 된 모습. 합체 컷신과 보스 컷신이 같은 그림을 쓴다. */
+function drawBossDisc(ctx, cx, cy, r, spin) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(spin);
+  ctx.fillStyle = '#14101d';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  for (let i = 1; i <= 5; i++) {
+    ctx.beginPath();
+    ctx.arc(0, 0, (r * i) / 6, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  const size = Math.max(6, r * 0.19);
+  for (let i = 0; i < ALBUMS.length; i++) {
+    const angle = (i / ALBUMS.length) * Math.PI * 2;
+    const d = r * 0.68;
+    drawCoverAt(ctx, ALBUMS[i], Math.cos(angle) * d - size / 2, Math.sin(angle) * d - size / 2, size);
+  }
+  ctx.restore();
+}
+
+
+// ── 보스전 컷신 (페이즈 전환 · 엔딩) ────────────────────────
+// 월드를 평소대로 그린 뒤 그 위에 얹는다. 한글 대사는 DOM 대사창이 맡는다.
+
+const CUT_CX = VIEW.w / 2;
+const CUT_CY = VIEW.h / 2 - 6;
+
+export function drawBossCut(ctx, game, time) {
+  const cut = BOSS_CUTS[game.bossCut.id];
+  if (!cut) return;
+  const t = game.bossCut.t;
+  const len = game.bossCut.length;
+  const phase = phaseAtIn(cut.timeline, t, 'shake');
+
+  // 들어올 때 어두워지고 나갈 때 다시 밝아진다 — 싸움으로 뚝 끊겨 돌아가면 어지럽다
+  const fade = Math.max(0, Math.min(1, t / 0.3, (len - t) / 0.4));
+  ctx.save();
+  ctx.fillStyle = `rgba(4,2,10,${0.94 * fade})`;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  ctx.globalAlpha = fade;
+
+  if (game.bossCut.id === 'phase2') drawPhase2Cut(ctx, t, phase, time);
+  else if (game.bossCut.id === 'phase3') drawPhase3Cut(ctx, t, phase, time);
+  else drawEndingCut(ctx, t, phase, time);
+
+  ctx.restore();
+}
+
+/** 화면 가로로 박히는 큰 제목 (PHASE 2, #1 …) */
+function drawCutTitle(ctx, text, since, scale, y) {
+  const p = Math.min(1, Math.max(0, since) / 0.25);
+  const h = 7 * scale;
+  ctx.save();
+  ctx.globalAlpha *= p;
+  ctx.fillStyle = 'rgba(6,2,14,0.88)';
+  ctx.fillRect(0, y - 6, VIEW.w, h + 12);
+  ctx.fillStyle = '#ff5d8f';
+  ctx.fillRect(0, y - 7, VIEW.w, 1);
+  ctx.fillRect(0, y + h + 6, VIEW.w, 1);
+  drawBigTextCentered(ctx, text, VIEW.w / 2, y, scale, '#ffd166');
+  ctx.restore();
+}
+
+/** 원반에 번지는 금 */
+function drawCracks(ctx, cx, cy, r, p) {
+  ctx.save();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 + 0.4;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    for (let step = 1; step <= 4; step++) {
+      const d = (r * p * step) / 4;
+      const wob = Math.sin(i * 3 + step) * 5 * p;
+      ctx.lineTo(cx + Math.cos(a) * d + Math.cos(a + 1.57) * wob, cy + Math.sin(a) * d + Math.sin(a + 1.57) * wob);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ── 페이즈 2: 한 장이 네 조각으로 ───────────────────────────
+function drawPhase2Cut(ctx, t, phase, time) {
+  const r = 40;
+  if (phase === 'split' || phase === 'title') {
+    const p = Math.min(1, (t - 1.9) / 1.1);
+    drawQuarters(ctx, CUT_CX, CUT_CY, r, p * p * (3 - 2 * p), time);
+  } else {
+    const amp = phase === 'crack' ? 3 : 1.4;
+    drawBossDisc(ctx, CUT_CX + Math.sin(time * 57) * amp, CUT_CY + Math.cos(time * 63) * amp, r, time * 0.8);
+    if (phase === 'crack') drawCracks(ctx, CUT_CX, CUT_CY, r, Math.min(1, (t - 1.2) / 0.7));
+  }
+    // 조각들이 빠져나가 텅 빈 한가운데에 박는다
+  if (phase === 'title') drawCutTitle(ctx, 'PHASE 2', t - 3.4, 4, 92);
+}
+
+function drawQuarters(ctx, cx, cy, r, p, time) {
+  for (let i = 0; i < 4; i++) {
+    const a0 = i * (Math.PI / 2) - Math.PI / 4;
+    const mid = a0 + Math.PI / 4;
+    const off = 6 + 46 * p;
+    ctx.save();
+    ctx.translate(cx + Math.cos(mid) * off, cy + Math.sin(mid) * off * 0.62);
+    ctx.rotate(Math.sin(time * 2 + i) * 0.08);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, r * 0.92, a0, a0 + Math.PI / 2);
+    ctx.closePath();
+    ctx.fillStyle = '#14101d';
+    ctx.fill();
+    ctx.strokeStyle = '#ff5d8f';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    for (let k = 0; k < 4; k++) {
+      const a = a0 + (Math.PI / 2) * ((k + 0.5) / 4);
+      const d = r * 0.55;
+      drawCoverAt(ctx, ALBUMS[(i * 4 + k) % ALBUMS.length], Math.cos(a) * d - 5, Math.sin(a) * d - 5, 10);
+    }
+    ctx.restore();
+  }
+}
+
+// ── 페이즈 3: 실시간 차트를 대놓고 조작한다 ─────────────────
+function drawPhase3Cut(ctx, t, phase, time) {
+  if (phase === 'shake') {
+    drawBossDisc(ctx, CUT_CX + Math.sin(time * 61) * 3, CUT_CY, 40, time * 0.8);
+    return;
+  }
+  drawFakeChart(ctx, t, phase, time);
+    // 조작된 차트 위에 도장처럼 찍는다
+  if (phase === 'title') drawCutTitle(ctx, 'PHASE 3', t - 4.0, 4, 92);
+}
+
+function drawFakeChart(ctx, t, phase, time) {
+  const x = 62;
+  const w = VIEW.w - 124;
+  const rowH = 21;
+  const top = 34;
+  const slide = Math.min(1, (t - 1.1) / 0.45);
+
+  ctx.save();
+  ctx.translate((1 - slide) * VIEW.w, 0);
+  ctx.fillStyle = 'rgba(6,2,14,0.92)';
+  ctx.fillRect(x - 8, top - 10, w + 16, rowH * 6 + 16);
+  ctx.strokeStyle = '#7c5cff';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - 7.5, top - 9.5, w + 15, rowH * 6 + 15);
+
+  const rig = phase === 'chart' ? 0 : Math.min(1, (t - 2.6) / 1.0);
+  // 원래 1~5위였던 줄들이 한 칸씩 밀려 내려간다
+  for (let i = 0; i < 5; i++) {
+    drawChartRow(ctx, x, top + (i + rig) * rowH, w, `${i + 1 + Math.round(rig)}`, ALBUMS[i], 0.9 - i * 0.11, '#7c5cff');
+  }
+  // 꼴찌에 있던 보스가 1위로 솟는다
+  const by = top + 5 * (1 - rig) * rowH;
+  drawChartRow(ctx, x, by, w, '1', null, 0.55 + 0.45 * rig, '#ff5d8f', time);
+  ctx.restore();
+}
+
+function drawChartRow(ctx, x, y, w, rank, album, barRatio, color, time) {
+  const boss = !album;
+  ctx.fillStyle = boss ? '#1b0a20' : 'rgba(255,255,255,0.06)';
+  ctx.fillRect(x, y, w, 16);
+  if (boss) {
+    ctx.strokeStyle = '#ff5d8f';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, 15);
+  }
+  drawBigTextCentered(ctx, rank, x + 10, y + 3, 2, '#f2f0ff', null);
+  if (album) {
+    drawCoverAt(ctx, album, x + 20, y + 1, 14);
+  } else {
+    // 보스 줄 — 앨범 대신 합체 원반이 돌아간다
+    drawBossDisc(ctx, x + 27, y + 8, 7, (time ?? 0) * 2);
+  }
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 38, y + 4, Math.max(2, (w - 46) * barRatio), 8);
+}
+
+// ── 엔딩: 터지고, 줄 서고, 꼭대기에 내가 선다 ───────────────
+const CHART_X = 96;
+const CHART_W = 192;
+const CHART_TOP = 58;
+const CHART_ROW = 22;
+/** 1위 아래로 보여줄 줄 수 (2위부터) */
+const CHART_ROWS = 5;
+
+/** 흩어진 앨범 i 의 위치 (퍼짐 정도 spread) */
+function scatterAt(i, spread, time) {
+  const a = (i / ALBUMS.length) * Math.PI * 2 + 0.7;
+  const d = spread * (60 + (i % 5) * 26);
+  return {
+    x: CUT_CX + Math.cos(a) * d,
+    y: CUT_CY + Math.sin(a) * d * 0.7 + Math.sin(time * 1.5 + i) * 3 * spread,
+  };
+}
+
+function drawEndingCut(ctx, t, phase, time) {
+  if (phase === 'crack') {
+    const p = Math.min(1, t / 1.8);
+    drawBossDisc(ctx, CUT_CX + Math.sin(time * 70) * p * 3, CUT_CY, 40, time * 0.6);
+    drawCracks(ctx, CUT_CX, CUT_CY, 40, p);
+    return;
+  }
+
+  if (phase === 'burst') {
+    const p = Math.min(1, (t - 1.8) / 0.8);
+    ctx.save();
+    ctx.fillStyle = `rgba(255,255,255,${(1 - p) * 0.9})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    ctx.restore();
+  }
+
+  // 앨범 열일곱 장: 흩어진 자리 → 차트 줄
+  const spread = phase === 'burst' ? Math.min(1, (t - 1.8) / 0.8) : 1;
+  const line = ['chartline', 'empty', 'climb', 'crown'].includes(phase) ? Math.min(1, (t - 4.4) / 1.4) : 0;
+  const ease = line * line * (3 - 2 * line);
+
+  if (line > 0) drawChartFrame(ctx, ease);
+
+  for (let i = 0; i < ALBUMS.length; i++) {
+    const from = scatterAt(i, spread, time);
+    if (i < CHART_ROWS) {
+      // 2위부터 아래로 줄을 선다
+      const to = { x: CHART_X + 22, y: CHART_TOP + (i + 1) * CHART_ROW + 3 };
+      const x = from.x + (to.x - from.x) * ease;
+      const y = from.y + (to.y - from.y) * ease;
+      drawCoverAt(ctx, ALBUMS[i], x - 8, y - 8, 16);
+    } else {
+      // 나머지는 화면 밖으로 밀려난다 — 순위표는 여섯 줄뿐이다
+      ctx.save();
+      ctx.globalAlpha *= Math.max(0, 1 - ease);
+      const push = scatterAt(i, spread + ease * 2.2, time);
+      drawCoverAt(ctx, ALBUMS[i], push.x - 8, push.y - 8, 16);
+      ctx.restore();
+    }
+  }
+
+  if (line > 0) drawTopRow(ctx, t, phase, time, ease);
+}
+
+function drawChartFrame(ctx, ease) {
+  ctx.save();
+  ctx.globalAlpha *= ease;
+  ctx.fillStyle = 'rgba(6,2,14,0.9)';
+  ctx.fillRect(CHART_X - 10, CHART_TOP - 10, CHART_W + 20, CHART_ROW * (CHART_ROWS + 1) + 14);
+  ctx.strokeStyle = '#7c5cff';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(CHART_X - 9.5, CHART_TOP - 9.5, CHART_W + 19, CHART_ROW * (CHART_ROWS + 1) + 13);
+  for (let i = 1; i <= CHART_ROWS; i++) {
+    const y = CHART_TOP + i * CHART_ROW;
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(CHART_X, y - 5, CHART_W, CHART_ROW - 4);
+    drawBigTextCentered(ctx, `${i + 1}`, CHART_X + 10, y - 1, 2, '#b3aecd', null);
+    ctx.fillStyle = '#4a2a66';
+    ctx.fillRect(CHART_X + 34, y + 1, CHART_W - 44, 6);
+  }
+  ctx.restore();
+}
+
+/** 맨 윗줄 — 비어 있다가, 내가 올라서고, 왕관이 박힌다 */
+function drawTopRow(ctx, t, phase, time, ease) {
+  const y = CHART_TOP;
+  ctx.save();
+  ctx.globalAlpha *= ease;
+
+  const blink = phase === 'empty' && Math.floor(time * 3) % 2 === 0;
+  ctx.strokeStyle = blink ? '#ffd166' : '#6b3a8f';
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(CHART_X + 0.5, y - 4.5, CHART_W - 1, CHART_ROW - 5);
+  ctx.setLineDash([]);
+  drawBigTextCentered(ctx, '1', CHART_X + 10, y - 1, 2, '#ffd166', null);
+
+  if (phase === 'climb' || phase === 'crown') {
+    const p = phase === 'crown' ? 1 : Math.min(1, (t - 8.4) / 1.0);
+    const px = CHART_X + 40;
+    const py = VIEW.h - 30 + (y + 1 - (VIEW.h - 30)) * p;
+    drawSprite(ctx, playerFrame({ onGround: p >= 1, vx: 0 }), px, py);
+    if (phase === 'crown') drawCrown(ctx, px + 1, py - 9, time);
+  }
+  ctx.restore();
+
+  if (phase === 'crown') drawCutTitle(ctx, '#1', t - 9.4, 5, 6);
+}
+
+function drawCrown(ctx, x, y, time) {
+  ctx.fillStyle = '#ffd166';
+  ctx.fillRect(x, y + 3, 10, 4);
+  ctx.fillRect(x, y, 2, 4);
+  ctx.fillRect(x + 4, y - 1, 2, 5);
+  ctx.fillRect(x + 8, y, 2, 4);
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 5; i++) {
+    const a = time * 2 + i * 1.3;
+    if (Math.sin(a * 3) < 0) continue;
+    ctx.fillRect(Math.round(x + 5 + Math.cos(a) * 22), Math.round(y + 2 + Math.sin(a) * 14), 1, 1);
   }
 }
 
@@ -642,6 +931,9 @@ export function drawScene(ctx, game, time) {
     ctx.fillStyle = `rgba(255,255,255,${Math.min(0.85, game.flash * 0.6)})`;
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   }
+
+  // 컷신은 맨 위에 — 싸움 화면이 그 아래로 비친다
+  if (game.bossCut) drawBossCut(ctx, game, time);
 }
 
 /** 구간 효과 연출 — 정전은 내 주변만 남기고, 역재생은 화면을 물들인다 */

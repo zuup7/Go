@@ -25,19 +25,28 @@ export const CUTSCENE = [
   { at: 15.4, kind: 'end' },
 ];
 
-export const CUTSCENE_LENGTH = CUTSCENE[CUTSCENE.length - 1].at;
+// ── 타임라인 도우미 ─────────────────────────────────────────
+// 보스 페이즈 전환·엔딩 컷신도 같은 모양의 타임라인을 쓴다 (data/bossCutscenes.js).
 
-/** t(초)까지 이미 지나간 단계들 */
-export const stepsUntil = (t) => CUTSCENE.filter((s) => s.at <= t);
+/** 타임라인 전체 길이 */
+export const lengthOf = (timeline) => timeline[timeline.length - 1].at;
 
 /** t 시점에 화면에 떠 있어야 할 대사 (다음 대사가 나오기 전까지 유지) */
-export function lineAt(t) {
-  const lines = CUTSCENE.filter((s) => s.kind === 'line' && s.at <= t);
+export function lineAtIn(timeline, t) {
+  const lines = timeline.filter((s) => s.kind === 'line' && s.at <= t);
   return lines.length ? lines[lines.length - 1] : null;
 }
 
 /** t 시점의 연출 단계 이름 */
-export function phaseAt(t) {
-  const stages = CUTSCENE.filter((s) => s.kind !== 'line' && s.at <= t);
-  return stages.length ? stages[stages.length - 1].kind : 'gather';
+export function phaseAtIn(timeline, t, fallback) {
+  const stages = timeline.filter((s) => s.kind !== 'line' && s.at <= t);
+  return stages.length ? stages[stages.length - 1].kind : fallback;
 }
+
+export const CUTSCENE_LENGTH = lengthOf(CUTSCENE);
+
+/** t(초)까지 이미 지나간 단계들 */
+export const stepsUntil = (t) => CUTSCENE.filter((s) => s.at <= t);
+
+export const lineAt = (t) => lineAtIn(CUTSCENE, t);
+export const phaseAt = (t) => phaseAtIn(CUTSCENE, t, 'gather');

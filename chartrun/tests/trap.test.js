@@ -190,6 +190,8 @@ test('보스를 잡으면 1위 엔딩', () => {
   game.boss.state = 'defeated';
   game.boss.defeatedAt = 3;
   step(game);
+  assert.equal(game.bossCut?.id, 'ending', '격파하면 먼저 엔딩 컷신');
+  step(game, idle, Math.ceil(game.bossCut.length * 60) + 2);
   assert.equal(game.scene, 'ending');
   assert.equal(game.rank, 1);
   assert.equal(game.ending.rank, 1);

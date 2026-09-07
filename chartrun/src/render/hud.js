@@ -3,7 +3,8 @@ import { rankTitle } from '../core/chart.js';
 import { timeText } from '../core/util.js';
 import { STAGES } from '../data/stages.js';
 import { BOSS_NAME } from '../data/bossData.js';
-import { lineAt } from '../data/cutscene.js';
+import { lineAt, lineAtIn } from '../data/cutscene.js';
+import { BOSS_CUTS } from '../data/bossCutscenes.js';
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -19,7 +20,7 @@ export function createHud(root) {
     bossFill: root.querySelector('#boss-fill'),
     bossPhase: root.querySelector('#boss-phase'),
     ammo: root.querySelector('#ammo'),
-    phaseCard: root.querySelector('#phase-card'),
+    bossSay: root.querySelector('#boss-say'),
     banner: root.querySelector('#banner'),
     center: root.querySelector('#center'),
     caption: root.querySelector('#caption'),
@@ -28,7 +29,7 @@ export function createHud(root) {
 
   let lastCenter = '';
   let lastCaption = '';
-  let lastPhaseCard = '';
+  let lastSay = '';
 
   const setCenter = (html) => {
     if (html === lastCenter) return;
@@ -101,16 +102,20 @@ export function createHud(root) {
     }
   }
 
+  // 큰 대사창은 컷신 전용이다. 싸우는 중의 짧은 대사는 위쪽 말풍선(#boss-say)이 맡는다.
   function captionFor(game) {
-    if (game.scene === 'cutscene') {
-      const line = lineAt(game.cutsceneTime);
-      if (!line) return '';
-      return `<div class="dialogue"><b>${esc(line.speaker)}</b><p>${esc(line.text)}</p></div>`;
-    }
-    if (game.scene === 'boss' && game.bossLine) {
-      return `<div class="dialogue boss"><b>${esc(BOSS_NAME)}</b><p>${esc(game.bossLine.text)}</p></div>`;
+    if (game.scene === 'cutscene') return dialogue(lineAt(game.cutsceneTime));
+    if (game.bossCut) {
+      const cut = BOSS_CUTS[game.bossCut.id];
+      return cut ? dialogue(lineAtIn(cut.timeline, game.bossCut.t)) : '';
     }
     return '';
+  }
+
+  function dialogue(line) {
+    if (!line) return '';
+    const boss = line.speaker === BOSS_NAME ? ' boss' : '';
+    return `<div class="dialogue${boss}"><b>${esc(line.speaker)}</b><p>${esc(line.text)}</p></div>`;
   }
 
   return {
@@ -121,9 +126,11 @@ export function createHud(root) {
       el.plays.textContent = `♪ ${game.plays}`;
       el.chartOuts.textContent = `차트아웃 ${game.chartOuts}`;
       el.time.textContent = timeText(game.elapsedMs);
-      el.hud.hidden = game.scene === 'title' || game.scene === 'cutscene';
+      // 컷신 중에는 HUD 를 걷는다 — 좁은 화면에서 큰 제목과 겹친다
+      const inCut = game.scene === 'cutscene' || !!game.bossCut;
+      el.hud.hidden = game.scene === 'title' || inCut;
 
-      const showBoss = game.scene === 'boss' && game.boss;
+      const showBoss = game.scene === 'boss' && game.boss && !inCut;
       el.bossBar.hidden = !showBoss;
       el.bossPhase.hidden = !showBoss;
       if (showBoss) {
@@ -131,15 +138,17 @@ export function createHud(root) {
         el.bossFill.style.width = `${Math.max(0, ratio * 100)}%`;
         el.bossPhase.textContent = `${game.boss.phaseId}페이즈`;
       }
-      el.ammo.hidden = !(game.player?.ammo > 0);
+      el.ammo.hidden = inCut || !(game.player?.ammo > 0);
 
-      const card = game.phaseCard
-        ? `<b>PHASE ${game.phaseCard.id}</b><span>${esc(game.phaseCard.name)} — ${esc(game.phaseCard.subtitle ?? '')}</span>`
-        : '';
-      if (card !== lastPhaseCard) {
-        lastPhaseCard = card;
-        el.phaseCard.innerHTML = card;
-        el.phaseCard.hidden = !card;
+      // 컷신 중에는 말풍선을 지운다 — 큰 대사창과 겹쳐 두 번 말하는 꼴이 된다
+      const say =
+        game.bossLine && !game.bossCut
+          ? `<b>${esc(BOSS_NAME)}</b>${esc(game.bossLine.text)}`
+          : '';
+      if (say !== lastSay) {
+        lastSay = say;
+        el.bossSay.innerHTML = say;
+        el.bossSay.hidden = !say;
       }
 
       if (game.paused) {

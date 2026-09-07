@@ -6,7 +6,7 @@ import { spawnAlbum, updateAlbum, stompAlbum, updateShot } from './enemy.js';
 import { createCamera, updateCamera, shakeCamera } from './camera.js';
 import { rankAt, TOP_RANK } from './chart.js';
 import { createBoss, updateBoss, hitBoss, syncPhase, bossPhase, throwMic, updateThrown } from './boss.js';
-import { PHASE_LINES, BOSS_HURT_LINES, BOSS_DEFEAT_LINES } from '../data/bossData.js';
+import { BOSS_HURT_LINES } from '../data/bossData.js';
 import {
   DEATH_MESSAGES,
   PIT_MESSAGES,
@@ -15,6 +15,7 @@ import {
   trapKey,
 } from '../data/traps.js';
 import { CUTSCENE_LENGTH } from '../data/cutscene.js';
+import { bossCutLength, cutForPhase } from '../data/bossCutscenes.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
 import { clamp, overlaps } from './util.js';
@@ -48,7 +49,8 @@ export function createGame(options = {}) {
     thrown: [],
     /** 구간 효과 남은 시간(초). 0 이면 안 걸린 것 */
     effects: { reversed: 0, blackout: 0 },
-    phaseCard: null,
+    /** 보스전 중간에 끼어드는 컷신 { id, t, length }. 있는 동안 싸움이 멈춘다 */
+    bossCut: null,
     particles: [],
     texts: [],
     camera: createCamera(VIEW.w, VIEW.h),
@@ -109,7 +111,7 @@ function spawnEntities(game) {
   game.mics = [];
   game.thrown = [];
   game.effects = { reversed: 0, blackout: 0 };
-  game.phaseCard = null;
+  game.bossCut = null;
   game.crumbling.clear();
   for (const p of game.world.pickups) p.taken = false;
   for (const f of game.world.fakeGoals) {
@@ -518,6 +520,30 @@ function updatePlay(game, input, dt) {
   updateCamera(game.camera, game.player, game.world, dt);
 }
 
+/** 엔딩 컷신이 끝나면 통계 화면으로 */
+function finishRun(game) {
+  game.rank = TOP_RANK;
+  game.ending = {
+    rank: TOP_RANK,
+    chartOuts: game.chartOuts,
+    plays: game.plays,
+    score: game.score + 2000,
+    defeated: game.defeated,
+    timeMs: game.elapsedMs,
+  };
+  game.scene = 'ending';
+  game.sceneTime = 0;
+  emit(game, 'ending', game.ending);
+}
+
+/** 보스전 컷신을 튼다. 도는 동안 보스도 플레이어도 멈춘다. */
+function startBossCut(game, id) {
+  if (!id) return;
+  game.bossCut = { id, t: 0, length: bossCutLength(id) };
+  game.bossLine = null;
+  emit(game, 'cutscene', { id });
+}
+
 /**
  * 보스에게 한 대 먹인다. 밟기와 던지기가 같은 길을 쓴다.
  * 실제로 들어갔으면 true.
@@ -536,16 +562,15 @@ function damageBoss(game, opts = {}) {
 
   const changed = syncPhase(boss);
   if (changed) {
-    const phase = bossPhase(boss);
-    game.phaseCard = { id: changed, name: phase.name, subtitle: phase.subtitle, life: 2.6 };
-    game.bossLine = { text: game.rng.pick(PHASE_LINES[changed] ?? ['…']), life: 3 };
+    // 페이즈가 바뀌면 싸움을 멈추고 전환 컷신을 튼다
+    startBossCut(game, cutForPhase(changed));
     game.flash = 1;
     shakeCamera(game.camera, 1.6);
     emit(game, 'phase', { phase: changed });
   } else if (boss.hp > 0) {
-    game.bossLine = { text: game.rng.pick(BOSS_HURT_LINES), life: 2 };
+    game.bossLine = { text: game.rng.pick(BOSS_HURT_LINES), life: 1.2 };
   } else {
-    game.bossLine = { text: game.rng.pick(BOSS_DEFEAT_LINES), life: 4 };
+    game.bossLine = null;
     game.flash = 1;
     emit(game, 'bossdown', {});
   }
@@ -596,6 +621,19 @@ function handleThrown(game, dt, onHit) {
 
 function updateBossScene(game, input, dt) {
   const boss = game.boss;
+
+  // 컷신이 도는 동안에는 아무것도 움직이지 않는다 — 연출 보다가 죽으면 안 된다
+  if (game.bossCut) {
+    game.bossCut.t += dt;
+    if (input.confirmPressed && game.bossCut.t > 0.5) game.bossCut.t = game.bossCut.length;
+    if (game.bossCut.t >= game.bossCut.length) {
+      const finished = game.bossCut.id;
+      game.bossCut = null;
+      if (finished === 'ending') finishRun(game);
+    }
+    return;
+  }
+
   const events = updatePlayer(game.player, applyEffects(game, input), game.world, dt);
   if (events.jumped) emit(game, 'jump', {});
 
@@ -647,25 +685,10 @@ function updateBossScene(game, input, dt) {
     game.bossLine.life -= dt;
     if (game.bossLine.life <= 0) game.bossLine = null;
   }
-  if (game.phaseCard) {
-    game.phaseCard.life -= dt;
-    if (game.phaseCard.life <= 0) game.phaseCard = null;
-  }
 
-  if (boss.state === 'defeated' && boss.defeatedAt > 2.6) {
-    game.rank = TOP_RANK;
-    game.ending = {
-      rank: TOP_RANK,
-      chartOuts: game.chartOuts,
-      plays: game.plays,
-      score: game.score + 2000,
-      defeated: game.defeated,
-      timeMs: game.elapsedMs,
-    };
-    game.scene = 'ending';
-    game.sceneTime = 0;
-    emit(game, 'ending', game.ending);
-  }
+  // 쓰러지고 잠깐 뒤 엔딩 컷신으로 넘어간다
+  if (boss.state === 'defeated' && boss.defeatedAt > 1.6) startBossCut(game, 'ending');
+
   updateCamera(game.camera, game.player, game.world, dt);
 }
 
@@ -728,7 +751,8 @@ export function updateGame(game, input, dt) {
       break;
 
     case 'boss':
-      if (input.restartPressed) killPlayer(game);
+      // 컷신 중에는 R 도 안 먹는다 — 연출 도중에 죽는 건 사고다
+      if (input.restartPressed && !game.bossCut) killPlayer(game);
       else updateBossScene(game, input, dt);
       break;
 
