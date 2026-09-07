@@ -14,13 +14,50 @@ import { drawBigTextCentered } from './bigtext.js';
 import { bossPhase } from '../core/boss.js';
 
 // ── 배경 ────────────────────────────────────────────────────
-function drawSky(ctx, stage, time) {
+//
+// 무대마다 하늘과 원경이 다르다. 어떤 그림을 그릴지는 stage.theme 이 고르고,
+// 색은 stage.sky / far / ground 에서 온다 — 그림과 색을 따로 두면
+// 같은 무대를 낮/밤으로 바꾸는 것도 색만 갈아끼우면 된다.
+
+/** 열 번호로부터 항상 같은 값이 나오는 0~1 난수 (배경이 프레임마다 안 흔들리게) */
+function noise(i, salt = 0) {
+  const n = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+/** 화면 폭을 step 간격으로 훑으며, 시차(depth)를 준 x 를 넘겨준다 */
+function band(ox, depth, step, draw) {
+  const shift = -ox * depth;
+  const from = Math.floor(-shift / step) - 1;
+  const to = from + Math.ceil(VIEW.w / step) + 2;
+  for (let i = from; i <= to; i++) draw(Math.round(i * step + shift), i);
+}
+
+function drawSky(ctx, stage, ox, time) {
   const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
   grad.addColorStop(0, stage.sky[0]);
   grad.addColorStop(1, stage.sky[1]);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, VIEW.w, VIEW.h);
-  // 반짝이는 별 = 재생수 알갱이
+
+  switch (stage.theme) {
+    case 'meadow':
+      drawClouds(ctx, ox, time);
+      break;
+    case 'forest':
+      drawCanopy(ctx, stage, ox);
+      break;
+    case 'building':
+      drawCeilingLights(ctx, ox, time);
+      break;
+    default:
+      drawStars(ctx, time);
+      break;
+  }
+}
+
+/** 밤 무대의 반짝이는 별 */
+function drawStars(ctx, time) {
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   for (let i = 0; i < 26; i++) {
     const x = (i * 71) % VIEW.w;
@@ -29,46 +66,223 @@ function drawSky(ctx, stage, time) {
   }
 }
 
-/** 스테이지마다 다른 원경 — 시차를 줘서 달리는 느낌을 낸다 */
-function drawParallax(ctx, stage, ox, time) {
+// ── 초원 ────────────────────────────────────────────────────
+/** 아주 느리게 흐르는 구름. 바람이 부는 것처럼 시간에도 조금 밀린다. */
+function drawClouds(ctx, ox, time) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  band(ox + time * 4, 0.08, 128, (x, i) => {
+    const y = 14 + noise(i) * 44;
+    const w = 22 + noise(i, 1) * 26;
+    // 뭉게구름 — 납작한 덩어리 위에 봉우리 두 개
+    ctx.fillRect(x, y + 4, w, 6);
+    ctx.fillRect(x + 5, y, w * 0.4, 6);
+    ctx.fillRect(x + w * 0.55, y + 1, w * 0.3, 5);
+  });
+  ctx.restore();
+}
+
+/** 겹겹이 물결치는 언덕. 뒤쪽일수록 연하고 느리게 흐른다. */
+function drawHills(ctx, stage, ox) {
+  const layers = [
+    { depth: 0.12, base: 96, amp: 14, alpha: 0.35, wave: 0.011 },
+    { depth: 0.24, base: 118, amp: 18, alpha: 0.55, wave: 0.008 },
+    { depth: 0.42, base: 142, amp: 12, alpha: 0.8, wave: 0.016 },
+  ];
+  ctx.save();
+  ctx.fillStyle = stage.far;
+  for (const L of layers) {
+    ctx.globalAlpha = L.alpha;
+    ctx.beginPath();
+    ctx.moveTo(0, VIEW.h);
+    for (let x = 0; x <= VIEW.w; x += 6) {
+      const t = (x - ox * L.depth) * L.wave;
+      ctx.lineTo(x, L.base + Math.sin(t) * L.amp + Math.sin(t * 2.3) * L.amp * 0.4);
+    }
+    ctx.lineTo(VIEW.w, VIEW.h);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** 바닥 근처의 풀포기와 들꽃 */
+function drawGrassTufts(ctx, stage, ox, time) {
+  ctx.save();
+  band(ox, 0.75, 14, (x, i) => {
+    const h = 5 + Math.floor(noise(i, 2) * 6);
+    const sway = Math.sin(time * 1.6 + i) * 1.2;
+    const y = VIEW.h - 30 - h;
+    ctx.fillStyle = stage.ground[0];
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(x, y, 1, h);
+    ctx.fillRect(Math.round(x + 2 + sway), y + 2, 1, h - 2);
+    ctx.fillRect(Math.round(x - 2 - sway), y + 3, 1, h - 3);
+    // 가끔 들꽃 한 송이
+    if (noise(i, 3) > 0.86) {
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = noise(i, 4) > 0.5 ? '#ffe066' : '#ff8fb1';
+      ctx.fillRect(x, y - 2, 2, 2);
+    }
+  });
+  ctx.restore();
+}
+
+// ── 숲 ──────────────────────────────────────────────────────
+/** 잎 덩어리 하나. 사각형으로 그리면 빌딩처럼 보여서 원을 겹쳐 쓴다. */
+function leafBlob(ctx, x, y, r) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.7, y + r * 0.35, r * 0.72, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.75, y + r * 0.3, r * 0.66, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** 화면 위를 덮은 나뭇잎 지붕 */
+function drawCanopy(ctx, stage, ox) {
+  ctx.save();
+  ctx.fillStyle = stage.far;
+  ctx.globalAlpha = 0.45;
+  band(ox, 0.08, 34, (x, i) => leafBlob(ctx, x, 4 + noise(i) * 16, 16 + noise(i, 1) * 8));
+  ctx.globalAlpha = 0.8;
+  band(ox, 0.16, 44, (x, i) => leafBlob(ctx, x + 12, -2 + noise(i, 2) * 14, 18 + noise(i, 3) * 9));
+  ctx.restore();
+}
+
+/** 잎 사이로 비스듬히 떨어지는 빛줄기 — 숲이라는 걸 가장 크게 말해준다 */
+function drawSunShafts(ctx, ox, time) {
+  ctx.save();
+  ctx.globalAlpha = 0.07;
+  ctx.fillStyle = '#fff6c9';
+  band(ox, 0.3, 150, (x, i) => {
+    const w = 14 + noise(i, 10) * 12;
+    const sway = Math.sin(time * 0.4 + i) * 4;
+    ctx.beginPath();
+    ctx.moveTo(x + sway, 0);
+    ctx.lineTo(x + w + sway, 0);
+    ctx.lineTo(x + w + 46, VIEW.h - 28);
+    ctx.lineTo(x + 46, VIEW.h - 28);
+    ctx.closePath();
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+/**
+ * 앞뒤로 늘어선 나무. 줄기는 갈색이라 초록 배경에서 확실히 떠 보이고,
+ * 앞쪽 나무일수록 굵고 성기게 서서 깊이가 생긴다.
+ */
+function drawTrees(ctx, stage, ox) {
+  const trunk = stage.trunk ?? stage.far;
+  const layers = [
+    { depth: 0.2, step: 46, w: 5, top: 26, alpha: 0.4, leaf: 0 },
+    { depth: 0.36, step: 78, w: 9, top: 16, alpha: 0.7, leaf: 15 },
+    { depth: 0.58, step: 132, w: 14, top: 4, alpha: 1, leaf: 22 },
+  ];
+  ctx.save();
+  for (const L of layers) {
+    band(ox, L.depth, L.step, (x, i) => {
+      const lean = Math.round((noise(i, 6) - 0.5) * 5);
+      // 잎 먼저, 줄기가 그 위로 올라오게
+      if (L.leaf) {
+        ctx.globalAlpha = L.alpha * 0.85;
+        ctx.fillStyle = stage.far;
+        leafBlob(ctx, x + lean + L.w / 2, L.top + 10, L.leaf + noise(i, 11) * 6);
+      }
+      ctx.globalAlpha = L.alpha;
+      ctx.fillStyle = trunk;
+      ctx.fillRect(x + lean, L.top, L.w, VIEW.h - 28 - L.top);
+      // 굵은 줄기에는 가지를 하나씩
+      if (L.w >= 9) {
+        const by = L.top + 34 + noise(i, 7) * 46;
+        const dir = noise(i, 8) > 0.5 ? 1 : -1;
+        ctx.fillRect(x + lean + (dir > 0 ? L.w : -14), by, 14, 3);
+      }
+    });
+  }
+  ctx.restore();
+}
+
+/** 바닥에 깔린 고사리 덤불 */
+function drawFerns(ctx, stage, ox, time) {
+  ctx.save();
+  ctx.fillStyle = stage.ground[0];
+  band(ox, 0.8, 20, (x, i) => {
+    const h = 8 + noise(i, 9) * 8;
+    const y = VIEW.h - 30 - h;
+    ctx.globalAlpha = 0.55;
+    for (let k = -2; k <= 2; k++) {
+      const sway = Math.sin(time * 1.3 + i + k) * 1.5;
+      ctx.fillRect(Math.round(x + k * 3 + sway), y + Math.abs(k) * 2, 2, h - Math.abs(k) * 2);
+    }
+  });
+  ctx.restore();
+}
+
+// ── 건물 ────────────────────────────────────────────────────
+/** 천장 형광등 — 일정한 간격이라 실내처럼 보인다 */
+function drawCeilingLights(ctx, ox, time) {
+  ctx.save();
+  band(ox, 0.5, 96, (x, i) => {
+    const flicker = Math.sin(time * 9 + i * 3) > -0.92 ? 1 : 0.35;
+    ctx.globalAlpha = 0.75 * flicker;
+    ctx.fillStyle = '#fdf6d8';
+    ctx.fillRect(x + 24, 6, 44, 3);
+    ctx.globalAlpha = 0.14 * flicker;
+    ctx.fillRect(x + 18, 9, 56, 22);
+  });
+  ctx.restore();
+}
+
+/** 창문 격자와 기둥 */
+function drawBuilding(ctx, stage, ox) {
+  ctx.save();
+  // 뒤편 벽과 창문
+  ctx.fillStyle = stage.far;
+  ctx.globalAlpha = 0.5;
+  band(ox, 0.2, 26, (x, i) => {
+    for (let r = 0; r < 4; r++) {
+      const lit = noise(i, r) > 0.66;
+      ctx.globalAlpha = lit ? 0.5 : 0.22;
+      ctx.fillStyle = lit ? '#ffe9a8' : stage.far;
+      ctx.fillRect(x + 3, 34 + r * 30, 18, 20);
+    }
+  });
+  // 앞쪽 기둥
+  ctx.globalAlpha = 0.8;
+  ctx.fillStyle = stage.far;
+  band(ox, 0.45, 88, (x) => {
+    ctx.fillRect(x, 20, 16, VIEW.h - 48);
+    ctx.globalAlpha = 0.35;
+    ctx.fillRect(x + 16, 20, 3, VIEW.h - 48);
+    ctx.globalAlpha = 0.8;
+  });
+  ctx.restore();
+}
+
+/** 무대 바닥을 따라 지나가는 배관 */
+function drawPipes(ctx, stage, ox) {
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = stage.ground[0];
+  ctx.fillRect(0, VIEW.h - 34, VIEW.w, 2);
+  band(ox, 0.75, 46, (x) => {
+    ctx.fillRect(x, VIEW.h - 37, 4, 8);
+  });
+  ctx.restore();
+}
+
+// ── 차트 (스테이지 4 · 보스) ────────────────────────────────
+function drawChartBars(ctx, stage, ox, time) {
   const shift = -ox * 0.35;
   ctx.save();
   ctx.globalAlpha = 0.85;
-  // 원경은 지형색이 아니라 전용 색을 쓴다 — 안 그러면 땅과 배경이 뒤섞여 안 보인다
   ctx.fillStyle = stage.far ?? stage.sky[1];
-  const step = 48;
-  for (let i = -1; i < VIEW.w / step + 2; i++) {
-    const x = Math.round(i * step + (shift % step));
-    switch (stage.number) {
-      case 2: {
-        // 스튜디오 조명
-        ctx.fillRect(x + 8, 24, 6, 26);
-        ctx.fillRect(x + 4, 50, 14, 8);
-        break;
-      }
-      case 3: {
-        // 서버 랙
-        ctx.fillRect(x, 60, 30, 100);
-        ctx.globalAlpha = 0.25;
-        for (let r = 0; r < 6; r++) ctx.fillRect(x + 4, 66 + r * 14, 22, 4);
-        ctx.globalAlpha = 0.5;
-        break;
-      }
-      case 4: {
-        // 차트 막대
-        const h = 40 + ((i * 29) % 70);
-        ctx.fillRect(x + 6, VIEW.h - h - 40, 20, h);
-        break;
-      }
-      default: {
-        // 도시 실루엣
-        const h = 30 + ((i * 47) % 60);
-        ctx.fillRect(x, VIEW.h - h - 40, 34, h);
-        break;
-      }
-    }
-  }
-  // EQ 막대 (모든 스테이지 공통, 바닥 근처)
+  band(ox, 0.35, 48, (x, i) => {
+    const h = 40 + ((i * 29) % 70);
+    ctx.fillRect(x + 6, VIEW.h - h - 40, 20, h);
+  });
+  // 소리에 맞춰 뛰는 EQ 막대
   ctx.globalAlpha = 0.3;
   ctx.fillStyle = stage.ground[0];
   for (let i = 0; i < 24; i++) {
@@ -76,6 +290,28 @@ function drawParallax(ctx, stage, ox, time) {
     ctx.fillRect(i * 17 + ((shift * 0.5) % 17), VIEW.h - h - 28, 10, h);
   }
   ctx.restore();
+}
+
+/** 스테이지마다 다른 원경 — 시차를 줘서 달리는 느낌을 낸다 */
+function drawParallax(ctx, stage, ox, time) {
+  switch (stage.theme) {
+    case 'meadow':
+      drawHills(ctx, stage, ox);
+      drawGrassTufts(ctx, stage, ox, time);
+      break;
+    case 'forest':
+      drawTrees(ctx, stage, ox);
+      drawSunShafts(ctx, ox, time);
+      drawFerns(ctx, stage, ox, time);
+      break;
+    case 'building':
+      drawBuilding(ctx, stage, ox);
+      drawPipes(ctx, stage, ox);
+      break;
+    default:
+      drawChartBars(ctx, stage, ox, time);
+      break;
+  }
 }
 
 // ── 타일 ────────────────────────────────────────────────────
@@ -874,7 +1110,7 @@ export function drawScene(ctx, game, time) {
   const { x: ox, y: oy } = cameraOffset(game.camera);
   const stage = game.world.stage;
 
-  drawSky(ctx, stage, time);
+  drawSky(ctx, stage, ox, time);
   drawParallax(ctx, stage, ox, time);
   drawTiles(ctx, game, ox, oy, time);
   drawPopSpikes(ctx, game.world, ox, oy);

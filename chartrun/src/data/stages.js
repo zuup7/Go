@@ -33,7 +33,7 @@ function compose(...chunks) {
 const EMPTY8 = ['', '', '', '', '', '', '', ''];
 
 // ══════════════════════════════════════════════════════════════
-// 스테이지 1 · 인디 신인의 거리
+// 스테이지 1 · 초원
 // ══════════════════════════════════════════════════════════════
 const s1 = {
   start: chunk('s1.start', [
@@ -132,7 +132,7 @@ const s1 = {
 };
 
 // ══════════════════════════════════════════════════════════════
-// 스테이지 2 · 음악방송 스튜디오
+// 스테이지 2 · 숲
 // ══════════════════════════════════════════════════════════════
 const s2 = {
   start: chunk('s2.start', [
@@ -232,7 +232,7 @@ const s2 = {
 };
 
 // ══════════════════════════════════════════════════════════════
-// 스테이지 3 · 스트리밍 서버 내부
+// 스테이지 3 · 건물 안
 // ══════════════════════════════════════════════════════════════
 const s3 = {
   start: chunk('s3.start', [
@@ -263,7 +263,7 @@ const s3 = {
     '###^^####v###^^#####',
     '####################',
   ]),
-  // 서버 내부에서 정전 — 여기 무대와 딱 맞는 장치다
+  // 건물 안에서 정전 — 여기 무대와 딱 맞는 장치다
   fly: chunk('s3.fly', [
     '', '', '', '',
     '      j             ',
@@ -455,34 +455,41 @@ export const STAGES = [
   {
     id: 'stage1',
     number: 1,
-    icon: '🎤',
-    sky: ['#170d2b', '#3f2266'],
-    far: '#2a1547',
-    ground: ['#c77dff', '#2a1240'],
+    icon: '🌿',
+    // theme 은 render/scene.js 가 배경을 어떻게 그릴지 고르는 이름이다
+    theme: 'meadow',
+    sky: ['#2f6fa4', '#cfe6a6'],
+    far: '#4d8a45',
+    ground: ['#7fd45a', '#2c5222'],
     rows: compose(s1.start, s1.walk, s1.pit, s1.fake, s1.fly, s1.shoot, s1.blocks, s1.pit2, s1.stairs, s1.goal),
   },
   {
     id: 'stage2',
     number: 2,
-    icon: '📺',
-    sky: ['#07131f', '#154a70'],
-    far: '#0d2d47',
-    ground: ['#57d0ff', '#0d2740'],
+    icon: '🌳',
+    theme: 'forest',
+    // 아래로 갈수록 밝다 — 그래야 나무 줄기가 실루엣으로 뜬다
+    sky: ['#16321f', '#6ba05a'],
+    far: '#2f6b3c',
+    trunk: '#3a2717',
+    ground: ['#7cc24a', '#254718'],
     rows: compose(s2.start, s2.charge, s2.reverse, s2.drop, s2.invisible, s2.split, s2.pit, s2.spin, s2.check, s2.goal),
   },
   {
     id: 'stage3',
     number: 3,
-    icon: '💾',
-    sky: ['#02120d', '#0a4030'],
-    far: '#06291f',
-    ground: ['#4dffb8', '#062c21'],
+    icon: '🏢',
+    theme: 'building',
+    sky: ['#1b1e28', '#4a5162'],
+    far: '#333947',
+    ground: ['#9aa4b4', '#333947'],
     rows: compose(s3.start, s3.shield, s3.spikes, s3.fly, s3.shoot, s3.charge, s3.drop, s3.fakegoal, s3.check, s3.goal),
   },
   {
     id: 'stage4',
     number: 4,
     icon: '🪜',
+    theme: 'chart',
     sky: ['#25060f', '#6e1533'],
     far: '#450c20',
     ground: ['#ff8fa3', '#3d0a1c'],
@@ -494,6 +501,7 @@ export const BOSS_STAGE = {
   id: 'boss',
   number: 5,
   icon: '👑',
+  theme: 'chart',
   sky: ['#12000f', '#4a0040'],
   far: '#2b0724',
   ground: ['#ff6be0', '#2b0724'],
