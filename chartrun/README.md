@@ -105,8 +105,9 @@ npm run build:chart    # 서버 없이 열리는 chartrun/dist/play.html 한 파
 그냥 불합리한 게임이 됩니다. 또 모든 앨범은 **배치된 자리 근처에서만 순찰**합니다 —
 안 그러면 벽을 만날 때까지 흘러가서 레벨 디자인이 통째로 무너집니다.
 
-> 앨범 그림은 지금 전부 코드로 그린 무늬입니다.
-> 진짜 사진으로 바꾸는 법은 [`assets/albums/README.md`](assets/albums/README.md) 에 있습니다.
+> 앨범 커버는 **진짜 사진 16장**입니다 (`assets/albums/`). 17번만 아직 사진이 없어서
+> 코드로 그린 무늬가 나옵니다. 바꾸거나 더 넣는 법은
+> [`assets/albums/README.md`](assets/albums/README.md) 에 있습니다.
 
 ## 트롤 함정 — 살짝 고양이마리오
 
@@ -165,7 +166,7 @@ npm run build:chart    # 서버 없이 열리는 chartrun/dist/play.html 한 파
 chartrun/
   index.html            캔버스 + 터치 버튼
   assets/style.css      픽셀 렌더링, CRT 스캔라인, 모바일 대응
-  assets/albums/        ★ 나중에 앨범 사진 넣는 곳
+  assets/albums/        앨범 커버 사진 (48×48, 단일 파일 빌드에 자동으로 담긴다)
   src/core/             게임 규칙 — DOM 을 절대 쓰지 않는다
     physics.js          AABB 타일 충돌, 코요테 타임, 점프 버퍼, 모서리 보정
     world.js            타일맵 파서

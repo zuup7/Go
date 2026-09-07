@@ -1,7 +1,8 @@
 // ★ 앨범 적 17종.
 //
 // `name` 은 레벨을 편집할 때 어느 놈인지 부르려고 두는 이름이고 화면에는 안 나온다.
-// 나중에 진짜 앨범 사진을 받으면 `art` 한 줄만 고치면 된다.
+// `art` 는 커버 사진 경로. null 이면 아래 `cover` 무늬를 코드로 그린다.
+// 사진을 바꾸거나 더 넣는 법은 assets/albums/README.md 참고.
 //   art: 'assets/albums/a01.png'  →  그 그림이 커버 자리에 그대로 들어간다.
 //   art: null                     →  아래 `cover` 패턴을 코드로 그린다.
 // 행동·충돌·수치는 그림과 완전히 분리돼 있어서 사진을 넣어도 게임은 그대로다.
@@ -40,6 +41,7 @@ export const ALBUMS = [
   // ── 스테이지 1 · 인디 신인의 거리 ─────────────────────────────
   album({
     id: 'a01',
+    art: 'assets/albums/a01.png',
     name: '데뷔 싱글',
     stage: 1,
     behavior: 'walker',
@@ -49,6 +51,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a02',
+    art: 'assets/albums/a02.png',
     name: '리메이크 앨범',
     stage: 1,
     behavior: 'hopper',
@@ -60,6 +63,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a03',
+    art: 'assets/albums/a03.png',
     name: '여름 시즌송',
     stage: 1,
     behavior: 'flyer',
@@ -71,6 +75,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a04',
+    art: 'assets/albums/a04.png',
     name: '감성 발라드',
     stage: 1,
     behavior: 'shooter',
@@ -84,6 +89,7 @@ export const ALBUMS = [
   // ── 스테이지 2 · 음악방송 스튜디오 ────────────────────────────
   album({
     id: 'a05',
+    art: 'assets/albums/a05.png',
     name: '아이돌 컴백작',
     stage: 2,
     behavior: 'charger',
@@ -95,6 +101,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a06',
+    art: 'assets/albums/a06.png',
     name: '클럽 리믹스',
     stage: 2,
     behavior: 'spinner',
@@ -104,6 +111,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a07',
+    art: 'assets/albums/a07.png',
     name: '조명 아래 라이브',
     stage: 2,
     behavior: 'dropper',
@@ -113,6 +121,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a08',
+    art: 'assets/albums/a08.png',
     name: '컴필레이션',
     stage: 2,
     behavior: 'splitter',
@@ -126,6 +135,7 @@ export const ALBUMS = [
   // ── 스테이지 3 · 스트리밍 서버 내부 ───────────────────────────
   album({
     id: 'a09',
+    art: 'assets/albums/a09.png',
     name: '알고리즘 추천',
     stage: 3,
     behavior: 'shielder',
@@ -136,6 +146,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a10',
+    art: 'assets/albums/a10.png',
     name: '새벽 자작곡',
     stage: 3,
     behavior: 'flyer',
@@ -147,6 +158,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a11',
+    art: 'assets/albums/a11.png',
     name: '랩 믹스테잎',
     stage: 3,
     behavior: 'shooter',
@@ -159,6 +171,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a12',
+    art: 'assets/albums/a12.png',
     name: '광고 삽입곡',
     stage: 3,
     behavior: 'charger',
@@ -170,6 +183,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a13',
+    art: 'assets/albums/a13.png',
     name: '드라마 OST',
     stage: 3,
     behavior: 'dropper',
@@ -181,6 +195,7 @@ export const ALBUMS = [
   // ── 스테이지 4 · 차트 정상 계단 ───────────────────────────────
   album({
     id: 'a14',
+    art: 'assets/albums/a14.png',
     name: '밀리언셀러',
     stage: 4,
     behavior: 'walker',
@@ -193,6 +208,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a15',
+    art: 'assets/albums/a15.png',
     name: '트로트 대작',
     stage: 4,
     behavior: 'hopper',
@@ -205,6 +221,7 @@ export const ALBUMS = [
   }),
   album({
     id: 'a16',
+    art: 'assets/albums/a16.png',
     name: '페스티벌 헤드라이너',
     stage: 4,
     behavior: 'spinner',

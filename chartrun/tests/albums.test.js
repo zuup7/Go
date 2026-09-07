@@ -12,6 +12,9 @@ import {
 import { spawnAlbum, stompAlbum, updateAlbum, updateShot } from '../src/core/enemy.js';
 import { createWorld } from '../src/core/world.js';
 import { TILE } from '../src/core/physics.js';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 test('앨범은 17종이고 id 가 겹치지 않는다', () => {
   assert.equal(ALBUMS.length, 17);
@@ -36,10 +39,21 @@ test('행동 아키타입 9종이 전부 실제로 쓰인다', () => {
   }
 });
 
-test('사진 교체 훅(art)은 기본이 비어 있다', () => {
+test('앨범 사진 경로가 가리키는 파일이 실제로 있다', () => {
+  // 경로가 틀리면 게임은 안 깨지고 조용히 원래 무늬로 돌아간다.
+  // 그래서 눈으로는 "사진을 안 넣었나?" 와 구별이 안 된다 — 여기서 잡는다.
+  const here = path.dirname(fileURLToPath(import.meta.url));
   for (const album of ALBUMS) {
-    assert.equal(album.art, null, `${album.id}: 아직 사진 없음이 기본`);
+    if (album.art === null) continue;
+    assert.match(album.art, /^assets\/albums\/[\w.-]+$/, `${album.id}: 경로 모양이 이상하다`);
+    const file = path.join(here, '..', album.art);
+    assert.ok(existsSync(file), `${album.id}: ${album.art} 파일이 없다`);
   }
+});
+
+test('사진 한 장을 두 앨범이 같이 쓰지 않는다', () => {
+  const arts = ALBUMS.map((a) => a.art).filter(Boolean);
+  assert.equal(new Set(arts).size, arts.length, '같은 사진이 두 번 쓰였다');
 });
 
 test('스테이지마다 앨범이 배정돼 있다', () => {

@@ -123,10 +123,36 @@ for (const path of files) {
 
 const order = topoSort(ENTRY, graph);
 // 인라인 스크립트 안에 </script> 나 <!-- 가 들어가면 HTML 파싱이 깨진다
-const script = ['const __m = {};', ...order.map((path) => wrapModule(path, sources.get(path)))]
-  .join('\n')
-  .replaceAll('</script', '<\\/script')
-  .replaceAll('<!--', '<\\!--');
+const script = await inlineAlbumArt(
+  ['const __m = {};', ...order.map((path) => wrapModule(path, sources.get(path)))]
+    .join('\n')
+    .replaceAll('</script', '<\\/script')
+    .replaceAll('<!--', '<\\!--'),
+);
+
+// 앨범 사진은 파일이 아니라 data: URI 로 박아 넣는다. 한 파일로 열었을 때
+// assets/albums/*.png 를 찾아갈 곳이 없어서, 안 하면 사진만 조용히 사라진다.
+async function inlineAlbumArt(code) {
+  const dir = at('assets/albums');
+  let files;
+  try {
+    files = await readdir(join(ROOT, dir));
+  } catch {
+    return code;
+  }
+  let out = code;
+  let inlined = 0;
+  for (const name of files.filter((f) => /\.(png|jpe?g|webp|gif)$/i.test(f))) {
+    const ref = posix.join('assets/albums', name);
+    if (!out.includes(ref)) continue;
+    const bytes = await readFile(join(ROOT, dir, name));
+    const type = name.toLowerCase().endsWith('.png') ? 'png' : name.toLowerCase().endsWith('.gif') ? 'gif' : name.toLowerCase().endsWith('.webp') ? 'webp' : 'jpeg';
+    out = out.replaceAll(ref, `data:image/${type};base64,${bytes.toString('base64')}`);
+    inlined += 1;
+  }
+  if (inlined) console.log(`  앨범 사진 ${inlined}장 심음`);
+  return out;
+}
 
 const css = await readFile(join(ROOT, at('assets/style.css')), 'utf8');
 const html = await readFile(join(ROOT, at('index.html')), 'utf8');
