@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TRAPS, TRAP_KINDS, createTrapMemory, trapKey } from '../src/data/traps.js';
 import { createGame, updateGame, startRun, loadStage, VIEW } from '../src/core/game.js';
-import { emptySave, mergeRun, serialize, deserialize } from '../src/core/save.js';
+import { emptySave, mergeRun, beatRecord, serialize, deserialize } from '../src/core/save.js';
 import { T } from '../src/core/world.js';
 import { STAGES } from '../src/data/stages.js';
 
@@ -48,6 +48,29 @@ test('함정 기억은 저장에서 복원된다', () => {
   assert.equal(memory.has('3,4'), true);
   assert.equal(memory.has('0,0'), false);
   assert.equal(memory.size, 2);
+});
+
+test('신기록 판정이 실제 저장 조건과 같다', () => {
+  // 화면에 "신기록" 을 띄우는 판단과 mergeRun 이 실제로 갱신하는 판단이 어긋나면,
+  // 신기록이라고 해놓고 저장은 안 되는 일이 생긴다.
+  const none = emptySave();
+  assert.equal(beatRecord(none, 90_000), true, '기록이 없으면 처음 세운 것이다');
+
+  const has = { ...emptySave(), bestTimeMs: 90_000 };
+  assert.equal(beatRecord(has, 80_000), true);
+  assert.equal(beatRecord(has, 90_000), false, '같은 기록은 갱신이 아니다');
+  assert.equal(beatRecord(has, 120_000), false);
+  assert.equal(beatRecord(has, null), false, '기록이 없는 판은 갱신이 아니다');
+
+  // mergeRun 과 실제로 같은 답을 내는가
+  for (const [save, timeMs] of [[none, 90_000], [has, 80_000], [has, 120_000]]) {
+    const merged = mergeRun(save, { timeMs, chartOuts: 0 });
+    assert.equal(
+      merged.bestTimeMs === timeMs,
+      beatRecord(save, timeMs),
+      `${timeMs} 에서 표시와 저장이 어긋난다`,
+    );
+  }
 });
 
 test('저장 직렬화가 왕복한다', () => {

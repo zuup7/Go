@@ -21,6 +21,8 @@ export const CUT_SOUND = {
     bottom: { sfx: 'thud' },
     look: { sfx: 'rumble' },
     block: { sfx: 'title' },
+    snatch: { sfx: 'trap' },
+    reach: { sfx: 'hurt' },
     grab: { sfx: 'power' },
     // 여기서 스테이지 브금으로 갈아탄다 — 스테이지 1이 시작될 때 이미 흐르고 있다
     run: { sfx: 'climb', bgm: 'stage' },

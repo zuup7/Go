@@ -59,6 +59,13 @@ export function clearSave() {
   storage()?.removeItem(SAVE_KEY);
 }
 
+/**
+ * 이번 기록이 최고 기록을 깼는가. 기록이 아직 없으면 처음 세운 것이니 참이다.
+ * (mergeRun 이 실제로 갱신하는 조건과 같은 판단이라, 화면 표시와 저장이 어긋나지 않는다)
+ */
+export const beatRecord = (save, timeMs) =>
+  timeMs != null && (save?.bestTimeMs == null || timeMs < save.bestTimeMs);
+
 /** 이번 판의 결과를 기록에 합친다 */
 export function mergeRun(save, run) {
   const next = { ...save };

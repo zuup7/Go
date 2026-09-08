@@ -239,5 +239,13 @@ export function hitBoss(boss, { ranged = false } = {}) {
   return true;
 }
 
+/**
+ * 강아지 공주가 아직 갇혀 있는가.
+ *
+ * 오프닝에서 앨범들이 채간 뒤로 보스 위 새장에 갇혀 있다.
+ * **격파가 곧 구출이다** — 이 규칙을 여기 한 곳에만 두고, 그리는 쪽은 이걸 물어본다.
+ */
+export const princessCaged = (boss) => !!boss && boss.state !== 'defeated';
+
 /** 남은 체력 비율 0~1 */
 export const bossHealthRatio = (boss) => clamp(boss.hp / boss.maxHp, 0, 1);

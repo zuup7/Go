@@ -1,7 +1,8 @@
 // 오프닝 컷신. 여기서 막히면 게임이 시작조차 안 되므로 제일 빡빡하게 본다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, updateGame, startRun, setDevMode } from '../src/core/game.js';
+import { createGame, updateGame, startRun, loadBoss } from '../src/core/game.js';
+import { princessCaged } from '../src/core/boss.js';
 import { INTRO_CUT, INTRO_AT, introLength } from '../src/data/introCutscene.js';
 import { emptySave, deserialize, serialize } from '../src/core/save.js';
 import { STAGES } from '../src/data/stages.js';
@@ -56,8 +57,34 @@ test('그리는 쪽이 읽는 시각표가 타임라인과 같다', () => {
 test('이야기 순서가 뜻대로 짜여 있다', () => {
   assert.deepEqual(
     INTRO_CUT.map((s) => s.kind),
-    ['room', 'note', 'upload', 'chart', 'bottom', 'look', 'block', 'grab', 'run', 'end'],
+    ['room', 'note', 'upload', 'chart', 'bottom', 'look', 'block', 'snatch', 'reach', 'grab', 'run', 'end'],
   );
+});
+
+test('납치가 막아선 뒤·달리기 앞에 온다 — 순서가 곧 개연성이다', () => {
+  // 앨범이 막아서는 걸 본 다음에 채가야 "저놈들이 데려갔다" 가 되고,
+  // 마이크를 쥐기 전에 채가야 달릴 이유가 생긴다. 순서가 뒤집히면 이야기가 무너진다.
+  const at = (kind) => INTRO_CUT.findIndex((s) => s.kind === kind);
+  assert.ok(at('block') < at('snatch'), '막아서는 걸 본 뒤에 채가야 한다');
+  assert.ok(at('snatch') < at('reach'), '채가고 나서 놓친다');
+  assert.ok(at('reach') < at('grab'), '놓친 뒤에 마이크를 쥔다');
+  assert.ok(at('grab') < at('run'), '쥐고 나서 달린다');
+});
+
+// ── 격파가 곧 구출이다 ──────────────────────────────────────
+test('보스가 살아 있는 동안은 갇혀 있고, 격파하면 풀려난다', () => {
+  const game = createGame({ seed: 9, save: { ...emptySave(), seenOpening: true } });
+  loadBoss(game);
+  assert.equal(princessCaged(game.boss), true, '싸우는 내내 갇혀 있어야 한다');
+
+  game.boss.state = 'defeated';
+  assert.equal(princessCaged(game.boss), false, '격파가 곧 구출이다');
+});
+
+test('보스가 없으면 갇혀 있지도 않다', () => {
+  // 스테이지 도중에는 보스 자체가 없다 — 새장을 그릴 자리도 없어야 한다
+  assert.equal(princessCaged(null), false);
+  assert.equal(princessCaged(undefined), false);
 });
 
 // ── 언제 뜨는가 ─────────────────────────────────────────────

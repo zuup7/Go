@@ -1,6 +1,7 @@
 // 화면에 나오는 글자는 여기가 전부고, 전부 "정보"다 —
 // 순위, 재생수, 차트아웃 횟수, 시간, 스테이지 번호. 대사나 농담은 두지 않는다.
 import { timeText } from '../core/util.js';
+import { beatRecord } from '../core/save.js';
 import { STAGES } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
 
@@ -72,7 +73,9 @@ export function createHud(root) {
           <div class="panel title-panel">
             <h1>차트런</h1>
             ${menu}
-            <p class="record">BEST #${game.save.bestRank}</p>
+            <p class="record">BEST #${game.save.bestRank} · ${
+              game.save.bestTimeMs == null ? '--:--' : timeText(game.save.bestTimeMs)
+            }</p>
             <button type="button" class="dev-open" data-key="open" aria-label="개발자 모드">⚙</button>
           </div>`;
       }
@@ -119,13 +122,17 @@ export function createHud(root) {
       }
       case 'ending': {
         const e = game.ending ?? {};
+        // 기록은 저장하기 전에 판정해야 한다 — 저장하고 나면 항상 "안 깼다" 가 된다.
+        // (game.save 는 아직 이번 판이 반영되기 전 상태다)
+        const fresh = beatRecord(game.save, e.timeMs);
         return `
           <div class="panel ending">
             <h1>#1</h1>
             <ul class="stats">
-              <li><span>TIME</span><b>${timeText(e.timeMs ?? 0)}</b></li>
+              <li><span>TIME</span><b>${timeText(e.timeMs ?? 0)}${fresh ? ' <i class="fresh">신기록</i>' : ''}</b></li>
               <li><span>차트아웃</span><b>${e.chartOuts ?? 0}</b></li>
               <li><span>물리친 앨범</span><b>${e.defeated ?? 0}</b></li>
+              <li><span>찾은 함정</span><b>${game.save.revealedTraps?.length ?? 0}</b></li>
               <li><span>재생수</span><b>${e.plays ?? 0}</b></li>
               <li><span>SCORE</span><b>${(e.score ?? 0).toLocaleString('ko-KR')}</b></li>
             </ul>

@@ -388,6 +388,17 @@ canvas#game {
   color: var(--dim);
 }
 
+/* 최고 기록을 깼을 때만 뜬다 */
+.stats .fresh {
+  margin-left: 6px;
+  padding: 1px 4px;
+  font-style: normal;
+  font-size: 0.8em;
+  color: #2a1607;
+  background: var(--warn);
+  border-radius: 3px;
+}
+
 @keyframes blink {
   50% {
     opacity: 0.25;

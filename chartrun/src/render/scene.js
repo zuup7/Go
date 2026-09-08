@@ -12,7 +12,7 @@ import { phaseAt, phaseAtIn, CUT_AT } from '../data/cutscene.js';
 import { BOSS_CUTS, PHASE2_AT, PHASE3_AT, ENDING_AT } from '../data/bossCutscenes.js';
 import { INTRO_CUT, INTRO_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
-import { bossPhase } from '../core/boss.js';
+import { bossPhase, princessCaged } from '../core/boss.js';
 
 // ── 배경 ────────────────────────────────────────────────────
 //
@@ -654,6 +654,9 @@ export function drawBoss(ctx, boss, ox, oy, time) {
   }
 
   if (boss.state !== 'defeated') drawBossHealth(ctx, boss, ox, oy, color);
+
+  // 싸우는 내내 그녀가 보스 위에 갇혀 있다 — 왜 여기까지 왔는지가 화면에 남아 있어야 한다
+  if (princessCaged(boss)) drawCage(ctx, cx, boss.y - oy - 26, time);
 }
 
 /** 보스가 흘린 마이크(바닥)와 던진 마이크(공중) */
@@ -745,10 +748,57 @@ export function drawCutscene(ctx, t) {
     ctx.beginPath();
     ctx.arc(cx, cy, 10 * grow, 0, Math.PI * 2);
     ctx.fill();
+    // 합쳐진 원반 위에 새장이 얹힌다 — 여기서부터 보스전 내내 저 자리에 있다
+    drawCage(ctx, cx, cy - r - 20 * grow, t);
+  } else {
+    // 빨려 들어가는 앨범들 한가운데에서 새장도 같이 돌아간다
+    const swirlR = 34 + Math.sin(t * 2) * 5;
+    drawCage(ctx, cx + Math.cos(t * 1.6) * swirlR, cy + Math.sin(t * 1.6) * swirlR * 0.5, t);
   }
 }
 
 /** 열일곱 장이 한 장이 된 모습. 합체 컷신과 보스 컷신이 같은 그림을 쓴다. */
+/**
+ * 강아지 공주가 갇힌 새장. 오프닝에서 채간 뒤로 합체 컷신·보스전 내내 여기 있다가,
+ * 보스가 터질 때 부서진다. cx, cy 는 새장 한가운데.
+ *
+ * broken 이 0보다 크면 창살이 튀어나가고 그녀가 떨어진다 (0~1).
+ */
+function drawCage(ctx, cx, cy, time, broken = 0) {
+  const w = 26;
+  const h = 26;
+  const x = Math.round(cx - w / 2);
+  const y = Math.round(cy - h / 2);
+
+  // 부서지는 동안에는 그녀가 아래로 떨어진다
+  const fall = broken > 0 ? ease(broken) * 40 : 0;
+  const sway = broken > 0 ? 0 : Math.sin(time * 2) * 1.5;
+
+  ctx.save();
+  // 매달린 줄
+  if (broken <= 0) {
+    ctx.fillStyle = '#5c4a70';
+    ctx.fillRect(Math.round(cx), y - 14, 1, 14);
+  }
+
+  drawSprite(ctx, BRIDE, Math.round(cx - 10), Math.round(y + 4 + sway + fall));
+
+  // 창살 — 부서지면 사방으로 튄다
+  ctx.globalAlpha = Math.max(0, 1 - broken * 1.4);
+  ctx.strokeStyle = '#d8dde8';
+  ctx.lineWidth = 1;
+  const burst = broken * 26;
+  ctx.strokeRect(x + 0.5 - burst * 0.3, y + 0.5 - burst * 0.3, w - 1 + burst * 0.6, h - 1 + burst * 0.6);
+  for (let i = 1; i < 4; i++) {
+    const bx = Math.round(x + (w * i) / 4) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(bx + (i - 2) * burst, y - burst * 0.3);
+    ctx.lineTo(bx + (i - 2) * burst * 1.6, y + h + burst * 0.3);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawBossDisc(ctx, cx, cy, r, spin) {
   ctx.save();
   ctx.translate(cx, cy);
@@ -1131,6 +1181,8 @@ function drawEndingCut(ctx, t, phase, time) {
     const p = Math.min(1, t / ENDING_AT.burst);
     drawBossDisc(ctx, CUT_CX + Math.sin(time * 70) * p * 3, CUT_CY, 40, time * 0.6);
     drawCracks(ctx, CUT_CX, CUT_CY, 40, p);
+    // 아직 갇혀 있다. 이 다음 컷에서 부서진다.
+    drawCage(ctx, CUT_CX, CUT_CY - 60, time);
     return;
   }
 
@@ -1140,6 +1192,12 @@ function drawEndingCut(ctx, t, phase, time) {
     ctx.fillStyle = `rgba(255,255,255,${(1 - p) * 0.9})`;
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
     ctx.restore();
+  }
+
+  // 보스가 터지면 새장도 같이 부서진다 — 격파가 곧 구출이다
+  if (phase === 'burst' || phase === 'scatter') {
+    const broken = Math.min(1, (t - ENDING_AT.burst) / 1.4);
+    drawCage(ctx, CUT_CX, CUT_CY - 60, time, broken);
   }
 
   // 앨범 열일곱 장: 흩어진 자리 → 차트 줄
@@ -1241,8 +1299,11 @@ const IN_MINE_Y = 158;
 /** 방 안 책상의 왼쪽 끝 */
 const ROOM_DESK_X = 34;
 /** 방 안에서 내가 서 있는 자리 (바닥 176 에 발이 닿는다) */
-const ROOM_ME_X = 196;
+const ROOM_ME_X = 214;
 const ROOM_ME_Y = 160;
+/** 그 옆의 강아지 공주 (20×20 이라 바닥에서 20 을 뺀다) */
+const ROOM_HER_X = 180;
+const ROOM_HER_Y = 156;
 
 /** 좁은 방 — 벽, 창문, 책상, 그 위의 마이크 */
 function drawRoom(ctx, time) {
@@ -1338,11 +1399,43 @@ export function drawIntroCut(ctx, t) {
 
   // ── 1부: 방 ──────────────────────────────────────────────
   const inRoom = ['room', 'note', 'upload'].includes(phase);
+  const snatching = phase === 'snatch' || phase === 'reach';
   const grabbing = phase === 'grab' || phase === 'run';
-  if (inRoom || grabbing) {
+  if (inRoom || snatching || grabbing) {
     drawRoom(ctx, time);
     const px = ROOM_ME_X;
     const py = ROOM_ME_Y;
+
+    // 강아지 공주 — 원래 옆에 같이 있다. 앨범이 채가면 위로 끌려 올라간다.
+    if (!grabbing) {
+      // 앨범이 내려와 붙잡기까지 0.5초, 그 뒤로 같이 올라간다.
+      // 너무 빨리 올리면 데려가는 앨범이 화면 밖으로 나가서 "누가 데려갔는지" 가 사라진다.
+      const dive = snatching ? Math.min(1, (t - INTRO_AT.snatch) / 0.5) : 0;
+      const lift = snatching ? ease((t - INTRO_AT.snatch - 0.5) / 1.6) : 0;
+      // 음표가 나오면 좋아서 폴짝 뛴다
+      const hop = phase === 'note' ? Math.abs(Math.sin(time * 6)) * 4 : 0;
+      const herY = ROOM_HER_Y - hop - lift * 130;
+      // 잡힌 뒤에는 버둥거린다
+      const shake = lift > 0 ? Math.sin(time * 30) * 2 : 0;
+      drawSprite(ctx, BRIDE, Math.round(ROOM_HER_X + shake), Math.round(herY));
+
+      // 채가는 앨범 — 위(차트)에서 내려와 머리 위를 잡고 도로 올라간다
+      if (snatching) {
+        const rest = ROOM_HER_Y - 22;
+        drawCoverAt(ctx, ALBUMS[0], ROOM_HER_X + shake, -26 + dive * (rest + 26) - lift * 130, 20);
+        // 끌려 올라가는 자국
+        if (lift > 0) {
+          ctx.save();
+          ctx.globalAlpha = 0.5;
+          ctx.fillStyle = '#e8ecf7';
+          for (let i = 0; i < 3; i++) {
+            const sy = herY + 24 + ((time * 90 + i * 18) % 44);
+            ctx.fillRect(Math.round(ROOM_HER_X + 4 + i * 6), Math.round(sy), 1, 6);
+          }
+          ctx.restore();
+        }
+      }
+    }
 
     // 책상 위 마이크 (쥐기 전까지만)
     if (!grabbing) {
@@ -1355,8 +1448,18 @@ export function drawIntroCut(ctx, t) {
     // 달려나가는 동안에는 오른쪽으로 빠진다
     const runP = phase === 'run' ? ease((t - INTRO_AT.run) / 1.2) : 0;
     const x = px + runP * 160;
-    const frame = phase === 'run' ? playerFrame({ onGround: true, vx: 90, animTime: time }) : playerFrame({ onGround: true, vx: 0 });
-    drawSprite(ctx, frame, x, py);
+    // 놓칠 때는 그녀 쪽으로 뛰어오른다 — 가만히 서 있으면 "놓쳤다" 로 안 읽힌다.
+    // 점프 프레임(팔다리를 뻗은 자세)에 실제로 뛰는 포물선을 얹는다.
+    const reaching = phase === 'reach';
+    const jumpP = reaching ? Math.min(1, (t - INTRO_AT.reach) / 0.9) : 0;
+    const hopUp = reaching ? Math.sin(jumpP * Math.PI) * 18 : 0;
+    const frame = playerFrame({
+      onGround: !reaching,
+      vx: phase === 'run' ? 90 : 0,
+      animTime: time,
+    });
+    // 뻗는 동안에는 그녀 쪽(왼쪽)을 본다
+    drawSprite(ctx, frame, x - reaching * 10, py - hopUp, reaching);
 
     // 쥔 마이크
     if (grabbing) {
