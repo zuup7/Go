@@ -240,6 +240,14 @@ export function hitBoss(boss, { ranged = false } = {}) {
 }
 
 /**
+ * 합체했는가. 3페이즈에서 조각들이 도로 붙어 로봇이 된다.
+ *
+ * 페이즈는 뒤로 안 가므로(syncPhase) 한 번 합체하면 풀리지 않는다.
+ * 그리는 쪽이 원반으로 그릴지 로봇으로 그릴지 이걸 보고 정한다.
+ */
+export const bossCombined = (boss) => !!boss && boss.phaseId >= 3;
+
+/**
  * 강아지 공주가 아직 갇혀 있는가.
  *
  * 오프닝에서 앨범들이 채간 뒤로 보스 위 새장에 갇혀 있다.

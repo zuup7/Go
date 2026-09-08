@@ -14,13 +14,21 @@ export const PHASE2_CUT = [
   { at: 4.4, kind: 'end' },
 ];
 
-/** 3페이즈 — 실시간 차트를 대놓고 조작한다 */
+/**
+ * 3페이즈 — 차트를 조작해 1위를 빼앗고, 그 힘으로 합체한다.
+ *
+ * 2페이즈에서 넷으로 쪼개졌던 조각이 도로 불려와 로봇으로 조립된다.
+ * 조작(chart·rig)이 합체의 이유다 — 순서를 바꾸면 왜 갑자기 합체하는지가 사라진다.
+ */
 export const PHASE3_CUT = [
   { at: 0.0, kind: 'shake' },
-  { at: 0.9, kind: 'chart' },
-  { at: 2.2, kind: 'rig' },
-  { at: 3.8, kind: 'title' },
-  { at: 5.0, kind: 'end' },
+  { at: 0.7, kind: 'chart' }, // 가짜 실시간 차트가 뜬다
+  { at: 1.6, kind: 'rig' }, // 꼴찌였던 보스가 1위로 솟는다
+  { at: 2.8, kind: 'call' }, // 흩어진 조각들이 사방에서 불려온다
+  { at: 4.0, kind: 'assemble' }, // 팔·다리·머리가 차례로 딱딱 붙는다
+  { at: 5.6, kind: 'core' }, // 가슴 코어에 불이 들어오고 눈이 켜진다
+  { at: 6.6, kind: 'title' },
+  { at: 8.0, kind: 'end' },
 ];
 
 /**

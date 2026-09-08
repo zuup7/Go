@@ -48,11 +48,14 @@ export const CUT_SOUND = {
     end: {},
   },
 
-  /** 3페이즈 — 실시간 차트를 대놓고 조작한다 */
+  /** 3페이즈 — 차트를 조작해 1위를 빼앗고, 그 힘으로 합체한다 */
   phase3: {
     shake: { sfx: 'rumble' },
     chart: { sfx: 'blip' },
     rig: { sfx: 'rig' },
+    call: { sfx: 'gather' }, // 조각들이 불려온다
+    assemble: { sfx: 'thud' }, // 딱딱 붙는다
+    core: { sfx: 'roar' }, // 코어 점화
     title: { sfx: 'title' },
     end: {},
   },

@@ -12,7 +12,7 @@ import { phaseAt, phaseAtIn, CUT_AT } from '../data/cutscene.js';
 import { BOSS_CUTS, PHASE2_AT, PHASE3_AT, ENDING_AT } from '../data/bossCutscenes.js';
 import { INTRO_CUT, INTRO_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
-import { bossPhase, princessCaged } from '../core/boss.js';
+import { bossPhase, princessCaged, bossCombined } from '../core/boss.js';
 
 // ── 배경 ────────────────────────────────────────────────────
 //
@@ -572,10 +572,11 @@ function drawPlayer(ctx, player, ox, oy, time) {
 
 // ── 보스 ────────────────────────────────────────────────────
 /** 체력계는 보스 바로 아래에 붙여 그린다 — 화면 위에 판을 깔면 게임을 가린다 */
-function drawBossHealth(ctx, boss, ox, oy, color) {
+function drawBossHealth(ctx, boss, ox, oy, color, drop = 0) {
   const w = boss.w + 12;
   const x = Math.round(boss.x - ox - 6);
-  const y = Math.round(boss.y - oy + boss.h + 4);
+  // drop 은 몸이 더 아래까지 내려올 때 쓴다 — 로봇은 다리가 있어서 그만큼 비켜야 한다
+  const y = Math.round(boss.y - oy + boss.h + 4 + drop);
   ctx.fillStyle = 'rgba(6,2,14,0.8)';
   ctx.fillRect(x - 1, y - 1, w + 2, 7);
   ctx.fillStyle = '#2a1740';
@@ -588,37 +589,13 @@ function drawBossHealth(ctx, boss, ox, oy, color) {
   for (let i = 1; i < boss.maxHp; i++) ctx.fillRect(x + Math.round((w * i) / boss.maxHp), y, 1, 5);
 }
 
-export function drawBoss(ctx, boss, ox, oy, time) {
-  const cx = boss.x - ox + boss.w / 2;
-  const cy = boss.y - oy + boss.h / 2;
+/**
+ * 약점 — 가운데 재생 버튼. 열려 있을 때만 초록으로 빛난다.
+ * 원반이든 로봇이든 약점은 같은 자리에 같은 모양이다 (로봇에서는 가슴 코어).
+ */
+function drawBossCore(ctx, cx, cy, open, time) {
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(boss.spin);
-
-  // 거대 LP
-  const r = boss.w / 2;
-  ctx.fillStyle = boss.hurtFlash > 0 ? '#ffffff' : '#14101d';
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-  for (let i = 1; i <= 5; i++) {
-    ctx.beginPath();
-    ctx.arc(0, 0, (r * i) / 6, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  // 열일곱 조각이 박힌 라벨
-  for (let i = 0; i < ALBUMS.length; i++) {
-    const angle = (i / ALBUMS.length) * Math.PI * 2;
-    const d = r * 0.68;
-    drawCoverAt(ctx, ALBUMS[i], Math.cos(angle) * d - 6, Math.sin(angle) * d - 6, 12);
-  }
-  ctx.restore();
-
-  // 가운데 재생 버튼 = 약점 (열려 있을 때만 빛난다)
-  ctx.save();
-  ctx.translate(cx, cy);
-  const open = boss.vulnerable;
   ctx.fillStyle = open ? '#39ff9a' : '#5c4a70';
   ctx.beginPath();
   ctx.arc(0, 0, 11, 0, Math.PI * 2);
@@ -637,9 +614,84 @@ export function drawBoss(ctx, boss, ox, oy, time) {
     ctx.stroke();
   }
   ctx.restore();
+}
+
+/**
+ * 합체한 뒤의 조각들 — 로켓 펀치. 궤도를 도는 건 2페이즈와 같지만,
+ * 조각난 파편이 아니라 떼어낸 주먹으로 보여야 합체가 말이 된다.
+ */
+function drawFists(ctx, boss, ox, oy, color) {
+  for (const q of boss.quarters) {
+    if (q.delay > 0) continue;
+    ctx.save();
+    ctx.translate(q.x - ox + q.w / 2, q.y - oy + q.h / 2);
+    // 주먹은 날아가는 쪽을 본다 — 도는 게 아니라 쏜 것이다
+    const dir = q.vx > 0 ? 1 : -1;
+    ctx.scale(dir, 1);
+    // 뒤로 뻗은 화염
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.5 + Math.sin(q.spin * 3) * 0.2;
+    ctx.fillRect(-q.w / 2 - 10, -3, 10, 6);
+    ctx.globalAlpha = 1;
+    // 주먹
+    ctx.fillStyle = '#5c4a70';
+    ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h);
+    ctx.fillStyle = '#241a33';
+    ctx.fillRect(-q.w / 2 + 2, -q.h / 2 + 2, q.w - 4, q.h - 4);
+    // 손가락 마디
+    ctx.fillStyle = color;
+    for (let i = 0; i < 3; i++) ctx.fillRect(q.w / 2 - 4, -q.h / 2 + 3 + i * 6, 3, 4);
+    ctx.restore();
+  }
+}
+
+export function drawBoss(ctx, boss, ox, oy, time) {
+  const cx = boss.x - ox + boss.w / 2;
+  const cy = boss.y - oy + boss.h / 2;
+  const phaseColor = bossPhase(boss).color;
+  const r = boss.w / 2;
+
+  // 3페이즈는 합체한 로봇이다 — 원반이 가슴이 되고 팔다리가 붙는다
+  if (bossCombined(boss) && boss.state !== 'defeated') {
+    ctx.save();
+    ctx.translate(cx, cy);
+    drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
+    ctx.restore();
+    drawBossCore(ctx, cx, cy, boss.vulnerable, time);
+    drawFists(ctx, boss, ox, oy, phaseColor);
+    // 다리 아래로 내린다 — 안 그러면 체력계가 다리를 가로지르는 벨트처럼 보인다
+    if (boss.state !== 'defeated') drawBossHealth(ctx, boss, ox, oy, phaseColor, 30);
+    if (princessCaged(boss)) drawCage(ctx, cx, boss.y - oy - 30, time);
+    return;
+  }
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(boss.spin);
+
+  // 거대 LP
+  ctx.fillStyle = boss.hurtFlash > 0 ? '#ffffff' : '#14101d';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  for (let i = 1; i <= 5; i++) {
+    ctx.beginPath();
+    ctx.arc(0, 0, (r * i) / 6, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // 열일곱 조각이 박힌 라벨
+  for (let i = 0; i < ALBUMS.length; i++) {
+    const angle = (i / ALBUMS.length) * Math.PI * 2;
+    const d = r * 0.68;
+    drawCoverAt(ctx, ALBUMS[i], Math.cos(angle) * d - 6, Math.sin(angle) * d - 6, 12);
+  }
+  ctx.restore();
+
+  drawBossCore(ctx, cx, cy, boss.vulnerable, time);
 
   // 분열 조각 — 페이즈 색으로 테두리를 둘러 어느 페이즈인지 눈에 들어오게
-  const color = bossPhase(boss).color;
+  const color = phaseColor;
   for (const q of boss.quarters) {
     if (q.delay > 0) continue;
     ctx.save();
@@ -758,6 +810,81 @@ export function drawCutscene(ctx, t) {
 }
 
 /** 열일곱 장이 한 장이 된 모습. 합체 컷신과 보스 컷신이 같은 그림을 쓴다. */
+/**
+ * 합체한 3페이즈 보스 — 원반이 가슴이 되고 팔다리가 붙은 로봇.
+ *
+ * (0,0) 이 몸통 한가운데. r 은 원래 원반의 반지름이라, 몸이 원반만 하다.
+ * grow 는 조립 진행도(0~1) — 컷신에서 부위가 하나씩 붙는 데 쓴다.
+ * 기울기(spin)는 주지 않는다. 로봇은 돌지 않고 버티고 서 있어야 무겁다.
+ */
+function drawRobotBody(ctx, r, time, color, grow = 1, hurt = false) {
+  const w = r * 1.5;
+  const h = r * 1.7;
+  const dark = hurt ? '#ffffff' : '#241a33';
+  const metal = hurt ? '#ffffff' : '#5c4a70';
+
+  // 팔 — 어깨에서 뻗어 나온다 (제일 먼저 붙는다).
+  // 몸통보다 확실히 바깥에 둬야 한다. 걸치면 어깨 뽕처럼 보이고 팔로 안 읽힌다.
+  const armP = Math.min(1, grow / 0.45);
+  if (armP > 0) {
+    for (const side of [-1, 1]) {
+      const ax = side * (w / 2 + 9 + (1 - armP) * 44);
+      const top = -h * 0.34;
+      const len = h * 0.62;
+      ctx.fillStyle = metal;
+      ctx.fillRect(Math.round(ax - 6), Math.round(top), 12, Math.round(len));
+      // 어깨
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(ax - 7), Math.round(top), 14, 4);
+      // 주먹
+      ctx.fillStyle = dark;
+      ctx.fillRect(Math.round(ax - 7), Math.round(top + len - 9), 14, 9);
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(ax - 7), Math.round(top + len - 9), 14, 2);
+    }
+  }
+
+  // 다리
+  const legP = Math.min(1, Math.max(0, (grow - 0.3) / 0.4));
+  if (legP > 0) {
+    ctx.fillStyle = metal;
+    for (const side of [-1, 1]) {
+      const lx = side * w * 0.26;
+      const ly = h / 2 - 2 + (1 - legP) * 40;
+      ctx.fillRect(Math.round(lx - 5), Math.round(ly), 10, Math.round(h * 0.32));
+    }
+  }
+
+  // 몸통 — 원반이 가슴이 된다
+  ctx.fillStyle = dark;
+  ctx.fillRect(Math.round(-w / 2), Math.round(-h / 2), Math.round(w), Math.round(h));
+  ctx.fillStyle = metal;
+  ctx.fillRect(Math.round(-w / 2), Math.round(-h / 2), Math.round(w), 4);
+  // 합체한 티 — 어깨에 앨범이 박혀 있다
+  for (let i = 0; i < 4; i++) {
+    drawCoverAt(ctx, ALBUMS[i * 3], -w / 2 + 3 + (i % 2) * (w - 16), -h / 2 + 8 + Math.floor(i / 2) * 14, 10);
+  }
+
+  // 머리 — 마지막에 얹힌다
+  const headP = Math.min(1, Math.max(0, (grow - 0.6) / 0.4));
+  if (headP > 0) {
+    const hy = -h / 2 - 12 - (1 - headP) * 50;
+    ctx.fillStyle = metal;
+    ctx.fillRect(Math.round(-9), Math.round(hy), 18, 12);
+    ctx.fillStyle = dark;
+    ctx.fillRect(Math.round(-7), Math.round(hy + 2), 14, 8);
+    // 눈 — 코어가 켜지면 같이 켜진다
+    if (grow >= 1) {
+      ctx.fillStyle = color;
+      const blink = Math.sin(time * 6) > -0.7 ? 1 : 0.3;
+      ctx.globalAlpha = blink;
+      ctx.fillRect(Math.round(-5), Math.round(hy + 4), 4, 3);
+      ctx.fillRect(Math.round(1), Math.round(hy + 4), 4, 3);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
 /**
  * 강아지 공주가 갇힌 새장. 오프닝에서 채간 뒤로 합체 컷신·보스전 내내 여기 있다가,
  * 보스가 터질 때 부서진다. cx, cy 는 새장 한가운데.
@@ -926,14 +1053,73 @@ function drawQuarters(ctx, cx, cy, r, p, time) {
 }
 
 // ── 페이즈 3: 실시간 차트를 대놓고 조작한다 ─────────────────
+/** 합체 단계들 — 차트를 조작한 뒤 조각들이 불려와 로봇이 된다 */
+const P3_ROBOT = ['call', 'assemble', 'core', 'title'];
+
 function drawPhase3Cut(ctx, t, phase, time) {
   if (phase === 'shake') {
     drawBossDisc(ctx, CUT_CX + Math.sin(time * 61) * 3, CUT_CY, 40, time * 0.8);
     return;
   }
+
+  if (P3_ROBOT.includes(phase)) {
+    drawCombine(ctx, t, phase, time);
+    // 다 붙고 나서 찍는다
+    if (phase === 'title') drawCutTitle(ctx, 'PHASE 3', t - PHASE3_AT.title, 4, 14);
+    return;
+  }
+
   drawFakeChart(ctx, t, phase, time);
-    // 조작된 차트 위에 도장처럼 찍는다
-  if (phase === 'title') drawCutTitle(ctx, 'PHASE 3', t - PHASE3_AT.title, 4, 92);
+}
+
+/**
+ * 합체. 흩어진 조각이 사방에서 날아와 붙고, 마지막에 코어에 불이 들어온다.
+ *
+ * grow 는 조립 진행도라 그리는 쪽(drawRobotBody)이 부위를 하나씩 붙이는 데 쓴다.
+ * 시각은 PHASE3_AT 에서만 온다 — 타임라인을 고치면 여기도 따라온다.
+ */
+function drawCombine(ctx, t, phase, time) {
+  const cy = CUT_CY + 8;
+  const r = 40;
+
+  // 불려오는 조각들 — 화면 밖에서 몸통 쪽으로 빨려 들어온다
+  const pull = ease((t - PHASE3_AT.call) / (PHASE3_AT.assemble - PHASE3_AT.call));
+  if (phase === 'call') {
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + 0.3;
+      const d = (1 - pull) * 210 + 46;
+      drawCoverAt(ctx, ALBUMS[i * 2], CUT_CX + Math.cos(a) * d - 8, cy + Math.sin(a) * d * 0.7 - 8, 16);
+    }
+    // 아직 원반 상태로 떨고 있다
+    drawBossDisc(ctx, CUT_CX + Math.sin(time * 40) * 2, cy, r * (1 - pull * 0.25), time * 1.2);
+    return;
+  }
+
+  // 조립 — 팔 → 다리 → 머리 순으로 붙는다
+  const grow =
+    phase === 'assemble'
+      ? Math.min(1, (t - PHASE3_AT.assemble) / (PHASE3_AT.core - PHASE3_AT.assemble))
+      : 1;
+  // 부위가 붙을 때마다 화면이 한 번씩 튄다
+  const jolt = phase === 'assemble' ? Math.sin(grow * Math.PI * 3) * 2 : 0;
+
+  ctx.save();
+  ctx.translate(CUT_CX + jolt, cy);
+  drawRobotBody(ctx, r, time, '#7c5cff', grow);
+  ctx.restore();
+
+  // 코어 점화
+  if (phase === 'core' || phase === 'title') {
+    const lit = ease((t - PHASE3_AT.core) / 0.6);
+    drawBossCore(ctx, CUT_CX, cy, true, time);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - lit) * 0.8;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    ctx.restore();
+  } else {
+    drawBossCore(ctx, CUT_CX + jolt, cy, false, time);
+  }
 }
 
 function drawFakeChart(ctx, t, phase, time) {

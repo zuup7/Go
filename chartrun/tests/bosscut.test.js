@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, loadBoss, updateGame } from '../src/core/game.js';
-import { hitBoss, syncPhase } from '../src/core/boss.js';
+import { hitBoss, syncPhase, bossCombined } from '../src/core/boss.js';
 import {
   BOSS_CUTS,
   PHASE2_CUT,
@@ -78,6 +78,24 @@ test('그리는 쪽이 읽는 시각표가 타임라인과 같다', () => {
   }
 });
 
+test('조작이 합체보다 먼저다 — 순서가 곧 이유다', () => {
+  // 차트를 뺏은 힘으로 합체하는 것이라, 뒤집히면 왜 갑자기 합체하는지가 사라진다
+  const at = (kind) => PHASE3_CUT.findIndex((s) => s.kind === kind);
+  assert.ok(at('rig') < at('call'), '1위를 뺏은 다음에 조각을 부른다');
+  assert.ok(at('call') < at('assemble'), '불러 모은 다음에 조립한다');
+  assert.ok(at('assemble') < at('core'), '다 붙은 다음에 코어에 불이 들어온다');
+});
+
+test('3페이즈에서만 합체한 몸이다', () => {
+  const game = bossGame();
+  assert.equal(bossCombined(game.boss), false, '1페이즈는 아직 원반이다');
+  game.boss.phaseId = 2;
+  assert.equal(bossCombined(game.boss), false, '2페이즈는 쪼개진 조각이다');
+  game.boss.phaseId = 3;
+  assert.equal(bossCombined(game.boss), true);
+  assert.equal(bossCombined(null), false, '보스가 없으면 합체도 없다');
+});
+
 test('전환 컷신은 페이즈 2·3 에만 붙는다', () => {
   assert.equal(cutForPhase(1), null, '1페이즈는 싸움 시작이라 전환이 없다');
   assert.equal(cutForPhase(2), 'phase2');
@@ -89,9 +107,10 @@ test('연출 순서가 뜻대로 짜여 있다', () => {
     PHASE2_CUT.filter((s) => s.kind !== 'line').map((s) => s.kind),
     ['shake', 'crack', 'split', 'title', 'end'],
   );
+  // 3페이즈: 차트를 조작해 1위를 뺏고 → 그 힘으로 조각을 불러 → 로봇으로 합체한다
   assert.deepEqual(
     PHASE3_CUT.filter((s) => s.kind !== 'line').map((s) => s.kind),
-    ['shake', 'chart', 'rig', 'title', 'end'],
+    ['shake', 'chart', 'rig', 'call', 'assemble', 'core', 'title', 'end'],
   );
   // 엔딩 1부: 터지고 → 흩어지고 → 줄 서고 → 1위 자리가 비고 → 올라서고 → 왕관
   // 엔딩 2부: 차트가 식장이 되고 → 공주가 들어오고 → 마주 서고 → 반지 → 하트
