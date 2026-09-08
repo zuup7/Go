@@ -235,6 +235,136 @@ canvas#game {
 
 .panel.title-panel {
   min-width: min(320px, 86%);
+  position: relative;
+}
+
+/* ── 개발자 모드 ───────────────────────────────────────── */
+/* 숨기려는 게 아니라 실수로 안 눌리게 하려는 것이므로 구석에 작게 둔다 */
+.dev-open {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid #43265f;
+  border-radius: 5px;
+  opacity: 0.5;
+  cursor: pointer;
+  /* .ui 전체가 pointer-events: none 이라 눌리는 것만 되살린다 */
+  pointer-events: auto;
+}
+
+.dev-open:hover {
+  opacity: 1;
+}
+
+/* 고르는 줄 (타이틀 · 스테이지 선택) */
+.menu,
+.slots {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.9em;
+}
+
+.menu li,
+.slots li {
+  padding: 5px 10px;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  color: var(--dim);
+}
+
+.menu li.on,
+.slots li.on {
+  color: var(--ink);
+  border-color: var(--warn);
+  background: rgba(255, 209, 102, 0.12);
+}
+
+.slots li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.slot-icon {
+  font-size: 1.2em;
+}
+
+.panel.select-panel {
+  min-width: min(300px, 86%);
+}
+
+/* 숫자판 */
+.keypad-panel {
+  min-width: min(260px, 86%);
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.dots i {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #5a3382;
+  border-radius: 50%;
+}
+
+.dots i.on {
+  background: var(--warn);
+  border-color: var(--warn);
+}
+
+/* 틀렸을 때 한 번 흔든다 */
+.dots.bad i {
+  border-color: var(--hot);
+  background: transparent;
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  pointer-events: auto; /* .ui 가 none 이라 여기서 되살린다 */
+}
+
+.keypad button {
+  font-family: var(--font);
+  font-size: 1em;
+  padding: 10px 0;
+  color: var(--ink);
+  background: #241338;
+  border: 2px solid #5a3382;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.keypad button:active {
+  background: var(--warn);
+  color: #2a1607;
+}
+
+.keypad button.wide {
+  font-size: 0.8em;
 }
 
 .stats {
@@ -303,8 +433,9 @@ canvas#game {
   border: 2px solid rgba(160, 120, 220, 0.7);
   border-radius: 10px;
   padding: 0;
-  width: 58px;
-  height: 52px;
+  /* 손 크기가 사람마다 다르다. 편집 바에서 --pad-scale 로 키우고 줄인다. */
+  width: calc(58px * var(--pad-scale, 1));
+  height: calc(52px * var(--pad-scale, 1));
   backdrop-filter: blur(2px);
   touch-action: none;
   user-select: none;
@@ -313,8 +444,8 @@ canvas#game {
 
 /* 점프는 제일 많이 누르니 제일 크게 */
 .touch button[data-action='jump'] {
-  width: 74px;
-  height: 66px;
+  width: calc(74px * var(--pad-scale, 1));
+  height: calc(66px * var(--pad-scale, 1));
   font-size: 15px;
   background: rgba(90, 24, 60, 0.6);
   border-color: rgba(255, 120, 170, 0.75);
@@ -385,6 +516,26 @@ body.rotated .touch button.pad-edit {
   border: 1px solid #5a3382;
   border-radius: 5px;
   touch-action: none;
+}
+
+/* 크기 조절 — − 100% + */
+.pad-size {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pad-size button {
+  width: 26px;
+  padding: 4px 0;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.pad-size b {
+  min-width: 38px;
+  text-align: center;
+  color: var(--warn);
 }
 
 .pad-bar #pad-done {

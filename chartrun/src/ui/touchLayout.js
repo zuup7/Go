@@ -17,7 +17,24 @@ const EDGE = 8;
  */
 const ROTATED_SIDE = 84;
 
+/** 버튼 크기 배율 — 이 밖으로는 못 나간다 */
+export const MIN_SCALE = 0.7;
+export const MAX_SCALE = 1.8;
+export const SCALE_STEP = 0.1;
+
 export const layoutMode = (rotated) => (rotated ? 'rotated' : 'landscape');
+
+/**
+ * 배율을 쓸 수 있는 값으로 만든다. 진짜 숫자가 아니면 1 로 본다.
+ *
+ * Number() 로 바꾸지 않는 게 중요하다 — null 은 0 이 돼버려서 "값이 없다"가
+ * "제일 작게"로 둔갑한다. 옛 저장값에는 이 칸이 아예 없다.
+ */
+export function clampScale(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 1;
+  // 0.1 단위로 떨어뜨린다 — 더하다 보면 0.7000000000000001 같은 게 나온다
+  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(value * 10) / 10));
+}
 
 /** 이 모드에서 버튼이 들어갈 수 있는 여백 */
 export function marginsFor(mode) {
@@ -44,7 +61,7 @@ export function clampSpot(x, y, { box, size, mode }) {
   };
 }
 
-const emptyLayout = () => ({ landscape: {}, rotated: {} });
+const emptyLayout = () => ({ landscape: {}, rotated: {}, scale: { landscape: 1, rotated: 1 } });
 
 const storage = () => (typeof localStorage === 'undefined' ? null : localStorage);
 
@@ -52,7 +69,9 @@ const storage = () => (typeof localStorage === 'undefined' ? null : localStorage
 export function sanitize(raw) {
   const out = emptyLayout();
   if (!raw || typeof raw !== 'object') return out;
-  for (const mode of Object.keys(out)) {
+  for (const mode of Object.keys(out.scale)) {
+    // 크기 칸이 없는 옛 저장값도 그대로 읽힌다 — 없으면 1
+    out.scale[mode] = clampScale(raw.scale?.[mode] ?? 1);
     const spots = raw[mode];
     if (!spots || typeof spots !== 'object') continue;
     for (const [action, spot] of Object.entries(spots)) {
@@ -100,6 +119,9 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
   const bar = root.querySelector('#pad-bar');
   const doneBtn = root.querySelector('#pad-done');
   const resetBtn = root.querySelector('#pad-reset');
+  const smallerBtn = root.querySelector('#pad-smaller');
+  const biggerBtn = root.querySelector('#pad-bigger');
+  const scaleText = root.querySelector('#pad-scale-text');
 
   let layout = loadLayout();
   let editing = false;
@@ -154,8 +176,50 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
    */
   const readSpots = (list) => new Map(list.map((el) => [el, spotOf(el)]));
 
+  const scaleOf = () => clampScale(layout.scale?.[mode()] ?? 1);
+
+  /** 버튼 크기를 화면에 먹인다. CSS 가 --pad-scale 을 곱해서 쓴다. */
+  function applyScale() {
+    const scale = scaleOf();
+    document.body.style.setProperty('--pad-scale', String(scale));
+    if (scaleText) scaleText.textContent = `${Math.round(scale * 100)}%`;
+  }
+
+  /**
+   * 저장된 자리를 지금 크기에 맞춰 다시 가둔다.
+   *
+   * 크기를 키우면 가장자리에 붙여둔 버튼이 화면 밖으로 삐져나가 아예 못 누르게 된다.
+   * 크기가 바뀔 때마다 반드시 부른다.
+   */
+  function reclamp() {
+    const spots = layout[mode()];
+    if (!spots || Object.keys(spots).length === 0) return;
+    const box = boxOf();
+    for (const el of buttons) {
+      const spot = spots[el.dataset.action];
+      if (!spot) continue;
+      spots[el.dataset.action] = clampSpot(spot.x * box.w, spot.y * box.h, {
+        box,
+        size: { w: el.offsetWidth, h: el.offsetHeight },
+        mode: mode(),
+      });
+      place(el, spots[el.dataset.action]);
+    }
+  }
+
+  /** −/+ 한 번에 0.1씩 */
+  function changeScale(delta) {
+    const next = clampScale(scaleOf() + delta);
+    if (next === scaleOf()) return;
+    layout.scale[mode()] = next;
+    applyScale();
+    reclamp(); // 크기가 바뀐 뒤의 offsetWidth 로 재야 하므로 순서가 중요하다
+    writeLayout(layout);
+  }
+
   /** 저장된 자리가 있으면 얹는다. 없으면 CSS 가 정한 기본 자리 그대로 둔다. */
   function apply() {
+    applyScale();
     const spots = layout[mode()] ?? {};
     if (Object.keys(spots).length === 0) {
       toDefault();
@@ -251,8 +315,12 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
 
   handle.addEventListener('click', () => setEditing(true));
   doneBtn.addEventListener('click', () => setEditing(false));
+  smallerBtn?.addEventListener('click', () => changeScale(-SCALE_STEP));
+  biggerBtn?.addEventListener('click', () => changeScale(SCALE_STEP));
   resetBtn.addEventListener('click', () => {
     layout[mode()] = {};
+    layout.scale[mode()] = 1;
+    applyScale();
     toDefault();
     writeLayout(layout);
     // 기본 자리를 다시 읽어서 편집을 이어간다

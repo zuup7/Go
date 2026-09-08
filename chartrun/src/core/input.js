@@ -58,6 +58,9 @@ export function createInput(target = window) {
     right: false,
     jump: false,
     jumpPressed: false,
+    /** 메뉴에서 칸을 옮길 때 쓴다 — 누르고 있는 동안 계속이 아니라 누른 순간 한 번 */
+    leftPressed: false,
+    rightPressed: false,
     throwPressed: false,
     confirmPressed: false,
     restartPressed: false,
@@ -71,6 +74,8 @@ export function createInput(target = window) {
       input.right = held.has('right');
       input.jump = held.has('jump');
       input.jumpPressed = pressedNow.has('jump');
+      input.leftPressed = pressedNow.has('left');
+      input.rightPressed = pressedNow.has('right');
       input.throwPressed = pressedNow.has('throw');
       input.confirmPressed = pressedNow.has('confirm') || pressedNow.has('jump');
       input.restartPressed = pressedNow.has('restart');

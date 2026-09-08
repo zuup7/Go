@@ -12,6 +12,8 @@ export const emptySave = () => ({
   bestTimeMs: null,
   muted: false,
   seenIntro: false,
+  /** 개발자 모드 (비번 1234). 켜면 스테이지를 골라 들어갈 수 있다 */
+  dev: false,
 });
 
 export function serialize(data) {
@@ -55,7 +57,9 @@ export function clearSave() {
 /** 이번 판의 결과를 기록에 합친다 */
 export function mergeRun(save, run) {
   const next = { ...save };
-  next.bestRank = Math.min(save.bestRank, run.rank ?? save.bestRank);
+  // 골라 들어간 판(개발자 모드)은 기록을 건드리지 않는다.
+  // 보스만 골라 이기고 "최고 기록"이 되면 기록이 거짓말이 된다.
+  if (!run.partial) next.bestRank = Math.min(save.bestRank, run.rank ?? save.bestRank);
   next.chartOuts = (save.chartOuts ?? 0) + (run.chartOuts ?? 0);
   if (run.clearedStage != null && !next.clearedStages.includes(run.clearedStage)) {
     next.clearedStages = [...next.clearedStages, run.clearedStage].sort((a, b) => a - b);
@@ -63,7 +67,7 @@ export function mergeRun(save, run) {
   if (run.revealedTraps) {
     next.revealedTraps = [...new Set([...(save.revealedTraps ?? []), ...run.revealedTraps])];
   }
-  if (run.timeMs != null && (save.bestTimeMs == null || run.timeMs < save.bestTimeMs)) {
+  if (!run.partial && run.timeMs != null && (save.bestTimeMs == null || run.timeMs < save.bestTimeMs)) {
     next.bestTimeMs = run.timeMs;
   }
   return next;

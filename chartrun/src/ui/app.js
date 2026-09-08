@@ -1,5 +1,6 @@
 // 차트런 진입점. 캔버스를 켜고, 입력·소리·게임 상태를 이어 붙인다.
-import { createGame, updateGame, runSummary, VIEW } from '../core/game.js';
+import { createGame, updateGame, runSummary, setDevMode, VIEW } from '../core/game.js';
+import { DEV_CODE, pushDigit, codeMatches } from '../core/devmode.js';
 import { createLoop } from '../core/loop.js';
 import { createInput, bindTouchButtons } from '../core/input.js';
 import { createAudio } from '../core/audio.js';
@@ -9,6 +10,7 @@ import { createHud } from '../render/hud.js';
 import { crisp } from '../render/pixel.js';
 import { preloadAlbumArt } from '../render/albumArt.js';
 import { ALBUMS } from '../data/albums.js';
+import { soundFor } from '../data/cutSound.js';
 import { createTouchLayout } from './touchLayout.js';
 
 const canvas = document.getElementById('game');
@@ -40,6 +42,7 @@ function persist(extra = {}) {
   persisted = mergeRun(persisted, { ...runSummary(game), ...extra });
   persisted.muted = audio.muted;
   persisted.seenIntro = true;
+  persisted.dev = game.dev;
   game.save = persisted;
   writeSave(persisted);
 }
@@ -97,7 +100,23 @@ function handleEvent(name, data) {
       audio.bgm('stage');
       break;
     case 'cutscene':
+      // 컷신은 정적으로 시작한다. 음악은 아래 cutbeat 가 알맞은 때에 다시 켠다.
       audio.stopBgm();
+      break;
+    case 'cutbeat': {
+      const cue = soundFor(data.cut, data.kind);
+      if (cue?.bgm) audio.bgm(cue.bgm);
+      if (cue?.sfx) audio.play(cue.sfx);
+      break;
+    }
+    case 'dev':
+      // 켜고 끈 걸 기억한다 — 새로고침할 때마다 다시 넣게 하면 성가시다
+      persist();
+      break;
+    case 'cutdone':
+      // 페이즈 전환 컷신이 끝나면 싸움이 이어진다 — 브금을 되돌린다.
+      // (엔딩은 곧 통계 화면이 stopBgm 을 부르므로 건드리지 않는다)
+      if (data.cut !== 'ending') audio.bgm('boss');
       break;
     case 'ending':
       audio.stopBgm();
@@ -109,7 +128,66 @@ function handleEvent(name, data) {
   }
 }
 
+// ── 개발자 모드 숫자판 ──────────────────────────────────────
+// 화면에 그리는 건 hud 가 하고, 여기서는 상태와 입력만 다룬다.
+const ui = { keypad: null };
+
+function openKeypad() {
+  ui.keypad = { buf: '', bad: false };
+}
+
+function pressKey(key) {
+  if (key === 'open') {
+    openKeypad();
+    return;
+  }
+  const pad = ui.keypad;
+  if (!pad) return;
+  if (key === 'close') {
+    ui.keypad = null;
+    return;
+  }
+  if (key === 'back') {
+    pad.buf = pad.buf.slice(0, -1);
+    pad.bad = false;
+    return;
+  }
+  if (!/^[0-9]$/.test(key)) return;
+
+  pad.buf = pushDigit(pad.bad ? '' : pad.buf, key);
+  pad.bad = false;
+  if (pad.buf.length < DEV_CODE.length) return;
+
+  if (codeMatches(pad.buf)) {
+    ui.keypad = null;
+    setDevMode(game, true);
+  } else {
+    // 틀리면 지우고 다시 — 칸을 한 번 빨갛게 흔든다
+    pad.bad = true;
+  }
+}
+
+// 다시 그릴 때마다 innerHTML 이 통째로 갈리므로 버튼마다 핸들러를 달 수 없다.
+// 리스너는 #center 에 하나만 두고 위임한다.
+uiRoot.querySelector('#center').addEventListener('click', (e) => {
+  const key = e.target.closest?.('[data-key]')?.dataset.key;
+  if (key) pressKey(key);
+});
+
+// 키보드로도 넣을 수 있다. 숫자판이 열려 있을 때만 받는다.
+window.addEventListener('keydown', (e) => {
+  if (!ui.keypad) return;
+  if (/^[0-9]$/.test(e.key)) pressKey(e.key);
+  else if (e.key === 'Backspace') pressKey('back');
+  else if (e.key === 'Escape') pressKey('close');
+});
+
 function update(dt) {
+  // 숫자판이 떠 있는 동안은 게임 입력을 먹지 않는다 — 점프 키로 판이 시작돼버린다
+  if (ui.keypad) {
+    input.sample();
+    return;
+  }
   input.sample();
   if (input.anyPressed) audio.unlock();
   if (input.mutePressed) {
@@ -124,7 +202,7 @@ const throwBtn = document.getElementById('throw-btn');
 
 function render() {
   drawScene(ctx, game, time);
-  hud.update(game);
+  hud.update(game, ui);
   // 던지기 버튼은 쓸 수 있을 때만 — 평소엔 자리만 차지한다
   throwBtn.hidden = game.scene !== 'boss';
   throwBtn.disabled = !(game.player?.ammo > 0);

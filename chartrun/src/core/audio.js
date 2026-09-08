@@ -30,6 +30,36 @@ const TRACKS = {
     ],
     kick: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1],
   },
+  /** 엔딩 1부 — 차트를 타고 1위까지 올라간다 */
+  victory: {
+    bpm: 130,
+    lead: [
+      72, _, 76, _, 79, _, 84, _, 83, _, 79, _, 81, _, _, _,
+      74, _, 77, _, 81, _, 86, _, 84, _, 81, _, 79, _, _, _,
+    ],
+    bass: [
+      48, _, 55, _, 48, _, 55, _, 53, _, 60, _, 53, _, _, _,
+      50, _, 57, _, 50, _, 57, _, 55, _, 62, _, 55, _, _, _,
+    ],
+    kick: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0],
+  },
+  /**
+   * 엔딩 2부 — 결혼식. 느리고 따뜻하게.
+   * 드럼도 하이햇도 없다. 칩튠 특유의 치찰음이 들어가면 식장이 아니라 던전이 된다.
+   */
+  wedding: {
+    bpm: 76,
+    hat: false,
+    leadType: 'triangle',
+    lead: [
+      79, _, _, _, 84, _, _, _, 84, _, 83, _, 81, _, _, _,
+      79, _, _, _, 81, _, _, _, 83, _, 81, _, 79, _, _, _,
+    ],
+    bass: [
+      48, _, 55, _, 52, _, 55, _, 53, _, 60, _, 57, _, _, _,
+      47, _, 55, _, 52, _, 55, _, 43, _, 55, _, 48, _, _, _,
+    ],
+  },
 };
 
 export function createAudio(muted = false) {
@@ -112,13 +142,22 @@ export function createAudio(muted = false) {
     for (let i = 0; i < 32; i++) {
       const at = start + i * step;
       if (track.lead[i] != null) {
-        tone(midi(track.lead[i]), at, step * 0.9, { type: 'square', gain: 0.22, out: bgmGain });
+        // 느린 곡(hat 없음)은 음을 길게 끌어야 뚝뚝 끊기지 않고 선율로 들린다
+        const hold = track.hat === false ? 1.7 : 0.9;
+        tone(midi(track.lead[i]), at, step * hold, {
+          type: track.leadType ?? 'square',
+          gain: 0.22,
+          out: bgmGain,
+        });
       }
       if (track.bass[i] != null) {
         tone(midi(track.bass[i]), at, step * 1.1, { type: 'triangle', gain: 0.3, out: bgmGain });
       }
-      if (track.kick[i]) noise(at, 0.05, { gain: 0.18, out: bgmGain });
-      if (i % 2 === 1) noise(at, 0.02, { gain: 0.05, out: bgmGain, highpass: 6000 });
+      if (track.kick?.[i]) noise(at, 0.05, { gain: 0.18, out: bgmGain });
+      // 하이햇. 결혼식 곡에서는 이 치찰음이 분위기를 다 깬다 — hat:false 면 뺀다.
+      if (track.hat !== false && i % 2 === 1) {
+        noise(at, 0.02, { gain: 0.05, out: bgmGain, highpass: 6000 });
+      }
     }
     const loopMs = step * 32 * 1000;
     timer = setTimeout(() => {
@@ -178,11 +217,125 @@ export function createAudio(muted = false) {
         tone(midi(n), ctx.currentTime + i * 0.14, 0.3, { gain: 0.24 }),
       );
     },
+
+    // ── 컷신 ──────────────────────────────────────────────
+    // 언제 울릴지는 여기가 아니라 타임라인이 정한다 (data/cutSound.js).
+
+    /** 앨범들이 빨려 들어온다 — 위로 빨려 올라가는 소리 */
+    gather: () => tone(180, ctx.currentTime, 0.7, { type: 'triangle', gain: 0.16, slide: 3.2 }),
+    /** 소용돌이 — 두 음을 살짝 어긋나게 올려 어지럽게 */
+    swirl: () => {
+      tone(300, ctx.currentTime, 0.9, { type: 'sawtooth', gain: 0.12, slide: 2.2 });
+      tone(307, ctx.currentTime, 0.9, { type: 'sawtooth', gain: 0.12, slide: 2.1 });
+    },
+    /** 하나로 뭉치는 순간의 묵직한 착지 */
+    thud: () => {
+      tone(110, ctx.currentTime, 0.45, { type: 'sawtooth', gain: 0.3, slide: 0.4 });
+      noise(ctx.currentTime, 0.3, { gain: 0.22 });
+    },
+    flash: () => noise(ctx.currentTime, 0.35, { gain: 0.26, highpass: 2500 }),
+    /** 보스가 드러난다 */
+    roar: () => {
+      tone(70, ctx.currentTime, 1.1, { type: 'sawtooth', gain: 0.3, slide: 1.6 });
+      noise(ctx.currentTime, 0.9, { gain: 0.2 });
+    },
+
+    rumble: () => {
+      tone(48, ctx.currentTime, 0.9, { type: 'triangle', gain: 0.3 });
+      noise(ctx.currentTime, 0.8, { gain: 0.16 });
+    },
+    crack: () => {
+      tone(190, ctx.currentTime, 0.3, { type: 'sawtooth', gain: 0.26, slide: 0.45 });
+      noise(ctx.currentTime, 0.22, { gain: 0.2, highpass: 900 });
+    },
+    /** 유리처럼 쪼개진다 */
+    split: () => {
+      [96, 91, 88, 84].forEach((n, i) =>
+        tone(midi(n), ctx.currentTime + i * 0.05, 0.12, { gain: 0.18 }),
+      );
+      noise(ctx.currentTime, 0.4, { gain: 0.22, highpass: 3000 });
+    },
+    /** 제목이 쿵 하고 박힌다 */
+    title: () => {
+      tone(90, ctx.currentTime, 0.5, { type: 'sawtooth', gain: 0.3, slide: 0.5 });
+      noise(ctx.currentTime, 0.25, { gain: 0.18 });
+    },
+    blip: () => tone(midi(84), ctx.currentTime, 0.07, { gain: 0.2 }),
+    /** 차트를 조작하는 소리 — 일부러 어긋난 음을 끊어친다 */
+    rig: () => {
+      [77, 74, 78, 73, 79].forEach((n, i) =>
+        tone(midi(n), ctx.currentTime + i * 0.07, 0.06, { type: 'sawtooth', gain: 0.2 }),
+      );
+    },
+
+    /** 보스가 터진다 — 이 게임에서 제일 큰 소리 */
+    burst: () => {
+      tone(120, ctx.currentTime, 0.9, { type: 'sawtooth', gain: 0.32, slide: 0.25 });
+      noise(ctx.currentTime, 0.7, { gain: 0.3 });
+      noise(ctx.currentTime + 0.05, 0.5, { gain: 0.2, highpass: 1800 });
+    },
+    /** 앨범 열일곱 장이 사방으로 흩어진다 */
+    scatter: () => {
+      [88, 81, 91, 84, 78, 86].forEach((n, i) =>
+        tone(midi(n), ctx.currentTime + i * 0.05, 0.1, { gain: 0.16 }),
+      );
+    },
+    /** 흩어진 앨범이 차트 순위표로 줄을 선다 — 한 칸씩 올라가는 블립 */
+    chartline: () => {
+      for (let i = 0; i < 8; i++) {
+        tone(midi(64 + i * 3), ctx.currentTime + i * 0.08, 0.09, { gain: 0.17 });
+      }
+    },
+    /** 1위 자리로 올라선다 */
+    climb: () => {
+      [72, 76, 79, 83, 86, 91].forEach((n, i) =>
+        tone(midi(n), ctx.currentTime + i * 0.07, 0.16, { gain: 0.22 }),
+      );
+    },
+    /** 왕관 — 짧은 팡파르 */
+    crown: () => {
+      [79, 79, 79, 84].forEach((n, i) =>
+        tone(midi(n), ctx.currentTime + i * 0.12, i === 3 ? 0.5 : 0.1, { gain: 0.24 }),
+      );
+    },
+
+    /** 식장 종. sine 두 개를 겹쳐 여운을 길게 */
+    bell: () => {
+      tone(midi(84), ctx.currentTime, 1.4, { type: 'sine', gain: 0.26 });
+      tone(midi(91), ctx.currentTime + 0.02, 1.1, { type: 'sine', gain: 0.14 });
+      tone(midi(96), ctx.currentTime + 0.04, 0.7, { type: 'sine', gain: 0.08 });
+    },
+    /** 공주가 걸어 들어온다 — 부드러운 3화음 */
+    chime: () => {
+      [84, 88, 91].forEach((n, i) =>
+        tone(midi(n), ctx.currentTime + i * 0.09, 0.7, { type: 'triangle', gain: 0.16 }),
+      );
+    },
+    /** 반지 — 높고 맑게 딩 */
+    ring: () => {
+      tone(midi(96), ctx.currentTime, 1.2, { type: 'sine', gain: 0.26 });
+      tone(midi(103), ctx.currentTime + 0.03, 0.8, { type: 'sine', gain: 0.12 });
+    },
+    /** 키스 — 두 음이 위로 붙었다가 반짝 퍼진다 */
+    kiss: () => {
+      tone(midi(81), ctx.currentTime, 0.5, { type: 'triangle', gain: 0.2 });
+      tone(midi(88), ctx.currentTime + 0.12, 0.9, { type: 'triangle', gain: 0.22 });
+      [93, 96, 100].forEach((n, i) =>
+        tone(midi(n), ctx.currentTime + 0.3 + i * 0.08, 0.5, { type: 'sine', gain: 0.12 }),
+      );
+    },
   };
 
   return {
     get muted() {
       return state.muted;
+    },
+    /**
+     * 낼 수 있는 소리 이름들. 소리를 내지 않으므로 브라우저 밖에서도 부를 수 있다 —
+     * data/cutSound.js 가 없는 이름을 가리키고 있지 않은지 테스트가 이걸로 대조한다.
+     */
+    names() {
+      return { sfx: Object.keys(SFX), bgm: Object.keys(TRACKS) };
     },
     /** 첫 입력 때 부른다 */
     unlock() {

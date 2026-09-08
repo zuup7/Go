@@ -1269,7 +1269,8 @@ export function drawTitle(ctx, time) {
 // ── 전체 ────────────────────────────────────────────────────
 export function drawScene(ctx, game, time) {
   crisp(ctx);
-  if (game.scene === 'title') {
+  // 스테이지 선택도 타이틀 배경 위에 뜬다 (판이 아직 없어서 그릴 월드가 없다)
+  if (game.scene === 'title' || game.scene === 'select') {
     drawTitle(ctx, time);
     return;
   }

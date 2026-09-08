@@ -28,6 +28,15 @@ export const CUTSCENE = Object.entries(CUT_AT).map(([kind, at]) => ({ at, kind }
 /** 타임라인 전체 길이 */
 export const lengthOf = (timeline) => timeline[timeline.length - 1].at;
 
+/**
+ * from 다음부터 to 까지 사이에 새로 지나간 단계들 (from < at <= to).
+ *
+ * 컷신에 소리를 붙일 때 쓴다. 시각을 소리 쪽에 다시 적어두면 타임라인만 고쳤을 때
+ * 조용히 어긋나므로, 단계를 넘어가는 순간은 여기서 한 번만 판정한다.
+ */
+export const beatsCrossed = (timeline, from, to) =>
+  timeline.filter((s) => s.at > from && s.at <= to);
+
 /** t 시점의 연출 단계 이름 */
 export function phaseAtIn(timeline, t, fallback) {
   const stages = timeline.filter((s) => s.at <= t);

@@ -11,8 +11,8 @@ import {
   createTrapMemory,
   trapKey,
 } from '../data/traps.js';
-import { CUTSCENE_LENGTH } from '../data/cutscene.js';
-import { bossCutLength, cutForPhase } from '../data/bossCutscenes.js';
+import { CUTSCENE, CUTSCENE_LENGTH, beatsCrossed } from '../data/cutscene.js';
+import { BOSS_CUTS, bossCutLength, cutForPhase } from '../data/bossCutscenes.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
 import { clamp, overlaps } from './util.js';
@@ -66,6 +66,16 @@ export function createGame(options = {}) {
     flash: 0,
     cutsceneTime: 0,
     ending: null,
+    /** 개발자 모드가 켜져 있는지 (비번 1234). 켜면 스테이지를 골라 들어갈 수 있다 */
+    dev: save.dev ?? false,
+    /** 타이틀에서 고른 줄, 스테이지 선택 화면에서 고른 칸 */
+    titleIndex: 0,
+    selectIndex: 0,
+    /**
+     * 1스테이지부터 달린 판이 아니다 (골라 들어갔다).
+     * 이런 판은 기록을 갱신하지 않는다 — 안 그러면 보스만 골라 이기고 최고 기록이 된다.
+     */
+    partial: false,
   };
   return game;
 }
@@ -141,14 +151,20 @@ export function loadBoss(game) {
   emit(game, 'boss', {});
 }
 
-export function startRun(game) {
+/**
+ * 새 판. index 를 주면 그 스테이지부터 시작한다 (개발자 모드에서만 쓴다).
+ * index 가 마지막 스테이지 다음이면 보스전으로 바로 들어간다.
+ */
+export function startRun(game, index = 0) {
   game.chartOuts = 0;
   game.plays = 0;
   game.score = 0;
   game.defeated = 0;
   game.elapsedMs = 0;
   game.ending = null;
-  loadStage(game, 0);
+  game.partial = index > 0;
+  if (index >= STAGES.length) loadBoss(game);
+  else loadStage(game, index);
 }
 
 // ── 죽음과 부활 ──────────────────────────────────────────────
@@ -509,6 +525,28 @@ function finishRun(game) {
   emit(game, 'ending', game.ending);
 }
 
+/** 타이틀에서 고를 수 있는 줄 수 (개발자 모드일 때: 처음부터 / 스테이지 선택) */
+const TITLE_ROWS = 2;
+
+/** 개발자 모드를 켜고 끈다. 비번 판정은 ui 가 하고 결과만 여기로 온다. */
+export function setDevMode(game, on) {
+  game.dev = on;
+  game.titleIndex = 0;
+  emit(game, 'dev', { on });
+}
+
+/**
+ * 컷신이 새 단계로 넘어가는 순간마다 알린다. 소리는 ui/ 가 낸다 — 여기는 시각만 판정한다.
+ *
+ * 첫 프레임(from 이 0)에는 0.0 초에 있는 단계도 넘긴 것으로 친다.
+ * 안 그러면 컷신 맨 앞 단계만 소리가 안 난다.
+ */
+function beat(game, cut, timeline, from, to) {
+  for (const step of beatsCrossed(timeline, from > 0 ? from : -1, to)) {
+    emit(game, 'cutbeat', { cut, kind: step.kind });
+  }
+}
+
 /** 보스전 컷신을 튼다. 도는 동안 보스도 플레이어도 멈춘다. */
 function startBossCut(game, id) {
   if (!id) return;
@@ -592,11 +630,18 @@ function updateBossScene(game, input, dt) {
 
   // 컷신이 도는 동안에는 아무것도 움직이지 않는다 — 연출 보다가 죽으면 안 된다
   if (game.bossCut) {
+    const was = game.bossCut.t;
     game.bossCut.t += dt;
+    // 실제로 흐른 만큼만 소리를 낸다. 건너뛰기로 시각을 끝까지 밀기 **전에** 판정해야
+    // 남은 단계 열 개가 한 프레임에 쏟아지지 않는다.
+    beat(game, game.bossCut.id, BOSS_CUTS[game.bossCut.id].timeline, was, game.bossCut.t);
     if (input.confirmPressed && game.bossCut.t > 0.5) game.bossCut.t = game.bossCut.length;
     if (game.bossCut.t >= game.bossCut.length) {
       const finished = game.bossCut.id;
       game.bossCut = null;
+      // 컷신이 끝났다고 알린다. 건너뛰었을 때도 반드시 나오므로,
+      // 컷신 때문에 꺼둔 것(브금 같은 것)을 여기서 되돌리면 안전하다.
+      emit(game, 'cutdone', { cut: finished });
       if (finished === 'ending') finishRun(game);
     }
     return;
@@ -671,9 +716,45 @@ export function updateGame(game, input, dt) {
   updateParticles(game, dt);
 
   switch (game.scene) {
-    case 'title':
-      if (input.confirmPressed) startRun(game);
+    case 'title': {
+      // 개발자 모드가 꺼져 있으면 고를 것도 없다 — 예전과 똑같이 바로 시작한다
+      if (!game.dev) {
+        game.titleIndex = 0;
+        if (input.confirmPressed) startRun(game);
+        break;
+      }
+      const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
+      if (moved) game.titleIndex = (game.titleIndex + moved + TITLE_ROWS) % TITLE_ROWS;
+      if (input.confirmPressed) {
+        if (game.titleIndex === 0) startRun(game);
+        else {
+          game.scene = 'select';
+          game.sceneTime = 0;
+          game.selectIndex = 0;
+        }
+      }
       break;
+    }
+
+    case 'select': {
+      // 칸: 스테이지 넷 + 보스 + 마지막 한 칸은 "개발자 모드 끄기"
+      const slots = STAGES.length + 2;
+      const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
+      if (moved) game.selectIndex = (game.selectIndex + moved + slots) % slots;
+      if (input.restartPressed) {
+        game.scene = 'title';
+        game.sceneTime = 0;
+      } else if (input.confirmPressed) {
+        if (game.selectIndex === slots - 1) {
+          setDevMode(game, false);
+          game.scene = 'title';
+          game.sceneTime = 0;
+        } else {
+          startRun(game, game.selectIndex);
+        }
+      }
+      break;
+    }
 
     case 'stageIntro':
       if (game.sceneTime >= INTRO_HOLD || input.confirmPressed) {
@@ -702,16 +783,19 @@ export function updateGame(game, input, dt) {
           game.scene = 'cutscene';
           game.cutsceneTime = 0;
           game.sceneTime = 0;
-          emit(game, 'cutscene', {});
+          emit(game, 'cutscene', { id: 'merge' });
         }
       }
       break;
 
-    case 'cutscene':
+    case 'cutscene': {
+      const wasCut = game.cutsceneTime;
       game.cutsceneTime += dt;
+      beat(game, 'merge', CUTSCENE, wasCut, game.cutsceneTime);
       if (input.confirmPressed && game.cutsceneTime > 0.6) game.cutsceneTime = CUTSCENE_LENGTH;
       if (game.cutsceneTime >= CUTSCENE_LENGTH) loadBoss(game);
       break;
+    }
 
     case 'boss':
       // 컷신 중에는 R 도 안 먹는다 — 연출 도중에 죽는 건 사고다
@@ -738,4 +822,6 @@ export const runSummary = (game) => ({
   clearedStage: game.scene === 'stageClear' ? game.stageIndex : null,
   revealedTraps: game.trapMemory.toJSON(),
   timeMs: game.ending ? game.ending.timeMs : null,
+  // 골라 들어간 판인지. 저장 쪽(mergeRun)이 이걸 보고 기록 갱신을 건너뛴다.
+  partial: game.partial,
 });
