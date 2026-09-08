@@ -13,6 +13,7 @@ import {
 } from '../data/traps.js';
 import { CUTSCENE, CUTSCENE_LENGTH, beatsCrossed } from '../data/cutscene.js';
 import { BOSS_CUTS, bossCutLength, cutForPhase } from '../data/bossCutscenes.js';
+import { INTRO_CUT, introLength } from '../data/introCutscene.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
 import { clamp, overlaps } from './util.js';
@@ -163,8 +164,18 @@ export function startRun(game, index = 0) {
   game.elapsedMs = 0;
   game.ending = null;
   game.partial = index > 0;
-  if (index >= STAGES.length) loadBoss(game);
+  // 처음부터 달리는 판이고 오프닝을 아직 안 봤으면, 스테이지보다 먼저 오프닝을 튼다
+  if (index === 0 && !game.save.seenOpening) startIntro(game);
+  else if (index >= STAGES.length) loadBoss(game);
   else loadStage(game, index);
+}
+
+/** 오프닝 컷신을 튼다. 끝나면 스테이지 1 로 이어진다. */
+export function startIntro(game) {
+  game.scene = 'intro';
+  game.cutsceneTime = 0;
+  game.sceneTime = 0;
+  emit(game, 'cutscene', { id: 'intro' });
 }
 
 // ── 죽음과 부활 ──────────────────────────────────────────────
@@ -528,6 +539,13 @@ function finishRun(game) {
 /** 타이틀에서 고를 수 있는 줄 수 (개발자 모드일 때: 처음부터 / 스테이지 선택) */
 const TITLE_ROWS = 2;
 
+// 스테이지 선택 화면의 칸. 0..STAGES.length 는 스테이지와 보스라 startRun 에 그대로 넘긴다.
+/** 오프닝 다시 보기 (한 번 보면 저절로는 안 뜨므로 여기서만 다시 볼 수 있다) */
+export const SELECT_OPENING = STAGES.length + 1;
+/** 개발자 모드 끄기 */
+export const SELECT_DEV_OFF = STAGES.length + 2;
+export const SELECT_SLOTS = STAGES.length + 3;
+
 /** 개발자 모드를 켜고 끈다. 비번 판정은 ui 가 하고 결과만 여기로 온다. */
 export function setDevMode(game, on) {
   game.dev = on;
@@ -737,21 +755,33 @@ export function updateGame(game, input, dt) {
     }
 
     case 'select': {
-      // 칸: 스테이지 넷 + 보스 + 마지막 한 칸은 "개발자 모드 끄기"
-      const slots = STAGES.length + 2;
       const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
-      if (moved) game.selectIndex = (game.selectIndex + moved + slots) % slots;
+      if (moved) game.selectIndex = (game.selectIndex + moved + SELECT_SLOTS) % SELECT_SLOTS;
       if (input.restartPressed) {
         game.scene = 'title';
         game.sceneTime = 0;
       } else if (input.confirmPressed) {
-        if (game.selectIndex === slots - 1) {
+        if (game.selectIndex === SELECT_OPENING) startIntro(game);
+        else if (game.selectIndex === SELECT_DEV_OFF) {
           setDevMode(game, false);
           game.scene = 'title';
           game.sceneTime = 0;
         } else {
           startRun(game, game.selectIndex);
         }
+      }
+      break;
+    }
+
+    case 'intro': {
+      const wasIntro = game.cutsceneTime;
+      game.cutsceneTime += dt;
+      beat(game, 'intro', INTRO_CUT, wasIntro, game.cutsceneTime);
+      if (input.confirmPressed && game.cutsceneTime > 0.6) game.cutsceneTime = introLength();
+      if (game.cutsceneTime >= introLength()) {
+        // 건너뛰어도 여기를 지나므로 반드시 한 번 나온다 — 저장이 여기 달려 있다
+        emit(game, 'introdone', {});
+        loadStage(game, 0);
       }
       break;
     }

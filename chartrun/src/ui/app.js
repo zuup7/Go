@@ -41,7 +41,6 @@ let persisted = save;
 function persist(extra = {}) {
   persisted = mergeRun(persisted, { ...runSummary(game), ...extra });
   persisted.muted = audio.muted;
-  persisted.seenIntro = true;
   persisted.dev = game.dev;
   game.save = persisted;
   writeSave(persisted);
@@ -111,6 +110,12 @@ function handleEvent(name, data) {
     }
     case 'dev':
       // 켜고 끈 걸 기억한다 — 새로고침할 때마다 다시 넣게 하면 성가시다
+      persist();
+      break;
+    case 'introdone':
+      // 오프닝은 한 번만 — 끝까지 봤든 건너뛰었든 여기로 온다.
+      // persist() 가 persisted 를 그대로 이어받으므로 여기서 켜두면 그대로 저장된다.
+      persisted = { ...persisted, seenOpening: true };
       persist();
       break;
     case 'cutdone':

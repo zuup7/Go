@@ -10,6 +10,7 @@ import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import { phaseAt, phaseAtIn, CUT_AT } from '../data/cutscene.js';
 import { BOSS_CUTS, PHASE2_AT, PHASE3_AT, ENDING_AT } from '../data/bossCutscenes.js';
+import { INTRO_CUT, INTRO_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
 import { bossPhase } from '../core/boss.js';
 
@@ -1228,6 +1229,203 @@ function drawCrown(ctx, x, y, time) {
   }
 }
 
+// ── 오프닝: 방구석 → 차트 밑바닥 → 달리기 ───────────────────
+// 대사는 없다. 왜 달리는지는 화면이 말한다.
+
+/** 오프닝 차트 한 줄의 크기 */
+const IN_X = 52;
+const IN_W = 280;
+const IN_ROW = 26;
+/** 내가 걸린 맨 아랫줄의 화면상 y */
+const IN_MINE_Y = 158;
+/** 방 안 책상의 왼쪽 끝 */
+const ROOM_DESK_X = 34;
+/** 방 안에서 내가 서 있는 자리 (바닥 176 에 발이 닿는다) */
+const ROOM_ME_X = 196;
+const ROOM_ME_Y = 160;
+
+/** 좁은 방 — 벽, 창문, 책상, 그 위의 마이크 */
+function drawRoom(ctx, time) {
+  const floor = 176;
+  ctx.fillStyle = '#241a33';
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  // 벽지 세로줄
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  for (let x = 0; x < VIEW.w; x += 12) ctx.fillRect(x, 0, 5, floor);
+
+  // 창문 — 바깥은 밤이고, 별이 몇 개 떠 있다
+  ctx.fillStyle = '#0d0a1a';
+  ctx.fillRect(46, 34, 62, 48);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (let i = 0; i < 7; i++) {
+    if (Math.sin(time * 1.6 + i * 2.1) < 0.1) continue;
+    ctx.fillRect(50 + ((i * 23) % 54), 38 + ((i * 17) % 40), 1, 1);
+  }
+  ctx.fillStyle = '#4a3566';
+  ctx.fillRect(46, 34, 62, 2);
+  ctx.fillRect(46, 80, 62, 2);
+  ctx.fillRect(75, 34, 2, 48);
+
+  // 바닥
+  ctx.fillStyle = '#191026';
+  ctx.fillRect(0, floor, VIEW.w, VIEW.h - floor);
+  ctx.fillStyle = '#2e2140';
+  ctx.fillRect(0, floor, VIEW.w, 2);
+
+  // 책상은 왼쪽에 — 오른쪽을 비워둬야 마지막에 그리로 달려나갈 수 있다
+  ctx.fillStyle = '#3b2a18';
+  ctx.fillRect(ROOM_DESK_X, 150, 112, 6);
+  ctx.fillStyle = '#2a1e11';
+  ctx.fillRect(ROOM_DESK_X + 6, 156, 5, 20);
+  ctx.fillRect(ROOM_DESK_X + 101, 156, 5, 20);
+  // 스툴 — 옆에서 본 모양. 세로 기둥에 가로대를 걸치면 십자가처럼 보인다.
+  // 벽(#241a33)보다 확실히 밝아야 다리가 보인다 — 같은 색이면 좌석만 떠 있다.
+  ctx.fillStyle = '#4a3566';
+  ctx.fillRect(ROOM_DESK_X + 118, 160, 20, 3);
+  ctx.fillStyle = '#3d2c58';
+  ctx.fillRect(ROOM_DESK_X + 121, 163, 3, 13);
+  ctx.fillRect(ROOM_DESK_X + 132, 163, 3, 13);
+  return floor;
+}
+
+/** 커버 위에 뜨는 눈 — 앨범이 나를 내려다본다 */
+function drawWatchingEyes(ctx, x, y, size, time, look) {
+  const w = Math.max(2, Math.round(size / 5));
+  const ey = Math.round(y + size * 0.4);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(Math.round(x + size * 0.18), ey, w, w);
+  ctx.fillRect(Math.round(x + size * 0.6), ey, w, w);
+  ctx.fillStyle = '#101018';
+  const drop = Math.round(w * 0.4 + Math.sin(time * 2) * 0.5);
+  ctx.fillRect(Math.round(x + size * 0.18), ey + drop, w - 1, w - drop);
+  ctx.fillRect(Math.round(x + size * 0.6), ey + drop, w - 1, w - drop);
+  if (look) {
+    // 찌푸린 눈썹 — 반갑지 않다는 뜻
+    ctx.fillStyle = '#ff2e63';
+    ctx.fillRect(Math.round(x + size * 0.16), ey - 3, w + 1, 1);
+    ctx.fillRect(Math.round(x + size * 0.58), ey - 3, w + 1, 1);
+  }
+}
+
+/** 앨범이 박힌 차트 한 줄 */
+function drawIntroRow(ctx, y, album, ratio, time, watching) {
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(IN_X, y, IN_W, IN_ROW - 6);
+  drawCoverAt(ctx, album, IN_X + 6, y + 1, 18);
+  if (watching) drawWatchingEyes(ctx, IN_X + 6, y + 1, 18, time, true);
+  ctx.fillStyle = '#7c5cff';
+  ctx.fillRect(IN_X + 30, y + 5, Math.max(2, (IN_W - 40) * ratio), 10);
+}
+
+/** 내가 걸린 맨 아랫줄 — #100 */
+function drawMineRow(ctx, y, time, glow) {
+  ctx.fillStyle = '#1b0a20';
+  ctx.fillRect(IN_X, y, IN_W, IN_ROW - 6);
+  ctx.strokeStyle = glow ? '#ffd166' : '#6b3a8f';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(IN_X + 0.5, y + 0.5, IN_W - 1, IN_ROW - 7);
+  drawSprite(ctx, playerFrame({ onGround: true, vx: 0 }), IN_X + 8, y - 2);
+  drawBigTextCentered(ctx, '#100', IN_X + 74, y + 4, 2, '#ffd166', null);
+  ctx.fillStyle = '#4a2a66';
+  ctx.fillRect(IN_X + 122, y + 5, 8, 10);
+}
+
+export function drawIntroCut(ctx, t) {
+  const phase = phaseAtIn(INTRO_CUT, t, 'room');
+  const time = t;
+  ctx.fillStyle = '#0a0410';
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  // ── 1부: 방 ──────────────────────────────────────────────
+  const inRoom = ['room', 'note', 'upload'].includes(phase);
+  const grabbing = phase === 'grab' || phase === 'run';
+  if (inRoom || grabbing) {
+    drawRoom(ctx, time);
+    const px = ROOM_ME_X;
+    const py = ROOM_ME_Y;
+
+    // 책상 위 마이크 (쥐기 전까지만)
+    if (!grabbing) {
+      ctx.save();
+      ctx.translate(ROOM_DESK_X + 52, 138);
+      drawMicShape(ctx, 12);
+      ctx.restore();
+    }
+
+    // 달려나가는 동안에는 오른쪽으로 빠진다
+    const runP = phase === 'run' ? ease((t - INTRO_AT.run) / 1.2) : 0;
+    const x = px + runP * 160;
+    const frame = phase === 'run' ? playerFrame({ onGround: true, vx: 90, animTime: time }) : playerFrame({ onGround: true, vx: 0 });
+    drawSprite(ctx, frame, x, py);
+
+    // 쥔 마이크
+    if (grabbing) {
+      ctx.save();
+      ctx.translate(Math.round(x) + 12, Math.round(py) + 4);
+      drawMicShape(ctx, 9);
+      ctx.restore();
+    }
+
+    // 음표가 마이크 위로 떠올랐다가, 위로 빨려 올라간다 — 곡이 나왔고, 올렸다
+    if (phase === 'note' || phase === 'upload') {
+      const rise = phase === 'upload' ? ease((t - INTRO_AT.upload) / 0.9) : 0;
+      const ny = 126 - rise * 150 + Math.sin(time * 4) * 2;
+      ctx.save();
+      ctx.globalAlpha = 1 - rise * 0.3;
+      drawSprite(ctx, NOTE, ROOM_DESK_X + 54, ny);
+      ctx.restore();
+    }
+
+    // 흩어져 있던 음표들이 손으로 모인다
+    if (grabbing) {
+      const pull = ease((t - INTRO_AT.grab) / 1.0);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const d = (1 - pull) * (44 + noise(i, 40) * 26);
+        ctx.save();
+        ctx.globalAlpha = 0.35 + pull * 0.65;
+        drawSprite(ctx, NOTE, x + 2 + Math.cos(a) * d, py + Math.sin(a) * d * 0.8);
+        ctx.restore();
+      }
+    }
+    return;
+  }
+
+  // ── 2부: 차트 ────────────────────────────────────────────
+  // 위에서 내려오고, 그 다음 위로 훑는다 (훑기는 차트를 아래로 미는 것이다).
+  // 훑는 폭은 한 줄 반뿐이다 — 내 줄이 화면 밖으로 나가면
+  // "내가 밑바닥이다" 라는 그림 자체가 사라진다.
+  const drop = ease((t - INTRO_AT.chart) / 0.9);
+  const scan = phase === 'look' || phase === 'block' ? ease((t - INTRO_AT.look) / 1.4) : 0;
+  const closing = phase === 'block' ? ease((t - INTRO_AT.block) / 1.0) : 0;
+
+  ctx.save();
+  ctx.translate(0, (1 - drop) * -VIEW.h + scan * IN_ROW * 1.6);
+
+  // 내 위에 쌓인 앨범 줄. 위로 갈수록 순위가 높으니 막대도 길어진다 —
+  // 거꾸로 그리면 위로 갈수록 초라해 보여서 그림이 뜻과 어긋난다.
+  const ROWS = 14;
+  for (let i = 0; i < ROWS; i++) {
+    const y = IN_MINE_Y - (i + 1) * IN_ROW + closing * (i + 1) * 3;
+    // 훑는 만큼 화면이 아래로 밀리므로, 그만큼은 위로 더 그려야 꼭대기가 안 빈다
+    if (y + IN_ROW * 2 < -IN_ROW) continue;
+    ctx.save();
+    // 위쪽은 아직 못 본 세상이라 조금 흐리게
+    ctx.globalAlpha = Math.max(0.4, 1 - i * 0.055);
+    drawIntroRow(ctx, y, ALBUMS[i % ALBUMS.length], 0.34 + (i / (ROWS - 1)) * 0.62, time, phase === 'block');
+    ctx.restore();
+  }
+
+  if (phase !== 'chart') drawMineRow(ctx, IN_MINE_Y, time, phase === 'bottom');
+  ctx.restore();
+
+  // 벽처럼 닫힐 때 화면이 눌리는 느낌
+  if (closing > 0) {
+    ctx.fillStyle = `rgba(6,2,14,${closing * 0.35})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
+}
+
 // ── 타이틀 배경 ─────────────────────────────────────────────
 /** 앞으로 만날 앨범 열일곱 장이 천천히 흘러간다 */
 export function drawTitle(ctx, time) {
@@ -1272,6 +1470,10 @@ export function drawScene(ctx, game, time) {
   // 스테이지 선택도 타이틀 배경 위에 뜬다 (판이 아직 없어서 그릴 월드가 없다)
   if (game.scene === 'title' || game.scene === 'select') {
     drawTitle(ctx, time);
+    return;
+  }
+  if (game.scene === 'intro') {
+    drawIntroCut(ctx, game.cutsceneTime);
     return;
   }
   if (game.scene === 'cutscene') {

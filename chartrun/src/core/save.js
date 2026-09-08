@@ -11,7 +11,12 @@ export const emptySave = () => ({
   revealedTraps: [],
   bestTimeMs: null,
   muted: false,
-  seenIntro: false,
+  /**
+   * 오프닝 컷신을 한 번 봤는지. 본 뒤로는 시작할 때 바로 스테이지 1 이다.
+   * (예전에 있던 seenIntro 는 읽는 곳이 없는데 저장할 때마다 true 가 돼서
+   *  기존 플레이어가 오프닝을 영영 못 보게 된다 — 그래서 칸을 새로 뒀다)
+   */
+  seenOpening: false,
   /** 개발자 모드 (비번 1234). 켜면 스테이지를 골라 들어갈 수 있다 */
   dev: false,
 });

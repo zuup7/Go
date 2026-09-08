@@ -12,6 +12,7 @@ import {
   bossCutLength,
 } from '../src/data/bossCutscenes.js';
 import { CUT_SOUND, soundFor } from '../src/data/cutSound.js';
+import { INTRO_CUT } from '../src/data/introCutscene.js';
 
 const DT = 1 / 60;
 
@@ -58,14 +59,29 @@ test('경계를 정확히 한 번만 넘긴다', () => {
 });
 
 // ── 표에 빠진 단계가 없어야 한다 (이 파일의 핵심) ────────────
+/**
+ * 컷신 id → 타임라인. 소리 표(CUT_SOUND)의 키를 돌면서 여기서 찾으므로,
+ * 컷신을 새로 만들고 표에 넣으면 여기에도 넣어야 테스트가 돈다 —
+ * 어느 쪽을 빠뜨려도 잡힌다.
+ */
+const TIMELINES = {
+  intro: INTRO_CUT,
+  merge: CUTSCENE,
+  phase2: PHASE2_CUT,
+  phase3: PHASE3_CUT,
+  ending: ENDING_CUT,
+};
+
+test('소리 표와 타임라인이 서로 빠짐없이 맞는다', () => {
+  assert.deepEqual(
+    Object.keys(CUT_SOUND).sort(),
+    Object.keys(TIMELINES).sort(),
+    '컷신을 새로 만들고 소리 표나 이 목록 한쪽만 고쳤다',
+  );
+});
+
 test('모든 컷신 단계가 소리 표에 있다', () => {
-  const timelines = [
-    ['merge', CUTSCENE],
-    ['phase2', PHASE2_CUT],
-    ['phase3', PHASE3_CUT],
-    ['ending', ENDING_CUT],
-  ];
-  for (const [cut, timeline] of timelines) {
+  for (const [cut, timeline] of Object.entries(TIMELINES)) {
     for (const step of timeline) {
       assert.ok(
         soundFor(cut, step.kind) !== undefined,

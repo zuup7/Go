@@ -2,7 +2,16 @@
 // 제일 중요한 건 "평소 진행이 그대로인가" 와 "골라 들어간 판이 기록을 더럽히지 않는가" 다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, updateGame, startRun, setDevMode, runSummary } from '../src/core/game.js';
+import {
+  createGame,
+  updateGame,
+  startRun,
+  setDevMode,
+  runSummary,
+  SELECT_OPENING,
+  SELECT_DEV_OFF,
+  SELECT_SLOTS,
+} from '../src/core/game.js';
 import { DEV_CODE, pushDigit, codeMatches, KEYPAD } from '../src/core/devmode.js';
 import { emptySave, mergeRun, deserialize, serialize } from '../src/core/save.js';
 import { STAGES } from '../src/data/stages.js';
@@ -27,6 +36,9 @@ const idle = (over = {}) => ({
 
 /** 한 프레임 */
 const tap = (game, over) => updateGame(game, idle(over), DT);
+
+/** 오프닝을 이미 본 판 — 여기 테스트들은 오프닝이 아니라 개발자 모드를 본다 */
+const played = (seed = 1) => createGame({ seed, save: { ...emptySave(), seenOpening: true } });
 
 /** 여러 자리를 차례로 넣는다 */
 const type = (digits) => [...String(digits)].reduce((buf, d) => pushDigit(buf, d), '');
@@ -59,7 +71,7 @@ test('숫자판에 0~9 와 지우기·닫기가 다 있다', () => {
 
 // ── 평소 진행은 그대로 ──────────────────────────────────────
 test('개발자 모드를 안 켰으면 타이틀에서 바로 시작한다 — 예전과 같다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played();
   assert.equal(game.dev, false);
   tap(game, { confirmPressed: true });
   assert.equal(game.scene, 'stageIntro', '바로 1스테이지로 가야 한다');
@@ -68,7 +80,7 @@ test('개발자 모드를 안 켰으면 타이틀에서 바로 시작한다 — 
 });
 
 test('개발자 모드가 꺼져 있으면 ◀▶ 를 눌러도 선택 화면이 안 열린다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played();
   tap(game, { rightPressed: true });
   assert.equal(game.titleIndex, 0, '고를 줄 자체가 없어야 한다');
   tap(game, { confirmPressed: true });
@@ -77,7 +89,7 @@ test('개발자 모드가 꺼져 있으면 ◀▶ 를 눌러도 선택 화면이
 
 // ── 켠 뒤 ───────────────────────────────────────────────────
 test('켜면 타이틀에서 스테이지 선택으로 갈 수 있다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played();
   setDevMode(game, true);
   tap(game, { rightPressed: true });
   assert.equal(game.titleIndex, 1);
@@ -86,7 +98,7 @@ test('켜면 타이틀에서 스테이지 선택으로 갈 수 있다', () => {
 });
 
 test('선택 화면에서 뒤로 나올 수 있다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played();
   setDevMode(game, true);
   game.scene = 'select';
   tap(game, { restartPressed: true });
@@ -94,29 +106,39 @@ test('선택 화면에서 뒤로 나올 수 있다', () => {
 });
 
 test('선택 화면 마지막 칸은 개발자 모드 끄기다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played();
   setDevMode(game, true);
   game.scene = 'select';
-  game.selectIndex = STAGES.length + 1;
+  game.selectIndex = SELECT_DEV_OFF;
   tap(game, { confirmPressed: true });
   assert.equal(game.dev, false);
   assert.equal(game.scene, 'title');
 });
 
-test('칸 고르기가 양끝에서 돌아간다', () => {
-  const game = createGame({ seed: 1 });
+test('오프닝 다시 보기 칸이 오프닝을 다시 튼다', () => {
+  // 오프닝은 한 번 보면 저절로는 안 뜬다 — 여기가 유일하게 다시 보는 길이다
+  const game = played();
   setDevMode(game, true);
   game.scene = 'select';
-  const slots = STAGES.length + 2;
+  game.selectIndex = SELECT_OPENING;
+  tap(game, { confirmPressed: true });
+  assert.equal(game.scene, 'intro');
+  assert.equal(game.cutsceneTime, 0, '처음부터 다시 틀어야 한다');
+});
+
+test('칸 고르기가 양끝에서 돌아간다', () => {
+  const game = played();
+  setDevMode(game, true);
+  game.scene = 'select';
   tap(game, { leftPressed: true });
-  assert.equal(game.selectIndex, slots - 1, '왼쪽 끝에서 오른쪽 끝으로 돌아야 한다');
+  assert.equal(game.selectIndex, SELECT_SLOTS - 1, '왼쪽 끝에서 오른쪽 끝으로 돌아야 한다');
   tap(game, { rightPressed: true });
   assert.equal(game.selectIndex, 0);
 });
 
 // ── 골라 들어가기 ───────────────────────────────────────────
 test('고른 스테이지에서 시작하고 순위도 거기서 시작한다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played();
   startRun(game, 2);
   assert.equal(game.stageIndex, 2);
   assert.equal(game.scene, 'stageIntro');
@@ -125,7 +147,7 @@ test('고른 스테이지에서 시작하고 순위도 거기서 시작한다', 
 });
 
 test('마지막 칸 다음은 보스전이다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played();
   startRun(game, STAGES.length);
   assert.equal(game.scene, 'boss');
   assert.ok(game.boss, '보스가 있어야 한다');
@@ -133,7 +155,7 @@ test('마지막 칸 다음은 보스전이다', () => {
 });
 
 test('처음부터 시작한 판은 partial 이 아니다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played();
   startRun(game, 2);
   startRun(game); // 다시 처음부터
   assert.equal(game.partial, false);
@@ -158,7 +180,7 @@ test('처음부터 달린 판은 기록을 갱신한다', () => {
 });
 
 test('요약에 partial 이 실려 나간다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played();
   startRun(game, 3);
   assert.equal(runSummary(game).partial, true);
 });

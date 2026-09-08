@@ -80,6 +80,7 @@ export function createHud(root) {
         const slots = [
           ...STAGES.map((s) => ({ icon: s.icon, label: `STAGE ${s.number}` })),
           { icon: '👑', label: '보스전' },
+          { icon: '🎬', label: '오프닝 다시 보기' },
           { icon: '🚪', label: '개발자 모드 끄기' },
         ];
         return `
@@ -145,7 +146,7 @@ export function createHud(root) {
       el.time.textContent = timeText(game.elapsedMs);
 
       // 컷신 중에는 HUD 를 걷는다 — 좁은 화면에서 큰 제목과 겹친다
-      const inCut = game.scene === 'cutscene' || !!game.bossCut;
+      const inCut = game.scene === 'cutscene' || game.scene === 'intro' || !!game.bossCut;
       el.hud.hidden = game.scene === 'title' || game.scene === 'select' || inCut;
 
       const showBoss = game.scene === 'boss' && game.boss && !inCut;

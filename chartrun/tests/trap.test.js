@@ -18,6 +18,12 @@ const idle = {
   anyPressed: false,
 };
 const press = (over) => ({ ...idle, ...over });
+
+/**
+ * 오프닝을 이미 본 판. 여기 테스트들은 오프닝이 아니라 게임 흐름을 보므로,
+ * 처음 켠 사람이 아니라 다시 켠 사람의 상태에서 시작한다.
+ */
+const played = (seed) => createGame({ seed, save: { ...emptySave(), seenOpening: true } });
 const step = (game, input = idle, frames = 1) => {
   for (let i = 0; i < frames; i++) updateGame(game, input, 1 / 60);
 };
@@ -68,7 +74,7 @@ test('판 결과를 기록에 합친다', () => {
 
 // ── 실제 게임 흐름 ─────────────────────────────────────────
 test('타이틀에서 아무 키나 누르면 1스테이지가 시작된다', () => {
-  const game = createGame({ seed: 1 });
+  const game = played(1);
   assert.equal(game.scene, 'title');
   step(game, press({ confirmPressed: true }));
   assert.equal(game.scene, 'stageIntro');
@@ -78,7 +84,7 @@ test('타이틀에서 아무 키나 누르면 1스테이지가 시작된다', ()
 });
 
 test('죽으면 차트아웃이 늘고 체크포인트에서 부활한다', () => {
-  const game = createGame({ seed: 2 });
+  const game = played(2);
   startRun(game);
   step(game, idle, 130);
   assert.equal(game.scene, 'play');
@@ -95,7 +101,7 @@ test('죽으면 차트아웃이 늘고 체크포인트에서 부활한다', () =
 });
 
 test('목숨은 무한 — 계속 죽어도 게임오버가 없다', () => {
-  const game = createGame({ seed: 3 });
+  const game = played(3);
   startRun(game);
   step(game, idle, 130);
   for (let i = 0; i < 5; i++) {
@@ -107,7 +113,7 @@ test('목숨은 무한 — 계속 죽어도 게임오버가 없다', () => {
 });
 
 test('가짜 발판은 밟으면 사라지고 기억에 남는다', () => {
-  const game = createGame({ seed: 4 });
+  const game = played(4);
   loadStage(game, 0);
   game.scene = 'play';
   const world = game.world;
@@ -132,7 +138,7 @@ test('가짜 발판은 밟으면 사라지고 기억에 남는다', () => {
 });
 
 test('골에 닿으면 스테이지를 넘긴다', () => {
-  const game = createGame({ seed: 5 });
+  const game = played(5);
   loadStage(game, 0);
   game.scene = 'play';
   game.player.x = game.world.goal.x;
@@ -144,7 +150,7 @@ test('골에 닿으면 스테이지를 넘긴다', () => {
 });
 
 test('마지막 스테이지를 깨면 합체 컷신이 나오고 보스전으로 간다', () => {
-  const game = createGame({ seed: 6 });
+  const game = played(6);
   loadStage(game, STAGES.length - 1);
   game.scene = 'play';
   game.player.x = game.world.goal.x;
@@ -160,7 +166,7 @@ test('마지막 스테이지를 깨면 합체 컷신이 나오고 보스전으�
 });
 
 test('컷신은 건너뛸 수 있다', () => {
-  const game = createGame({ seed: 7 });
+  const game = played(7);
   game.scene = 'cutscene';
   game.cutsceneTime = 0;
   step(game, idle, 60);
@@ -170,7 +176,7 @@ test('컷신은 건너뛸 수 있다', () => {
 });
 
 test('보스를 잡으면 1위 엔딩', () => {
-  const game = createGame({ seed: 8 });
+  const game = played(8);
   loadStage(game, 0);
   game.scene = 'cutscene';
   game.cutsceneTime = 999;
@@ -189,7 +195,7 @@ test('보스를 잡으면 1위 엔딩', () => {
 });
 
 test('일시정지 중에는 시간이 멈춘다', () => {
-  const game = createGame({ seed: 9 });
+  const game = played(9);
   startRun(game);
   step(game, idle, 130);
   step(game, press({ pausePressed: true }));
@@ -208,7 +214,7 @@ test('화면 크기는 4:2.33 저해상도', () => {
 
 test('화면에 문구를 띄우는 장치가 아예 없다', () => {
   // 대사·배너를 다시 들이면 여기서 걸린다. 화면 글자는 HUD 의 숫자뿐이다.
-  const game = createGame({ seed: 10 });
+  const game = played(10);
   startRun(game);
   step(game, idle, 60);
   assert.equal(game.banner, undefined, '배너가 되살아났다');

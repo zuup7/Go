@@ -9,6 +9,24 @@
 // 시각은 여기 없다. 언제 울릴지는 타임라인이 정하고, 게임이 'cutbeat' 로 알려준다.
 
 export const CUT_SOUND = {
+  /**
+   * 오프닝 — 방구석에서 만든 노래가 차트 밑바닥에 걸린다.
+   * 앞부분을 일부러 조용하게 둬야 차트가 내려올 때 한 방이 산다.
+   */
+  intro: {
+    room: {},
+    note: { sfx: 'coin' },
+    upload: { sfx: 'gather' },
+    chart: { sfx: 'blip' },
+    bottom: { sfx: 'thud' },
+    look: { sfx: 'rumble' },
+    block: { sfx: 'title' },
+    grab: { sfx: 'power' },
+    // 여기서 스테이지 브금으로 갈아탄다 — 스테이지 1이 시작될 때 이미 흐르고 있다
+    run: { sfx: 'climb', bgm: 'stage' },
+    end: {},
+  },
+
   /** 합체 컷신 — 앨범 열일곱 장이 하나로 뭉친다 */
   merge: {
     gather: { sfx: 'gather' },
