@@ -4,7 +4,7 @@ import { T } from '../core/world.js';
 import { cameraOffset } from '../core/camera.js';
 import { trapKey } from '../data/traps.js';
 import { drawAlbum, drawCoverAt } from './albumArt.js';
-import { drawSprite, crisp } from './pixel.js';
+import { drawSprite, crisp, makeCanvas } from './pixel.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
@@ -593,24 +593,26 @@ function drawBossHealth(ctx, boss, ox, oy, color, drop = 0) {
  * 약점 — 가운데 재생 버튼. 열려 있을 때만 초록으로 빛난다.
  * 원반이든 로봇이든 약점은 같은 자리에 같은 모양이다 (로봇에서는 가슴 코어).
  */
-function drawBossCore(ctx, cx, cy, open, time) {
+function drawBossCore(ctx, cx, cy, open, time, rad = 11) {
+  // 배경의 거대 로봇도 같은 그림을 쓴다 — 크기만 다르고 모양은 하나여야 한 몸으로 보인다
+  const k = rad / 11;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.fillStyle = open ? '#39ff9a' : '#5c4a70';
   ctx.beginPath();
-  ctx.arc(0, 0, 11, 0, Math.PI * 2);
+  ctx.arc(0, 0, rad, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = open ? '#04240f' : '#2a2136';
   ctx.beginPath();
-  ctx.moveTo(-3, -5);
-  ctx.lineTo(6, 0);
-  ctx.lineTo(-3, 5);
+  ctx.moveTo(-3 * k, -5 * k);
+  ctx.lineTo(6 * k, 0);
+  ctx.lineTo(-3 * k, 5 * k);
   ctx.fill();
   if (open) {
     ctx.strokeStyle = `rgba(57,255,154,${0.5 + Math.sin(time * 10) * 0.4})`;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(0, 0, 14 + Math.sin(time * 8) * 2, 0, Math.PI * 2);
+    ctx.arc(0, 0, (14 + Math.sin(time * 8) * 2) * k, 0, Math.PI * 2);
     ctx.stroke();
   }
   ctx.restore();
@@ -642,6 +644,67 @@ function drawFists(ctx, boss, ox, oy, color) {
     }
     ctx.restore();
   }
+}
+
+/**
+ * 3페이즈 배경에 버티고 선 거대 로봇.
+ *
+ * 실제로 싸우는 몸은 56픽셀이라 아무리 잘 그려도 커 보이질 않는다. 뒤에 같은 몸을
+ * 화면보다 크게 세워두면 **크기가 그림으로 읽힌다** — 지금 상대하는 게 저것이라는 뜻이다.
+ * 몸 그림은 drawRobotBody 하나뿐이라, 로봇을 고치면 배경도 같이 바뀐다.
+ */
+const GIANT_R = 92;
+/** 머리는 다 보이고 다리는 지형 뒤로 사라지는 높이 — "화면에 안 들어간다"가 요점이다 */
+const GIANT_CY = 116;
+
+/**
+ * 거대 로봇을 한 번 구워둔다.
+ *
+ * 그냥 흐리게 겹쳐 그리면 앨범 커버가 알록달록하게 남아서 로봇이 아니라
+ * 벽에 걸린 액자들처럼 보인다. 딴 캔버스에 그린 뒤 **제 픽셀 위에만**(source-atop)
+ * 한 가지 색을 덮어 무늬를 눌러버리면, 덩치와 실루엣만 남는다.
+ * 매 프레임 다시 구울 이유가 없어서 페이즈 색이 바뀔 때만 새로 굽는다.
+ */
+let giantBaked = null;
+
+function giantCanvas(color) {
+  if (giantBaked?.color === color) return giantBaked.canvas;
+  const r = GIANT_R;
+  const top = r * ROBOT_TOP;
+  const w = Math.ceil(r * 2.8);
+  const h = Math.ceil(r * (ROBOT_BOTTOM - ROBOT_TOP)) + 4;
+  const canvas = makeCanvas(w, h);
+  const c = canvas.getContext('2d');
+  c.imageSmoothingEnabled = false;
+  c.translate(Math.round(w / 2), Math.round(-top + 2));
+  drawRobotBody(c, r, 0, color, 1, false);
+  drawBossCore(c, 0, 0, false, 0, coreRadius(r));
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'source-atop';
+  c.fillStyle = 'rgba(58,24,92,0.86)';
+  c.fillRect(0, 0, w, h);
+  giantBaked = { color, canvas, w, h, top };
+  return canvas;
+}
+
+function drawGiantRobot(ctx, boss, ox, time) {
+  const down = boss.state === 'defeated';
+  // 쓰러지면 배경도 같이 꺼진다 — 이겼는데 뒤에 그대로 서 있으면 안 진 것 같다
+  const fade = down ? Math.max(0, 1 - boss.defeatedAt / 1.6) : 1;
+  if (fade <= 0) return;
+
+  const canvas = giantCanvas(bossPhase(boss).color);
+  const { w, h, top } = giantBaked;
+  // 시차 — 카메라를 천천히 따라오고, 아주 조금씩 흔들린다
+  const x = Math.round(VIEW.w / 2 - ox * 0.12 - w / 2 + Math.sin(time * 0.6) * 2);
+  const y = Math.round(GIANT_CY + top - 2);
+
+  ctx.save();
+  ctx.globalAlpha = 0.55 * fade;
+  ctx.drawImage(canvas, x, y);
+  ctx.restore();
+  // 코어는 구운 그림 안에 이미 들어 있다. 여기에 따로 빛을 얹지 않는다 —
+  // 배경의 재생 버튼이 초록으로 켜지면 저기를 밟으라는 말로 읽힌다.
 }
 
 /** 쓰러진 로봇의 관절에서 튀는 스파크 */
@@ -900,6 +963,15 @@ export const ROBOT_BOTTOM = RB.footBot;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 /**
+ * 가슴 코어실의 반쪽 크기. 작은 몸에서는 코어(반지름 11)가 들어갈 최소치를 지키고,
+ * 큰 몸에서는 가슴 비율을 따라 같이 커진다 — 배경의 거대 로봇도 이 식을 쓴다.
+ */
+const housingHalf = (r) => Math.max(26, Math.min(30, r * 0.75), r * 0.62) / 2;
+
+/** 그 몸 크기에 맞는 코어 반지름 */
+const coreRadius = (r) => Math.max(11, housingHalf(r) * 0.74);
+
+/**
  * 장갑에 박힌 앨범 한 장. 테를 둘러 **판에 끼워진 것**으로 보이게 한다 —
  * 그냥 얹으면 스티커로 보이고, 열일곱 장이 뭉쳐 만든 몸이라는 게 안 읽힌다.
  */
@@ -1034,7 +1106,7 @@ function drawRobotBody(ctx, r, time, color, grow = 1, hurt = false) {
       ctx.restore();
     }
     // 코어실 — 코어(반지름 11 고정)가 어느 크기에서도 들어가되 가슴 밖으로는 안 나가야 한다
-    const hs = Math.max(26, Math.min(30, r * 0.75)) / 2;
+    const hs = housingHalf(r);
     plate(ctx, -hs, -hs, hs * 2, hs * 2, { hurt, face: VINYL, lit: METAL });
     for (const sx of [-1, 1]) {
       for (const sy of [-1, 1]) {
@@ -1450,7 +1522,8 @@ function drawBlasts(ctx, since, cy) {
  */
 function drawCombine(ctx, t, phase, time) {
   const cy = CUT_CY + 6;
-  const r = 40;
+  // 합체 컷신의 몸은 크게 — 이 컷의 요점이 "커졌다" 이다
+  const r = 52;
 
   if (phase === 'call') {
     const p = clamp01((t - PHASE3_AT.call) / (PHASE3_AT.assemble - PHASE3_AT.call));
@@ -2167,6 +2240,8 @@ export function drawScene(ctx, game, time) {
 
   drawSky(ctx, stage, ox, time);
   drawParallax(ctx, stage, ox, time);
+  // 3페이즈에서는 그 뒤로 거대 로봇이 버티고 선다 (원경 다음, 지형 앞)
+  if (game.boss && bossCombined(game.boss)) drawGiantRobot(ctx, game.boss, ox, time);
   drawTiles(ctx, game, ox, oy, time);
   drawPopSpikes(ctx, game.world, ox, oy);
   drawWallHints(ctx, game, ox, oy, time);
