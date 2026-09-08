@@ -1047,7 +1047,8 @@ function drawCouple(ctx, t, phase, time, floor) {
   ctx.fillStyle = '#2b1d12';
   ctx.fillRect(Math.round(groomX) + 4, Math.round(standY) + 3, 4, 2);
 
-  drawSprite(ctx, BRIDE, Math.round(brideX), Math.round(standY - 6 - hop));
+  // 발이 카펫에 정확히 닿게 — 스프라이트 키가 바뀌어도 따라오도록 높이에서 뺀다
+  drawSprite(ctx, BRIDE, Math.round(brideX), Math.round(floor - BRIDE.h - hop));
 
   // 반지가 둘 사이에 떠오른다
   if (phase === 'ring' || phase === 'kiss') {

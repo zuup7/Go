@@ -117,44 +117,48 @@ export const DISC = sprite(
 );
 
 // ── 엔딩의 강아지 공주 ───────────────────────────────────────
-// 실제 사진을 보고 맞춘 말티푸. 사진에서 가져온 것:
-//   · 털은 갈색이 아니라 **크림빛 금발**. 주둥이와 가슴은 거의 흰색에 가깝다.
-//   · 귀도 같은 금발이다 (갈색으로 칠하면 딴 개가 된다). 턱 아래까지 길게 늘어진다.
-//   · 새까맣고 큰 코가 얼굴에서 제일 진한 것.
-//   · 눈이 크고 **동그랗다**. 네모난 덩어리로 칠하면 해골이 된다 — 위아래를 깎는다.
-// 18×18.
+// 통통한 옆모습 + **검은 테두리**. 테두리가 이 그림체의 전부다시피 해서,
+// 실루엣 바깥을 전부 K 로 두른다. 털색은 실제 사진의 크림빛 금발.
+//
+// 눈과 코도 검정이라 테두리에 닿으면 그냥 먹혀버린다. 눈은 사방을 털로 감싸고,
+// 코는 주둥이를 왼쪽으로 한 칸 내밀어 그 끝에서 테두리와 뭉치게 뒀다.
+// 공주 드레스를 입고 두 발로 서 있다. 20×20.
 const BRIDE_PAL = {
+  K: '#1a1410', // 테두리·눈·코
   g: '#ffd166', // 티아라
   G: '#fff0b8', // 티아라 반짝임
-  w: '#fffaf2', // 면사포
-  m: '#e9cf9f', // 머리·등의 금빛 털
-  d: '#d2a95f', // 귀 (조금 더 진한 금빛 — 갈색이 아니다)
-  c: '#f7ead2', // 주둥이·가슴의 크림색
-  e: '#1b1410', // 눈
+  w: '#fffaf2', // 면사포·드레스 밑단
+  m: '#e9cf9f', // 금빛 털
+  d: '#b8894a', // 늘어진 귀 (털색과 확실히 달라야 귀로 보인다)
   h: '#ffffff', // 눈동자 반짝임
-  n: '#241d1a', // 코
+  n: '#1a1410', // 코
+  e: '#1a1410', // 눈
+  p: '#ff9ec4', // 드레스
+  P: '#e85f95', // 드레스 주름
 };
 
 export const BRIDE = sprite(
   [
-    '.......g.g.g......',
-    '......gGgGgGg.....',
-    '.....wmmmmmmw.....',
-    '....wmmmmmmmmw....',
-    '...wdmmmmmmmmdw...',
-    '..wdmmmmmmmmmmdw..',
-    '..wdmmhemmhemmdw..',
-    '..wdmeeemmeeemdw..',
-    '..wdmmeemmeemmdw..',
-    '..wdmmmccccmmmdw..',
-    '..wdmmccnnccmmdw..',
-    '..wdmcccnncccmdw..',
-    '...wddccccccddw...',
-    '....wccccccccw....',
-    '....cccccccccc....',
-    '...cccccccccccc...',
-    '...cccccccccccc...',
-    '....ccc....ccc....',
+    '.....gg.gg..........',
+    '....gGgGgGg.........',
+    '...KKKKKKKKK........',
+    '..KKmmmmmmmKKw......',
+    '..KmmmmmmmmmKdKw....',
+    '..KmmmhemmmmKddKw...',
+    '..KmmmeemmmmKddKw...',
+    '.KKmmmeemmmmKddKw...',
+    'KKKmmmmmmmmmKddK....',
+    '.KKmmmmmmmmmKddK....',
+    '..KKmmmmmmmKKddK....',
+    '...KKKmmmmmKKddK....',
+    '.....KKmmmmmKKKK....',
+    '....KppppppppK......',
+    '...KpppppppppppK....',
+    '...KpPpppppppPpK....',
+    '..KpppppppppppppK...',
+    '..KpPppppppppppPK...',
+    '.KwwwwwwwwwwwwwwwK..',
+    '.KKKKKKKKKKKKKKKKK..',
   ],
   BRIDE_PAL,
 );
