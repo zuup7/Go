@@ -25,10 +25,11 @@ export const PHASE3_CUT = [
   { at: 0.7, kind: 'chart' }, // 가짜 실시간 차트가 뜬다
   { at: 1.6, kind: 'rig' }, // 꼴찌였던 보스가 1위로 솟는다
   { at: 2.8, kind: 'call' }, // 흩어진 조각들이 사방에서 불려온다
-  { at: 4.0, kind: 'assemble' }, // 팔·다리·머리가 차례로 딱딱 붙는다
-  { at: 5.6, kind: 'core' }, // 가슴 코어에 불이 들어오고 눈이 켜진다
-  { at: 6.6, kind: 'title' },
-  { at: 8.0, kind: 'end' },
+  { at: 4.0, kind: 'assemble' }, // 다리·몸통·견갑·팔이 하나씩 꽂힌다
+  { at: 6.0, kind: 'lock' }, // 머리와 크레스트 — 마지막 철컥
+  { at: 6.8, kind: 'core' }, // 가슴 코어에 불이 들어오고 바이저가 켜진다
+  { at: 7.8, kind: 'title' },
+  { at: 9.2, kind: 'end' },
 ];
 
 /**

@@ -83,7 +83,9 @@ test('조작이 합체보다 먼저다 — 순서가 곧 이유다', () => {
   const at = (kind) => PHASE3_CUT.findIndex((s) => s.kind === kind);
   assert.ok(at('rig') < at('call'), '1위를 뺏은 다음에 조각을 부른다');
   assert.ok(at('call') < at('assemble'), '불러 모은 다음에 조립한다');
-  assert.ok(at('assemble') < at('core'), '다 붙은 다음에 코어에 불이 들어온다');
+  assert.ok(at('assemble') < at('lock'), '부위를 붙이고 나서 마지막이 잠긴다');
+  // 다 잠기기 전에 불이 들어오면 합체가 아니라 그냥 켜진 거다
+  assert.ok(at('lock') < at('core'), '다 붙은 다음에 코어에 불이 들어온다');
 });
 
 test('3페이즈에서만 합체한 몸이다', () => {
@@ -110,7 +112,7 @@ test('연출 순서가 뜻대로 짜여 있다', () => {
   // 3페이즈: 차트를 조작해 1위를 뺏고 → 그 힘으로 조각을 불러 → 로봇으로 합체한다
   assert.deepEqual(
     PHASE3_CUT.filter((s) => s.kind !== 'line').map((s) => s.kind),
-    ['shake', 'chart', 'rig', 'call', 'assemble', 'core', 'title', 'end'],
+    ['shake', 'chart', 'rig', 'call', 'assemble', 'lock', 'core', 'title', 'end'],
   );
   // 엔딩 1부: 터지고 → 흩어지고 → 줄 서고 → 1위 자리가 비고 → 올라서고 → 왕관
   // 엔딩 2부: 차트가 식장이 되고 → 공주가 들어오고 → 마주 서고 → 반지 → 하트

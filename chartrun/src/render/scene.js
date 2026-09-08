@@ -633,16 +633,29 @@ function drawFists(ctx, boss, ox, oy, color) {
     ctx.globalAlpha = 0.5 + Math.sin(q.spin * 3) * 0.2;
     ctx.fillRect(-q.w / 2 - 10, -3, 10, 6);
     ctx.globalAlpha = 1;
-    // 주먹
-    ctx.fillStyle = '#5c4a70';
-    ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h);
-    ctx.fillStyle = '#241a33';
-    ctx.fillRect(-q.w / 2 + 2, -q.h / 2 + 2, q.w - 4, q.h - 4);
+    // 주먹 — 몸과 같은 장갑판이라야 떼어낸 손으로 보인다
+    plate(ctx, -q.w / 2, -q.h / 2, q.w, q.h);
+    plate(ctx, -q.w / 2 + 3, -q.h / 2 + 3, q.w - 6, q.h - 6, { face: DARK, lit: METAL });
     // 손가락 마디
-    ctx.fillStyle = color;
-    for (let i = 0; i < 3; i++) ctx.fillRect(q.w / 2 - 4, -q.h / 2 + 3 + i * 6, 3, 4);
+    for (let i = 0; i < 3; i++) {
+      plate(ctx, q.w / 2 - 5, -q.h / 2 + 3 + i * 6, 4, 4, { face: color, lit: '#ffffff' });
+    }
     ctx.restore();
   }
+}
+
+/** 쓰러진 로봇의 관절에서 튀는 스파크 */
+function drawSparks(ctx, cx, cy, r, since, color) {
+  ctx.save();
+  for (let i = 0; i < 7; i++) {
+    const t = (since * 2.6 + i * 0.37) % 1;
+    const a = i * 1.9 + since;
+    const d = r * (0.3 + t * 1.1);
+    ctx.globalAlpha = Math.max(0, 1 - t);
+    ctx.fillStyle = i % 2 === 0 ? '#ffffff' : color;
+    ctx.fillRect(Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d * 0.8), 2, 2);
+  }
+  ctx.restore();
 }
 
 export function drawBoss(ctx, boss, ox, oy, time) {
@@ -651,17 +664,22 @@ export function drawBoss(ctx, boss, ox, oy, time) {
   const phaseColor = bossPhase(boss).color;
   const r = boss.w / 2;
 
-  // 3페이즈는 합체한 로봇이다 — 원반이 가슴이 되고 팔다리가 붙는다
-  if (bossCombined(boss) && boss.state !== 'defeated') {
+  // 3페이즈는 합체한 로봇이다 — 원반이 어깨가 되고 마디 나뉜 팔다리가 붙는다.
+  // 격파해도 로봇으로 남긴다. 이긴 순간에 몸이 도로 원반으로 바뀌면 이긴 것 같지가 않다.
+  if (bossCombined(boss)) {
+    const down = boss.state === 'defeated';
     ctx.save();
     ctx.translate(cx, cy);
+    // 쓰러질 때는 옆으로 기운다 (다 돌지는 않는다 — 로봇은 구르지 않는다)
+    if (down) ctx.rotate(Math.min(0.7, boss.defeatedAt * 0.6));
     drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
     ctx.restore();
     drawBossCore(ctx, cx, cy, boss.vulnerable, time);
-    drawFists(ctx, boss, ox, oy, phaseColor);
-    // 다리 아래로 내린다 — 안 그러면 체력계가 다리를 가로지르는 벨트처럼 보인다
-    if (boss.state !== 'defeated') drawBossHealth(ctx, boss, ox, oy, phaseColor, 30);
-    if (princessCaged(boss)) drawCage(ctx, cx, boss.y - oy - 30, time);
+    if (down) drawSparks(ctx, cx, cy, r, boss.defeatedAt, phaseColor);
+    else drawFists(ctx, boss, ox, oy, phaseColor);
+    // 체력계는 발밑으로 내린다 — 몸 크기는 ROBOT_BOTTOM 한 곳에서만 온다
+    if (!down) drawBossHealth(ctx, boss, ox, oy, phaseColor, r * ROBOT_BOTTOM - r + 4);
+    if (princessCaged(boss)) drawCage(ctx, cx, cy + r * ROBOT_TOP - 16, time);
     return;
   }
 
@@ -809,80 +827,282 @@ export function drawCutscene(ctx, t) {
   }
 }
 
-/** 열일곱 장이 한 장이 된 모습. 합체 컷신과 보스 컷신이 같은 그림을 쓴다. */
+// ── 합체 로봇 ───────────────────────────────────────────────
+// 장갑 색. 판을 그리는 곳이 열 군데가 넘어서, 색을 여기 한 번만 적는다.
+const DARK = '#241a33';
+const METAL = '#5c4a70';
+const LIT = '#a98cff';
+const VINYL = '#14101d';
+
 /**
- * 합체한 3페이즈 보스 — 원반이 가슴이 되고 팔다리가 붙은 로봇.
+ * 장갑판 한 장 — 어두운 테두리 + 금속 면 + 위·왼쪽 1px 하이라이트.
  *
- * (0,0) 이 몸통 한가운데. r 은 원래 원반의 반지름이라, 몸이 원반만 하다.
- * grow 는 조립 진행도(0~1) — 컷신에서 부위가 하나씩 붙는 데 쓴다.
+ * 부위마다 fillRect 를 손으로 쌓으면 죄다 납작해진다. 여기 한 번만 두께를 주고
+ * 모든 부위가 이걸 쓰면 재질이 저절로 같아진다.
+ * hurt 면 전부 흰색 — 피격 표시를 부위마다 다시 적지 않는다.
+ */
+function plate(ctx, x, y, w, h, { face = METAL, edge = DARK, lit = LIT, hurt = false } = {}) {
+  const X = Math.round(x);
+  const Y = Math.round(y);
+  const W = Math.max(1, Math.round(w));
+  const H = Math.max(1, Math.round(h));
+  ctx.fillStyle = hurt ? '#ffffff' : edge;
+  ctx.fillRect(X, Y, W, H);
+  if (W <= 2 || H <= 2) return;
+  ctx.fillStyle = hurt ? '#ffffff' : face;
+  ctx.fillRect(X + 1, Y + 1, W - 2, H - 2);
+  ctx.fillStyle = hurt ? '#ffffff' : lit;
+  ctx.fillRect(X + 1, Y + 1, W - 2, 1);
+  ctx.fillRect(X + 1, Y + 1, 1, H - 2);
+}
+
+/** 각진 판 (사다리꼴 등). 첫 변이 빛 받는 모서리다. */
+function wedge(ctx, pts, { face = METAL, edge = DARK, lit = LIT, hurt = false } = {}) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath();
+  ctx.fillStyle = hurt ? '#ffffff' : face;
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = hurt ? '#ffffff' : edge;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  ctx.lineTo(pts[1][0], pts[1][1]);
+  ctx.strokeStyle = hurt ? '#ffffff' : lit;
+  ctx.stroke();
+}
+
+/**
+ * 로봇 몸 비율 — 전부 r(원래 원반 반지름) 배수. 몸 한가운데가 (0,0).
+ * 한 곳에서 고치면 새장·체력계 자리까지 따라온다.
+ */
+const RB = {
+  // 가슴은 코어실(30px 고정)이 여유 있게 들어갈 만큼 넓어야 한다 — 좁으면 틀이 몸 밖으로 삐져나온다
+  chestTop: -0.62, chestBot: 0.44, chestHalf: 0.6, waistHalf: 0.4,
+  padX: 0.74, padY: -0.36, padR: 0.42,
+  // 팔은 가슴 바깥으로 확실히 빼야 한다 — 겹치면 몸통에 먹혀서 팔로 안 읽힌다
+  armX: 0.88, armTop: -0.2, elbow: 0.12, wrist: 0.54, fistBot: 0.74,
+  hipX: 0.3, thighTop: 0.58, kneeTop: 0.84, shinTop: 1.0, footTop: 1.28, footBot: 1.42,
+  headBot: -0.74, headTop: -1.12, headHalf: 0.32, crestTop: -1.34,
+};
+
+/**
+ * 몸 한가운데 기준, 로봇이 실제로 차지하는 위·아래 (r 배수).
+ *
+ * 히트박스(56×56)를 넘는 건 머리·크레스트와 정강이·발뿐이고, 밟히는 코어는 늘 한가운데다.
+ * 새장과 체력계가 이 값으로 자리를 잡는다 — 숫자를 두 군데 적어두면 몸을 키울 때 조용히 어긋난다.
+ */
+export const ROBOT_TOP = RB.crestTop;
+export const ROBOT_BOTTOM = RB.footBot;
+
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
+
+/**
+ * 장갑에 박힌 앨범 한 장. 테를 둘러 **판에 끼워진 것**으로 보이게 한다 —
+ * 그냥 얹으면 스티커로 보이고, 열일곱 장이 뭉쳐 만든 몸이라는 게 안 읽힌다.
+ */
+function armorCover(ctx, id, cx, cy, size, hurt) {
+  const s = Math.round(size);
+  if (hurt || s < 4) return;
+  const x = Math.round(cx - s / 2);
+  const y = Math.round(cy - s / 2);
+  // 작을 때는 테를 빼야 한다 — 밝은 테가 그림보다 커지면 몸이 격자무늬로 보인다
+  if (s >= 8) {
+    ctx.fillStyle = LIT;
+    ctx.fillRect(x - 1, y - 1, s + 2, s + 2);
+  }
+  drawCoverAt(ctx, id, x, y, s);
+}
+
+/** 잠기기 전에는 밖에서 날아든다. p=1 이면 제자리. */
+function slam(ctx, p, dx, dy, draw) {
+  if (p <= 0) return;
+  ctx.save();
+  if (p < 1) {
+    const back = (1 - p) * (1 - p);
+    ctx.translate(Math.round(dx * back), Math.round(dy * back));
+    ctx.globalAlpha *= 0.4 + p * 0.6;
+  }
+  draw();
+  ctx.restore();
+}
+
+/**
+ * 어깨 견갑 — **반으로 쪼개진 원반**. 홈까지 그대로 남겨둔다.
+ * 변신 전 물건이 몸에 남아 있어야 합체 로봇으로 읽힌다.
+ */
+function pauldron(ctx, x, y, rad, side, color, hurt, cover) {
+  ctx.save();
+  ctx.translate(Math.round(x), Math.round(y));
+  ctx.rotate(side * 0.16);
+  ctx.beginPath();
+  ctx.arc(0, 0, rad, Math.PI, 0);
+  ctx.closePath();
+  ctx.fillStyle = hurt ? '#ffffff' : VINYL;
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = hurt ? '#ffffff' : color;
+  ctx.stroke();
+  if (!hurt) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    for (let i = 1; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.arc(0, 0, (rad * i) / 4, Math.PI, 0);
+      ctx.stroke();
+    }
+    if (cover) armorCover(ctx, cover, 0, -rad * 0.42, rad * 0.62, false);
+  }
+  // 아래를 장갑으로 물린다 — 그냥 반원이면 원반이 얹힌 걸로만 보인다
+  plate(ctx, -rad, -2, rad * 2, 5, { hurt, face: color, lit: '#ffffff' });
+  ctx.restore();
+}
+
+/**
+ * 합체한 3페이즈 보스 — 원반이 어깨가 되고 마디 나뉜 팔다리가 붙은 로봇.
+ *
+ * (0,0) 이 몸통 한가운데. r 은 원래 원반의 반지름.
+ * grow 는 조립 진행도(0~1)로, 부위가 **다리 → 몸통 → 견갑 → 팔 → 머리** 순서로 잠긴다.
  * 기울기(spin)는 주지 않는다. 로봇은 돌지 않고 버티고 서 있어야 무겁다.
  */
 function drawRobotBody(ctx, r, time, color, grow = 1, hurt = false) {
-  const w = r * 1.5;
-  const h = r * 1.7;
-  const dark = hurt ? '#ffffff' : '#241a33';
-  const metal = hurt ? '#ffffff' : '#5c4a70';
+  const opt = { hurt };
+  const hot = { hurt, face: color, lit: '#ffffff' };
+  const P = (i) => clamp01((grow - i * 0.2) / 0.2);
+  const px = (v) => v * r;
+  const done = grow >= 1;
 
-  // 팔 — 어깨에서 뻗어 나온다 (제일 먼저 붙는다).
-  // 몸통보다 확실히 바깥에 둬야 한다. 걸치면 어깨 뽕처럼 보이고 팔로 안 읽힌다.
-  const armP = Math.min(1, grow / 0.45);
-  if (armP > 0) {
+  ctx.save();
+  // 다 붙고 나서만 숨을 쉰다. 조립 중에 들썩이면 잠긴 걸로 안 보인다.
+  if (done) ctx.translate(0, Math.round(Math.sin(time * 2) * 1));
+
+  // ── 다리 ──
+  slam(ctx, P(0), 0, 70, () => {
+    for (const [i, side] of [-1, 1].entries()) {
+      const x = side * px(RB.hipX);
+      plate(ctx, x - px(0.17), px(RB.thighTop) - 2, px(0.34), px(RB.kneeTop - RB.thighTop) + 3, opt);
+      armorCover(ctx, ALBUMS[i === 0 ? 1 : 16], x, px((RB.thighTop + RB.kneeTop) / 2), px(0.17), hurt);
+      plate(ctx, x - px(0.21), px(RB.kneeTop), px(0.42), px(RB.shinTop - RB.kneeTop) + 1, hot);
+      plate(ctx, x - px(0.2), px(RB.shinTop), px(0.4), px(RB.footTop - RB.shinTop), opt);
+      // 발은 앞으로 튀어나온다 — 세로 막대 두 개로는 서 있는 걸로 안 읽힌다
+      plate(ctx, x - px(0.27), px(RB.footTop), px(0.54), px(RB.footBot - RB.footTop), opt);
+      armorCover(ctx, ALBUMS[i === 0 ? 6 : 14], x, px((RB.shinTop + RB.footTop) / 2), px(0.2), hurt);
+    }
+  });
+
+  // ── 팔 (몸통 뒤) ──
+  slam(ctx, P(3), 0, 0, () => {
+    for (const [i, side] of [-1, 1].entries()) {
+      const x = side * px(RB.armX);
+      const off = side * (1 - P(3)) * px(2.2);
+      ctx.save();
+      ctx.translate(Math.round(off), 0);
+      plate(ctx, x - px(0.11), px(RB.armTop), px(0.22), px(RB.elbow - RB.armTop), opt); // 윗팔
+      plate(ctx, x - px(0.2), px(RB.elbow), px(0.4), px(RB.wrist - RB.elbow), opt); // 아래팔
+      armorCover(ctx, ALBUMS[i === 0 ? 0 : 9], x, px((RB.elbow + RB.wrist) / 2), px(0.22), hurt); // 아래팔 장갑
+      plate(ctx, x - px(0.2), px(RB.wrist), px(0.4), px(RB.fistBot - RB.wrist), opt); // 주먹
+      for (let i = 0; i < 3; i++) {
+        plate(ctx, x - px(0.16) + i * px(0.11), px(RB.wrist) + 2, px(0.08), 2, hot);
+      }
+      ctx.restore();
+    }
+  });
+
+  // ── 몸통 ──
+  slam(ctx, P(1), 0, -70, () => {
+    const top = px(RB.chestTop);
+    const bot = px(RB.chestBot);
+    // 어깨 넓고 허리 좁은 사다리꼴 — 사각형이면 아무리 칠해도 짜친다
+    wedge(
+      ctx,
+      [
+        [-px(RB.chestHalf), top],
+        [px(RB.chestHalf), top],
+        [px(RB.waistHalf), bot],
+        [-px(RB.waistHalf), bot],
+      ],
+      opt,
+    );
+    plate(ctx, -px(RB.chestHalf), top - px(0.06), px(RB.chestHalf * 2), px(0.12), hot); // 칼라
+    // 가슴 V — 코어를 가리키게 내려온다
     for (const side of [-1, 1]) {
-      const ax = side * (w / 2 + 9 + (1 - armP) * 44);
-      const top = -h * 0.34;
-      const len = h * 0.62;
-      ctx.fillStyle = metal;
-      ctx.fillRect(Math.round(ax - 6), Math.round(top), 12, Math.round(len));
-      // 어깨
-      ctx.fillStyle = color;
-      ctx.fillRect(Math.round(ax - 7), Math.round(top), 14, 4);
-      // 주먹
-      ctx.fillStyle = dark;
-      ctx.fillRect(Math.round(ax - 7), Math.round(top + len - 9), 14, 9);
-      ctx.fillStyle = color;
-      ctx.fillRect(Math.round(ax - 7), Math.round(top + len - 9), 14, 2);
+      ctx.save();
+      ctx.translate(side * px(0.34), top + px(0.08));
+      ctx.rotate(side * 0.55);
+      plate(ctx, -2, 0, 4, px(0.34), hot);
+      ctx.restore();
     }
-  }
+    // 코어실 — 코어(반지름 11 고정)가 어느 크기에서도 들어가되 가슴 밖으로는 안 나가야 한다
+    const hs = Math.max(26, Math.min(30, r * 0.75)) / 2;
+    plate(ctx, -hs, -hs, hs * 2, hs * 2, { hurt, face: VINYL, lit: METAL });
+    for (const sx of [-1, 1]) {
+      for (const sy of [-1, 1]) {
+        plate(ctx, sx > 0 ? hs - 6 : -hs, sy > 0 ? hs - 6 : -hs, 6, 6, hot);
+      }
+    }
+    // 가슴 양옆 — 코어실 옆에 자리가 남을 때만 (작은 몸에서는 armorCover 가 알아서 건너뛴다)
+    const strip = px(RB.chestHalf) - hs;
+    for (const [i, side] of [-1, 1].entries()) {
+      armorCover(ctx, ALBUMS[i === 0 ? 5 : 12], side * (hs + strip / 2), -px(0.06), strip - 2, hurt);
+    }
+    // 허리 통풍구
+    for (let i = 0; i < 3; i++) plate(ctx, -px(0.22), bot - px(0.16) + i * px(0.06), px(0.44), 2, opt);
+    // 골반
+    plate(ctx, -px(0.3), bot - 1, px(0.6), px(RB.thighTop - RB.chestBot) + 2, opt);
+    plate(ctx, -px(0.3), bot + 1, px(0.6), 2, hot);
+  });
 
-  // 다리
-  const legP = Math.min(1, Math.max(0, (grow - 0.3) / 0.4));
-  if (legP > 0) {
-    ctx.fillStyle = metal;
+  // ── 견갑 (원반 반쪽) ──
+  slam(ctx, P(2), 0, 0, () => {
+    for (const [i, side] of [-1, 1].entries()) {
+      const off = side * (1 - P(2)) * px(2.6);
+      pauldron(
+        ctx,
+        side * px(RB.padX) + off,
+        px(RB.padY),
+        px(RB.padR),
+        side,
+        hurt ? '#ffffff' : color,
+        hurt,
+        ALBUMS[i === 0 ? 3 : 11],
+      );
+    }
+  });
+
+  // ── 머리 ──
+  slam(ctx, P(4), 0, -80, () => {
+    const top = px(RB.headTop);
+    const bot = px(RB.headBot);
+    const hw = px(RB.headHalf);
+    plate(ctx, -px(0.08), bot - 2, px(0.16), px(0.1), opt); // 목
+    // 헬멧은 어둡게. 몸과 같은 금속색으로 칠하면 얼굴이 아니라 어깨 사이 혹으로 보인다.
+    wedge(ctx, [[-hw + 2, top], [hw - 2, top], [hw, bot], [-hw, bot]], { hurt, face: DARK, lit: LIT });
+    for (const side of [-1, 1]) plate(ctx, side > 0 ? hw - 1 : -hw - px(0.09), top + px(0.1), px(0.1), px(0.18), hot); // 통풍구
+    plate(ctx, -hw + 2, bot - px(0.08), hw * 2 - 4, px(0.08), opt); // 턱
+    // 바이저 한 줄 — 눈 두 칸보다 이쪽이 기계다. 어두운 헬멧 위라야 켜진 게 보인다.
+    const vy = Math.round(top + px(0.13));
+    const vh = Math.max(2, Math.round(px(0.11)));
+    ctx.save();
+    ctx.fillStyle = hurt ? '#ffffff' : color;
+    ctx.globalAlpha *= done ? 1 : 0.4;
+    ctx.fillRect(Math.round(-hw + 2), vy - 1, Math.round(hw * 2 - 4), vh + 2);
+    ctx.fillStyle = hurt ? '#ffffff' : done ? '#ffffff' : LIT;
+    ctx.globalAlpha *= done ? 0.6 + Math.sin(time * 5) * 0.2 : 0.6;
+    ctx.fillRect(Math.round(-hw + 3), vy, Math.round(hw * 2 - 6), vh);
+    ctx.restore();
+    // 크레스트 — 실루엣을 위로 찢는다
+    plate(ctx, -px(0.05), px(RB.crestTop), px(0.1), px(RB.headTop - RB.crestTop) + 2, hot);
     for (const side of [-1, 1]) {
-      const lx = side * w * 0.26;
-      const ly = h / 2 - 2 + (1 - legP) * 40;
-      ctx.fillRect(Math.round(lx - 5), Math.round(ly), 10, Math.round(h * 0.32));
+      ctx.save();
+      ctx.translate(side * px(0.12), top + 1);
+      ctx.rotate(side * 0.5);
+      plate(ctx, -2, -px(0.2), 4, px(0.22), hot);
+      ctx.restore();
     }
-  }
+  });
 
-  // 몸통 — 원반이 가슴이 된다
-  ctx.fillStyle = dark;
-  ctx.fillRect(Math.round(-w / 2), Math.round(-h / 2), Math.round(w), Math.round(h));
-  ctx.fillStyle = metal;
-  ctx.fillRect(Math.round(-w / 2), Math.round(-h / 2), Math.round(w), 4);
-  // 합체한 티 — 어깨에 앨범이 박혀 있다
-  for (let i = 0; i < 4; i++) {
-    drawCoverAt(ctx, ALBUMS[i * 3], -w / 2 + 3 + (i % 2) * (w - 16), -h / 2 + 8 + Math.floor(i / 2) * 14, 10);
-  }
-
-  // 머리 — 마지막에 얹힌다
-  const headP = Math.min(1, Math.max(0, (grow - 0.6) / 0.4));
-  if (headP > 0) {
-    const hy = -h / 2 - 12 - (1 - headP) * 50;
-    ctx.fillStyle = metal;
-    ctx.fillRect(Math.round(-9), Math.round(hy), 18, 12);
-    ctx.fillStyle = dark;
-    ctx.fillRect(Math.round(-7), Math.round(hy + 2), 14, 8);
-    // 눈 — 코어가 켜지면 같이 켜진다
-    if (grow >= 1) {
-      ctx.fillStyle = color;
-      const blink = Math.sin(time * 6) > -0.7 ? 1 : 0.3;
-      ctx.globalAlpha = blink;
-      ctx.fillRect(Math.round(-5), Math.round(hy + 4), 4, 3);
-      ctx.fillRect(Math.round(1), Math.round(hy + 4), 4, 3);
-      ctx.globalAlpha = 1;
-    }
-  }
+  ctx.restore();
 }
 
 /**
@@ -1054,7 +1274,7 @@ function drawQuarters(ctx, cx, cy, r, p, time) {
 
 // ── 페이즈 3: 실시간 차트를 대놓고 조작한다 ─────────────────
 /** 합체 단계들 — 차트를 조작한 뒤 조각들이 불려와 로봇이 된다 */
-const P3_ROBOT = ['call', 'assemble', 'core', 'title'];
+const P3_ROBOT = ['call', 'assemble', 'lock', 'core', 'title'];
 
 function drawPhase3Cut(ctx, t, phase, time) {
   if (phase === 'shake') {
@@ -1072,45 +1292,204 @@ function drawPhase3Cut(ctx, t, phase, time) {
   drawFakeChart(ctx, t, phase, time);
 }
 
+/** 한가운데서 뻗어나가는 집중선 */
+function drawRays(ctx, cx, cy, spin, color, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(cx, cy);
+  ctx.rotate(spin);
+  ctx.fillStyle = color;
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, 340, a, a + Math.PI / 13);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** 2페이즈에서 갈라져 나간 조각 하나 (한가운데가 원점) */
+function drawQuarterPiece(ctx, i, rr) {
+  const a0 = i * (Math.PI / 2) - Math.PI / 4;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, rr, a0, a0 + Math.PI / 2);
+  ctx.closePath();
+  ctx.fillStyle = VINYL;
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#ff5d8f';
+  ctx.stroke();
+  for (let k = 0; k < 3; k++) {
+    const a = a0 + (Math.PI / 2) * ((k + 0.5) / 3);
+    const d = rr * 0.6;
+    drawCoverAt(ctx, ALBUMS[(i * 4 + k) % ALBUMS.length], Math.cos(a) * d - 5, Math.sin(a) * d - 5, 10);
+  }
+}
+
 /**
- * 합체. 흩어진 조각이 사방에서 날아와 붙고, 마지막에 코어에 불이 들어온다.
+ * 집합 컷 — 조각 넷이 **각자의 칸**에서 정면으로 달려온다.
+ * 넷을 한 화면에 흩어놓으면 그냥 떠다니는 걸로 보인다. 칸을 나눠야 "모인다"가 된다.
+ */
+function drawFormation(ctx, p, time) {
+  const gw = VIEW.w / 2;
+  const gh = VIEW.h / 2;
+  for (let i = 0; i < 4; i++) {
+    const x0 = (i % 2) * gw;
+    const y0 = Math.floor(i / 2) * gh;
+    const lead = clamp01(p * 1.4 - i * 0.1);
+    const shear = 10;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x0 + 2 + shear, y0 + 2);
+    ctx.lineTo(x0 + gw - 2, y0 + 2);
+    ctx.lineTo(x0 + gw - 2 - shear, y0 + gh - 2);
+    ctx.lineTo(x0 + 2, y0 + gh - 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = '#0b0616';
+    ctx.fillRect(x0, y0, gw, gh);
+    drawRays(ctx, x0 + gw / 2, y0 + gh / 2, time * 1.5 + i, '#7c5cff', 0.22);
+    ctx.save();
+    ctx.translate(x0 + gw / 2, y0 + gh / 2);
+    const s = 0.55 + lead * 1.5;
+    ctx.scale(s, s);
+    ctx.rotate(Math.sin(time * 3 + i) * 0.07);
+    drawQuarterPiece(ctx, i, 26);
+    ctx.restore();
+    ctx.restore();
+  }
+}
+
+/** 원반이 반으로 쩍 갈라진다 — 이 두 쪽이 어깨 견갑이 된다 */
+function drawDiscSplit(ctx, cx, cy, r, p, time) {
+  const gap = ease(p) * r * 0.55;
+  for (const side of [-1, 1]) {
+    ctx.save();
+    ctx.translate(cx + side * gap, cy);
+    ctx.rotate(side * ease(p) * 0.45);
+    ctx.beginPath();
+    if (side < 0) ctx.arc(0, 0, r, Math.PI / 2, Math.PI * 1.5);
+    else ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2);
+    ctx.closePath();
+    ctx.clip();
+    drawBossDisc(ctx, 0, 0, r, time * 0.6);
+    ctx.restore();
+  }
+}
+
+/**
+ * 조립 진행 — 부위 하나가 꽂히고, 번쩍하고, 다음까지 **멈춘다.**
  *
- * grow 는 조립 진행도라 그리는 쪽(drawRobotBody)이 부위를 하나씩 붙이는 데 쓴다.
+ * 매끄럽게 자라면 합체로 안 보인다. 칸의 앞 4분의 1 동안만 날아와 꽂히고
+ * 나머지는 정지 — 그 정지가 "철컥"으로 읽힌다.
+ * 시각은 PHASE3_AT 에서만 온다.
+ */
+function assembleAt(t) {
+  const STEP_IN = 0.25;
+  let i;
+  let frac;
+  let stepDur;
+  if (t < PHASE3_AT.lock) {
+    // assemble 구간을 넷으로 — 다리 · 몸통 · 견갑 · 팔
+    stepDur = (PHASE3_AT.lock - PHASE3_AT.assemble) / 4;
+    const s = (t - PHASE3_AT.assemble) / stepDur;
+    i = Math.min(3, Math.max(0, Math.floor(s)));
+    frac = clamp01(s - i);
+  } else {
+    // lock — 머리와 크레스트, 마지막 하나
+    stepDur = PHASE3_AT.core - PHASE3_AT.lock;
+    i = 4;
+    frac = clamp01((t - PHASE3_AT.lock) / stepDur);
+  }
+  const q = Math.min(1, frac / STEP_IN);
+  const since = Math.max(0, frac - STEP_IN) * stepDur;
+  const hit = q >= 1 ? Math.max(0, 1 - since / 0.14) : 0;
+  return { grow: (i + q) * 0.2, flash: hit, jolt: Math.sin(since * 70) * 3 * hit };
+}
+
+/** 다 붙은 로봇 뒤로 터지는 폭발들 — 이유는 없다. 원래 뒤에서 터진다. */
+function drawBlasts(ctx, since, cy) {
+  const spots = [[-72, -34], [70, -26], [-48, 28], [54, 36], [4, -58], [-90, 8]];
+  ctx.save();
+  spots.forEach(([dx, dy], i) => {
+    const p = (since - i * 0.12) / 0.42;
+    if (p <= 0 || p >= 1) return;
+    const rr = 6 + p * 26;
+    ctx.globalAlpha = 1 - p;
+    // 동그라미로 그리면 행성처럼 보인다 — 삐죽삐죽해야 폭발이다
+    ctx.fillStyle = i % 2 ? '#ffd166' : '#ff5d8f';
+    ctx.beginPath();
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2 + i;
+      const d = k % 2 ? rr : rr * 0.55;
+      const fx = CUT_CX + dx + Math.cos(a) * d;
+      const fy = cy + dy + Math.sin(a) * d;
+      if (k === 0) ctx.moveTo(fx, fy);
+      else ctx.lineTo(fx, fy);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = Math.max(0, 1 - p * 2.4);
+    ctx.beginPath();
+    ctx.arc(CUT_CX + dx, cy + dy, rr * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+/**
+ * 합체. 조각이 각자 칸에서 달려오고, 부위가 하나씩 철컥철컥 잠기고,
+ * 코어에 불이 들어오고, 폭발을 등지고 선다.
+ *
+ * grow 는 조립 진행도라 그리는 쪽(drawRobotBody)이 부위를 순서대로 붙이는 데 쓴다.
  * 시각은 PHASE3_AT 에서만 온다 — 타임라인을 고치면 여기도 따라온다.
  */
 function drawCombine(ctx, t, phase, time) {
-  const cy = CUT_CY + 8;
+  const cy = CUT_CY + 6;
   const r = 40;
 
-  // 불려오는 조각들 — 화면 밖에서 몸통 쪽으로 빨려 들어온다
-  const pull = ease((t - PHASE3_AT.call) / (PHASE3_AT.assemble - PHASE3_AT.call));
   if (phase === 'call') {
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2 + 0.3;
-      const d = (1 - pull) * 210 + 46;
-      drawCoverAt(ctx, ALBUMS[i * 2], CUT_CX + Math.cos(a) * d - 8, cy + Math.sin(a) * d * 0.7 - 8, 16);
+    const p = clamp01((t - PHASE3_AT.call) / (PHASE3_AT.assemble - PHASE3_AT.call));
+    // 앞 7할은 형성 컷, 뒤 3할은 원반이 갈라지는 컷. 사이는 뚝 끊는다.
+    if (p < 0.7) {
+      drawFormation(ctx, p / 0.7, time);
+    } else {
+      drawRays(ctx, CUT_CX, cy, time * 1.2, '#7c5cff', 0.28);
+      drawDiscSplit(ctx, CUT_CX, cy, r, (p - 0.7) / 0.3, time);
     }
-    // 아직 원반 상태로 떨고 있다
-    drawBossDisc(ctx, CUT_CX + Math.sin(time * 40) * 2, cy, r * (1 - pull * 0.25), time * 1.2);
     return;
   }
 
-  // 조립 — 팔 → 다리 → 머리 순으로 붙는다
-  const grow =
-    phase === 'assemble'
-      ? Math.min(1, (t - PHASE3_AT.assemble) / (PHASE3_AT.core - PHASE3_AT.assemble))
-      : 1;
-  // 부위가 붙을 때마다 화면이 한 번씩 튄다
-  const jolt = phase === 'assemble' ? Math.sin(grow * Math.PI * 3) * 2 : 0;
+  const assembling = phase === 'assemble' || phase === 'lock';
+  const { grow, flash, jolt } = assembling ? assembleAt(t) : { grow: 1, flash: 0, jolt: 0 };
+
+  drawRays(ctx, CUT_CX, cy, time * 0.9, '#7c5cff', 0.2);
+  if (phase === 'title') drawBlasts(ctx, t - PHASE3_AT.title, cy);
 
   ctx.save();
-  ctx.translate(CUT_CX + jolt, cy);
+  ctx.translate(Math.round(CUT_CX + jolt), cy);
   drawRobotBody(ctx, r, time, '#7c5cff', grow);
   ctx.restore();
 
-  // 코어 점화
   if (phase === 'core' || phase === 'title') {
+    // 코어 점화 — 에너지 링이 밖으로 퍼진다
     const lit = ease((t - PHASE3_AT.core) / 0.6);
+    for (const ring of [0, 0.35]) {
+      const q = clamp01((t - PHASE3_AT.core) / 0.9 - ring);
+      if (q <= 0 || q >= 1) continue;
+      ctx.save();
+      ctx.globalAlpha = 1 - q;
+      ctx.strokeStyle = '#39ff9a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(CUT_CX, cy, 12 + q * 80, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     drawBossCore(ctx, CUT_CX, cy, true, time);
     ctx.save();
     ctx.globalAlpha = Math.max(0, 1 - lit) * 0.8;
@@ -1118,7 +1497,15 @@ function drawCombine(ctx, t, phase, time) {
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
     ctx.restore();
   } else {
-    drawBossCore(ctx, CUT_CX + jolt, cy, false, time);
+    if (grow >= 0.4) drawBossCore(ctx, CUT_CX + jolt, cy, false, time);
+    // 부위가 꽂힐 때마다 화면이 한 번 하얘진다
+    if (flash > 0) {
+      ctx.save();
+      ctx.globalAlpha = flash * 0.55;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+      ctx.restore();
+    }
   }
 }
 

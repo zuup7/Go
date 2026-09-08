@@ -54,7 +54,8 @@ export const CUT_SOUND = {
     chart: { sfx: 'blip' },
     rig: { sfx: 'rig' },
     call: { sfx: 'gather' }, // 조각들이 불려온다
-    assemble: { sfx: 'thud' }, // 딱딱 붙는다
+    assemble: { sfx: 'thud' }, // 부위가 하나씩 꽂힌다
+    lock: { sfx: 'thud' }, // 마지막 철컥 — 머리가 얹힌다
     core: { sfx: 'roar' }, // 코어 점화
     title: { sfx: 'title' },
     end: {},
