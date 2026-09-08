@@ -117,35 +117,42 @@ export const DISC = sprite(
 );
 
 // ── 엔딩의 강아지 공주 ───────────────────────────────────────
-// 연갈색 말티푸. 티아라와 면사포를 썼다. 16×16.
+// 연갈색 말티푸. 귀여움은 비율에서 나온다 — 머리를 몸보다 크게(2/3),
+// 눈을 크게(2×3) 잡고 흰 점을 찍어 살리고, 볼터치와 혓바닥을 더한다.
+// 18×18.
 const BRIDE_PAL = {
   g: '#ffd166', // 티아라
+  G: '#fff0b8', // 티아라 반짝임
   w: '#fff6ef', // 면사포
-  f: '#dcb98d', // 연갈색 털
-  d: '#b98f5c', // 그늘진 털·귀
-  e: '#2b1d12', // 눈
-  n: '#7a5638', // 주둥이
-  p: '#ff9ec4', // 코
+  m: '#e3c096', // 연갈색 털
+  f: '#f5dcb8', // 밝은 털 (뭉실뭉실해 보이게)
+  d: '#a3763f', // 귀·그늘 (털색과 확실히 달라야 귀가 귀로 보인다)
+  e: '#2f2119', // 눈
+  h: '#ffffff', // 눈동자 반짝임
+  n: '#4a3527', // 코
+  p: '#ff9ec4', // 볼터치·혓바닥
 };
 
 export const BRIDE = sprite(
   [
-    '.....gg.gg......',
-    '....gggggggg....',
-    '...wffffffffw...',
-    '..wwdffffffdww..',
-    '..wwdffffffdww..',
-    '..wwdfeffefdww..',
-    '..wwdffffffdww..',
-    '...wdfnnnnfdw...',
-    '...wwdfppfdww...',
-    '....wffffffw....',
-    '....ffffffff....',
-    '...ffffffffff...',
-    '...ffffffffff...',
-    '...ff......ff...',
-    '...dd......dd...',
-    '................',
+    '.......g.g.g......',
+    '......gGgGgGg.....',
+    '.....wggggggw.....',
+    '....wmmmmmmmmw....',
+    '...wdmmmmmmmmdw...',
+    '..wddmmmmmmmmddw..',
+    '..wddmhemmhemddw..',
+    '..wddmeemmeemddw..',
+    '..wddmeemmeemddw..',
+    '..wddpmmnnmmpddw..',
+    '...wdmmmppmmmdw...',
+    '...wddmmmmmmddw...',
+    '....wdmmmmmmdw....',
+    '.....mmmmmmmm.....',
+    '....mmffmmffmm....',
+    '...mmmmmmmmmmmm...',
+    '...mmmmmmmmmmmm...',
+    '....mmm....mmm....',
   ],
   BRIDE_PAL,
 );
