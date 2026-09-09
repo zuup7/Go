@@ -11,10 +11,25 @@ import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } 
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import { phaseAt, phaseAtIn, CUT_AT } from '../data/cutscene.js';
-import { BOSS_CUTS, PHASE2_AT, PHASE3_AT, PHASE4_AT, ENDING_AT } from '../data/bossCutscenes.js';
+import {
+  BOSS_CUTS,
+  PHASE2_AT,
+  PHASE3_AT,
+  PHASE4_AT,
+  HARD3_AT,
+  BOSS_DOWN_AT,
+  ENDING_AT,
+} from '../data/bossCutscenes.js';
 import { INTRO_CUT, INTRO_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
-import { bossPhase, princessCaged, bossCombined, laserBeams } from '../core/boss.js';
+import {
+  bossPhase,
+  princessCaged,
+  bossCombined,
+  laserBeams,
+  tailBand,
+  shockWaves,
+} from '../core/boss.js';
 import { PLAYER } from '../core/player.js';
 
 // ── 배경 ────────────────────────────────────────────────────
@@ -1113,6 +1128,61 @@ function drawPlayer(ctx, player, ox, oy, time) {
  * 예고(live=false)는 가는 선으로, 발사(live=true)는 굵은 기둥으로.
  * 둘이 한눈에 달라 보여야 "지금 맞는 건가"를 안 헷갈린다.
  */
+/**
+ * 공룡의 가로 공격 — 꼬리와 충격파.
+ *
+ * 사각형은 core/boss.js 의 tailBand / shockWaves 가 정한다. 여기서 다시 계산하면
+ * 보이는 자리와 죽는 자리가 언젠가 어긋난다 (레이저와 같은 규칙).
+ *
+ * 레이저는 **세로 기둥**이고 이건 **가로 띠**다. 한눈에 달라 보여야
+ * "옆으로 비켜야 하나, 뛰어야 하나" 를 안 헷갈린다.
+ */
+function drawGroundSweeps(ctx, boss, ox, oy, time, color) {
+  const tail = tailBand(boss);
+  if (tail) {
+    const x = Math.round(tail.x - ox);
+    const y = Math.round(tail.y - oy);
+    ctx.save();
+    if (!tail.live) {
+      // 예고 — 지나갈 자리에 얇은 밑줄만
+      ctx.globalAlpha = 0.4 + Math.sin(time * 20) * 0.25;
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y + tail.h - 2, tail.w, 2);
+    } else {
+      // 휘두르는 중 — 두꺼운 띠 + 앞쪽에 잔상
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.9;
+      ctx.fillRect(x, y, tail.w, tail.h);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(x + (boss.tailDir > 0 ? tail.w - 4 : 0), y, 4, tail.h);
+      ctx.globalAlpha = 0.3;
+      for (let i = 1; i <= 3; i++) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x - boss.tailDir * i * 10, y + 3, 8, tail.h - 6);
+      }
+    }
+    ctx.restore();
+  }
+
+  for (const wave of shockWaves(boss)) {
+    const x = Math.round(wave.x - ox);
+    const y = Math.round(wave.y - oy);
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = '#ffd166';
+    // 바닥에서 솟는 삼각 파도 — 뛰어 넘는 것이라 위가 뾰족해야 읽힌다
+    ctx.beginPath();
+    ctx.moveTo(x, y + wave.h);
+    ctx.lineTo(x + wave.w / 2, y);
+    ctx.lineTo(x + wave.w, y + wave.h);
+    ctx.fill();
+    ctx.fillStyle = '#ff8f3c';
+    ctx.fillRect(x + 2, y + wave.h - 3, wave.w - 4, 3);
+    ctx.restore();
+  }
+}
+
 function drawLaser(ctx, boss, ox, oy, time, color) {
   for (const beam of laserBeams(boss)) drawBeam(ctx, beam, ox, oy, time, color);
 }
@@ -1320,7 +1390,10 @@ export function drawBoss(ctx, boss, ox, oy, time) {
     ctx.translate(cx, cy);
     // 쓰러질 때는 옆으로 기운다 (다 돌지는 않는다 — 로봇은 구르지 않는다)
     if (down) ctx.rotate(Math.min(0.7, boss.defeatedAt * 0.6));
-    drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
+    // 하드 3페이즈부터는 **공룡로봇**이다. 껍질을 찢고 나온 모습이라
+    // 서 있는 로봇과 실루엣이 아예 다르다 (가로로 길고 목과 꼬리가 뻗는다).
+    if (bossPhase(boss).dino) drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0);
+    else drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
     ctx.restore();
     drawBossCore(ctx, cx, cy, boss.vulnerable, time);
     if (down) drawSparks(ctx, cx, cy, r, boss.defeatedAt, phaseColor);
@@ -1642,6 +1715,96 @@ function pauldron(ctx, x, y, rad, side, color, hurt, cover) {
  * grow 는 조립 진행도(0~1)로, 부위가 **다리 → 몸통 → 견갑 → 팔 → 머리** 순서로 잠긴다.
  * 기울기(spin)는 주지 않는다. 로봇은 돌지 않고 버티고 서 있어야 무겁다.
  */
+/**
+ * 공룡로봇 — 하드 3페이즈부터의 몸.
+ *
+ * **박혀 있는 앨범이 이 보스의 정체다.** 1회차에서 우리가 밟아 없앤 열일곱 장이
+ * 진화해서 돌아온 것이라, 등판·허벅지·목덜미에 그때 그 커버가 그대로 박혀 있다.
+ * 그래서 armorCover 를 로봇 몸과 똑같이 쓴다 — 새 그림 규칙을 만들지 않는다.
+ *
+ * 서 있는 로봇과 **실루엣이 확실히 달라야** 변신이 읽힌다. 로봇은 세로로 길고
+ * 좌우 대칭인데, 이쪽은 가로로 길고 목과 꼬리가 양쪽으로 뻗는다.
+ */
+function drawDinoBody(ctx, r, time, color, hurt = false) {
+  const opt = { hurt };
+  const hot = { hurt, face: color, lit: '#ffffff' };
+  const px = (v) => v * r;
+  const breathe = Math.sin(time * 2.4) * 1.5;
+
+  ctx.save();
+  ctx.translate(0, Math.round(breathe));
+
+  // ── 꼬리 — 뒤(왼쪽)로 뻗어 점점 가늘어진다
+  for (let i = 0; i < 5; i++) {
+    const t = i / 5;
+    const w = px(0.3 - t * 0.2);
+    plate(ctx, -px(0.55) - i * px(0.26), -px(0.02) + i * px(0.05), w, px(0.24 - t * 0.13), opt);
+  }
+  // 꼬리 끝의 날 — 이게 바닥을 훑는 그 꼬리다
+  plate(ctx, -px(1.75), px(0.2), px(0.34), px(0.1), hot);
+
+  // ── 뒷다리 (몸통 뒤) — 굵은 허벅지 + 꺾인 정강이
+  for (const side of [-1, 1]) {
+    const x = side * px(0.26);
+    plate(ctx, x - px(0.24), px(0.16), px(0.48), px(0.42), opt);
+    armorCover(ctx, ALBUMS[side < 0 ? 3 : 12], x, px(0.36), px(0.26), hurt);
+    plate(ctx, x - px(0.15), px(0.56), px(0.3), px(0.34), opt);
+    // 발 — 앞으로 튀어나온 세 발톱
+    plate(ctx, x - px(0.22), px(0.88), px(0.52), px(0.14), opt);
+    for (let i = 0; i < 3; i++) plate(ctx, x + px(0.16) + i * px(0.06), px(0.9), px(0.05), px(0.08), hot);
+  }
+
+  // ── 몸통 — 가로로 긴 통. 등에 앨범이 줄줄이 박혀 있다
+  wedge(
+    ctx,
+    [
+      [-px(0.62), -px(0.06)],
+      [px(0.5), -px(0.26)],
+      [px(0.62), px(0.3)],
+      [-px(0.56), px(0.34)],
+    ],
+    opt,
+  );
+  for (let i = 0; i < 4; i++) {
+    armorCover(ctx, ALBUMS[i * 3 + 2], -px(0.4) + i * px(0.28), px(0.06), px(0.22), hurt);
+  }
+  // 등지느러미 — 공룡으로 읽히게 하는 결정적인 실루엣
+  for (let i = 0; i < 5; i++) {
+    const bx = -px(0.5) + i * px(0.24);
+    const h = px(0.18 + Math.sin(i * 0.9) * 0.08);
+    wedge(ctx, [[bx, -px(0.1)], [bx + px(0.1), -px(0.1) - h], [bx + px(0.2), -px(0.1)]], hot);
+  }
+
+  // ── 앞발 — 짧고 접혀 있다 (내리찍는 그 발)
+  for (const side of [-1, 1]) {
+    const x = px(0.42) + side * px(0.06);
+    plate(ctx, x - px(0.09), px(0.06), px(0.18), px(0.24), opt);
+    plate(ctx, x - px(0.07), px(0.28), px(0.14), px(0.12), hot);
+  }
+
+  // ── 목 — 앞(오른쪽) 위로 뻗는다
+  for (let i = 0; i < 4; i++) {
+    const t = i / 4;
+    plate(ctx, px(0.5) + i * px(0.16), -px(0.24) - i * px(0.14), px(0.26 - t * 0.06), px(0.26), opt);
+  }
+  armorCover(ctx, ALBUMS[8], px(0.72), -px(0.3), px(0.2), hurt);
+
+  // ── 머리 — 긴 턱과 붉은 바이저
+  const hx = px(1.06);
+  const hy = -px(0.72);
+  plate(ctx, hx, hy, px(0.5), px(0.26), opt);
+  plate(ctx, hx + px(0.1), hy + px(0.24), px(0.44), px(0.12), opt); // 아래턱
+  plate(ctx, hx + px(0.06), hy + px(0.07), px(0.34), px(0.08), { hurt, face: '#ff3b3b', lit: '#fff' });
+  // 이빨
+  for (let i = 0; i < 4; i++) {
+    plate(ctx, hx + px(0.14) + i * px(0.09), hy + px(0.2), px(0.05), px(0.06), hot);
+  }
+  // 뿔
+  wedge(ctx, [[hx + px(0.06), hy], [hx + px(0.16), hy - px(0.2)], [hx + px(0.22), hy]], hot);
+
+  ctx.restore();
+}
+
 function drawRobotBody(ctx, r, time, color, grow = 1, hurt = false) {
   const opt = { hurt };
   const hot = { hurt, face: color, lit: '#ffffff' };
@@ -1868,7 +2031,9 @@ export function drawBossCut(ctx, game, time) {
 
   if (game.bossCut.id === 'phase2') drawPhase2Cut(ctx, t, phase, time);
   else if (game.bossCut.id === 'phase3') drawPhase3Cut(ctx, t, phase, time);
+  else if (game.bossCut.id === 'hard3') drawHard3Cut(ctx, t, phase, time);
   else if (game.bossCut.id === 'phase4') drawPhase4Cut(ctx, t, phase, time);
+  else if (game.bossCut.id === 'bossdown') drawBossDownCut(ctx, t, phase, time);
   else drawEndingCut(ctx, t, phase, time);
 
   ctx.restore();
@@ -1960,6 +2125,116 @@ const P3_ROBOT = ['call', 'assemble', 'lock', 'core', 'title'];
  * 있는 drawRobotBody 를 벌겋게 달구고, 이음새에서 빛이 새어 나오게 하는 것으로 끝낸다.
  */
 const P4_HOT = '#ff3b3b';
+
+/**
+ * 하드 3페이즈 — **껍질을 찢고 공룡로봇이 나온다.**
+ *
+ * 이야기가 여기서 드러난다: 1회차에서 밟아 없앤 앨범들이 바닥에서 떠올라
+ * 보스에게 달라붙고, 그 무게로 껍질이 갈라진다. 대사는 없다 — 그림이 말한다.
+ */
+function drawHard3Cut(ctx, t, phase, time) {
+  const r = 52;
+
+  // 밟혀 사라졌던 앨범들이 바닥에서 떠오른다
+  if (phase === 'graves' || phase === 'swarm') {
+    const rise = clamp01((t - HARD3_AT.graves) / 1.2);
+    const pull = clamp01((t - HARD3_AT.swarm) / 1.2);
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const floorY = CUT_CY + 62;
+      const gx = CUT_CX + Math.cos(a) * 84;
+      // 떠오른 뒤 보스 쪽으로 빨려 들어간다
+      const x = gx + (CUT_CX - gx) * pull;
+      const y = floorY - rise * 40 + (CUT_CY - (floorY - 40)) * pull;
+      ctx.save();
+      ctx.globalAlpha = rise * (1 - pull * 0.3);
+      drawCoverAt(ctx, ALBUMS[i % ALBUMS.length], x - 6, y - 6, 12);
+      ctx.restore();
+    }
+  }
+
+  ctx.save();
+  const shakeAmt = phase === 'shake' ? 3 : phase === 'shell' ? 2 : 0;
+  ctx.translate(CUT_CX + Math.sin(time * 63) * shakeAmt, CUT_CY);
+
+  if (phase === 'shake' || phase === 'graves' || phase === 'swarm' || phase === 'shell') {
+    // 아직 원반 로봇이다. 껍질에 금이 간다.
+    drawRobotBody(ctx, r, time, '#7c5cff', 1, false);
+    if (phase === 'shell') {
+      const crack = clamp01((t - HARD3_AT.shell) / 1.0);
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = crack;
+      for (let i = 0; i < 4; i++) {
+        const a = -1.2 + i * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.3);
+        ctx.lineTo(Math.cos(a) * r * crack, Math.sin(a) * r * crack - r * 0.2);
+        ctx.stroke();
+      }
+    }
+  } else {
+    // 갈라진 틈에서 목과 꼬리가 뻗어 나온다
+    const out = clamp01((t - HARD3_AT.hatch) / 1.4);
+    ctx.scale(0.6 + out * 0.4, 0.6 + out * 0.4);
+    drawDinoBody(ctx, r, time, phase === 'roar' || phase === 'title' ? '#ff3b3b' : '#7c5cff', false);
+  }
+  ctx.restore();
+
+  // 포효 — 화면이 붉게 번쩍인다
+  if (phase === 'roar') {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 0.5 - (t - HARD3_AT.roar) * 0.6);
+    ctx.fillStyle = '#ff3b3b';
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    ctx.restore();
+  }
+}
+
+/**
+ * 보스가 쓰러진다 — **박혀 있던 앨범이 하나씩 떨어져 나간다.**
+ * 진화가 풀리는 것이 곧 패배다. 그냥 사라지면 이긴 것 같지가 않다.
+ */
+function drawBossDownCut(ctx, t, phase, time) {
+  const r = 52;
+  const kneel = clamp01((t - BOSS_DOWN_AT.kneel) / 1.0);
+  const gone = clamp01((t - BOSS_DOWN_AT.burst) / 0.8);
+
+  ctx.save();
+  // 비틀거리다 무릎이 꺾인다
+  ctx.translate(CUT_CX + Math.sin(time * 26) * (1 - kneel) * 4, CUT_CY + kneel * 26);
+  ctx.rotate(kneel * 0.35);
+  ctx.globalAlpha = 1 - gone;
+  // hurt 는 **한 프레임짜리** 피격 번쩍임이다. 컷신 내내 켜두면 몸이 하얗게 날아가
+  // 무엇이 쓰러지는지가 안 보인다. 색이 식는 것으로 죽어가는 걸 보여준다.
+  drawDinoBody(ctx, r, time, mixHex('#ff3b3b', '#3a2a4e', kneel), false);
+  ctx.restore();
+
+  // 박혀 있던 앨범이 튕겨 나간다
+  if (t >= BOSS_DOWN_AT.shed) {
+    const k = t - BOSS_DOWN_AT.shed;
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 + 0.4;
+      const d = k * (60 + i * 9);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - k * 0.5);
+      drawCoverAt(ctx, ALBUMS[i], CUT_CX + Math.cos(a) * d - 6, CUT_CY + Math.sin(a) * d - 6 + k * k * 30, 12);
+      ctx.restore();
+    }
+  }
+
+  // 코어가 터진다
+  if (phase === 'burst') {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - gone);
+    ctx.fillStyle = '#fff';
+    const rad = 8 + gone * 90;
+    ctx.beginPath();
+    ctx.arc(CUT_CX, CUT_CY, rad, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
 
 function drawPhase4Cut(ctx, t, phase, time) {
   const r = 52;
@@ -2942,6 +3217,7 @@ export function drawScene(ctx, game, time) {
   if (game.boss) {
     drawBoss(ctx, game.boss, ox, oy, time);
     drawLaser(ctx, game.boss, ox, oy, time, bossPhase(game.boss).color);
+    drawGroundSweeps(ctx, game.boss, ox, oy, time, bossPhase(game.boss).color);
   }
 
   drawPlayer(ctx, game.player, ox, oy, time);

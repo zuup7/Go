@@ -15,6 +15,8 @@ import {
   updateThrown,
   laserBeam,
   laserBeams,
+  tailBand,
+  shockWaves,
 } from './boss.js';
 import { ZONE_EFFECTS, emptyEffects, createTrapMemory, trapKey } from '../data/traps.js';
 import { CUTSCENE, CUTSCENE_LENGTH, beatsCrossed } from '../data/cutscene.js';
@@ -88,6 +90,8 @@ export function createGame(options = {}) {
     bombs: [],
     bombTimer: 0,
     bombPhase: 0,
+    /** 쓰러지는 컷신을 이미 틀었나 (한 번만 튼다) */
+    downShown: false,
     particles: [],
     texts: [],
     camera: createCamera(VIEW.w, VIEW.h),
@@ -175,6 +179,7 @@ function spawnEntities(game) {
   game.bombs = [];
   game.bombTimer = 0;
   game.bombPhase = 0;
+  game.downShown = false;
   for (const p of game.world.pickups) p.taken = false;
   for (const f of game.world.fakeGoals) {
     f.fleeing = false;
@@ -351,6 +356,28 @@ function handleLaser(game) {
     if (overlaps(game.player, beam)) {
       hurt(game);
       return; // 한 프레임에 두 기둥에 두 번 맞을 이유가 없다
+    }
+  }
+}
+
+/**
+ * 공룡 형태의 가로 공격 — 꼬리와 충격파.
+ *
+ * 레이저는 **세로 기둥**이라 옆으로 비켜서 피했다. 이건 바닥을 훑는 **가로**라
+ * 뛰어야만 피한다. 피하는 축이 달라야 "새 형태"로 읽힌다.
+ * 사각형은 boss.js 가 정하고, 그림도 같은 걸 본다.
+ */
+function handleGroundSweeps(game) {
+  if (game.player.dead) return;
+  const tail = tailBand(game.boss);
+  if (tail?.live && overlaps(game.player, tail)) {
+    hurt(game);
+    return;
+  }
+  for (const wave of shockWaves(game.boss)) {
+    if (overlaps(game.player, wave)) {
+      hurt(game);
+      return;
     }
   }
 }
@@ -983,14 +1010,38 @@ function returnToHub(game) {
 /** 타이틀에서 고를 수 있는 줄 수 (개발자 모드일 때: 처음부터 / 스테이지 선택) */
 const TITLE_ROWS = 2;
 
-// 스테이지 선택 화면의 칸. 0..STAGES.length 는 스테이지와 보스라 startRun 에 그대로 넘긴다.
+/**
+ * 스테이지 선택 화면의 칸 **한 벌**.
+ *
+ * 예전에는 칸 번호(core)와 칸 이름(render/hud)을 따로 적어뒀다. 하드 판을 넣으려면
+ * 두 곳을 같이 고쳐야 하고, 한쪽만 고치면 **엉뚱한 판이 시작되는데 화면은 맞게 보인다**.
+ * 그래서 여기 한 곳에만 적고 양쪽이 이걸 읽는다.
+ *
+ * run 이 있으면 startRun 에 그대로 넘긴다. index 가 판 수와 같으면 보스전이다.
+ */
+export const SELECT_ITEMS = [
+  ...STAGES.map((s, i) => ({ icon: s.icon, label: `STAGE ${s.number}`, run: { index: i } })),
+  { icon: '👑', label: '보스전', run: { index: STAGES.length } },
+  ...HARD_STAGES.map((s, i) => ({
+    icon: s.icon,
+    label: `하드 ${s.number}판`,
+    run: { index: i, hard: true },
+  })),
+  { icon: '💀', label: '하드 보스전', run: { index: HARD_STAGES.length, hard: true } },
+  { icon: '🎬', label: '오프닝 다시 보기', action: 'opening' },
+  { icon: '🚪', label: '개발자 모드 끄기', action: 'devOff' },
+];
+
+const slotOf = (test) => SELECT_ITEMS.findIndex(test);
 /** 하드모드 1판부터 (NPC 를 안 거치고 바로 — 개발자 모드에서만) */
-export const SELECT_HARD = STAGES.length + 1;
+export const SELECT_HARD = slotOf((s) => s.run?.hard && s.run.index === 0);
+/** 하드 보스전으로 바로 */
+export const SELECT_HARD_BOSS = slotOf((s) => s.run?.hard && s.run.index === HARD_STAGES.length);
 /** 오프닝 다시 보기 (한 번 보면 저절로는 안 뜨므로 여기서만 다시 볼 수 있다) */
-export const SELECT_OPENING = STAGES.length + 2;
+export const SELECT_OPENING = slotOf((s) => s.action === 'opening');
 /** 개발자 모드 끄기 */
-export const SELECT_DEV_OFF = STAGES.length + 3;
-export const SELECT_SLOTS = STAGES.length + 4;
+export const SELECT_DEV_OFF = slotOf((s) => s.action === 'devOff');
+export const SELECT_SLOTS = SELECT_ITEMS.length;
 
 /** 개발자 모드를 켜고 끈다. 비번 판정은 ui 가 하고 결과만 여기로 온다. */
 export function setDevMode(game, on) {
@@ -1037,7 +1088,7 @@ function damageBoss(game, opts = {}) {
   const changed = syncPhase(boss);
   if (changed) {
     // 페이즈가 바뀌면 싸움을 멈추고 전환 컷신을 튼다
-    startBossCut(game, cutForPhase(changed));
+    startBossCut(game, cutForPhase(changed, game.hard));
     game.flash = 1;
     shakeCamera(game.camera, 1.6);
     emit(game, 'phase', { phase: changed });
@@ -1106,6 +1157,8 @@ function updateBossScene(game, input, dt) {
       // 컷신이 끝났다고 알린다. 건너뛰었을 때도 반드시 나오므로,
       // 컷신 때문에 꺼둔 것(브금 같은 것)을 여기서 되돌리면 안전하다.
       emit(game, 'cutdone', { cut: finished });
+      // 쓰러지는 컷신이 끝나면 곧바로 엔딩으로 이어진다
+      if (finished === 'bossdown') startBossCut(game, 'ending');
       if (finished === 'ending') finishRun(game);
     }
     return;
@@ -1124,6 +1177,15 @@ function updateBossScene(game, input, dt) {
     dropMic: (mic) => game.mics.push(mic),
     onAim: () => emit(game, 'laseraim', {}),
     onLaser: () => emit(game, 'laser', {}),
+    // 꼬리는 플레이어 반대쪽에서 시작한다 — 발밑에서 생기면 예고가 있어도 못 피한다
+    playerX: game.player.x + game.player.w / 2,
+    onTailAim: () => emit(game, 'tailaim', {}),
+    onTail: () => emit(game, 'tail', {}),
+    onStompAim: () => emit(game, 'stompaim', {}),
+    onStomp: () => {
+      shakeCamera(game.camera, 1.2);
+      emit(game, 'stomp', {});
+    },
   };
   updateBoss(boss, ctx, dt);
 
@@ -1139,6 +1201,7 @@ function updateBossScene(game, input, dt) {
   handleAlbums(game, dt, input.jump);
   handleShots(game, dt);
   handleLaser(game);
+  handleGroundSweeps(game);
 
   if (boss.state !== 'defeated' && !game.player.dead) {
     // 약점 밟기 — 붙어야 해서 위험하지만 마이크를 기다릴 필요가 없다
@@ -1163,8 +1226,12 @@ function updateBossScene(game, input, dt) {
     killPlayer(game);
   }
 
-  // 쓰러지고 잠깐 뒤 엔딩 컷신으로 넘어간다
-  if (boss.state === 'defeated' && boss.defeatedAt > 1.6) startBossCut(game, 'ending');
+  // 쓰러지면 **먼저 쓰러지는 컷신**을 틀고, 그게 끝나야 엔딩으로 간다.
+  // 그냥 사라지면 이긴 것 같지가 않다 — 박혀 있던 앨범이 떨어져 나가는 걸 보여준다.
+  if (boss.state === 'defeated' && boss.defeatedAt > 0.9 && !game.downShown) {
+    game.downShown = true;
+    startBossCut(game, 'bossdown');
+  }
 
   updateCamera(game.camera, game.player, game.world, dt);
 }
@@ -1251,14 +1318,13 @@ export function updateGame(game, input, dt) {
         game.scene = 'title';
         game.sceneTime = 0;
       } else if (input.confirmPressed) {
-        if (game.selectIndex === SELECT_HARD) startRun(game, 0, { hard: true });
-        else if (game.selectIndex === SELECT_OPENING) startIntro(game);
-        else if (game.selectIndex === SELECT_DEV_OFF) {
+        const pick = SELECT_ITEMS[game.selectIndex];
+        if (pick?.run) startRun(game, pick.run.index, { hard: !!pick.run.hard });
+        else if (pick?.action === 'opening') startIntro(game);
+        else if (pick?.action === 'devOff') {
           setDevMode(game, false);
           game.scene = 'title';
           game.sceneTime = 0;
-        } else {
-          startRun(game, game.selectIndex);
         }
       }
       break;

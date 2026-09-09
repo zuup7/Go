@@ -8,6 +8,10 @@ export const BOSS_H = 56;
 
 /** 레이저 기둥의 폭 */
 export const LASER_W = 14;
+/** 꼬리가 훑는 폭 — 레이저 기둥보다 두껍다. 가로로 오는 것이라 두꺼워야 읽힌다 */
+export const TAIL_W = 26;
+/** 충격파 한 덩이의 폭 */
+export const WAVE_W = 18;
 
 /**
  * floorY 는 레이저가 닿을 바닥 높이다. 기본값을 두는 이유는
@@ -51,7 +55,47 @@ export function createBoss(arenaWidth, floorY = 192, hard = false) {
     beamX2: 0,
     beamDir: 1,
     laserTimer: 0,
+    // ── 공룡 형태의 공격 (3페이즈부터) ───────────────────────
+    /** 꼬리를 휘두르기까지 / 내리찍기까지 */
+    tailTimer: 0,
+    stompTimer: 0,
+    /** 꼬리가 지금 훑고 있는 x (왼→오). 'tail' 동안에만 뜻이 있다 */
+    tailX: 0,
+    tailDir: 1,
+    /** 바닥을 타고 퍼지는 충격파. { x, dir } 둘 (양쪽) */
+    waves: [],
   };
+}
+
+/**
+ * 지금 바닥을 훑고 있는 꼬리 칸. 안 휘두르고 있으면 null.
+ *
+ * 레이저와 같은 규칙이다 — **판정과 그림이 이 하나를 같이 본다.**
+ * 사각형을 양쪽에 따로 적으면 보이는 자리와 죽는 자리가 달라진다.
+ */
+export function tailBand(boss) {
+  if (boss.state !== 'tail' && boss.state !== 'tailAim') return null;
+  const phase = bossPhase(boss);
+  const h = phase.tailHeight ?? 20;
+  return {
+    x: boss.tailX - TAIL_W / 2,
+    y: boss.floorY - h,
+    w: TAIL_W,
+    h,
+    live: boss.state === 'tail',
+  };
+}
+
+/** 바닥을 타고 퍼지는 충격파들. 판정과 그림이 같이 본다 */
+export function shockWaves(boss) {
+  const phase = bossPhase(boss);
+  const h = phase.waveHeight ?? 14;
+  return boss.waves.map((w) => ({
+    x: w.x - WAVE_W / 2,
+    y: boss.floorY - h,
+    w: WAVE_W,
+    h,
+  }));
 }
 
 /**
@@ -180,7 +224,13 @@ export function updateBoss(boss, ctx, dt) {
 
   // 좌우로 천천히 배회. 다만 레이저를 겨누거나 쏘는 동안에는 제자리에 선다 —
   // 큰 걸 쓰기로 마음먹은 놈이 멈추는 것 자체가 예고다.
-  const charging = boss.state === 'aim' || boss.state === 'laser';
+  const charging =
+    boss.state === 'aim' ||
+    boss.state === 'laser' ||
+    boss.state === 'tailAim' ||
+    boss.state === 'tail' ||
+    boss.state === 'stompAim' ||
+    boss.state === 'stomp';
   const speed = charging ? 0 : 26 + boss.phaseId * 12;
   boss.x += boss.drift * speed * dt;
   if (boss.x < 24) {
@@ -220,6 +270,24 @@ export function updateBoss(boss, ctx, dt) {
           break;
         }
       }
+      // 공룡 형태의 두 기술. 바닥을 훑는 가로 공격이라 **뛰어야** 피한다.
+      if (phase.tailEvery > 0) {
+        boss.tailTimer += dt;
+        if (boss.tailTimer >= phase.tailEvery) {
+          startTail(boss, phase, ctx);
+          break;
+        }
+      }
+      if (phase.stompEvery > 0) {
+        boss.stompTimer += dt;
+        if (boss.stompTimer >= phase.stompEvery) {
+          boss.stompTimer = 0;
+          boss.state = 'stompAim';
+          boss.timer = phase.stompAim;
+          ctx.onStompAim?.();
+          break;
+        }
+      }
       if (boss.timer <= 0) {
         boss.state = 'open';
         boss.timer = phase.openFor;
@@ -248,6 +316,56 @@ export function updateBoss(boss, ctx, dt) {
       }
       break;
     }
+    case 'tailAim': {
+      // 꼬리를 뒤로 감는다. 멈춰서 감는 것 자체가 예고다.
+      boss.vulnerable = false;
+      boss.y += (boss.homeY - boss.y) * Math.min(1, dt * 4);
+      if (boss.timer <= 0) {
+        boss.state = 'tail';
+        boss.timer = phase.tailSweep;
+        ctx.onTail?.();
+      }
+      break;
+    }
+    case 'tail': {
+      boss.vulnerable = false;
+      // 아레나를 가로질러 훑는다
+      const span = ctx.arenaWidth + TAIL_W;
+      boss.tailX += boss.tailDir * (span / phase.tailSweep) * dt;
+      if (boss.timer <= 0) {
+        boss.state = 'recover';
+        boss.timer = 0.8;
+      }
+      break;
+    }
+    case 'stompAim': {
+      // 몸을 높이 든다 — 위로 뜨는 것이 "곧 내려찍는다" 는 신호다
+      boss.vulnerable = false;
+      boss.y += (boss.homeY - 26 - boss.y) * Math.min(1, dt * 5);
+      if (boss.timer <= 0) {
+        boss.state = 'stomp';
+        boss.timer = 0.28;
+      }
+      break;
+    }
+    case 'stomp': {
+      boss.vulnerable = false;
+      // 내리꽂는다
+      boss.y += 620 * dt;
+      if (boss.y >= boss.floorY - BOSS_H - 6 || boss.timer <= 0) {
+        boss.y = boss.floorY - BOSS_H - 6;
+        // 발밑에서 양쪽으로 충격파
+        const cx = boss.x + BOSS_W / 2;
+        boss.waves = [
+          { x: cx, dir: -1 },
+          { x: cx, dir: 1 },
+        ];
+        boss.state = 'recover';
+        boss.timer = 1.0;
+        ctx.onStomp?.();
+      }
+      break;
+    }
     case 'open': {
       // 재생 버튼이 열린다 — 내려와서 밟히길 기다린다
       boss.vulnerable = true;
@@ -273,6 +391,30 @@ export function updateBoss(boss, ctx, dt) {
   }
 
   updateQuarters(boss, phase, ctx, dt);
+
+  // 충격파는 바닥을 타고 끝까지 가서 사라진다
+  if (boss.waves.length) {
+    const speed = phase.waveSpeed ?? 190;
+    for (const w of boss.waves) w.x += w.dir * speed * dt;
+    boss.waves = boss.waves.filter((w) => w.x > -WAVE_W && w.x < ctx.arenaWidth + WAVE_W);
+  }
+}
+
+/**
+ * 꼬리를 감는다. 훑는 방향은 **플레이어의 반대쪽에서 시작**한다 —
+ * 발밑에서 갑자기 생기면 예고가 있어도 못 피한다.
+ */
+function startTail(boss, phase, ctx) {
+  boss.tailTimer = 0;
+  boss.state = 'tailAim';
+  boss.timer = phase.tailAim;
+  const px = ctx.playerX ?? boss.x;
+  // 플레이어가 **왼쪽에 있으면 오른쪽 끝에서** 시작한다. 같은 쪽에서 시작하면
+  // 예고를 봐도 이미 코앞이라 못 피한다.
+  const startRight = px < ctx.arenaWidth / 2;
+  boss.tailDir = startRight ? -1 : 1;
+  boss.tailX = startRight ? ctx.arenaWidth + TAIL_W / 2 : -TAIL_W / 2;
+  ctx.onTailAim?.();
 }
 
 /**

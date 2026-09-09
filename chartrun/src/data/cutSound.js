@@ -73,6 +73,25 @@ export const CUT_SOUND = {
     title: { sfx: 'title' },
     end: {},
   },
+  /** 하드 3페이즈 — 껍질을 찢고 공룡로봇으로 변신한다 */
+  hard3: {
+    shake: { sfx: 'rumble' },
+    graves: { sfx: 'blip' },
+    swarm: { sfx: 'scatter' },
+    shell: { sfx: 'crack' },
+    hatch: { sfx: 'split' },
+    roar: { sfx: 'roar', bgm: 'boss' },
+    title: { sfx: 'title' },
+    end: {},
+  },
+  /** 보스가 쓰러질 때 — 박혀 있던 앨범이 하나씩 떨어져 나간다 */
+  bossdown: {
+    stagger: { sfx: 'thud' },
+    shed: { sfx: 'scatter' },
+    kneel: { sfx: 'crack' },
+    burst: { sfx: 'burst' },
+    end: {},
+  },
   /**
    * 추격 판에서 잡혔을 때. 시작할 때 음악을 끄므로 **끝에서 반드시 다시 켠다** —
    * 'stage' 는 판을 새로 불러올 때만 나오는 소식이라, 여기서 안 켜면

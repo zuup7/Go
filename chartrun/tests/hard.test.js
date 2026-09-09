@@ -15,6 +15,8 @@ import {
   SELECT_DEV_OFF,
   SELECT_SLOTS,
   markKey,
+  SELECT_ITEMS,
+  SELECT_HARD_BOSS,
 } from '../src/core/game.js';
 import { STAGES, HARD_STAGES } from '../src/data/stages.js';
 import { emptySave, mergeRun, beatRecord, deserialize, serialize } from '../src/core/save.js';
@@ -349,4 +351,37 @@ test('아는 사람은 하드 네 판을 지형만으로 끝까지 간다', () =
       `하드 ${index + 1}판: 알고도 못 지나가는 자리가 있다 — x ${Math.round(far)} / ${goal}`,
     );
   }
+});
+
+test('개발자 선택에서 하드 판 넷과 하드 보스로 바로 갈 수 있다', () => {
+  // 하드 3판만 확인하고 싶은데 매번 1판부터 달려야 하면 아무도 안 본다.
+  for (let i = 0; i < HARD_STAGES.length; i++) {
+    const slot = SELECT_ITEMS.findIndex((s) => s.run?.hard && s.run.index === i);
+    assert.ok(slot >= 0, `하드 ${i + 1}판 칸이 없다`);
+    const game = createGame({ seed: 9, save: { ...emptySave(), seenOpening: true, dev: true } });
+    game.scene = 'select';
+    game.selectIndex = slot;
+    step(game, idle({ confirmPressed: true }), 1);
+    assert.equal(game.hard, true, `하드 ${i + 1}판 칸인데 하드모드가 아니다`);
+    assert.equal(game.world.stage.id, HARD_STAGES[i].id, `하드 ${i + 1}판 칸이 엉뚱한 판을 연다`);
+  }
+
+  const game = createGame({ seed: 9, save: { ...emptySave(), seenOpening: true, dev: true } });
+  game.scene = 'select';
+  game.selectIndex = SELECT_HARD_BOSS;
+  step(game, idle({ confirmPressed: true }), 1);
+  assert.equal(game.hard, true, '하드 보스 칸인데 하드모드가 아니다');
+  assert.ok(game.boss, '하드 보스 칸인데 보스가 없다');
+  assert.equal(game.boss.maxHp, HARD_MAX_HP, '보스가 하드 체력이 아니다');
+});
+
+test('선택 칸의 이름과 실제로 열리는 판이 어긋나지 않는다', () => {
+  // 칸 목록을 core 와 화면이 따로 들고 있으면 한쪽만 고쳤을 때
+  // **화면은 맞는데 엉뚱한 판이 시작된다.** 목록이 하나뿐인지 본다.
+  for (const item of SELECT_ITEMS) {
+    assert.ok(item.icon && item.label, '이름 없는 칸이 있다');
+    assert.ok(item.run || item.action, `"${item.label}" 칸이 아무 일도 안 한다`);
+  }
+  const hardStages = SELECT_ITEMS.filter((s) => s.run?.hard && s.run.index < HARD_STAGES.length);
+  assert.equal(hardStages.length, HARD_STAGES.length, '하드 판 칸 수가 판 수와 다르다');
 });

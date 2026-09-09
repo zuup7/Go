@@ -211,7 +211,10 @@ test('보스를 잡으면 1위 엔딩', () => {
   game.boss.state = 'defeated';
   game.boss.defeatedAt = 3;
   step(game);
-  assert.equal(game.bossCut?.id, 'ending', '격파하면 먼저 엔딩 컷신');
+  // 격파하면 **쓰러지는 컷신**이 먼저 돌고, 그게 끝나야 엔딩으로 이어진다
+  assert.equal(game.bossCut?.id, 'bossdown', '격파하면 먼저 쓰러지는 컷신');
+  step(game, idle, Math.ceil(game.bossCut.length * 60) + 2);
+  assert.equal(game.bossCut?.id, 'ending', '쓰러진 뒤 엔딩 컷신');
   step(game, idle, Math.ceil(game.bossCut.length * 60) + 2);
   assert.equal(game.scene, 'ending');
   assert.equal(game.rank, 1);

@@ -33,6 +33,41 @@ export const PHASE3_CUT = [
 ];
 
 /**
+ * 3페이즈 · 하드 (**공룡로봇 변신**).
+ *
+ * 이야기가 여기서 드러난다 — 1회차에서 우리가 밟아 없앤 앨범들이
+ * **진화해서 돌아온** 것이다. 그래서 껍질이 갈라지고 그 안에서 짐승이 나온다.
+ *
+ * 보통 모드의 3페이즈는 조각을 **불러 모아 조립**하는 이야기였다.
+ * 여기는 반대로 **안에서 찢고 나오는** 이야기다 — 같은 로봇을 또 조립하면
+ * 2회차에 새 볼거리가 없다.
+ */
+export const HARD3_CUT = [
+  { at: 0.0, kind: 'shake' },
+  { at: 0.8, kind: 'graves' }, // 밟혀 사라졌던 앨범들이 바닥에서 떠오른다
+  { at: 2.2, kind: 'swarm' }, // 그것들이 보스에게 몰려들어 달라붙는다
+  { at: 3.6, kind: 'shell' }, // 껍질에 금이 간다
+  { at: 4.6, kind: 'hatch' }, // 갈라진 틈에서 목과 꼬리가 뻗어 나온다
+  { at: 6.0, kind: 'roar' }, // 공룡로봇이 고개를 들고 포효한다
+  { at: 7.4, kind: 'title' },
+  { at: 8.8, kind: 'end' },
+];
+
+/**
+ * 보스가 쓰러질 때 (**죽는 컷신**).
+ *
+ * 그냥 사라지면 이긴 것 같지가 않다. 박혀 있던 앨범이 하나씩 떨어져 나가고,
+ * 마지막에 몸이 무너진다 — 진화가 풀리는 것이 곧 패배다.
+ */
+export const BOSS_DOWN_CUT = [
+  { at: 0.0, kind: 'stagger' }, // 비틀거린다
+  { at: 1.0, kind: 'shed' }, // 박혀 있던 앨범이 하나씩 튕겨 나간다
+  { at: 2.6, kind: 'kneel' }, // 무릎이 꺾인다
+  { at: 3.6, kind: 'burst' }, // 코어가 터진다
+  { at: 4.6, kind: 'end' },
+];
+
+/**
  * 4페이즈 (하드모드에만) — 이미 합체한 로봇이 한계를 넘는다.
  *
  * 새 몸을 그리지 않는다. 있는 로봇을 벌겋게 달구고 뒤의 거대 로봇이 일어서는 것으로
@@ -70,7 +105,10 @@ export const ENDING_CUT = [
 export const BOSS_CUTS = {
   phase2: { timeline: PHASE2_CUT, title: 'PHASE 2' },
   phase3: { timeline: PHASE3_CUT, title: 'PHASE 3' },
+  /** 하드모드의 3페이즈는 조립이 아니라 **변신**이다 */
+  hard3: { timeline: HARD3_CUT, title: 'EVOLVED' },
   phase4: { timeline: PHASE4_CUT, title: 'FINAL' },
+  bossdown: { timeline: BOSS_DOWN_CUT, title: null },
   ending: { timeline: ENDING_CUT, title: '#1' },
 };
 
@@ -84,9 +122,21 @@ export const bossCutLength = (id) => lengthOf(BOSS_CUTS[id].timeline);
 const atOf = (timeline) => Object.fromEntries(timeline.map((s) => [s.kind, s.at]));
 
 export const PHASE2_AT = atOf(PHASE2_CUT);
+export const HARD3_AT = atOf(HARD3_CUT);
+export const BOSS_DOWN_AT = atOf(BOSS_DOWN_CUT);
 export const PHASE3_AT = atOf(PHASE3_CUT);
 export const PHASE4_AT = atOf(PHASE4_CUT);
 export const ENDING_AT = atOf(ENDING_CUT);
 
-/** 페이즈가 바뀔 때 틀 컷신 id (1페이즈는 시작이라 없다) */
-export const cutForPhase = (phaseId) => (phaseId >= 2 && phaseId <= 4 ? `phase${phaseId}` : null);
+/**
+ * 페이즈가 바뀔 때 틀 컷신 id (1페이즈는 시작이라 없다).
+ *
+ * 하드의 3페이즈만 다른 컷신을 쓴다 — 보통 모드는 조각을 모아 **조립**하고,
+ * 하드는 껍질을 찢고 **공룡으로 변신**한다. 같은 컷신을 두 번 보여주면
+ * 2회차에 새 볼거리가 없다.
+ */
+export const cutForPhase = (phaseId, hard = false) => {
+  if (phaseId < 2 || phaseId > 4) return null;
+  if (phaseId === 3 && hard) return 'hard3';
+  return `phase${phaseId}`;
+};

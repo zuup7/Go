@@ -9,6 +9,8 @@ import {
   bossPhase,
   bossHealthRatio,
   laserBeam,
+  tailBand,
+  shockWaves,
 } from '../src/core/boss.js';
 import { BOSS_MAX_HP, PHASES, HARD_PHASES, phaseFor } from '../src/data/bossData.js';
 import { PLAYER } from '../src/core/player.js';
@@ -411,4 +413,77 @@ test('하드 4페이즈에서 기둥이 둘, 그 전에는 하나다', () => {
     }
     assert.equal(got, want, `체력 ${hp}(${boss.phaseId}페이즈): 기둥이 ${got}개`);
   }
+});
+
+// ── 공룡 형태의 가로 공격 ────────────────────────────────────
+test('공룡 페이즈에만 꼬리와 내리찍기가 있다', () => {
+  for (const phase of HARD_PHASES) {
+    const hasDino = !!phase.dino;
+    assert.equal(
+      (phase.tailEvery ?? 0) > 0,
+      hasDino,
+      `하드 ${phase.id}페이즈: 공룡(${hasDino})인데 꼬리가 안 맞는다`,
+    );
+    assert.equal((phase.stompEvery ?? 0) > 0, hasDino, `하드 ${phase.id}페이즈: 내리찍기가 안 맞는다`);
+  }
+  assert.ok(
+    HARD_PHASES.some((p) => p.dino),
+    '공룡으로 변신하는 페이즈가 하나도 없다',
+  );
+  // 보통 모드는 공룡이 안 된다 — 그게 하드의 볼거리다
+  assert.ok(!PHASES.some((p) => p.dino), '보통 모드에도 공룡이 있다');
+});
+
+test('꼬리와 충격파는 뛰어서 넘을 수 있는 높이다', () => {
+  // 레이저는 옆으로 비켜서 피하지만 이건 **뛰어야만** 피한다.
+  // 점프 높이(2.95칸 ≈ 47px)보다 낮아야 넘을 수 있다.
+  const jump = 47;
+  for (const phase of HARD_PHASES.filter((p) => p.dino)) {
+    assert.ok(
+      phase.tailHeight < jump,
+      `하드 ${phase.id}페이즈: 꼬리가 ${phase.tailHeight}px 라 뛰어도 못 넘는다`,
+    );
+    assert.ok(
+      phase.waveHeight < jump,
+      `하드 ${phase.id}페이즈: 충격파가 ${phase.waveHeight}px 라 뛰어도 못 넘는다`,
+    );
+  }
+});
+
+test('꼬리는 플레이어 반대쪽 끝에서 시작한다 — 발밑에서 안 생긴다', () => {
+  // 예고가 있어도 발밑에서 생기면 못 피한다.
+  const arenaWidth = 640;
+  for (const px of [60, 580]) {
+    const boss = createBoss(arenaWidth, 192, true);
+    boss.hp = 3; // 4페이즈(공룡)
+    syncPhase(boss);
+    const phase = bossPhase(boss);
+    assert.ok(phase.dino, '공룡 페이즈가 아니다');
+    boss.state = 'attack';
+    boss.tailTimer = phase.tailEvery;
+    updateBoss(boss, { arenaWidth, playerX: px, spawnShot() {}, addAlbum() {} }, 1 / 60);
+    assert.equal(boss.state, 'tailAim', '꼬리를 안 감았다');
+    const band = tailBand(boss);
+    assert.ok(
+      Math.abs(band.x + band.w / 2 - px) > arenaWidth / 3,
+      `플레이어(${px}) 코앞(${Math.round(band.x)})에서 꼬리가 시작했다`,
+    );
+  }
+});
+
+test('내리찍으면 충격파가 양쪽으로 퍼져서 사라진다', () => {
+  const arenaWidth = 640;
+  const boss = createBoss(arenaWidth, 192, true);
+  boss.hp = 3;
+  syncPhase(boss);
+  boss.state = 'stompAim';
+  boss.timer = 0;
+  const ctx = { arenaWidth, playerX: 300, spawnShot() {}, addAlbum() {} };
+  for (let i = 0; i < 40 && boss.waves.length === 0; i++) updateBoss(boss, ctx, 1 / 60);
+  assert.equal(boss.waves.length, 2, '충격파가 양쪽으로 안 퍼졌다');
+  assert.equal(boss.waves[0].dir, -1);
+  assert.equal(boss.waves[1].dir, 1);
+  // 끝까지 가면 사라진다 — 안 그러면 영원히 남는다
+  for (let i = 0; i < 60 * 6; i++) updateBoss(boss, ctx, 1 / 60);
+  assert.equal(boss.waves.length, 0, '충격파가 안 사라진다');
 });

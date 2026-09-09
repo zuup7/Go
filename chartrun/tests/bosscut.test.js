@@ -176,7 +176,9 @@ test('컷신은 반드시 저절로 풀린다 — 안 풀리면 게임이 영영
     const game = bossGame();
     game.bossCut = { id, t: 0, length: bossCutLength(id) };
     run(game, bossCutLength(id) + 1);
-    assert.equal(game.bossCut, null, `${id} 컷신이 안 끝났다`);
+    // 쓰러지는 컷신은 **일부러** 엔딩으로 이어진다. 그것 말고는 다 끝나야 한다.
+    const next = id === 'bossdown' ? 'ending' : null;
+    assert.equal(game.bossCut?.id ?? null, next, `${id} 컷신이 안 끝났다`);
   }
 });
 
@@ -187,7 +189,8 @@ test('건너뛰기가 세 컷신 모두에서 먹는다', () => {
     run(game, 0.4, { confirmPressed: true });
     assert.ok(game.bossCut, `${id}: 시작하자마자 넘어가면 눌린 줄도 모른다`);
     run(game, 0.4, { confirmPressed: true });
-    assert.equal(game.bossCut, null, `${id}: 건너뛰기가 안 먹는다`);
+    const next = id === 'bossdown' ? 'ending' : null;
+    assert.equal(game.bossCut?.id ?? null, next, `${id}: 건너뛰기가 안 먹는다`);
   }
 });
 
@@ -205,9 +208,11 @@ test('보스를 쓰러뜨리면 엔딩 컷신을 거쳐 통계 화면으로 간�
   }
   assert.equal(game.boss.state, 'defeated');
 
-  run(game, 2.0);
-  assert.ok(game.bossCut, '격파하고 잠깐 뒤 엔딩 컷신이 떠야 한다');
-  assert.equal(game.bossCut.id, 'ending');
+  // 먼저 **쓰러지는 컷신**이 돌고, 그게 끝나야 엔딩으로 이어진다
+  run(game, 1.2);
+  assert.equal(game.bossCut?.id, 'bossdown', '격파하고 잠깐 뒤 쓰러지는 컷신이 떠야 한다');
+  run(game, bossCutLength('bossdown') + 0.2);
+  assert.equal(game.bossCut?.id, 'ending', '쓰러지는 컷신 뒤에 엔딩이 이어져야 한다');
   assert.equal(game.scene, 'boss', '컷신 도는 동안은 아직 보스 씬');
 
   run(game, bossCutLength('ending') + 0.5);

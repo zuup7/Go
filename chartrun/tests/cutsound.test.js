@@ -11,6 +11,8 @@ import {
   PHASE4_CUT,
   ENDING_CUT,
   bossCutLength,
+  HARD3_CUT,
+  BOSS_DOWN_CUT,
 } from '../src/data/bossCutscenes.js';
 import { CUT_SOUND, soundFor } from '../src/data/cutSound.js';
 import { INTRO_CUT } from '../src/data/introCutscene.js';
@@ -73,6 +75,8 @@ const TIMELINES = {
   phase2: PHASE2_CUT,
   phase3: PHASE3_CUT,
   phase4: PHASE4_CUT,
+  hard3: HARD3_CUT,
+  bossdown: BOSS_DOWN_CUT,
   caught: CAUGHT_CUT,
   ending: ENDING_CUT,
 };
@@ -122,13 +126,13 @@ test('엔딩 2부는 결혼식 곡으로 갈아탄다', () => {
 // ── 실제로 흐를 때 ──────────────────────────────────────────
 for (const id of Object.keys(BOSS_CUTS)) {
   test(`${id} 컷신을 끝까지 돌리면 모든 단계가 순서대로 한 번씩 울린다`, () => {
-    const { beats } = beatsOf(id);
+    // 쓰러지는 컷신은 끝나면 엔딩으로 이어진다 — 이어진 뒤의 소리는 여기 관심 밖이다
+    const beats = beatsOf(id).beats.filter((b) => b.cut === id);
     assert.deepEqual(
       beats.map((b) => b.kind),
       BOSS_CUTS[id].timeline.map((s) => s.kind),
       `${id}: 울린 순서가 타임라인과 다르다`,
     );
-    assert.ok(beats.every((b) => b.cut === id));
   });
 }
 

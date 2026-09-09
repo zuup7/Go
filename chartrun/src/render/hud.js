@@ -4,7 +4,7 @@ import { timeText } from '../core/util.js';
 import { beatRecord } from '../core/save.js';
 import { STAGES } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
-import { PAUSE_ROWS, stageTable } from '../core/game.js';
+import { PAUSE_ROWS, stageTable, SELECT_ITEMS } from '../core/game.js';
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -111,13 +111,9 @@ export function createHud(root) {
           </div>`;
       }
       case 'select': {
-        const slots = [
-          ...STAGES.map((s) => ({ icon: s.icon, label: `STAGE ${s.number}` })),
-          { icon: '👑', label: '보스전' },
-          { icon: '🔥', label: '하드모드 1판부터' },
-          { icon: '🎬', label: '오프닝 다시 보기' },
-          { icon: '🚪', label: '개발자 모드 끄기' },
-        ];
+        // 칸 목록은 core 가 갖고 있다 — 여기 또 적으면 둘이 어긋나서
+        // "화면은 맞는데 엉뚱한 판이 시작되는" 상태가 된다
+        const slots = SELECT_ITEMS;
         return `
           <div class="panel select-panel">
             <h2>스테이지 선택</h2>
