@@ -49,6 +49,10 @@
         <button type="button" data-action="jump" aria-label="점프">점프</button>
       </div>
 
+      <!-- 멈춤. data-action 이라 입력 배선(bindTouchButtons)과 자리 옮기기(touchLayout)를
+           그대로 타고, 폰에서도 판을 세울 수 있게 된다. -->
+      <button type="button" class="pause-btn" data-action="pause" aria-label="일시정지">⏸</button>
+
       <!-- 버튼을 원하는 자리로 끌어다 놓기 -->
       <button type="button" class="pad-edit" id="pad-edit" aria-label="버튼 위치 바꾸기">✥</button>
       <div class="pad-bar" id="pad-bar" hidden>

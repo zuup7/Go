@@ -1,9 +1,9 @@
 // 차트런 진입점. 캔버스를 켜고, 입력·소리·게임 상태를 이어 붙인다.
-import { createGame, updateGame, runSummary, setDevMode, VIEW } from '../core/game.js';
+import { createGame, updateGame, runSummary, setDevMode, PAUSE_ROWS, VIEW } from '../core/game.js';
 import { DEV_CODE, pushDigit, codeMatches } from '../core/devmode.js';
 import { createLoop } from '../core/loop.js';
 import { createInput, bindTouchButtons } from '../core/input.js';
-import { createAudio } from '../core/audio.js';
+import { createAudio, nextVolume } from '../core/audio.js';
 import { loadSave, writeSave, mergeRun } from '../core/save.js';
 import { drawScene } from '../render/scene.js';
 import { createHud } from '../render/hud.js';
@@ -19,7 +19,7 @@ const uiRoot = document.getElementById('ui');
 const shell = document.getElementById('shell');
 
 const save = loadSave();
-const audio = createAudio(save.muted);
+const audio = createAudio(save.muted, save.volume);
 const input = createInput(window);
 const hud = createHud(uiRoot);
 
@@ -41,6 +41,7 @@ let persisted = save;
 function persist(extra = {}) {
   persisted = mergeRun(persisted, { ...runSummary(game), ...extra });
   persisted.muted = audio.muted;
+  persisted.volume = audio.volume;
   persisted.dev = game.dev;
   game.save = persisted;
   writeSave(persisted);
@@ -108,6 +109,12 @@ function handleEvent(name, data) {
       if (cue?.sfx) audio.play(cue.sfx);
       break;
     }
+    case 'volume':
+      // 일시정지 메뉴에서 소리 줄을 골랐다. core 는 소리를 모르니 여기서 한 칸 돌린다.
+      ui.volume = audio.setVolume(nextVolume(audio.volume));
+      audio.play('blip');
+      persist();
+      break;
     case 'dev':
       // 켜고 끈 걸 기억한다 — 새로고침할 때마다 다시 넣게 하면 성가시다
       persist();
@@ -135,13 +142,27 @@ function handleEvent(name, data) {
 
 // ── 개발자 모드 숫자판 ──────────────────────────────────────
 // 화면에 그리는 건 hud 가 하고, 여기서는 상태와 입력만 다룬다.
-const ui = { keypad: null };
+const ui = { keypad: null, volume: audio.volume };
 
 function openKeypad() {
   ui.keypad = { buf: '', bad: false };
 }
 
 function pressKey(key) {
+  // 일시정지 메뉴는 그 줄로 옮긴 뒤 바로 고른다 — 폰에는 ◀▶ 도 엔터도 없다
+  if (key.startsWith('pause:')) {
+    const row = PAUSE_ROWS.indexOf(key.slice('pause:'.length));
+    if (row >= 0 && game.paused) {
+      game.pauseIndex = row;
+      // 눌린 상태를 그대로 넘기면 안 된다 — pausePressed 가 살아 있으면 멈춤이 도로 풀린다
+      updateGame(
+        game,
+        { ...input, pausePressed: false, leftPressed: false, rightPressed: false, confirmPressed: true },
+        0,
+      );
+    }
+    return;
+  }
   if (key === 'open') {
     openKeypad();
     return;
@@ -204,6 +225,7 @@ function update(dt) {
 }
 
 const throwBtn = document.getElementById('throw-btn');
+const pauseBtn = document.querySelector('.pause-btn');
 
 function render() {
   drawScene(ctx, game, time);
@@ -211,6 +233,8 @@ function render() {
   // 던지기 버튼은 쓸 수 있을 때만 — 평소엔 자리만 차지한다
   throwBtn.hidden = game.scene !== 'boss';
   throwBtn.disabled = !(game.player?.ammo > 0);
+  // 멈출 수 있을 때만 보인다 (편집 중에는 touchLayout 이 알아서 다 보여준다)
+  pauseBtn.hidden = !(game.scene === 'play' || game.scene === 'boss');
 }
 
 // 화면 맞추기.

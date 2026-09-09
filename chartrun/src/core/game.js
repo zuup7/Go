@@ -69,9 +69,10 @@ export function createGame(options = {}) {
     ending: null,
     /** 개발자 모드가 켜져 있는지 (비번 1234). 켜면 스테이지를 골라 들어갈 수 있다 */
     dev: save.dev ?? false,
-    /** 타이틀에서 고른 줄, 스테이지 선택 화면에서 고른 칸 */
+    /** 타이틀에서 고른 줄, 스테이지 선택 화면에서 고른 칸, 일시정지 메뉴에서 고른 줄 */
     titleIndex: 0,
     selectIndex: 0,
+    pauseIndex: 0,
     /**
      * 1스테이지부터 달린 판이 아니다 (골라 들어갔다).
      * 이런 판은 기록을 갱신하지 않는다 — 안 그러면 보스만 골라 이기고 최고 기록이 된다.
@@ -718,15 +719,54 @@ function updateBossScene(game, input, dt) {
   updateCamera(game.camera, game.player, game.world, dt);
 }
 
+/**
+ * 멈췄을 때 고를 수 있는 줄. 순서가 곧 화면 순서다.
+ *
+ * volume 은 여기서 아무것도 안 한다 — core 는 소리를 모른다. 'volume' 이벤트만 내고
+ * 실제로 크기를 바꾸는 건 ui/app.js 다 (오디오는 브라우저 것이라 여기 들어오면 테스트가 죽는다).
+ */
+export const PAUSE_ROWS = ['resume', 'retry', 'volume', 'title'];
+
+/** 멈춤을 풀 수 있는 장면. 여기 아니면 Esc 를 눌러도 안 멈춘다. */
+const pausable = (game) => game.scene === 'play' || game.scene === 'boss';
+
+function choosePause(game) {
+  const row = PAUSE_ROWS[game.pauseIndex] ?? 'resume';
+  if (row === 'volume') {
+    emit(game, 'volume', {});
+    return;
+  }
+  // 나머지는 전부 멈춤을 푼다. 멈춘 채로 장면을 옮기면 아무 키도 안 먹어서 게임이 잠긴다.
+  game.paused = false;
+  emit(game, 'pause', { paused: false });
+  if (row === 'retry') killPlayer(game);
+  else if (row === 'title') {
+    game.scene = 'title';
+    game.sceneTime = 0;
+    game.titleIndex = 0;
+  }
+}
+
+function updatePauseMenu(game, input) {
+  const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
+  if (moved) game.pauseIndex = (game.pauseIndex + moved + PAUSE_ROWS.length) % PAUSE_ROWS.length;
+  if (input.confirmPressed) choosePause(game);
+}
+
 /** 게임 한 프레임. input 은 이미 sample() 된 상태여야 한다. */
 export function updateGame(game, input, dt) {
   game.sceneTime += dt;
 
-  if (input.pausePressed && (game.scene === 'play' || game.scene === 'boss')) {
+  if (input.pausePressed && pausable(game)) {
     game.paused = !game.paused;
+    if (game.paused) game.pauseIndex = 0;
     emit(game, 'pause', { paused: game.paused });
   }
-  if (game.paused) return;
+  if (game.paused) {
+    // 멈춘 동안은 메뉴만 움직인다 — 시간도 안 흐르고 아무것도 갱신되지 않는다
+    updatePauseMenu(game, input);
+    return;
+  }
 
   const playing = game.scene === 'play' || game.scene === 'boss';
   if (playing) game.elapsedMs += dt * 1000;

@@ -93,6 +93,38 @@ function patternPainter(album, ctx) {
       }
       px(6, 6, accent, 4, 4);
       break;
+    /**
+     * 명반 — 금박 이중 테두리 + 검은 LP + 수상 인장.
+     * 사진이 없는 유일한 앨범이라, 무늬만으로 "이건 급이 다르다"가 읽혀야 한다.
+     */
+    case 'legend': {
+      // 금박 이중 테두리
+      px(0, 0, main, BASE, 1);
+      px(0, BASE - 1, main, BASE, 1);
+      px(0, 0, main, 1, BASE);
+      px(BASE - 1, 0, main, 1, BASE);
+      px(2, 2, main, BASE - 4, 1);
+      px(2, BASE - 3, main, BASE - 4, 1);
+      px(2, 2, main, 1, BASE - 4);
+      px(BASE - 3, 2, main, 1, BASE - 4);
+      // 가운데 LP — 검은 원반에 금 홈 하나, 가운데는 금 라벨
+      for (let y = 3; y < BASE - 3; y++) {
+        for (let x = 3; x < BASE - 3; x++) {
+          const d = Math.hypot(x - 7.5, y - 7.5);
+          if (d > 4) continue;
+          if (d < 1.2) px(x, y, main);
+          else if (d > 3 && d < 3.7) px(x, y, main);
+          else px(x, y, '#0b0a09');
+        }
+      }
+      // 왼쪽 위 모서리에만 짧은 광택 — 대각선을 길게 그으면 원반을 가로질러 그림이 깨진다
+      px(3, 1, accent, 3, 1);
+      px(1, 3, accent, 1, 3);
+      // 오른쪽 아래 수상 인장 (원반 위에 붙은 스티커처럼 맨 마지막에)
+      px(BASE - 6, BASE - 6, main, 4, 4);
+      px(BASE - 5, BASE - 5, accent, 2, 2);
+      break;
+    }
     case 'wave':
     default:
       for (let x = 0; x < BASE; x++) {

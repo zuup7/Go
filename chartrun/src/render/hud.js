@@ -4,6 +4,7 @@ import { timeText } from '../core/util.js';
 import { beatRecord } from '../core/save.js';
 import { STAGES } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
+import { PAUSE_ROWS } from '../core/game.js';
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -54,6 +55,32 @@ export function createHud(root) {
             return key(k, k);
           }).join('')}
         </div>
+      </div>`;
+  }
+
+  /**
+   * 일시정지 메뉴.
+   *
+   * 줄마다 data-key 를 달아 **탭으로도 고를 수 있게** 한다 — 폰에는 ◀▶ 도 엔터도 없다.
+   * (숫자판과 같은 이유로 핸들러는 안 달고 ui/app.js 가 #center 에 위임한다)
+   */
+  function pausePanel(game, volume) {
+    const label = {
+      resume: '이어하기',
+      retry: '체크포인트부터 다시',
+      volume: `소리 ${Math.round(volume * 100)}%`,
+      title: '타이틀로',
+    };
+    return `
+      <div class="panel pause-panel">
+        <h2>일시정지</h2>
+        <ul class="menu">
+          ${PAUSE_ROWS.map(
+            (row, i) =>
+              `<li class="${i === game.pauseIndex ? 'on' : ''}" data-key="pause:${row}">${label[row]}</li>`,
+          ).join('')}
+        </ul>
+        <p class="press">◀▶ 로 고르고 점프로 확인 · 눌러도 된다</p>
       </div>`;
   }
 
@@ -166,7 +193,7 @@ export function createHud(root) {
       }
       el.ammo.hidden = inCut || !(game.player?.ammo > 0);
 
-      if (game.paused) setCenter('<div class="panel"><h2>PAUSE</h2></div>');
+      if (game.paused) setCenter(pausePanel(game, ui?.volume ?? 1));
       else setCenter(centerFor(game, ui));
     },
   };

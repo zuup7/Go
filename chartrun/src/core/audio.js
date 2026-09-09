@@ -2,6 +2,18 @@
 // 브라우저 정책상 첫 사용자 입력 뒤에야 소리가 난다 — resume() 을 그때 부른다.
 
 const midi = (n) => 440 * 2 ** ((n - 69) / 12);
+
+/** 마스터 볼륨이 1일 때의 실제 세기. 이 위로는 찢어진다. */
+const MASTER = 0.5;
+
+/**
+ * 소리 크기 단계. 버튼 하나로 다 돌 수 있어야 해서 슬라이더가 아니라 칸이다 —
+ * 눕힌 화면에서는 끌기 좌표가 틀어져서 슬라이더가 제대로 안 먹는다 (버튼 옮기기에서 물렸던 함정).
+ */
+export const VOLUME_STEPS = [0, 0.25, 0.5, 0.75, 1];
+
+/** 한 칸 다음. 끝에서 처음으로 돈다 (모르는 값은 indexOf 가 -1 이라 맨 앞으로 떨어진다). */
+export const nextVolume = (v) => VOLUME_STEPS[(VOLUME_STEPS.indexOf(v) + 1) % VOLUME_STEPS.length];
 const _ = null; // 쉼표
 
 /** 8분음표 32칸짜리 루프들 */
@@ -62,7 +74,7 @@ const TRACKS = {
   },
 };
 
-export function createAudio(muted = false) {
+export function createAudio(muted = false, volume = 1) {
   let ctx = null;
   let master = null;
   let bgmGain = null;
@@ -70,7 +82,10 @@ export function createAudio(muted = false) {
   let current = null;
   let timer = 0;
   let blocked = false;
-  let state = { muted };
+  let state = { muted, volume: VOLUME_STEPS.includes(volume) ? volume : 1 };
+
+  /** 지금 나야 할 마스터 세기. 음소거와 크기는 다른 것이라 곱해서 쓴다. */
+  const level = () => (state.muted ? 0 : MASTER * state.volume);
 
   function ensure() {
     if (ctx || blocked) return ctx;
@@ -84,7 +99,7 @@ export function createAudio(muted = false) {
       return null;
     }
     master = ctx.createGain();
-    master.gain.value = state.muted ? 0 : 0.5;
+    master.gain.value = level();
     master.connect(ctx.destination);
     bgmGain = ctx.createGain();
     bgmGain.gain.value = 0.16;
@@ -330,6 +345,9 @@ export function createAudio(muted = false) {
     get muted() {
       return state.muted;
     },
+    get volume() {
+      return state.volume;
+    },
     /**
      * 낼 수 있는 소리 이름들. 소리를 내지 않으므로 브라우저 밖에서도 부를 수 있다 —
      * data/cutSound.js 가 없는 이름을 가리키고 있지 않은지 테스트가 이걸로 대조한다.
@@ -363,9 +381,16 @@ export function createAudio(muted = false) {
     setMuted(value) {
       state.muted = value;
       ensure();
-      if (master) master.gain.value = value ? 0 : 0.5;
+      if (master) master.gain.value = level();
       if (!value && current) scheduleLoop(current);
       return state.muted;
+    },
+    /** 크기만 바꾼다. 음소거는 따로다 — M 로 껐다 켜는 것과 섞이면 헷갈린다. */
+    setVolume(value) {
+      state.volume = VOLUME_STEPS.includes(value) ? value : 1;
+      ensure();
+      if (master) master.gain.value = level();
+      return state.volume;
     },
     toggleMute() {
       return this.setMuted(!state.muted);

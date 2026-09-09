@@ -11,6 +11,8 @@ export const emptySave = () => ({
   revealedTraps: [],
   bestTimeMs: null,
   muted: false,
+  /** 소리 크기 0~1 (core/audio.js 의 VOLUME_STEPS 중 하나). 음소거와는 별개다. */
+  volume: 1,
   /**
    * 오프닝 컷신을 한 번 봤는지. 본 뒤로는 시작할 때 바로 스테이지 1 이다.
    * (예전에 있던 seenIntro 는 읽는 곳이 없는데 저장할 때마다 true 가 돼서

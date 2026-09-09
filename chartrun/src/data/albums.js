@@ -23,7 +23,7 @@ export const BEHAVIORS = [
 ];
 
 /** 커버 패턴 (render/albumArt.js 가 해석) */
-export const COVERS = ['stripes', 'checker', 'radial', 'noise', 'face', 'vinyl', 'burst', 'wave'];
+export const COVERS = ['stripes', 'checker', 'radial', 'noise', 'face', 'vinyl', 'burst', 'wave', 'legend'];
 
 const defaults = {
   art: null,
@@ -235,8 +235,10 @@ export const ALBUMS = [
     name: '레전드 명반',
     stage: 4,
     behavior: 'shielder',
-    palette: ['#1a1a1a', '#c0c0c0', '#ffffff'],
-    cover: 'face',
+    // 열일곱 중 유일하게 사진이 없다. 은색 얼굴 무늬로는 다른 앨범과 구분이 안 돼서
+    // 금박 명반 무늬를 따로 그린다 (render/albumArt.js 의 'legend').
+    palette: ['#141210', '#d4af37', '#fff3c4'],
+    cover: 'legend',
     speed: 40,
     hp: 2,
     size: 24,

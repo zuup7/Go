@@ -496,6 +496,36 @@ body.rotated .touch button.pad-edit {
   right: 84px;
 }
 
+/* 멈춤 — 손잡이(✥) 왼쪽에 같은 크기로. 게임 중에 잘못 누르면 안 되니 작고 흐리게 둔다. */
+.touch button.pause-btn {
+  position: absolute;
+  top: 8px;
+  right: 50px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--dim);
+  background: rgba(36, 19, 56, 0.45);
+  border: 1px solid rgba(160, 120, 220, 0.45);
+  border-radius: 8px;
+  /* .touch 전체가 pointer-events: none 이라 여기서 되살린다 —
+     이게 없으면 캔버스가 탭을 다 먹어서 폰에서 버튼이 죽어 있다 */
+  pointer-events: auto;
+  touch-action: none;
+}
+
+body.rotated .touch button.pause-btn {
+  right: 126px;
+}
+
+/* 자리를 직접 정한 뒤에는 위 top/right 대신 좌표가 먹어야 한다 */
+body.custom-pads .touch button.pause-btn {
+  top: auto;
+  right: auto;
+}
+
 .pad-bar {
   position: absolute;
   top: 8px;
@@ -589,6 +619,15 @@ body.pad-editing .touch button[data-action][disabled] {
 /* 편집 중에는 손잡이가 숨으므로 편집 바만 남는다 */
 body.pad-editing .touch button.pad-edit {
   display: none;
+}
+
+/* 일시정지 메뉴 — .ui 전체가 pointer-events: none 이라 여기서 되살린다 (숫자판과 같은 이유) */
+.pause-panel .menu {
+  pointer-events: auto;
+}
+
+.pause-panel .menu li {
+  cursor: pointer;
 }
 
 .touch button.is-moving {
