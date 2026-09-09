@@ -14,6 +14,7 @@ const idle = {
   jump: false,
   jumpPressed: false,
   throwPressed: false,
+  dashPressed: false,
   confirmPressed: false,
   restartPressed: false,
   pausePressed: false,

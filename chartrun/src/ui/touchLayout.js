@@ -140,7 +140,7 @@ export function writeLayout(layout) {
  * isRotated 지금 화면을 눕혀 놨는지
  */
 /** 편집 바에 보여줄 버튼 이름 */
-const LABELS = { left: '◀', right: '▶', jump: '점프', throw: '마이크', pause: '일시정지' };
+const LABELS = { left: '◀', right: '▶', jump: '점프', throw: '마이크', dash: '대시', pause: '일시정지' };
 
 export function createTouchLayout({ root, onEdit, isRotated }) {
   const buttons = [...root.querySelectorAll('[data-action]')];

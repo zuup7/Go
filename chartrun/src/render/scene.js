@@ -12,7 +12,7 @@ import { phaseAt, phaseAtIn, CUT_AT } from '../data/cutscene.js';
 import { BOSS_CUTS, PHASE2_AT, PHASE3_AT, ENDING_AT } from '../data/bossCutscenes.js';
 import { INTRO_CUT, INTRO_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
-import { bossPhase, princessCaged, bossCombined } from '../core/boss.js';
+import { bossPhase, princessCaged, bossCombined, laserBeam } from '../core/boss.js';
 import { PLAYER } from '../core/player.js';
 
 // ── 배경 ────────────────────────────────────────────────────
@@ -585,6 +585,26 @@ function drawPlayer(ctx, player, ox, oy, time) {
     ctx.restore();
   }
 
+  // 대시 잔상 — 지나온 쪽으로 두 장 옅게. 새 상태 없이 dashTime 하나만 본다.
+  if (player.dashTime > 0) {
+    ctx.save();
+    for (let i = 1; i <= 2; i++) {
+      ctx.globalAlpha = 0.3 / i;
+      drawSprite(ctx, frame, x - player.dir * i * 7, y, player.dir < 0);
+    }
+    ctx.restore();
+  }
+
+  // 대시가 언제 돌아오는지 — 발밑에서 줄어드는 막대. 다 차면 사라진다.
+  // (피격 무적 테두리와 같은 원칙 — 끝나는 때가 보여야 쓸 수 있다.)
+  if (player.dashCool > 0 && player.dashTime <= 0) {
+    const left = Math.min(1, player.dashCool / PLAYER.dashCool);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(Math.round(x), Math.round(y) + 18, 12, 2);
+    ctx.fillStyle = '#8fd8ff';
+    ctx.fillRect(Math.round(x), Math.round(y) + 18, Math.round(12 * (1 - left)), 2);
+  }
+
   // 찌그러짐 — 착지에 납작, 점프에 길쭉. 물리는 그대로고 그림만 늘였다 줄인다.
   // 조작이 화면에 즉시 보이는 게 조작감의 절반이다.
   const sy = 1 + player.stretch * 0.22 - player.squash * 0.3;
@@ -598,6 +618,53 @@ function drawPlayer(ctx, player, ox, oy, time) {
   ctx.translate(Math.round(x) + 6, Math.round(y) + 16);
   ctx.scale(sx, sy);
   drawSprite(ctx, frame, -6, -16, player.dir < 0);
+  ctx.restore();
+}
+
+/**
+ * 레이저. 사각형은 core/boss.js 의 laserBeam 이 정한다 —
+ * 여기서 다시 계산하면 보이는 자리와 죽는 자리가 언젠가 어긋난다.
+ *
+ * 예고(live=false)는 가는 선으로, 발사(live=true)는 굵은 기둥으로.
+ * 둘이 한눈에 달라 보여야 "지금 맞는 건가"를 안 헷갈린다.
+ */
+function drawLaser(ctx, boss, ox, oy, time, color) {
+  const beam = laserBeam(boss);
+  if (!beam) return;
+  const x = beam.x - ox;
+  const y = beam.y - oy;
+  const cx = x + beam.w / 2;
+
+  if (!beam.live) {
+    // 예고 — 깜빡이는 가는 선과, **곧 기둥이 설 자리**를 바닥에 폭 그대로 그린다.
+    // 선만 그으면 얼마나 굵게 올지 몰라서 아슬아슬하게 서 있다 맞는다.
+    const on = Math.floor(time * 16) % 2 === 0;
+    ctx.save();
+    ctx.fillStyle = on ? '#ffffff' : color;
+    ctx.globalAlpha = on ? 0.95 : 0.5;
+    ctx.fillRect(Math.round(cx) - 1, Math.round(y), 2, Math.round(beam.h));
+    // 착탄 예정 자리 — 기둥과 같은 폭이라야 "여기 서면 맞는다"가 맞는 말이 된다
+    ctx.globalAlpha = on ? 0.55 : 0.25;
+    ctx.fillStyle = color;
+    ctx.fillRect(Math.round(x), Math.round(y + beam.h) - 4, beam.w, 4);
+    ctx.restore();
+    return;
+  }
+
+  // 발사 — 바깥 번짐, 안쪽 기둥, 가운데 흰 심지
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x) - 3, Math.round(y), beam.w + 6, Math.round(beam.h));
+  ctx.globalAlpha = 1;
+  ctx.fillRect(Math.round(x), Math.round(y), beam.w, Math.round(beam.h));
+  ctx.fillStyle = '#ffffff';
+  const core = 2 + (Math.floor(time * 30) % 2);
+  ctx.fillRect(Math.round(cx) - core / 2, Math.round(y), core, Math.round(beam.h));
+  // 바닥에 터지는 불티
+  const spread = 10 + Math.sin(time * 40) * 3;
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(cx - spread / 2), Math.round(y + beam.h) - 3, Math.round(spread), 3);
   ctx.restore();
 }
 
@@ -2306,7 +2373,10 @@ export function drawScene(ctx, game, time) {
   }
 
   drawMics(ctx, game, ox, oy, time);
-  if (game.boss) drawBoss(ctx, game.boss, ox, oy, time);
+  if (game.boss) {
+    drawBoss(ctx, game.boss, ox, oy, time);
+    drawLaser(ctx, game.boss, ox, oy, time, bossPhase(game.boss).color);
+  }
 
   drawPlayer(ctx, game.player, ox, oy, time);
 

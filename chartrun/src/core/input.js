@@ -12,6 +12,10 @@ const KEYMAP = {
   KeyJ: 'throw',
   ArrowDown: 'throw',
   KeyS: 'throw',
+  KeyC: 'dash',
+  KeyK: 'dash',
+  ShiftLeft: 'dash',
+  ShiftRight: 'dash',
   KeyR: 'restart',
   Escape: 'pause',
   KeyP: 'pause',
@@ -62,6 +66,7 @@ export function createInput(target = window) {
     leftPressed: false,
     rightPressed: false,
     throwPressed: false,
+    dashPressed: false,
     confirmPressed: false,
     restartPressed: false,
     pausePressed: false,
@@ -77,6 +82,7 @@ export function createInput(target = window) {
       input.leftPressed = pressedNow.has('left');
       input.rightPressed = pressedNow.has('right');
       input.throwPressed = pressedNow.has('throw');
+      input.dashPressed = pressedNow.has('dash');
       input.confirmPressed = pressedNow.has('confirm') || pressedNow.has('jump');
       input.restartPressed = pressedNow.has('restart');
       input.pausePressed = pressedNow.has('pause');

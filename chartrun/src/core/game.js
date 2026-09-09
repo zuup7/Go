@@ -5,7 +5,16 @@ import { createPlayer, respawnPlayer, updatePlayer, bounce, damagePlayer } from 
 import { spawnAlbum, updateAlbum, stompAlbum, updateShot } from './enemy.js';
 import { createCamera, updateCamera, shakeCamera } from './camera.js';
 import { rankAt, TOP_RANK } from './chart.js';
-import { createBoss, updateBoss, hitBoss, syncPhase, bossPhase, throwMic, updateThrown } from './boss.js';
+import {
+  createBoss,
+  updateBoss,
+  hitBoss,
+  syncPhase,
+  bossPhase,
+  throwMic,
+  updateThrown,
+  laserBeam,
+} from './boss.js';
 import {
   ZONE_EFFECTS,
   createTrapMemory,
@@ -145,7 +154,8 @@ export function loadBoss(game) {
   game.player = createPlayer(game.world.spawn);
   game.checkpoint = { ...game.world.spawn };
   spawnEntities(game);
-  game.boss = createBoss(game.world.pixelWidth);
+  // 레이저가 닿을 바닥 — 아레나 맨 아래 두 줄이 땅이다
+  game.boss = createBoss(game.world.pixelWidth, game.world.pixelHeight - TILE * 2);
   game.camera = createCamera(VIEW.w, VIEW.h);
   game.scene = 'boss';
   game.sceneTime = 0;
@@ -251,6 +261,18 @@ function handleAlbums(game, dt, held = false) {
     }
   }
   game.albums = game.albums.filter((a) => a.alive || a.squash > 0);
+}
+
+/**
+ * 레이저에 닿았나. 예고선(aim)은 안 아프다 — beam.live 하나로 갈린다.
+ * 사각형은 boss.js 의 laserBeam 이 정한다. 그림도 같은 걸 본다.
+ */
+function handleLaser(game) {
+  const beam = laserBeam(game.boss);
+  if (!beam?.live || game.player.dead) return;
+  if (!overlaps(game.player, beam)) return;
+  if (damagePlayer(game.player)) killPlayer(game);
+  else emit(game, 'hurt', {});
 }
 
 function handleShots(game, dt) {
@@ -512,6 +534,7 @@ function landingDust(game, landed) {
 function updatePlay(game, input, dt) {
   const events = updatePlayer(game.player, applyEffects(game, input), game.world, dt);
   if (events.jumped) emit(game, 'jump', {});
+  if (events.dashed) emit(game, 'dash', {});
   landingDust(game, events.landed);
   handleBlocks(game, events);
   handleCrumbling(game, dt);
@@ -682,6 +705,7 @@ function updateBossScene(game, input, dt) {
 
   const events = updatePlayer(game.player, applyEffects(game, input), game.world, dt);
   if (events.jumped) emit(game, 'jump', {});
+  if (events.dashed) emit(game, 'dash', {});
   landingDust(game, events.landed);
 
   const ctx = {
@@ -690,6 +714,8 @@ function updateBossScene(game, input, dt) {
     spawnShot: (shot) => game.shots.push({ wobble: 0, ...shot }),
     addAlbum: (album) => game.albums.push(album),
     dropMic: (mic) => game.mics.push(mic),
+    onAim: () => emit(game, 'laseraim', {}),
+    onLaser: () => emit(game, 'laser', {}),
   };
   updateBoss(boss, ctx, dt);
 
@@ -704,6 +730,7 @@ function updateBossScene(game, input, dt) {
   handleThrown(game, dt, () => damageBoss(game, { ranged: true }));
   handleAlbums(game, dt, input.jump);
   handleShots(game, dt);
+  handleLaser(game);
 
   if (boss.state !== 'defeated' && !game.player.dead) {
     // 약점 밟기 — 붙어야 해서 위험하지만 마이크를 기다릴 필요가 없다

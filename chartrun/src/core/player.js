@@ -35,6 +35,20 @@ export const PLAYER = {
   squashDecay: 6,
   /** 피격 후 무적 시간(초) */
   invulnTime: 1.2,
+  /**
+   * 대시 — **무적은 없다.** 순수한 속도다.
+   * 무적을 주면 앨범도 탄막도 보스 몸도 다 통과해서 게임 전체가 무너진다.
+   * 속도뿐이라야 3페이즈 레이저가 끝까지 진짜 위협으로 남는다.
+   */
+  dashSpeed: 300,
+  /**
+   * 0.18초 * 300 ≈ 54px.
+   * 이걸로 **레이저 기둥을 통과하지는 못한다** — 무적이 없으니 들어가면 그냥 죽는다.
+   * 대시는 기둥이 설 자리에서 **비켜서는** 수단이다: 예고 0.9초 안에 발자국 밖으로
+   * 빠지고, 훑고 지나가면 곧바로 보스 밑으로 돌아와 약점을 밟는다.
+   */
+  dashTime: 0.18,
+  dashCool: 0.7,
   /** 역주행 바닥이 밀어내는 속도 */
   conveyor: 46,
 };
@@ -62,6 +76,9 @@ export function createPlayer(spawn) {
     power: 'none',
     /** 보스전에서 주운 던질 마이크 (0 또는 1). 쓰면 없어진다 */
     ammo: 0,
+    /** 대시가 남은 시간, 다시 쓸 수 있게 되기까지 남은 시간 */
+    dashTime: 0,
+    dashCool: 0,
   };
 }
 
@@ -80,6 +97,9 @@ export function respawnPlayer(player, spawn) {
   player.ammo = 0;
   player.squash = 0;
   player.stretch = 0;
+  // 여기서 안 풀어주면 죽은 자리의 쿨을 그대로 안고 되살아난다
+  player.dashTime = 0;
+  player.dashCool = 0;
 }
 
 /**
@@ -87,7 +107,7 @@ export function respawnPlayer(player, spawn) {
  * input: { left, right, jump, jumpPressed }
  */
 export function updatePlayer(player, input, world, dt) {
-  const events = { jumped: false, landed: null, bonked: null, hazard: false, fell: false };
+  const events = { jumped: false, landed: null, bonked: null, hazard: false, fell: false, dashed: false };
   if (player.dead) return events;
 
   player.animTime += dt;
@@ -95,11 +115,27 @@ export function updatePlayer(player, input, world, dt) {
   player.squash = Math.max(0, player.squash - dt * PLAYER.squashDecay);
   player.stretch = Math.max(0, player.stretch - dt * PLAYER.squashDecay);
 
+  // 대시 — 바라보는 쪽으로 짧고 굵게. 중력은 그대로 둔다.
+  // 공중 대시가 낙하를 멈추면 부양기가 되고, 레벨 디자인이 통째로 무너진다.
+  player.dashCool = Math.max(0, player.dashCool - dt);
+  if (player.dashTime > 0) {
+    player.dashTime = Math.max(0, player.dashTime - dt);
+  } else if (input.dashPressed && player.dashCool <= 0) {
+    player.dashTime = PLAYER.dashTime;
+    // 대시가 끝난 뒤부터 쿨이 도는 셈이 되게 길이를 더해둔다
+    player.dashCool = PLAYER.dashCool + PLAYER.dashTime;
+    player.stretch = 1; // 이미 있는 찌그러짐을 그대로 쓴다 — 길쭉해진다
+    events.dashed = true;
+  }
+
   // 좌우 이동 — 공중에서는 살짝 둔하게, 반대로 꺾을 때는 더 빠르게
   const want = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   const turning = want !== 0 && player.vx * want < 0;
   const accel = (player.onGround ? PLAYER.accel : PLAYER.airAccel) * (turning ? PLAYER.turnBoost : 1);
-  if (want !== 0) {
+  if (player.dashTime > 0) {
+    // 대시 중에는 가속을 건너뛰고 못 박는다 — 눌러도 안 꺾이는 게 대시다
+    player.vx = player.dir * PLAYER.dashSpeed;
+  } else if (want !== 0) {
     player.vx = approach(player.vx, want * PLAYER.maxSpeed, accel * dt);
     player.dir = want;
   } else if (player.onGround) {

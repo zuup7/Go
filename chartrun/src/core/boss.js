@@ -6,7 +6,14 @@ import { clamp } from './util.js';
 export const BOSS_W = 56;
 export const BOSS_H = 56;
 
-export function createBoss(arenaWidth) {
+/** 레이저 기둥의 폭 */
+export const LASER_W = 14;
+
+/**
+ * floorY 는 레이저가 닿을 바닥 높이다. 기본값을 두는 이유는
+ * tests/boss.test.js 가 createBoss(640) 로 부르기 때문이다.
+ */
+export function createBoss(arenaWidth, floorY = 192) {
   return {
     x: arenaWidth / 2 - BOSS_W / 2,
     y: 40,
@@ -29,6 +36,31 @@ export function createBoss(arenaWidth) {
     micTimer: 0,
     announce: null,
     defeatedAt: 0,
+    floorY,
+    /** 레이저 기둥의 가운데 x. 'aim' / 'laser' 동안에만 뜻이 있다 */
+    beamX: 0,
+    beamDir: 1,
+    laserTimer: 0,
+  };
+}
+
+/**
+ * 지금 훑고 있는 레이저 칸. 아무것도 안 쏘고 있으면 null.
+ *
+ * **판정(core/game.js)과 그림(render/scene.js)이 둘 다 이 하나를 본다.**
+ * 사각형을 양쪽에 따로 적으면 언젠가 어긋나서, 보이는 자리와 죽는 자리가 달라진다.
+ */
+export function laserBeam(boss) {
+  if (!boss || (boss.state !== 'aim' && boss.state !== 'laser')) return null;
+  // 가슴 코어에서 나간다 — 약점으로 열리는 그 자리다. 같은 구멍이 쏘고, 같은 구멍이 열린다.
+  const top = boss.y + boss.h * 0.35;
+  return {
+    x: boss.beamX - LASER_W / 2,
+    y: top,
+    w: LASER_W,
+    h: Math.max(0, boss.floorY - top),
+    /** 예고선은 안 아프다. 예고에 맞아 죽으면 그건 예고가 아니다. */
+    live: boss.state === 'laser',
   };
 }
 
@@ -120,8 +152,10 @@ export function updateBoss(boss, ctx, dt) {
   boss.hurtFlash = Math.max(0, boss.hurtFlash - dt);
   boss.timer -= dt;
 
-  // 좌우로 천천히 배회
-  const speed = 26 + boss.phaseId * 12;
+  // 좌우로 천천히 배회. 다만 레이저를 겨누거나 쏘는 동안에는 제자리에 선다 —
+  // 큰 걸 쓰기로 마음먹은 놈이 멈추는 것 자체가 예고다.
+  const charging = boss.state === 'aim' || boss.state === 'laser';
+  const speed = charging ? 0 : 26 + boss.phaseId * 12;
   boss.x += boss.drift * speed * dt;
   if (boss.x < 24) {
     boss.x = 24;
@@ -152,9 +186,38 @@ export function updateBoss(boss, ctx, dt) {
           ctx.addAlbum(album);
         }
       }
+      // 레이저가 먼저 차면 약점 열기보다 레이저가 앞선다
+      if (phase.laserEvery > 0) {
+        boss.laserTimer += dt;
+        if (boss.laserTimer >= phase.laserEvery) {
+          startLaser(boss, phase, ctx);
+          break;
+        }
+      }
       if (boss.timer <= 0) {
         boss.state = 'open';
         boss.timer = phase.openFor;
+      }
+      break;
+    }
+    case 'aim': {
+      boss.vulnerable = false;
+      boss.y += (boss.homeY - boss.y) * Math.min(1, dt * 4);
+      if (boss.timer <= 0) {
+        boss.state = 'laser';
+        boss.timer = phase.laserFire;
+        ctx.onLaser?.();
+      }
+      break;
+    }
+    case 'laser': {
+      boss.vulnerable = false;
+      boss.beamX += boss.beamDir * phase.laserSweep * dt;
+      // 아레나 밖으로는 안 나간다 — 나가면 화면 밖에서 훑는 셈이라 볼 수가 없다
+      boss.beamX = clamp(boss.beamX, 8, ctx.arenaWidth - 8);
+      if (boss.timer <= 0) {
+        boss.state = 'recover';
+        boss.timer = 0.9;
       }
       break;
     }
@@ -183,6 +246,22 @@ export function updateBoss(boss, ctx, dt) {
   }
 
   updateQuarters(boss, phase, ctx, dt);
+}
+
+/**
+ * 레이저를 겨눈다.
+ *
+ * 훑는 방향은 **지금 플레이어가 서 있는 쪽**이다 — 쫓아온다는 게 읽혀야
+ * "피해야 하는 것"이 되고, 안 그러면 그냥 배경 효과로 보인다.
+ */
+function startLaser(boss, phase, ctx) {
+  boss.laserTimer = 0;
+  boss.state = 'aim';
+  boss.timer = phase.laserAim;
+  boss.beamX = boss.x + boss.w / 2;
+  const px = ctx.player.x + ctx.player.w / 2;
+  boss.beamDir = px >= boss.beamX ? 1 : -1;
+  ctx.onAim?.();
 }
 
 function fireRing(boss, phase, ctx) {

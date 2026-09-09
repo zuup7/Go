@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { moveBody, TILE, SOLID, COYOTE_FRAMES, BUFFER_FRAMES } from '../src/core/physics.js';
-import { createPlayer, updatePlayer, bounce, PLAYER } from '../src/core/player.js';
+import { createPlayer, updatePlayer, respawnPlayer, bounce, PLAYER } from '../src/core/player.js';
 
 const DT = 1 / 60;
 
@@ -206,4 +206,60 @@ test('코요테 타임과 점프 버퍼가 넉넉하다', () => {
   // 프레임 단위라 값이 작으면 폰에서 특히 억울하다 (터치는 키보드보다 늦게 들어온다)
   assert.ok(COYOTE_FRAMES >= 8, `코요테가 ${COYOTE_FRAMES}프레임 — 발판을 떠난 직후가 너무 빡빡하다`);
   assert.ok(BUFFER_FRAMES >= 10, `버퍼가 ${BUFFER_FRAMES}프레임 — 착지 직전 입력이 자꾸 씹힌다`);
+});
+
+// ── 대시 ────────────────────────────────────────────────────
+// 3페이즈 레이저를 넘어가라고 넣은 것이다. 여기 수치가 흔들리면 그 판이 흔들린다.
+
+test('대시하면 한 프레임 만에 최고 속도를 넘는다', () => {
+  const player = createPlayer({ x: 40, y: 100 });
+  for (let i = 0; i < 20; i++) updatePlayer(player, keys(), flat, DT);
+
+  const events = updatePlayer(player, keys({ dashPressed: true }), flat, DT);
+  assert.ok(events.dashed, '대시했다고 알리지 않았다 — 소리가 안 난다');
+  assert.ok(
+    Math.abs(player.vx) > PLAYER.maxSpeed,
+    `대시가 달리기보다 안 빠르다 (${player.vx})`,
+  );
+});
+
+test('대시가 끝나면 원래 속도로 돌아온다', () => {
+  const player = createPlayer({ x: 40, y: 100 });
+  updatePlayer(player, keys({ dashPressed: true }), flat, DT);
+  for (let i = 0; i < 40; i++) updatePlayer(player, keys(), flat, DT);
+  assert.equal(player.dashTime, 0);
+  assert.ok(Math.abs(player.vx) <= PLAYER.maxSpeed, '대시 속도가 안 풀린다');
+});
+
+test('쿨이 도는 동안에는 다시 안 나간다', () => {
+  // 계속 누르고 있으면 무한 대시가 되어 레벨이 통째로 무너진다
+  const player = createPlayer({ x: 40, y: 100 });
+  let count = 0;
+  for (let i = 0; i < 30; i++) {
+    if (updatePlayer(player, keys({ dashPressed: true }), flat, DT).dashed) count++;
+  }
+  assert.equal(count, 1, '누르고 있는 내내 대시가 나갔다');
+
+  // 쿨이 다 돌면 다시 된다
+  for (let i = 0; i < 60; i++) updatePlayer(player, keys(), flat, DT);
+  assert.ok(updatePlayer(player, keys({ dashPressed: true }), flat, DT).dashed, '쿨이 안 풀린다');
+});
+
+test('공중 대시가 낙하를 멈추지 않는다', () => {
+  // 멈추면 부양기가 되고, 세 칸 구멍이 구멍이 아니게 된다
+  const player = createPlayer({ x: 40, y: 40 });
+  for (let i = 0; i < 6; i++) updatePlayer(player, keys(), flat, DT);
+  const before = player.vy;
+  assert.ok(before > 0, '아직 안 떨어지고 있다');
+  updatePlayer(player, keys({ dashPressed: true }), flat, DT);
+  assert.ok(player.vy > before, `대시하니까 낙하가 멎었다 (${before} → ${player.vy})`);
+});
+
+test('죽고 살아나면 대시가 돌아와 있다', () => {
+  const player = createPlayer({ x: 40, y: 100 });
+  updatePlayer(player, keys({ dashPressed: true }), flat, DT);
+  assert.ok(player.dashCool > 0);
+  respawnPlayer(player, { x: 40, y: 100 });
+  assert.equal(player.dashCool, 0, '죽은 자리의 쿨을 안고 되살아난다');
+  assert.equal(player.dashTime, 0);
 });

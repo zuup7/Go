@@ -64,6 +64,15 @@ function handleEvent(name, data) {
     case 'throw':
       audio.play('jump');
       break;
+    case 'dash':
+      audio.play('crumble');
+      break;
+    case 'laseraim':
+      audio.play('gather');
+      break;
+    case 'laser':
+      audio.play('flash');
+      break;
     case 'hurt':
       audio.play('hurt');
       break;
@@ -226,6 +235,7 @@ function update(dt) {
 
 const throwBtn = document.getElementById('throw-btn');
 const pauseBtn = document.querySelector('.pause-btn');
+const dashBtn = document.getElementById('dash-btn');
 
 function render() {
   drawScene(ctx, game, time);
@@ -233,6 +243,8 @@ function render() {
   // 던지기 버튼은 쓸 수 있을 때만 — 평소엔 자리만 차지한다
   throwBtn.hidden = game.scene !== 'boss';
   throwBtn.disabled = !(game.player?.ammo > 0);
+  // 대시가 돌아왔는지 폰에서도 보여야 한다 — 흐려진 버튼이 곧 쿨이다
+  dashBtn.disabled = !(game.player && game.player.dashCool <= 0);
   // 멈출 수 있을 때만 보인다 (편집 중에는 touchLayout 이 알아서 다 보여준다)
   pauseBtn.hidden = !(game.scene === 'play' || game.scene === 'boss');
 }

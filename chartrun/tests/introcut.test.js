@@ -17,6 +17,7 @@ const idle = (over = {}) => ({
   leftPressed: false,
   rightPressed: false,
   throwPressed: false,
+  dashPressed: false,
   confirmPressed: false,
   restartPressed: false,
   pausePressed: false,

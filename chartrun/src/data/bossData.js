@@ -21,6 +21,7 @@ export const PHASES = [
     descendTo: 118,
     minionEvery: 0,
     quarters: 0,
+    laserEvery: 0,
   },
   {
     id: 2,
@@ -36,6 +37,7 @@ export const PHASES = [
     minionEvery: 0,
     quarters: 4,
     quarterSpeed: 150,
+    laserEvery: 0,
   },
   {
     id: 3,
@@ -52,6 +54,21 @@ export const PHASES = [
     minions: ['a01', 'a06', 'a02'],
     quarters: 4,
     quarterSpeed: 185,
+    // ── 레이저. 3페이즈에만 있다 ──────────────────────────────
+    // 여기까지 오면 보스는 합체 로봇이다. 수치만 올라간 공격을 아무리 얹어도
+    // "최종 형태"로 안 읽힌다. 로봇만 할 수 있는 기술이 하나는 있어야 한다.
+    /** attack 중 이만큼 지나면 레이저를 쓴다. 0 이면 안 쓴다 */
+    laserEvery: 5.0,
+    /** 예고(유도선만, 안 아프다) */
+    laserAim: 0.9,
+    /** 발사 — 96 * 1.6 ≈ 154px 를 훑는다. 아레나(640)보다 한참 짧다 */
+    laserFire: 1.6,
+    /**
+     * 훑는 속도. **달리기(PLAYER.maxSpeed = 124)보다 반드시 느려야 한다** —
+     * 넘기는 순간 달려서 못 피하는 판이 되고, 그건 트롤이 아니라 그냥 불합리다.
+     * tests/boss.test.js 가 이 부등호를 지킨다.
+     */
+    laserSweep: 96,
   },
 ];
 

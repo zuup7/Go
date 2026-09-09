@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBoss, updateBoss, hitBoss, syncPhase, bossPhase, bossHealthRatio } from '../src/core/boss.js';
+import {
+  createBoss,
+  updateBoss,
+  hitBoss,
+  syncPhase,
+  bossPhase,
+  bossHealthRatio,
+  laserBeam,
+} from '../src/core/boss.js';
 import { BOSS_MAX_HP, PHASES, phaseFor } from '../src/data/bossData.js';
+import { PLAYER } from '../src/core/player.js';
 import { CUTSCENE, CUTSCENE_LENGTH, phaseAt } from '../src/data/cutscene.js';
 
 const ctx = (extra = {}) => ({
@@ -179,4 +188,110 @@ test('컷신에 대사가 없다 — 보면 아는 연출로만 간다', () => {
 test('연출 단계 조회', () => {
   assert.equal(phaseAt(0), 'gather');
   assert.equal(phaseAt(CUTSCENE_LENGTH), 'end');
+});
+
+// ── 3페이즈 레이저 ──────────────────────────────────────────
+// 이 판에서 제일 위험한 건 "못 피하는 공격"이다. 아래는 전부 그걸 막는 규칙이다.
+
+const DT = 1 / 60;
+
+/** 3페이즈 보스 하나. hp 를 낮춰 페이즈를 올린다 */
+function phase3Boss() {
+  const boss = createBoss(640, 192);
+  boss.hp = 3;
+  syncPhase(boss);
+  assert.equal(boss.phaseId, 3);
+  boss.state = 'attack';
+  boss.timer = 99; // 약점 열기가 먼저 끼어들지 않게
+  return boss;
+}
+
+/** 그 상태가 될 때까지 굴린다. 안 되면 null */
+function runUntil(boss, want, seconds = 20, extra = {}) {
+  for (let i = 0; i < seconds * 60; i++) {
+    updateBoss(boss, ctx(extra), DT);
+    if (boss.state === want) return boss;
+  }
+  return null;
+}
+
+test('레이저는 3페이즈만 쓴다', () => {
+  for (const p of PHASES) {
+    const laser = p.laserEvery > 0;
+    assert.equal(laser, p.id === 3, `페이즈 ${p.id}: 레이저 유무가 뜻과 다르다`);
+  }
+
+  // 1·2페이즈는 아무리 굴려도 겨누지 않는다
+  for (const hp of [9, 5]) {
+    const boss = createBoss(640, 192);
+    boss.hp = hp;
+    syncPhase(boss);
+    boss.timer = 99;
+    for (let i = 0; i < 60 * 30; i++) {
+      updateBoss(boss, ctx(), DT);
+      assert.ok(boss.state !== 'aim' && boss.state !== 'laser', `체력 ${hp} 에서 레이저가 나왔다`);
+    }
+  }
+});
+
+test('겨누는 동안에는 안 아프다 — 예고에 맞아 죽으면 그건 예고가 아니다', () => {
+  const boss = phase3Boss();
+  assert.ok(runUntil(boss, 'aim'), '레이저를 안 겨눴다');
+  const beam = laserBeam(boss);
+  assert.ok(beam, '겨누는 동안 빔 칸이 없다');
+  assert.equal(beam.live, false, '예고선이 아프면 피할 방법이 없다');
+
+  assert.ok(runUntil(boss, 'laser'), '겨누기만 하고 안 쐈다');
+  assert.equal(laserBeam(boss).live, true, '쏘는데 안 아프면 그냥 배경이다');
+});
+
+test('겨누는 동안 보스가 멈춘다 — 멈추는 것 자체가 예고다', () => {
+  const boss = phase3Boss();
+  assert.ok(runUntil(boss, 'aim'));
+  const x = boss.x;
+  for (let i = 0; i < 30; i++) updateBoss(boss, ctx(), DT);
+  assert.equal(boss.x, x, '겨누면서 돌아다니면 어디로 올지 알 수가 없다');
+});
+
+test('훑는 방향은 내가 서 있는 쪽이다', () => {
+  for (const [px, want] of [[600, 1], [20, -1]]) {
+    const boss = phase3Boss();
+    const at = { player: { x: px, y: 150, w: 10, h: 14 } };
+    assert.ok(runUntil(boss, 'aim', 20, at), '안 겨눴다');
+    assert.equal(boss.beamDir, want, `플레이어가 ${px} 인데 반대로 훑는다`);
+  }
+});
+
+test('훑는 속도가 달리기보다 느리다 — 달려서 피할 수 있어야 한다', () => {
+  // 이 부등호를 넘기는 순간 대시가 없으면 못 피하는 판이 된다.
+  // 수치를 만지다 뒤집힐 수 있는 곳이라 테스트로 못 박는다.
+  const p3 = PHASES.find((p) => p.id === 3);
+  assert.ok(p3.laserSweep < PLAYER.maxSpeed, '훑는 속도가 달리기보다 빠르면 못 피한다');
+});
+
+test('훑는 거리가 아레나보다 짧다 — 구석에 갇히지 않는다', () => {
+  const p3 = PHASES.find((p) => p.id === 3);
+  const swept = p3.laserSweep * p3.laserFire;
+  assert.ok(swept < 640 / 2, `${swept}px 나 훑으면 끝까지 밀려 갇힌다`);
+});
+
+test('레이저는 반드시 끝나고 약점이 다시 열린다', () => {
+  // 여기서 갇히면 재생 버튼이 영영 안 열려서 보스를 못 잡는다
+  const boss = phase3Boss();
+  assert.ok(runUntil(boss, 'laser'), '안 쐈다');
+  assert.ok(runUntil(boss, 'recover', 5), '쏘고 나서 빠져나오질 못한다');
+  boss.timer = 0;
+  assert.ok(runUntil(boss, 'open', 15), '약점이 다시 안 열린다');
+  assert.equal(laserBeam(boss), null, '안 쏘는데 빔 칸이 남아 있다');
+});
+
+test('빔 칸은 바이저에서 바닥까지 이어진다', () => {
+  const boss = phase3Boss();
+  assert.ok(runUntil(boss, 'laser'));
+  const beam = laserBeam(boss);
+  assert.ok(beam.y > boss.y, '빔이 보스 위에서 시작한다');
+  assert.ok(beam.y < boss.floorY, '빔이 바닥 아래에서 시작한다');
+  assert.ok(Math.abs(beam.y + beam.h - boss.floorY) < 0.01, '빔이 바닥까지 안 닿는다');
+  // 발판(y=160) 높이를 지나므로 발판 위에 서도 안전하지 않다
+  assert.ok(beam.y < 160 && beam.y + beam.h > 160, '발판 높이를 안 지나면 그냥 서서 피한다');
 });
