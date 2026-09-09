@@ -14,8 +14,19 @@ const EDGE = 8;
 /**
  * 눕힌 화면에서는 앱이 화면 위아래에 얹는 것들(닫기 X, 내비게이션 바)이
  * 좌표상으로는 좌우 끝이 된다. 거기로는 아예 못 옮기게 막는다.
+ *
+ * 이 값이 너무 크면 **두 가지가 한꺼번에 망가진다.** 폰에서 게임 화면은 높이에
+ * 딱 맞춰 그려지므로 남는 자리는 좌우 여백뿐인데(iPhone 12 기준 88px, Pixel 7 은
+ * 104px, 위아래 여백은 어느 폰에서도 0 이다), 이 값이 그 여백을 통째로 먹으면
+ *  1. 여백에 붙어 있는 ◀▶ 가 이미 한계선이라 **왼쪽으로 한 픽셀도 안 움직이고**
+ *  2. 버튼이 갈 데가 없어서 **게임 화면 위로 밀려난다.**
+ * 44 면 3버튼 내비게이션(48px 짜리도 절반은 비켜간다)과 닫기 X 를 피하면서
+ * 여백 안에 들어간다.
+ *
+ * **CSS 도 같은 값을 쓴다** (`--rotated-side`). 여기가 원본이고 createTouchLayout 이
+ * 화면에 얹는다 — 두 군데 적어두면 언젠가 어긋난다.
  */
-const ROTATED_SIDE = 84;
+export const ROTATED_SIDE = 44;
 
 /** 버튼 크기 배율 — 이 밖으로는 못 나간다 */
 export const MIN_SCALE = 0.7;
@@ -27,6 +38,14 @@ export const SCALE_STEP = 0.1;
  * 흐리면 어디를 누르는지 모른다. 사람마다 갈리는 취향이라 고를 수 있게 둔다.
  */
 export const ALPHA_STEPS = [0.4, 0.6, 0.8, 1];
+
+/**
+ * 처음 켰을 때의 투명도.
+ *
+ * 1 로 두면 버튼이 불투명한 상자라 폰에서 게임 화면을 가린다. 비쳐 보이게 두고,
+ * 누르는 동안에만 진해진다 (`.touch button.is-down` 이 opacity 를 1 로 되돌린다).
+ */
+export const DEFAULT_ALPHA = 0.6;
 
 /** 한 칸 다음. 끝에서 처음으로 돈다 (모르는 값은 indexOf 가 -1 이라 맨 앞으로 떨어진다). */
 export const nextAlpha = (a) => ALPHA_STEPS[(ALPHA_STEPS.indexOf(a) + 1) % ALPHA_STEPS.length];
@@ -77,8 +96,8 @@ const emptyLayout = () => ({
   scale: { landscape: 1, rotated: 1 },
   /** 모드별 **버튼 하나하나**의 배율 (전체 배율에 곱해진다). 없으면 1 */
   size: { landscape: {}, rotated: {} },
-  /** 모드별 투명도 */
-  alpha: { landscape: 1, rotated: 1 },
+  /** 모드별 투명도 — 기본이 진하면 버튼이 게임 화면을 가린다 */
+  alpha: { landscape: DEFAULT_ALPHA, rotated: DEFAULT_ALPHA },
 });
 
 const storage = () => (typeof localStorage === 'undefined' ? null : localStorage);
@@ -91,7 +110,7 @@ export function sanitize(raw) {
     // 크기·투명도 칸이 없는 옛 저장값도 그대로 읽힌다 — 없으면 기본값
     out.scale[mode] = clampScale(raw.scale?.[mode] ?? 1);
     const alpha = raw.alpha?.[mode];
-    out.alpha[mode] = ALPHA_STEPS.includes(alpha) ? alpha : 1;
+    out.alpha[mode] = ALPHA_STEPS.includes(alpha) ? alpha : DEFAULT_ALPHA;
     const sizes = raw.size?.[mode];
     if (sizes && typeof sizes === 'object') {
       for (const [action, v] of Object.entries(sizes)) {
@@ -154,6 +173,10 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
   const mirrorBtn = root.querySelector('#pad-mirror');
   const biggerBtn = root.querySelector('#pad-bigger');
   const scaleText = root.querySelector('#pad-scale-text');
+
+  // 여백 값의 원본은 JS 다. CSS 의 기본 자리(body.rotated .touch-left 등)도 같은
+  // 값을 써야 해서 여기서 얹는다 — 두 군데 적어두면 언젠가 어긋난다.
+  document.documentElement.style.setProperty('--rotated-side', `${ROTATED_SIDE}px`);
 
   let layout = loadLayout();
   let editing = false;
@@ -231,7 +254,7 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
   const sizeOf = (action) => clampScale(layout.size?.[mode()]?.[action] ?? 1);
   const alphaOf = () => {
     const a = layout.alpha?.[mode()];
-    return ALPHA_STEPS.includes(a) ? a : 1;
+    return ALPHA_STEPS.includes(a) ? a : DEFAULT_ALPHA;
   };
 
   /**
@@ -398,6 +421,13 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
       const r = el.getBoundingClientRect();
       const centre = pointerToBox(r.left + r.width / 2, r.top + r.height / 2);
       const at = pointerToBox(e.clientX, e.clientY);
+      // 손가락은 브라우저가 알아서 붙잡아 주지만 **마우스는 안 붙잡는다** — 커서가
+      // 버튼 밖으로 나가는 순간 pointermove 가 캔버스로 가버려서 끌기가 뚝 끊긴다.
+      try {
+        el.setPointerCapture?.(e.pointerId);
+      } catch {
+        /* 이미 놓친 포인터 */
+      }
       dragging.set(e.pointerId, { el, dx: centre.x - at.x, dy: centre.y - at.y });
       el.classList.add('is-moving');
       // 집은 버튼이 −/+ 의 대상이 된다. 같은 걸 또 집으면 전체로 돌아간다.
@@ -445,7 +475,7 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
     layout[mode()] = {};
     layout.scale[mode()] = 1;
     layout.size[mode()] = {};
-    layout.alpha[mode()] = 1;
+    layout.alpha[mode()] = DEFAULT_ALPHA;
     selected = null;
     applyScale();
     toDefault();
