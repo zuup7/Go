@@ -4,7 +4,7 @@ import { T } from '../core/world.js';
 import { cameraOffset } from '../core/camera.js';
 import { drawAlbum, drawCoverAt } from './albumArt.js';
 import { drawSprite, crisp, makeCanvas } from './pixel.js';
-import { npcInReach, markKey } from '../core/game.js';
+import { npcInReach, markKey, CEIL_BLADE } from '../core/game.js';
 import { NPC_TALK } from '../data/npcTalk.js';
 import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
@@ -678,7 +678,9 @@ function drawCeilSpikes(ctx, world, ox, oy) {
     if (!spike.popped || spike.t <= 0) continue;
     const x = spike.tx * TILE - ox;
     const top = (spike.ty + 1) * TILE - oy;
-    const len = TILE * spike.t;
+    // **판정과 같은 길이로 그린다.** 예전에는 그림이 한 칸인데 판정은 세 칸이라,
+    // 보이지도 않는 자리에서 죽었다. 길이는 한 곳(CEIL_BLADE)에서만 정한다.
+    const len = TILE * CEIL_BLADE * spike.t;
     ctx.fillStyle = '#8b93a8';
     ctx.fillRect(x, top - 2, TILE, 2);
     ctx.fillStyle = '#f2f5ff';
@@ -690,6 +692,9 @@ function drawCeilSpikes(ctx, world, ox, oy) {
       ctx.lineTo(sx + 4, top);
       ctx.fill();
     }
+    // 창끝 — 어디까지 내려왔는지가 한눈에 보여야 한다
+    ctx.fillStyle = '#ff3b3b';
+    ctx.fillRect(x + 6, top + len - 3, 4, 3);
   }
 }
 
@@ -718,6 +723,51 @@ function drawFakeChecks(ctx, game, ox, oy, time) {
  * 죽는 자리는 세로 띠 하나(chaser.x)뿐이다. 그림이 아무리 커도 판정이 하나여야
  * "저기 닿으면 죽는다"가 안 헷갈린다.
  */
+/**
+ * 하늘에서 떨어지는 폭탄. **그림자가 먼저다.**
+ *
+ * 떨어질 자리에 바닥 그림자를 먼저 깔아두고, 예고가 끝나야 폭탄이 내려온다.
+ * 그림자는 어둠(정전) 속에서도 보이게 밝게 그린다 — 정전과 겹치는 구간에서
+ * 이게 유일한 단서다.
+ */
+function drawBombs(ctx, game, ox, oy, time) {
+  if (!game.bombs?.length) return;
+  ctx.save();
+  for (const bomb of game.bombs) {
+    const x = Math.round(bomb.x - ox);
+    const gy = Math.round(bomb.groundY - oy);
+
+    // 떨어질 자리 — 두근거리는 고리
+    const pulse = 0.55 + Math.sin(time * 18) * 0.45;
+    ctx.globalAlpha = bomb.warn > 0 ? 0.35 + pulse * 0.5 : 0.8;
+    ctx.fillStyle = '#ff3b3b';
+    ctx.fillRect(x - 7, gy - 2, 14, 2);
+    ctx.fillRect(x - 7, gy - 5, 2, 3);
+    ctx.fillRect(x + 5, gy - 5, 2, 3);
+
+    if (bomb.warn > 0) {
+      // 아직 안 떨어졌다 — 위쪽 가장자리에 곧 온다는 표시만
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = '#ffd166';
+      ctx.fillRect(x - 3, Math.max(0, gy - VIEW.h + 4), 6, 4);
+      continue;
+    }
+
+    const y = Math.round(bomb.y - oy);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#241a33';
+    ctx.fillRect(x - 5, y - 5, 10, 10);
+    ctx.fillStyle = '#4a3a5e';
+    ctx.fillRect(x - 4, y - 4, 8, 8);
+    ctx.fillStyle = '#ff8f3c';
+    ctx.fillRect(x - 2, y - 2, 4, 4);
+    // 심지
+    ctx.fillStyle = Math.floor(time * 20) % 2 ? '#ffd166' : '#ff3b3b';
+    ctx.fillRect(x - 1, y - 8, 2, 3);
+  }
+  ctx.restore();
+}
+
 function drawChaser(ctx, game, ox, oy, time) {
   if (!game.chaser) return;
   const x = Math.round(game.chaser.x - ox);
@@ -2911,6 +2961,7 @@ export function drawScene(ctx, game, time) {
   }
   ctx.globalAlpha = 1;
 
+  drawBombs(ctx, game, ox, oy, time);
   drawChaser(ctx, game, ox, oy, time);
   drawChaseGauge(ctx, game, time);
   drawNpcTalk(ctx, game, ox, oy, time);

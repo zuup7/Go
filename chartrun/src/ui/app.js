@@ -77,7 +77,8 @@ function handleEvent(name, data) {
       audio.play('hurt');
       break;
     case 'trap':
-      audio.play('trap');
+      // 폭탄만 따로 — 함정 소리로는 "터졌다"가 안 들린다
+      audio.play(data.kind === 'bomb' ? 'burst' : 'trap');
       break;
     case 'crumble':
       audio.play('crumble');

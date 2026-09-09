@@ -1,8 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, updateGame, loadStage, loadBoss, WALL_HEIGHT } from '../src/core/game.js';
+import {
+  createGame,
+  updateGame,
+  loadStage,
+  loadBoss,
+  WALL_HEIGHT,
+  BOMB_GAP,
+} from '../src/core/game.js';
 import { createWorld, T, tileKind, ZONE_KINDS } from '../src/core/world.js';
-import { createPlayer, updatePlayer } from '../src/core/player.js';
+import { createPlayer, updatePlayer, PLAYER } from '../src/core/player.js';
 import { SOLID, TILE } from '../src/core/physics.js';
 import { TRAPS, TRAP_KINDS, ZONE_EFFECTS, trapKey } from '../src/data/traps.js';
 import { STAGES, HARD_STAGES } from '../src/data/stages.js';
@@ -440,4 +447,175 @@ test('튕기는 발판은 걸어 들어가도 튄다', () => {
     if (updatePlayer(player, { ...idle, right: true }, world, 1 / 60).sprung) sprung = true;
   }
   assert.ok(sprung, '발판 위를 걸어 지나갔는데 안 튀었다');
+});
+
+// ── 천장 가시가 창이 됐다 ────────────────────────────────────
+test('천장 가시는 세 칸을 뻗는다 — 높이 달아도 바닥까지 닿는다', () => {
+  // 칼날이 1칸이던 시절에는 바닥 딱 2칸 위에만 달 수 있었다. 그보다 높이 달면
+  // 닿지도 발동하지도 않아서 그냥 그림이 됐다.
+  const W = 24;
+  const rows = [];
+  for (let y = 0; y < 14; y++) rows.push(y >= 12 ? '#'.repeat(W) : ' '.repeat(W));
+  // 바닥(12줄)에서 세 칸 위(9줄)에 매단다 — 옛 규칙으로는 절대 못 닿는 높이다
+  rows[9] = ' '.repeat(10) + T.CEILSPIKE + ' '.repeat(W - 11);
+  rows[11] = ' S' + ' '.repeat(W - 2);
+
+  const game = createGame({ seed: 3 });
+  game.world = createWorld({ id: 'blade', number: 1, rows });
+  game.player = createPlayer(game.world.spawn);
+  game.checkpoint = { ...game.world.spawn };
+  game.scene = 'play';
+  game.player.x = 10 * TILE - 30;
+
+  let popped = false;
+  for (let i = 0; i < 200 && !game.player.dead; i++) {
+    step(game, { ...idle, right: true });
+    if (game.world.ceilSpikes[0].popped) popped = true;
+  }
+  assert.ok(popped, '세 칸 위에 달았더니 발동조차 안 했다');
+  assert.ok(game.player.dead, '칼날이 내려왔는데 바닥을 달리는 사람에게 안 닿았다');
+});
+
+test('튕기는 발판으로 솟으면 위에 매단 천장 가시에 꽂힌다', () => {
+  // 지름길처럼 생긴 것이 함정인 자리. 이 조합이 이번 하드모드의 간판이다.
+  const W = 24;
+  const rows = [];
+  for (let y = 0; y < 14; y++) rows.push(y >= 12 ? '#'.repeat(W) : ' '.repeat(W));
+  rows[12] = '#'.repeat(10) + T.SPRING + '#'.repeat(W - 11);
+  // 발판은 5.2칸 솟는다. 그 길목(7줄)에 창을 매단다.
+  rows[7] = ' '.repeat(10) + T.CEILSPIKE + ' '.repeat(W - 11);
+  rows[11] = ' S' + ' '.repeat(W - 2);
+
+  const game = createGame({ seed: 3 });
+  game.world = createWorld({ id: 'pad-spike', number: 1, rows });
+  game.player = createPlayer(game.world.spawn);
+  game.checkpoint = { ...game.world.spawn };
+  game.scene = 'play';
+  game.player.x = 10 * TILE - 40;
+
+  for (let i = 0; i < 300 && !game.player.dead; i++) step(game, { ...idle, right: true });
+  assert.ok(game.player.dead, '발판으로 솟았는데 위에 매단 창에 안 꽂혔다');
+});
+
+// ── 무너지는 바닥은 바로 꺼진다 ──────────────────────────────
+/** 무너지는 바닥 한 줄을 놓고, 달려서 지나가거나 그 위에 서 있어 본다 */
+function crumbleRun({ run }) {
+  const W = 24;
+  const rows = [];
+  for (let y = 0; y < 14; y++) rows.push(y >= 12 ? '#'.repeat(W) : ' '.repeat(W));
+  // 무너지는 바닥 세 칸, 그 밑은 완전히 비운다
+  rows[12] = '#'.repeat(8) + T.CRUMBLE.repeat(3) + '#'.repeat(W - 11);
+  rows[13] = '#'.repeat(8) + ' '.repeat(3) + '#'.repeat(W - 11);
+  rows[11] = ' S' + ' '.repeat(W - 2);
+
+  const game = createGame({ seed: 3 });
+  game.world = createWorld({ id: 'crumble', number: 1, rows });
+  game.player = createPlayer(game.world.spawn);
+  game.checkpoint = { ...game.world.spawn };
+  game.scene = 'play';
+  if (run) {
+    // 달려 들어갈 수 있게 조금 앞에서 최고 속도로 출발
+    game.player.x = 8 * TILE - 40;
+    game.player.vx = PLAYER.maxSpeed;
+  } else {
+    // 가만히 서 있는 쪽은 무너지는 바닥 **위에** 세워둔다
+    game.player.x = 9 * TILE + 3;
+    game.player.y = 11 * TILE - game.player.h;
+  }
+
+  // 바닥이 **사라진 순간**을 잰다. 죽을 때까지 세면 떨어지는 시간이 섞여 들어간다.
+  // 시계는 발이 바닥에 **닿은 뒤부터** 돈다 — 안 그러면 처음 내려앉는 시간이 섞인다.
+  let gone = null;
+  let started = null;
+  for (let i = 0; i < 240; i++) {
+    step(game, { ...idle, right: run });
+    if (started === null && game.crumbling.size > 0) started = i;
+    if (gone === null && started !== null && game.world.charAt(9, 12) !== T.CRUMBLE) {
+      gone = (i - started) / 60;
+    }
+    if (game.player.dead) return { fell: true, x: game.player.x, gone };
+  }
+  return { fell: false, x: game.player.x, gone };
+}
+
+test('무너지는 바닥은 달리면 건너지고, 서 있으면 빠진다', () => {
+  const crossed = crumbleRun({ run: true });
+  assert.equal(crossed.fell, false, '전속력으로 달렸는데도 빠졌다 — 건널 수 없는 바닥이다');
+  assert.ok(crossed.x > 11 * TILE, `건넜다고 보기엔 x ${Math.round(crossed.x)} 에서 멈췄다`);
+
+  const stood = crumbleRun({ run: false });
+  assert.equal(stood.fell, true, '올라서서 가만히 있었는데 안 꺼졌다');
+  // **바로** 꺼져야 한다. 0.45초였을 때는 밟고 서서 구경할 틈이 있었고,
+  // 그래서는 "벽에 막혀 멈추는 순간 발밑이 사라진다"는 연쇄가 성립하지 않는다.
+  assert.ok(
+    stood.gone !== null && stood.gone < 0.3,
+    `밟고 ${stood.gone}초 만에 꺼졌다 — 이건 함정이 아니라 예고다`,
+  );
+});
+
+// ── 하늘에서 떨어지는 폭탄 ───────────────────────────────────
+/** 폭탄 구간 하나를 밟고 서 있는 판 */
+function bombWorld() {
+  const W = 40;
+  const rows = [];
+  for (let y = 0; y < 14; y++) rows.push(y >= 12 ? '#'.repeat(W) : ' '.repeat(W));
+  rows[11] = ' S' + ' '.repeat(3) + T.ZONE_BOMBS + ' '.repeat(W - 6);
+  const game = createGame({ seed: 9 });
+  game.world = createWorld({ id: 'bomb', number: 1, rows });
+  game.player = createPlayer(game.world.spawn);
+  game.checkpoint = { ...game.world.spawn };
+  game.scene = 'play';
+  return game;
+}
+
+test('폭탄 구간을 밟으면 하늘에서 떨어지기 시작한다', () => {
+  const game = bombWorld();
+  game.player.invuln = 999;
+  for (let i = 0; i < 60; i++) step(game, { ...idle, right: true });
+  assert.ok(game.effects.bombs > 0, '구간을 밟았는데 효과가 안 걸렸다');
+  step(game, idle, 60);
+  assert.ok(game.bombs.length > 0, '효과는 걸렸는데 폭탄이 안 떨어진다');
+});
+
+test('폭탄은 그림자가 먼저 뜨고 나중에 떨어진다', () => {
+  // 예고 없이 하늘에서 죽으면 트롤이 아니라 그냥 불합리한 게임이다.
+  const game = bombWorld();
+  game.player.invuln = 999;
+  for (let i = 0; i < 60; i++) step(game, { ...idle, right: true });
+  step(game, idle, 40);
+  const fresh = game.bombs.find((b) => b.warn > 0);
+  assert.ok(fresh, '갓 생긴 폭탄에 예고 시간이 없다');
+  // 예고 중에는 아직 안 내려온다
+  const y0 = fresh.y;
+  step(game, idle, 10);
+  assert.equal(fresh.y, y0, '예고 중인데 벌써 떨어지고 있다');
+});
+
+test('같이 떨어지는 폭탄 사이에 설 자리가 남는다', () => {
+  // 붙여서 떨어뜨리면 피할 데가 없어져 못 지나가는 구간이 된다.
+  const game = bombWorld();
+  game.player.invuln = 999;
+  for (let i = 0; i < 60; i++) step(game, { ...idle, right: true });
+  let worst = Infinity;
+  // **달리는 동안**이 진짜 시험이다 — 기준이 밀리면서 겹치기 쉽다
+  for (let i = 0; i < 400; i++) {
+    step(game, { ...idle, right: i % 90 < 60 });
+    const lanes = game.bombs.map((b) => b.tx).sort((a, b) => a - b);
+    for (let k = 1; k < lanes.length; k++) {
+      if (lanes[k] !== lanes[k - 1]) worst = Math.min(worst, lanes[k] - lanes[k - 1]);
+    }
+  }
+  assert.ok(
+    worst === Infinity || worst >= BOMB_GAP,
+    `폭탄 둘이 ${worst}칸 붙어서 떨어졌다 — 사이에 설 자리가 없다`,
+  );
+});
+
+test('폭탄 효과는 저절로 풀린다 — 영원히 떨어지지 않는다', () => {
+  const game = bombWorld();
+  game.player.invuln = 999;
+  for (let i = 0; i < 60; i++) step(game, { ...idle, right: true });
+  step(game, idle, 60 * 12);
+  assert.equal(game.effects.bombs, 0, '폭탄 구간이 안 끝난다');
+  assert.equal(game.bombs.length, 0, '구간이 끝났는데 폭탄이 남아 있다');
 });

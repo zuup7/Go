@@ -33,6 +33,7 @@ export const T = {
   PORTAL: 'P', // 하드모드로 가는 문. NPC 에게 말을 걸기 전에는 닫혀 있다
   ZONE_REVERSE: 'R', // 좌우가 뒤바뀌는 역재생 구간
   ZONE_BLACKOUT: '@', // 화면이 깜깜해지는 정전 구간
+  ZONE_BOMBS: 'B', // 하늘에서 폭탄이 떨어지는 구간
 };
 
 const SOLID_CHARS = new Set([
@@ -57,6 +58,7 @@ export const ZONE_KINDS = {
   [T.ZONE_REVERSE]: 'reversed',
   [T.ZONE_BLACKOUT]: 'blackout',
   [T.ZONE_SURGE]: 'surge',
+  [T.ZONE_BOMBS]: 'bombs',
 };
 
 export function tileKind(ch) {
@@ -171,6 +173,7 @@ export function createWorld(stage) {
           break;
         case T.ZONE_REVERSE:
         case T.ZONE_BLACKOUT:
+        case T.ZONE_BOMBS:
           world.zones.push({ kind: ZONE_KINDS[ch], tx, ty, x, y, fired: false });
           grid[ty][tx] = T.EMPTY;
           break;

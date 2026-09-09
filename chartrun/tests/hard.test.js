@@ -19,7 +19,8 @@ import {
 import { STAGES, HARD_STAGES } from '../src/data/stages.js';
 import { emptySave, mergeRun, beatRecord, deserialize, serialize } from '../src/core/save.js';
 import { trapKey } from '../src/data/traps.js';
-import { createWorld, tileKind } from '../src/core/world.js';
+import { createWorld, tileKind, T } from '../src/core/world.js';
+import { SOLID, TILE } from '../src/core/physics.js';
 import { HARD_PHASES, HARD_MAX_HP, phaseFor } from '../src/data/bossData.js';
 import { createBoss, syncPhase } from '../src/core/boss.js';
 
@@ -286,7 +287,66 @@ test('하드 판은 최소한의 밀도를 지킨다', () => {
 
     assert.ok(world.albumSpawns.length >= 10, `${stage.id}: 앨범이 ${world.albumSpawns.length}마리뿐이다`);
     assert.ok(pits >= 20, `${stage.id}: 낭떠러지가 ${pits}칸뿐이라 달리기만 해도 지나간다`);
-    assert.ok(world.ceilSpikes.length >= 3, `${stage.id}: 천장 가시가 ${world.ceilSpikes.length}개뿐이다`);
-    assert.ok(checks >= 3, `${stage.id}: 체크포인트가 ${checks}개뿐이라 죽으면 너무 멀리 돌아간다`);
+    // 칼날이 세 칸으로 길어진 뒤로는 하나만 잘 놓아도 충분히 무섭다.
+    // 개수보다 **닿는 자리에 있는지**가 중요하고, 그건 stages.test.js 가 본다.
+    assert.ok(world.ceilSpikes.length >= 1, `${stage.id}: 천장 가시가 하나도 없다`);
+    // 추격 판은 일부러 하나만 둔다 (chase.test.js 가 따로 지킨다)
+    if (!stage.chase) {
+      assert.ok(checks >= 3, `${stage.id}: 체크포인트가 ${checks}개뿐이라 죽으면 너무 멀리 돌아간다`);
+    }
+  }
+});
+
+/**
+ * **알면 넘어갈 수 있어야 한다.**
+ *
+ * 이번 하드모드는 함정을 짝지어 건다 — 벽에 막히는 순간 발밑이 꺼지고,
+ * 튕기는 발판 위에는 창이 매달려 있다. 처음 보면 죽는 게 맞다. 하지만
+ * "알고 있으면 빠져나가는 입력이 있다"가 무너지면 그건 어려운 판이 아니라
+ * **못 깨는 판**이고, 화면만 봐서는 둘이 구분이 안 간다.
+ *
+ * 그래서 아는 사람을 흉내 낸 봇으로 네 판을 실제로 끝까지 굴려본다.
+ * 아는 것은 딱 둘이다 — 앞을 보고 뛴다, 그리고 **위에 창이 달린 발판만** 피한다
+ * (맨 발판은 오히려 밟아야 건너는 자리가 있다).
+ */
+test('아는 사람은 하드 네 판을 지형만으로 끝까지 간다', () => {
+  const trapPad = (world, tx, ty) => {
+    if (world.charAt(tx, ty) !== T.SPRING) return false;
+    for (let d = 1; d <= 6; d++) if (world.charAt(tx, ty - d) === T.CEILSPIKE) return true;
+    return false;
+  };
+
+  for (let index = 0; index < HARD_STAGES.length; index++) {
+    const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true } });
+    startRun(game, index, { hard: true });
+    for (let i = 0; i < 200; i++) updateGame(game, idle(), DT);
+
+    const goal = game.world.goal.x;
+    let far = game.player.x;
+    let hold = 0;
+    for (let i = 0; i < 60 * 90; i++) {
+      // 지금 재는 건 **지형과 함정**이다 — 앨범한테 죽는 건 빼둔다
+      game.albums.length = 0;
+      game.player.invuln = 99;
+      const p = game.player;
+      const footTy = Math.floor((p.y + p.h + 2) / TILE);
+      const aheadTx = Math.floor((p.x + p.w + 10) / TILE);
+      const gap = p.onGround && game.world.tileAt(aheadTx, footTy) !== SOLID;
+      const blocked = p.onGround && Math.abs(p.vx) < 24;
+      const up = p.onGround && [0, 1].some((d) => game.world.tileAt(aheadTx + d, footTy - 2) === SOLID);
+      const bad = p.onGround && [0, 1].some((d) => trapPad(game.world, aheadTx + d, footTy));
+      if ((gap || blocked || up || bad) && hold === 0) hold = 13;
+      const jump = hold > 0;
+      const pressed = hold === 13;
+      if (hold > 0) hold -= 1;
+      const go = game.effects.reversed > 0 ? { left: true } : { right: true };
+      updateGame(game, idle({ ...go, jump, jumpPressed: pressed }), DT);
+      if (game.scene === 'play') far = Math.max(far, game.player.x);
+      if (game.scene !== 'play' && game.scene !== 'death' && game.scene !== 'stageIntro') break;
+    }
+    assert.ok(
+      far > goal - 40,
+      `하드 ${index + 1}판: 알고도 못 지나가는 자리가 있다 — x ${Math.round(far)} / ${goal}`,
+    );
   }
 });

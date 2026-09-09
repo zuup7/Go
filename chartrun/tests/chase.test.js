@@ -94,7 +94,10 @@ function runBot(game, frames = 60 * 40) {
     const pressed = hold === 12;
     if (hold > 0) hold -= 1;
 
-    updateGame(game, idle({ right: true, jump, jumpPressed: pressed }), DT);
+    // 좌우가 뒤집힌 구간에서는 **반대를 누른다.** 사람도 한 번 겪으면 그렇게 한다 —
+    // 봇이 그걸 모르면 반전 구간을 "못 지나가는 자리" 로 잘못 재게 된다.
+    const go = game.effects.reversed > 0 ? { left: true } : { right: true };
+    updateGame(game, idle({ ...go, jump, jumpPressed: pressed }), DT);
     if (game.scene === 'play') {
       far = Math.max(far, game.player.x);
       if (game.chaser) gapAtEnd = game.player.x - game.chaser.x;
@@ -223,11 +226,15 @@ test('추격 판에는 기다려야 하는 장치가 없다', () => {
   }
 });
 
-test('추격 판에는 체크포인트가 넷 이상이다', () => {
-  // 잡히면 체크포인트로 가는데 그게 멀면 한 번 잡힐 때마다 판을 통째로 다시 뛴다
+test('추격 판에는 체크포인트가 딱 하나, 그것도 한가운데다', () => {
+  // 스피드런은 되돌아가는 벌이 세야 긴장이 산다. 다섯 개나 두면 잡혀도
+  // 바로 앞에서 다시 시작해서 쫓기는 느낌이 안 난다.
+  // 그래도 아예 없애지는 않는다 — 판 끝에서 죽고 처음부터는 너무 가혹하다.
   for (const stage of HARD_STAGES.filter((s) => s.chase)) {
     const w = createWorld(stage);
-    assert.ok(w.checkpoints.length >= 4, `${stage.id}: 체크포인트가 ${w.checkpoints.length}개뿐`);
+    assert.equal(w.checkpoints.length, 1, `${stage.id}: 체크포인트가 ${w.checkpoints.length}개다`);
+    const at = w.checkpoints[0].x / w.goal.x;
+    assert.ok(at > 0.3 && at < 0.65, `${stage.id}: 체크포인트가 판의 ${Math.round(at * 100)}% 지점이다`);
   }
 });
 

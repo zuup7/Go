@@ -25,7 +25,7 @@ import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
 import { clamp, overlaps } from './util.js';
-import { TILE } from './physics.js';
+import { TILE, SOLID } from './physics.js';
 
 export const VIEW = { w: 384, h: 224 };
 
@@ -44,8 +44,14 @@ export const stageCount = (game) => stageTable(game).length;
 
 /** 가짜 발판이 무너지기까지 (짧아야 웃기다) */
 const CRUMBLE_TIME = 0.14;
-/** 무너지는 바닥은 잠깐 떨다 꺼진다 — 달리면 건널 수 있을 만큼만 */
-const FLOOR_CRUMBLE_TIME = 0.45;
+/**
+ * 무너지는 바닥이 꺼지기까지. **거의 바로다.**
+ *
+ * 전속력(124px/s)이면 한 칸을 0.13초에 지난다. 0.16초로 잡으면
+ * **달리면 건너지고, 멈추면 빠진다** — 벽에 막혀 멈추는 순간 발밑이
+ * 사라지는 연쇄가 여기서 나온다. 0.45초였을 때는 밟고 서서 구경할 틈이 있었다.
+ */
+const FLOOR_CRUMBLE_TIME = 0.16;
 const DEATH_HOLD = 1.5;
 const CLEAR_HOLD = 2.6;
 const INTRO_HOLD = 2.0;
@@ -78,6 +84,10 @@ export function createGame(options = {}) {
     caught: null,
     /** 깜빡이는 발판이 지금 켜져 있나 (바뀔 때만 격자를 손대려고 들고 있다) */
     blinkOn: null,
+    /** 하늘에서 떨어지는 폭탄. 폭탄 구간에 들어서면 생긴다 */
+    bombs: [],
+    bombTimer: 0,
+    bombPhase: 0,
     particles: [],
     texts: [],
     camera: createCamera(VIEW.w, VIEW.h),
@@ -162,6 +172,9 @@ function spawnEntities(game) {
   game.chaser = null;
   game.caught = null;
   game.blinkOn = null;
+  game.bombs = [];
+  game.bombTimer = 0;
+  game.bombPhase = 0;
   for (const p of game.world.pickups) p.taken = false;
   for (const f of game.world.fakeGoals) {
     f.fleeing = false;
@@ -417,21 +430,23 @@ function handleCrumbling(game, dt) {
     for (let tx = tx0; tx <= tx1; tx++) {
       const spec = CRUMBLING[world.charAt(tx, ty)];
       if (!spec) continue;
-      const key = trapKey(tx, ty);
+      const key = markKey(game, tx, ty);
       if (!game.crumbling.has(key)) {
-        game.crumbling.set(key, spec.time);
+        // 칸 좌표를 **값에 같이 들고 있는다.** 예전에는 열쇠를 ',' 로 쪼개 되읽었는데,
+        // 하드모드 열쇠에는 판 이름이 붙어서(`hard1:12,9`) 그렇게 하면 NaN 이 나온다.
+        game.crumbling.set(key, { time: spec.time, tx, ty });
         emit(game, 'crumble', {});
       }
     }
   }
-  for (const [key, time] of [...game.crumbling]) {
-    const left = time - dt;
+  for (const [key, cell] of [...game.crumbling]) {
+    const left = cell.time - dt;
     if (left > 0) {
-      game.crumbling.set(key, left);
+      game.crumbling.set(key, { ...cell, time: left });
       continue;
     }
     game.crumbling.delete(key);
-    const [tx, ty] = key.split(',').map(Number);
+    const { tx, ty } = cell;
     const spec = CRUMBLING[world.charAt(tx, ty)];
     if (!spec) continue;
     world.setChar(tx, ty, T.EMPTY);
@@ -543,13 +558,25 @@ function handleFakeChecks(game) {
   }
 }
 
+/**
+ * 천장 가시가 **몇 칸까지 뻗는가.**
+ *
+ * 1칸이었을 때는 바닥 딱 2칸 위에만 달 수 있었다 — 그보다 높이 달면 닿지를
+ * 않아서 그냥 그림이 됐다. 창처럼 길게 만들면 천장에 높이 달아놓고도
+ * 바닥까지 내리꽂을 수 있고, 그래야 **점핑패드로 솟았다가 꽂히는** 자리도 나온다.
+ */
+export const CEIL_BLADE = 3;
+
 /** 천장 가시 — 아래를 지나가면 내려온다. 솟는 가시를 위아래만 뒤집은 것이다 */
 function handleCeilSpikes(game, dt) {
   const { player, world } = game;
   for (const spike of world.ceilSpikes) {
     const cx = spike.tx * TILE + TILE / 2;
     const near = Math.abs(player.x + player.w / 2 - cx) < 20;
-    const below = player.y > spike.ty * TILE && player.y - spike.ty * TILE < TILE * 4;
+    // 칼날이 닿는 데까지는 발동해야 한다. 칼날만 늘리고 여기를 안 늘리면
+    // 높이 단 가시가 "닿을 수는 있는데 발동은 안 하는" 상태가 된다.
+    const reach = TILE * (CEIL_BLADE + 2);
+    const below = player.y > spike.ty * TILE && player.y - spike.ty * TILE < reach;
     if (!spike.popped && near && below && !player.dead) {
       spike.popped = true;
       spike.t = 0;
@@ -563,12 +590,104 @@ function handleCeilSpikes(game, dt) {
       x: spike.tx * TILE + 2,
       y: (spike.ty + 1) * TILE - 2,
       w: TILE - 4,
-      h: TILE * spike.t,
+      h: TILE * CEIL_BLADE * spike.t,
     };
     if (!player.dead && spike.t > 0.35 && overlaps(player, blade)) {
       if (damagePlayer(player)) killPlayer(game);
     }
   }
+}
+
+// ── 하늘에서 떨어지는 폭탄 ──────────────────────────────────
+/** 폭탄 하나를 떨어뜨리는 간격(초) */
+const BOMB_EVERY = 0.55;
+/**
+ * 떨어질 자리에 **그림자만 보이는** 시간.
+ * 이게 없으면 하늘에서 예고 없이 죽는 것이고, 그건 트롤이 아니라 불합리한 게임이다.
+ */
+export const BOMB_WARN = 0.6;
+/**
+ * 잇달아 떨어지는 폭탄 사이에 비워두는 칸 수.
+ * 붙여서 떨어뜨리면 설 자리가 없어져 못 지나가는 구간이 된다 — 테스트가 지킨다.
+ */
+export const BOMB_GAP = 4;
+const BOMB_FALL = 240;
+/** 터질 때 휩쓰는 범위 */
+const BOMB_BLAST = 12;
+
+/** 그 칸 아래로 처음 나오는 바닥의 윗면 y (없으면 판 바닥) */
+function groundBelow(world, tx, fromTy) {
+  for (let ty = fromTy; ty < world.height; ty++) {
+    if (world.tileAt(tx, ty) === SOLID) return ty * TILE;
+  }
+  return world.pixelHeight;
+}
+
+function spawnBomb(game) {
+  const { player, world } = game;
+  // 셋씩 돌아가며 왼쪽·가운데·오른쪽.
+  //
+  // 자리를 **BOMB_GAP 격자에 붙인다.** 플레이어 위치에 그냥 더하면, 달리는 동안
+  // 기준이 밀려서 앞뒤 폭탄이 한두 칸 차이로 겹칠 수 있다 — 그러면 설 자리가
+  // 없어져 못 지나가는 구간이 된다. 격자에 붙이면 두 폭탄은 같은 칸이거나
+  // 최소 BOMB_GAP 칸 떨어진다.
+  const lane = (game.bombPhase % 3) - 1;
+  game.bombPhase += 1;
+  const want = Math.floor((player.x + player.w / 2) / TILE) + 2 + lane * BOMB_GAP;
+  const tx = clamp(Math.round(want / BOMB_GAP) * BOMB_GAP, 0, world.width - 1);
+  game.bombs.push({
+    x: tx * TILE + TILE / 2,
+    y: game.camera.y - TILE,
+    tx,
+    groundY: groundBelow(world, tx, 0),
+    warn: BOMB_WARN,
+  });
+}
+
+/**
+ * 폭탄 구간. 걸려 있는 동안 하늘에서 떨어진다.
+ *
+ * 순서는 늘 같다 — **그림자가 먼저, 폭탄은 나중.** 그림자를 보고 비키면 산다.
+ */
+function handleBombs(game, dt) {
+  if (game.effects.bombs > 0) {
+    game.bombTimer -= dt;
+    if (game.bombTimer <= 0) {
+      game.bombTimer += BOMB_EVERY;
+      spawnBomb(game);
+    }
+  } else {
+    game.bombTimer = 0;
+  }
+
+  const { player } = game;
+  game.bombs = game.bombs.filter((bomb) => {
+    if (bomb.warn > 0) {
+      bomb.warn -= dt;
+      return true;
+    }
+    bomb.y += BOMB_FALL * dt;
+    const hitGround = bomb.y >= bomb.groundY;
+    const box = { x: bomb.x - 5, y: bomb.y - 5, w: 10, h: 10 };
+    const hitPlayer = !player.dead && overlaps(player, box);
+    if (!hitGround && !hitPlayer) return true;
+
+    // 터진다 — 닿은 자리 둘레를 휩쓴다
+    const blast = {
+      x: bomb.x - BOMB_BLAST,
+      y: Math.min(bomb.y, bomb.groundY) - BOMB_BLAST,
+      w: BOMB_BLAST * 2,
+      h: BOMB_BLAST * 2,
+    };
+    if (!player.dead && overlaps(player, blast) && damagePlayer(player)) killPlayer(game);
+    addParticles(game, bomb.x, Math.min(bomb.y, bomb.groundY), 10, ['#ff8f3c', '#ffd166', '#fff'], {
+      speed: 120,
+      life: 0.4,
+    });
+    shakeCamera(game.camera, 0.5);
+    emit(game, 'trap', { kind: 'bomb' });
+    return false;
+  });
 }
 
 /**
@@ -808,6 +927,7 @@ function updatePlay(game, input, dt) {
   handleBlinkers(game);
   handleFakeChecks(game);
   handleCeilSpikes(game, dt);
+  handleBombs(game, dt);
   handleChaser(game, dt);
   handleAlbums(game, dt, input.jump);
   handleShots(game, dt);

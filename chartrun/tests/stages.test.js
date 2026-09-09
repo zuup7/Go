@@ -41,8 +41,14 @@ test('스테이지마다 시작점과 골이 있다', () => {
     const world = createWorld(stage);
     assert.ok(world.goal, `${stage.id}: 골이 없다`);
     assert.ok(world.spawn.x > 0, `${stage.id}: 시작점이 없다`);
-    // 하나뿐이면 죽었을 때 매번 처음으로 돌아가 버린다
-    assert.ok(world.checkpoints.length >= 2, `${stage.id}: 체크포인트가 부족하다`);
+    // 하나뿐이면 죽었을 때 매번 처음으로 돌아가 버린다.
+    // **추격 판만 예외로 하나다** — 스피드런은 되돌아가는 벌이 세야 긴장이 산다.
+    // 대신 그 하나는 반드시 판 한가운데쯤 있어야 한다.
+    const least = stage.chase ? 1 : 2;
+    assert.ok(
+      world.checkpoints.length >= least,
+      `${stage.id}: 체크포인트가 ${world.checkpoints.length}개뿐이다`,
+    );
     const middle = world.checkpoints.some((c) => c.x < world.goal.x * 0.6);
     assert.ok(middle, `${stage.id}: 중간 체크포인트가 없다`);
     assert.ok(world.goal.x > world.spawn.x, `${stage.id}: 골이 시작점보다 뒤에 있다`);
@@ -209,22 +215,26 @@ test('보스 무대는 넓고 평평하다', () => {
 
 // ── 장치가 진짜로 작동하는 자리에 있는가 ─────────────────────
 /**
- * 천장 가시는 **딛고 설 바닥 딱 2칸 위**에만 위협이 된다.
+ * 천장 가시는 **누군가를 맞힐 수 있는 자리**에 있어야 한다.
  *
- * handleCeilSpikes 를 보면 이유가 나온다: 가시에서 4칸 이내로 들어와야
- * 발동하고(`< TILE * 4`), 칼날은 1칸까지만 내려온다(`h: TILE * spike.t`).
- * 그래서 바닥에서 6칸 위에 달아두면 발동조차 안 한다 — 이 규칙이 없던 동안
- * 하드모드의 천장 가시 16개가 전부 그냥 그림이었다.
+ * 칼날이 (ty+1) 줄부터 CEIL_BLADE(3)칸 뻗는다. 그래서 쓸모 있는 자리는 둘뿐이다.
+ *   1. 아래 4칸 안에 **딛고 설 바닥** — 걸어가는 사람을 맞힌다
+ *   2. 아래 6칸 안에 **튕기는 발판** — 발판이 쏘아 올린 사람을 맞힌다 (이번 간판 연쇄)
+ * 둘 다 아니면 아무도 못 맞는 장식이다. 예전에 16개가 전부 그랬다.
  */
-test('천장 가시는 닿는 자리에 달려 있다 — 바닥 2칸 위', () => {
+test('천장 가시는 누군가를 맞힐 수 있는 자리에 있다', () => {
   for (const stage of PLAYABLE) {
     const world = createWorld(stage);
     for (const spike of world.ceilSpikes) {
-      const floorTy = spike.ty + 2;
-      const under = floorTy < world.height ? world.charAt(spike.tx, floorTy) : T.GROUND;
+      let hits = null;
+      for (let d = 1; d <= 7 && !hits; d++) {
+        const ch = world.charAt(spike.tx, spike.ty + d);
+        if (ch === T.SPRING) hits = '발판';
+        else if (d <= 4 && tileKind(ch) !== null) hits = '바닥';
+      }
       assert.ok(
-        tileKind(under) !== null,
-        `${stage.id}: (${spike.tx},${spike.ty}) 천장 가시 2칸 아래가 비었다 — 아무도 못 맞는 장식이다`,
+        hits,
+        `${stage.id}: (${spike.tx},${spike.ty}) 천장 가시 아래에 바닥도 발판도 없다 — 장식이다`,
       );
     }
   }
