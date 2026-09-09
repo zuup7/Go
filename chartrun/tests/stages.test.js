@@ -295,3 +295,28 @@ test('천장 가시는 구멍 앞을 막지 않는다', () => {
     }
   }
 });
+
+/**
+ * **하늘에서 떨어지는 땅에는 넘어갈 2층이 반드시 있다.**
+ *
+ * 이 함정만 시간 예고가 없다. 공략은 피하는 게 아니라 **애초에 1층으로 안 가는 것**이라,
+ * 위로 넘어갈 길이 없으면 지나갈 방법이 아예 없는 자리가 된다.
+ */
+test('떨어지는 땅 위에는 넘어갈 길이 있다', () => {
+  for (const stage of PLAYABLE) {
+    const world = createWorld(stage);
+    for (const slab of world.dropSlabs) {
+      let roof = false;
+      // 머리 위 2~6칸 안에 딛고 설 것이 있어야 한다
+      for (let d = 2; d <= 6 && !roof; d++) {
+        for (let dx = -3; dx <= 3 && !roof; dx++) {
+          if (tileKind(world.charAt(slab.tx + dx, slab.ty - d)) !== null) roof = true;
+        }
+      }
+      assert.ok(
+        roof,
+        `${stage.id}: (${slab.tx},${slab.ty}) 떨어지는 땅 위에 넘어갈 2층이 없다`,
+      );
+    }
+  }
+});

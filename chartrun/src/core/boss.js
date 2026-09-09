@@ -4,6 +4,14 @@ import { spawnAlbum } from './enemy.js';
 import { clamp } from './util.js';
 
 export const BOSS_W = 56;
+/**
+ * 공룡 형태의 몸 크기. 56px 짜리는 아무리 잘 그려도 "거대한 짐승" 으로 안 읽힌다.
+ *
+ * **판정 상자를 같이 키운다.** 그림만 키우면 보이는 몸과 밟는 자리가 어긋나서,
+ * 등을 밟았는데 안 맞는(또는 허공에서 죽는) 상태가 된다.
+ */
+export const DINO_W = 92;
+export const DINO_H = 76;
 export const BOSS_H = 56;
 
 /** 레이저 기둥의 폭 */
@@ -12,6 +20,8 @@ export const LASER_W = 14;
 export const TAIL_W = 26;
 /** 충격파 한 덩이의 폭 */
 export const WAVE_W = 18;
+/** 타일 한 칸. core/physics 의 TILE 과 같은 값이지만 boss.js 는 물리를 안 가져온다 */
+const TILE_PX = 16;
 
 /**
  * floorY 는 레이저가 닿을 바닥 높이다. 기본값을 두는 이유는
@@ -64,6 +74,14 @@ export function createBoss(arenaWidth, floorY = 192, hard = false) {
     tailDir: 1,
     /** 바닥을 타고 퍼지는 충격파. { x, dir } 둘 (양쪽) */
     waves: [],
+    // ── 1·2페이즈의 새 패턴 ──────────────────────────────────
+    whirlTimer: 0,
+    /** 회오리의 빈 자리 각도 (aim 때 정한다) */
+    whirlGap: Math.PI / 2,
+    ceilTimer: 0,
+    ceilPhase: 0,
+    /** 천장에서 떨어지는 조각들 */
+    ceilSlabs: [],
   };
 }
 
@@ -174,6 +192,13 @@ export function syncPhase(boss) {
   const next = phaseFor(boss.hp, boss.maxHp, boss.phases ?? phasesFor(false));
   if (next.id > boss.phaseId) {
     boss.phaseId = next.id;
+    // 공룡이 되면 몸이 커진다. 가운데를 잡아두고 넓혀야 갑자기 옆으로 튀지 않는다.
+    if (next.dino && boss.w !== DINO_W) {
+      const cx = boss.x + boss.w / 2;
+      boss.w = DINO_W;
+      boss.h = DINO_H;
+      boss.x = cx - DINO_W / 2;
+    }
     boss.announce = next.id;
     boss.quarters = [];
     boss.state = 'recover';
@@ -230,7 +255,9 @@ export function updateBoss(boss, ctx, dt) {
     boss.state === 'tailAim' ||
     boss.state === 'tail' ||
     boss.state === 'stompAim' ||
-    boss.state === 'stomp';
+    boss.state === 'stomp' ||
+    boss.state === 'whirlAim' ||
+    boss.state === 'whirl';
   const speed = charging ? 0 : 26 + boss.phaseId * 12;
   boss.x += boss.drift * speed * dt;
   if (boss.x < 24) {
@@ -268,6 +295,30 @@ export function updateBoss(boss, ctx, dt) {
         if (boss.laserTimer >= phase.laserEvery) {
           startLaser(boss, phase, ctx);
           break;
+        }
+      }
+      // 1·2페이즈의 새 기술. 공룡이 되기 전에도 볼거리가 있어야 한다.
+      if (phase.whirlEvery > 0) {
+        boss.whirlTimer += dt;
+        if (boss.whirlTimer >= phase.whirlEvery) {
+          boss.whirlTimer = 0;
+          boss.state = 'whirlAim';
+          boss.timer = phase.whirlAim ?? 0.9;
+          // 빈 자리는 **플레이어에게서 떨어진 쪽**에 낸다 — 제자리에 서 있으면
+          // 저절로 피해지면 기술이 아니라 배경이 된다
+          const px = ctx.playerX ?? boss.x;
+          const toRight = px < ctx.arenaWidth / 2;
+          boss.whirlGap = toRight ? Math.PI * 0.28 : Math.PI * 0.72;
+          ctx.onWhirlAim?.();
+          break;
+        }
+      }
+      if (phase.ceilEvery > 0) {
+        boss.ceilTimer += dt;
+        if (boss.ceilTimer >= phase.ceilEvery) {
+          boss.ceilTimer = 0;
+          dropCeiling(boss, phase, ctx);
+          ctx.onCeiling?.();
         }
       }
       // 공룡 형태의 두 기술. 바닥을 훑는 가로 공격이라 **뛰어야** 피한다.
@@ -313,6 +364,25 @@ export function updateBoss(boss, ctx, dt) {
       if (boss.timer <= 0) {
         boss.state = 'recover';
         boss.timer = 0.9;
+      }
+      break;
+    }
+    case 'whirlAim': {
+      boss.vulnerable = false;
+      boss.y += (boss.homeY - boss.y) * Math.min(1, dt * 4);
+      if (boss.timer <= 0) {
+        boss.state = 'whirl';
+        boss.timer = 0.25;
+        fireWhirl(boss, phase, ctx);
+        ctx.onWhirl?.();
+      }
+      break;
+    }
+    case 'whirl': {
+      boss.vulnerable = false;
+      if (boss.timer <= 0) {
+        boss.state = 'recover';
+        boss.timer = 0.7;
       }
       break;
     }
@@ -392,6 +462,18 @@ export function updateBoss(boss, ctx, dt) {
 
   updateQuarters(boss, phase, ctx, dt);
 
+  // 천장에서 떨어지는 조각 — 예고가 끝나야 내려온다
+  if (boss.ceilSlabs?.length) {
+    for (const c of boss.ceilSlabs) {
+      if (c.warn > 0) {
+        c.warn -= dt;
+        continue;
+      }
+      c.y += (phase.ceilFall ?? 300) * dt;
+    }
+    boss.ceilSlabs = boss.ceilSlabs.filter((c) => c.y < boss.floorY);
+  }
+
   // 충격파는 바닥을 타고 끝까지 가서 사라진다
   if (boss.waves.length) {
     const speed = phase.waveSpeed ?? 190;
@@ -440,6 +522,79 @@ function startLaser(boss, phase, ctx) {
     boss.beamDir = px >= boss.beamX ? 1 : -1;
   }
   ctx.onAim?.();
+}
+
+/**
+ * **앨범 회오리** (하드 1페이즈).
+ *
+ * 아래쪽 반원을 촘촘히 덮되 **한 군데만 비운다.** 피하는 법이 "탄 사이를 지나간다"가
+ * 아니라 **"빈 자리로 미리 가 있는다"** 라서, 다른 페이즈와 축이 다르다
+ * (2페이즈는 위에서 떨어지고, 3·4페이즈는 뛰어넘는다).
+ *
+ * 빈 자리는 발사 전에 바닥에 표시된다 — 안 보이면 그냥 운이다.
+ */
+function fireWhirl(boss, phase, ctx) {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h / 2;
+  const count = phase.whirlShots ?? 16;
+  // 빈 자리를 향하는 각도. aim 때 정해두고 그림도 이걸 본다.
+  const gap = boss.whirlGap;
+  for (let i = 0; i < count; i++) {
+    const angle = Math.PI * (0.08 + (0.84 * i) / (count - 1));
+    // 빈 자리 둘레는 안 쏜다
+    if (Math.abs(angle - gap) < (phase.whirlGapWidth ?? 0.34)) continue;
+    ctx.spawnShot({
+      x: cx - 3,
+      y: cy - 3,
+      w: 6,
+      h: 6,
+      vx: Math.cos(angle) * (phase.whirlSpeed ?? 90),
+      vy: Math.sin(angle) * (phase.whirlSpeed ?? 90),
+      life: 4,
+      boss: true,
+    });
+  }
+}
+
+/** 회오리의 빈 자리가 바닥 어디쯤인지. 판정도 그림도 이 하나를 본다 */
+export function whirlGapX(boss) {
+  if (boss.state !== 'whirlAim' && boss.state !== 'whirl') return null;
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h / 2;
+  const drop = boss.floorY - cy;
+  // 빈 자리 각도를 바닥까지 늘렸을 때의 x
+  const t = drop / Math.max(0.2, Math.sin(boss.whirlGap));
+  return cx + Math.cos(boss.whirlGap) * t;
+}
+
+/**
+ * **천장 붕괴** (하드 2페이즈). 아레나 천장에서 땅덩이가 줄줄이 떨어진다.
+ *
+ * 판에서 배운 "하늘에서 떨어지는 땅" 을 보스가 그대로 써먹는다 —
+ * 장치를 하나 더 만들지 않고도 보스가 새로워진다.
+ * 떨어지는 자리는 **격자에 붙여** 사이에 설 자리를 남긴다 (폭탄과 같은 규칙).
+ */
+function dropCeiling(boss, phase, ctx) {
+  const lanes = phase.ceilLanes ?? 4;
+  const step = Math.floor(ctx.arenaWidth / TILE_PX / (lanes + 1));
+  boss.ceilSlabs = [];
+  for (let i = 1; i <= lanes; i++) {
+    // 매번 반 칸씩 밀어 같은 자리만 반복되지 않게
+    const tx = i * step + (boss.ceilPhase % 2 ? Math.floor(step / 2) : 0);
+    boss.ceilSlabs.push({ x: tx * TILE_PX, y: -TILE_PX * 2, warn: phase.ceilWarn ?? 0.5 });
+  }
+  boss.ceilPhase += 1;
+}
+
+/** 지금 떨어지고 있는 천장 조각들. 판정과 그림이 같이 본다 */
+export function ceilingSlabs(boss) {
+  return (boss.ceilSlabs ?? []).map((c) => ({
+    x: c.x,
+    y: c.y,
+    w: TILE_PX,
+    h: TILE_PX,
+    warn: c.warn,
+  }));
 }
 
 function fireRing(boss, phase, ctx) {

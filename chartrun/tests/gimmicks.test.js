@@ -582,12 +582,17 @@ test('폭탄은 그림자가 먼저 뜨고 나중에 떨어진다', () => {
   const game = bombWorld();
   game.player.invuln = 999;
   for (let i = 0; i < 60; i++) step(game, { ...idle, right: true });
-  step(game, idle, 40);
-  const fresh = game.bombs.find((b) => b.warn > 0);
+  // 예고가 짧아졌으므로 **한 프레임씩 보며** 갓 생긴 폭탄을 잡는다.
+  // 고정된 시간에 한 번만 보면 예고를 줄일 때마다 테스트가 헛돈다.
+  let fresh = null;
+  for (let i = 0; i < 120 && !fresh; i++) {
+    step(game, idle);
+    fresh = game.bombs.find((b) => b.warn > 0);
+  }
   assert.ok(fresh, '갓 생긴 폭탄에 예고 시간이 없다');
   // 예고 중에는 아직 안 내려온다
   const y0 = fresh.y;
-  step(game, idle, 10);
+  step(game, idle);
   assert.equal(fresh.y, y0, '예고 중인데 벌써 떨어지고 있다');
 });
 
@@ -618,4 +623,96 @@ test('폭탄 효과는 저절로 풀린다 — 영원히 떨어지지 않는다'
   step(game, idle, 60 * 12);
   assert.equal(game.effects.bombs, 0, '폭탄 구간이 안 끝난다');
   assert.equal(game.bombs.length, 0, '구간이 끝났는데 폭탄이 남아 있다');
+});
+
+// ── 하늘에서 떨어지는 땅 ─────────────────────────────────────
+/** 1층(12줄)과 2층(9줄)이 있는 판. 1층 한가운데에 D 를 깐다 */
+function slabWorld() {
+  const W = 24;
+  const rows = [];
+  for (let y = 0; y < 14; y++) rows.push(y >= 12 ? '#'.repeat(W) : ' '.repeat(W));
+  rows[12] = '#'.repeat(10) + T.DROPSLAB + '#'.repeat(W - 11);
+  rows[9] = ' '.repeat(6) + '='.repeat(10) + ' '.repeat(W - 16); // 2층
+  rows[11] = ' S' + ' '.repeat(W - 2);
+  const game = createGame({ seed: 4 });
+  game.world = createWorld({ id: 'slab', number: 1, rows });
+  game.player = createPlayer(game.world.spawn);
+  game.checkpoint = { ...game.world.spawn };
+  game.scene = 'play';
+  return game;
+}
+
+test('1층을 밟으면 하늘에서 땅이 떨어져 죽는다', () => {
+  const game = slabWorld();
+  game.player.x = 10 * TILE - 40;
+  game.player.y = 11 * TILE - game.player.h;
+  let dead = false;
+  for (let i = 0; i < 200 && !dead; i++) {
+    step(game, { ...idle, right: true });
+    dead = game.player.dead;
+  }
+  assert.ok(dead, '1층을 밟았는데 아무것도 안 떨어졌다');
+  assert.ok(game.world.dropSlabs[0].fired, '슬래브가 발동을 안 했다');
+});
+
+test('2층으로 넘어가면 안 떨어진다 — 이게 이 함정의 전부다', () => {
+  // 층을 안 보고 발동하면 위로 지나가도 죽어서 공략이 아예 사라진다.
+  const game = slabWorld();
+  // 2층(9줄) 위에 세워놓고 슬래브 칸 위를 지나가게 한다
+  game.player.x = 7 * TILE;
+  game.player.y = 9 * TILE - game.player.h;
+  for (let i = 0; i < 200; i++) {
+    step(game, { ...idle, right: true });
+    if (game.player.dead) break;
+  }
+  assert.equal(game.player.dead, false, '2층으로 지나갔는데 죽었다');
+  assert.equal(game.world.dropSlabs[0].fired, false, '2층인데 슬래브가 발동했다');
+  assert.ok(game.player.x > 11 * TILE, '2층으로 지나가지도 못했다');
+});
+
+test('죽어서 되살아나면 땅덩이가 도로 매달린다', () => {
+  // 한 번 죽으면 그 구간이 통째로 비어버리면, "알고 나서 2층으로 넘어간다" 는
+  // 공략이 사라지고 그냥 한 번 죽고 지나가는 자리가 된다.
+  const game = slabWorld();
+  game.player.x = 10 * TILE + 2;
+  game.player.y = 11 * TILE - game.player.h;
+  step(game, idle, 30);
+  assert.ok(game.world.dropSlabs[0].fired, '발동을 안 했다');
+  step(game, idle, 60 * 4); // 죽고 되살아날 때까지
+  assert.equal(game.world.dropSlabs[0].fired, false, '되살아났는데 안 매달렸다');
+});
+
+test('폭탄이 터진 자리에 불이 남고, 반드시 꺼진다', () => {
+  // 안 꺼지면 판이 통째로 막혀서 못 지나간다.
+  const game = bombWorld();
+  game.player.invuln = 999;
+  for (let i = 0; i < 60; i++) step(game, { ...idle, right: true });
+  step(game, idle, 200);
+  assert.ok(game.fires.length > 0, '폭탄이 터졌는데 불이 안 남는다');
+  step(game, idle, 60 * 12);
+  assert.equal(game.fires.length, 0, '불이 안 꺼진다 — 판이 영영 막힌다');
+});
+
+test('불이 남아도 설 자리가 남는다', () => {
+  // 폭탄 강화의 유일한 선 — 불 + 떨어지는 폭탄이 합쳐져 연속으로 막히면
+  // 어려운 게 아니라 못 지나가는 구간이 된다.
+  const game = bombWorld();
+  game.player.invuln = 999;
+  for (let i = 0; i < 60; i++) step(game, { ...idle, right: true });
+  let worst = 0;
+  for (let i = 0; i < 600; i++) {
+    step(game, { ...idle, right: i % 90 < 60 });
+    // 막힌 칸 = 불 + 떨어지는 폭탄
+    const blocked = new Set();
+    for (const f of game.fires) blocked.add(Math.round(f.x / TILE));
+    for (const b of game.bombs) blocked.add(b.tx);
+    // 연속으로 막힌 칸이 몇 개인지
+    const lanes = [...blocked].sort((a, b) => a - b);
+    let run = 1;
+    for (let k = 1; k < lanes.length; k++) {
+      run = lanes[k] === lanes[k - 1] + 1 ? run + 1 : 1;
+      worst = Math.max(worst, run);
+    }
+  }
+  assert.ok(worst < 3, `연속 ${worst}칸이 한꺼번에 막혔다 — 설 자리가 없다`);
 });

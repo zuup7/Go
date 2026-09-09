@@ -11,6 +11,8 @@ import {
   laserBeam,
   tailBand,
   shockWaves,
+  ceilingSlabs,
+  whirlGapX,
 } from '../src/core/boss.js';
 import { BOSS_MAX_HP, PHASES, HARD_PHASES, phaseFor } from '../src/data/bossData.js';
 import { PLAYER } from '../src/core/player.js';
@@ -486,4 +488,63 @@ test('내리찍으면 충격파가 양쪽으로 퍼져서 사라진다', () => {
   // 끝까지 가면 사라진다 — 안 그러면 영원히 남는다
   for (let i = 0; i < 60 * 6; i++) updateBoss(boss, ctx, 1 / 60);
   assert.equal(boss.waves.length, 0, '충격파가 안 사라진다');
+});
+
+// ── 1·2페이즈의 새 패턴 ──────────────────────────────────────
+test('하드 1·2페이즈에도 저마다 새 기술이 있다', () => {
+  const p1 = HARD_PHASES[0];
+  const p2 = HARD_PHASES[1];
+  assert.ok(p1.whirlEvery > 0, '1페이즈에 회오리가 없다');
+  assert.ok(p2.ceilEvery > 0, '2페이즈에 천장 붕괴가 없다');
+  // 보통 모드에는 없다 — 그게 하드의 볼거리다
+  assert.ok(!PHASES.some((p) => p.whirlEvery > 0 || p.ceilEvery > 0), '보통 모드에도 있다');
+});
+
+test('회오리에는 반드시 빠져나갈 빈 자리가 있다', () => {
+  // 다 막으면 어려운 게 아니라 그냥 맞는 기술이 된다.
+  const arenaWidth = 640;
+  for (const px of [80, 560]) {
+    const boss = createBoss(arenaWidth, 192, true);
+    boss.state = 'attack';
+    const phase = bossPhase(boss);
+    boss.whirlTimer = phase.whirlEvery;
+    const shots = [];
+    const ctx = { arenaWidth, playerX: px, spawnShot: (s) => shots.push(s), addAlbum() {} };
+    updateBoss(boss, ctx, 1 / 60);
+    assert.equal(boss.state, 'whirlAim', '회오리를 안 겨눴다');
+
+    // 빈 자리가 바닥 어디쯤인지 그림도 판정도 이걸 본다
+    const gap = whirlGapX(boss);
+    assert.ok(gap != null, '빈 자리를 알 수가 없다');
+    assert.ok(gap > 0 && gap < arenaWidth, `빈 자리(${Math.round(gap)})가 아레나 밖이다`);
+
+    // 실제로 쏴 보면 빈 자리 쪽으로는 탄이 안 간다
+    boss.timer = 0;
+    updateBoss(boss, ctx, 1 / 60);
+    assert.ok(shots.length > 0, '회오리가 안 나갔다');
+    const toGap = shots.filter(
+      (sh) => Math.abs(Math.atan2(sh.vy, sh.vx) - boss.whirlGap) < 0.2,
+    );
+    assert.equal(toGap.length, 0, '빈 자리로도 탄이 날아간다 — 빈 자리가 아니다');
+  }
+});
+
+test('천장 붕괴 사이에는 설 자리가 남는다', () => {
+  const arenaWidth = 640;
+  const boss = createBoss(arenaWidth, 192, true);
+  boss.hp = 7; // 2페이즈
+  syncPhase(boss);
+  boss.state = 'attack';
+  const phase = bossPhase(boss);
+  boss.ceilTimer = phase.ceilEvery;
+  updateBoss(boss, { arenaWidth, playerX: 300, spawnShot() {}, addAlbum() {} }, 1 / 60);
+
+  const slabs = ceilingSlabs(boss);
+  assert.ok(slabs.length >= 2, '천장이 안 무너졌다');
+  const xs = slabs.map((s) => s.x).sort((a, b) => a - b);
+  for (let i = 1; i < xs.length; i++) {
+    assert.ok(xs[i] - xs[i - 1] >= 32, `조각 둘이 ${xs[i] - xs[i - 1]}px 붙어서 떨어진다`);
+  }
+  // 예고가 먼저다
+  assert.ok(slabs.every((s) => s.warn > 0), '예고 없이 떨어진다');
 });

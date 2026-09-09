@@ -61,6 +61,9 @@ export const TRAPS = {
   bombZone: {
     char: 'B',
   },
+  dropSlab: {
+    char: 'D',
+  },
 };
 
 /** 시간이 지나면 저절로 풀리는 구간 효과 (영구히 걸리면 게임이 끝난다) */

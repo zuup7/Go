@@ -4,7 +4,7 @@ import { T } from '../core/world.js';
 import { cameraOffset } from '../core/camera.js';
 import { drawAlbum, drawCoverAt } from './albumArt.js';
 import { drawSprite, crisp, makeCanvas } from './pixel.js';
-import { npcInReach, markKey, CEIL_BLADE } from '../core/game.js';
+import { npcInReach, markKey, CEIL_BLADE, SLAB_HANG } from '../core/game.js';
 import { NPC_TALK } from '../data/npcTalk.js';
 import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
@@ -29,6 +29,8 @@ import {
   laserBeams,
   tailBand,
   shockWaves,
+  ceilingSlabs,
+  whirlGapX,
 } from '../core/boss.js';
 import { PLAYER } from '../core/player.js';
 
@@ -1137,6 +1139,77 @@ function drawPlayer(ctx, player, ox, oy, time) {
  * 레이저는 **세로 기둥**이고 이건 **가로 띠**다. 한눈에 달라 보여야
  * "옆으로 비켜야 하나, 뛰어야 하나" 를 안 헷갈린다.
  */
+/**
+ * 하늘에서 떨어지는 땅.
+ *
+ * **매달린 모습을 반드시 그린다.** 이 함정만 시간 예고가 없으므로, 대신
+ * "저 위에 뭔가 매달려 있다"가 눈에 보여야 한다 — 지형을 읽으면 알 수 있는 예고다.
+ * 안 그리면 아무 이유 없이 죽는 것이 되고, 그건 트롤이 아니라 불합리다.
+ */
+/** 폭탄이 터진 자리에 남은 불. 밟을 수 없는 칸이라 **눈에 확 띄어야** 한다 */
+function drawFires(ctx, game, ox, oy, time) {
+  if (!game.fires?.length) return;
+  ctx.save();
+  for (const fire of game.fires) {
+    const x = Math.round(fire.x - ox);
+    const y = Math.round(fire.groundY - oy);
+    // 꺼질 때가 되면 옅어진다 — 언제 다시 밟을 수 있는지 보여야 한다
+    ctx.globalAlpha = Math.min(1, fire.t / 0.4);
+    for (let i = 0; i < 5; i++) {
+      const h = 6 + Math.abs(Math.sin(time * 12 + i * 1.3)) * 7;
+      ctx.fillStyle = i % 2 ? '#ff8f3c' : '#ffd166';
+      ctx.fillRect(x - 8 + i * 4, y - h, 3, h);
+    }
+    ctx.fillStyle = '#ff3b3b';
+    ctx.fillRect(x - 9, y - 2, 18, 2);
+  }
+  ctx.restore();
+}
+
+function drawDropSlabs(ctx, game, ox, oy, time) {
+  const slabs = game.world?.dropSlabs;
+  if (!slabs?.length) return;
+  ctx.save();
+  for (const slab of slabs) {
+    if (slab.done) continue;
+    const x = Math.round(slab.tx * TILE - ox);
+    const marked = game.trapMemory.has(markKey(game, slab.tx, slab.ty));
+
+    if (!slab.fired) {
+      // 매달려 있다 — 천장에 붙은 쇠덩이. 살짝 떨어서 "곧 떨어질 것" 으로 읽힌다
+      const y = Math.round((slab.ty - SLAB_HANG) * TILE - oy + Math.sin(time * 3) * 0.6);
+      ctx.fillStyle = '#5a5470';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#8a83a8';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, 3);
+      ctx.fillStyle = '#241a33';
+      for (let i = 0; i < 3; i++) ctx.fillRect(x + 3 + i * 4, y + TILE - 4, 2, 3);
+      // 매달린 사슬 — 위에서 내려온 것이라는 표시
+      ctx.fillStyle = '#3a3550';
+      ctx.fillRect(x + TILE / 2 - 1, Math.max(0, y - 40), 2, 40);
+      // 한 번 당한 자리는 붉게 남는다 (다른 함정과 같은 규칙)
+      if (marked) {
+        const my = Math.round(slab.ty * TILE - oy);
+        ctx.fillStyle = 'rgba(255,59,59,0.5)';
+        ctx.fillRect(x, my, TILE, 3);
+      }
+      continue;
+    }
+
+    // 떨어지는 중 — 잔상을 길게 남긴다. 빨라서 그냥 그리면 순간이동처럼 보인다
+    const y = Math.round(slab.y - oy);
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = '#8a83a8';
+    ctx.fillRect(x + 2, y - 26, TILE - 4, 26);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#5a5470';
+    ctx.fillRect(x, y, TILE, TILE);
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(x, y + TILE - 3, TILE, 3);
+  }
+  ctx.restore();
+}
+
 function drawGroundSweeps(ctx, boss, ox, oy, time, color) {
   const tail = tailBand(boss);
   if (tail) {
@@ -1161,6 +1234,45 @@ function drawGroundSweeps(ctx, boss, ox, oy, time, color) {
         ctx.fillStyle = color;
         ctx.fillRect(x - boss.tailDir * i * 10, y + 3, 8, tail.h - 6);
       }
+    }
+    ctx.restore();
+  }
+
+  // 회오리의 **빈 자리**를 바닥에 표시한다. 안 보이면 어디로 갈지 알 수가 없다.
+  const gapX = whirlGapX(boss);
+  if (gapX != null) {
+    const gx = Math.round(gapX - ox);
+    const gy = Math.round(boss.floorY - oy);
+    ctx.save();
+    ctx.globalAlpha = boss.state === 'whirlAim' ? 0.45 + Math.sin(time * 16) * 0.3 : 0.7;
+    ctx.fillStyle = '#39ff9a';
+    ctx.fillRect(gx - 14, gy - 3, 28, 3);
+    for (let i = 0; i < 3; i++) ctx.fillRect(gx - 12 + i * 11, gy - 10, 3, 6);
+    ctx.restore();
+  }
+
+  // 천장에서 떨어지는 조각
+  for (const slab of ceilingSlabs(boss)) {
+    const x = Math.round(slab.x - ox);
+    ctx.save();
+    if (slab.warn > 0) {
+      // 예고 — 떨어질 자리에 바닥 표시
+      const gy = Math.round(boss.floorY - oy);
+      ctx.globalAlpha = 0.4 + Math.sin(time * 20) * 0.3;
+      ctx.fillStyle = '#ff3b3b';
+      ctx.fillRect(x, gy - 3, slab.w, 3);
+      ctx.fillStyle = '#ffd166';
+      ctx.fillRect(x + 4, 2, 8, 5);
+    } else {
+      const y = Math.round(slab.y - oy);
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#8a83a8';
+      ctx.fillRect(x + 2, y - 20, slab.w - 4, 20);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#5a5470';
+      ctx.fillRect(x, y, slab.w, slab.h);
+      ctx.fillStyle = '#ffd166';
+      ctx.fillRect(x, y + slab.h - 3, slab.w, 3);
     }
     ctx.restore();
   }
@@ -1322,8 +1434,9 @@ const GIANT_CY = 116;
  */
 let giantBaked = null;
 
-function giantCanvas(color) {
-  if (giantBaked?.color === color) return giantBaked.canvas;
+function giantCanvas(color, dino = false) {
+  // 열쇠에 형태를 같이 넣는다 — 색만 보면 공룡으로 바뀌어도 로봇 그림이 남는다
+  if (giantBaked?.color === color && giantBaked?.dino === dino) return giantBaked.canvas;
   const r = GIANT_R;
   const top = r * ROBOT_TOP;
   const w = Math.ceil(r * 2.8);
@@ -1332,13 +1445,14 @@ function giantCanvas(color) {
   const c = canvas.getContext('2d');
   c.imageSmoothingEnabled = false;
   c.translate(Math.round(w / 2), Math.round(-top + 2));
-  drawRobotBody(c, r, 0, color, 1, false);
+  if (dino) drawDinoBody(c, r, 0, color, false);
+  else drawRobotBody(c, r, 0, color, 1, false);
   drawBossCore(c, 0, 0, false, 0, coreRadius(r));
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.globalCompositeOperation = 'source-atop';
   c.fillStyle = 'rgba(58,24,92,0.86)';
   c.fillRect(0, 0, w, h);
-  giantBaked = { color, canvas, w, h, top };
+  giantBaked = { color, dino, canvas, w, h, top };
   return canvas;
 }
 
@@ -1348,7 +1462,7 @@ function drawGiantRobot(ctx, boss, ox, time) {
   const fade = down ? Math.max(0, 1 - boss.defeatedAt / 1.6) : 1;
   if (fade <= 0) return;
 
-  const canvas = giantCanvas(bossPhase(boss).color);
+  const canvas = giantCanvas(bossPhase(boss).color, !!bossPhase(boss).dino);
   const { w, h, top } = giantBaked;
   // 시차 — 카메라를 천천히 따라오고, 아주 조금씩 흔들린다
   const x = Math.round(VIEW.w / 2 - ox * 0.12 - w / 2 + Math.sin(time * 0.6) * 2);
@@ -3237,6 +3351,8 @@ export function drawScene(ctx, game, time) {
   }
   ctx.globalAlpha = 1;
 
+  drawDropSlabs(ctx, game, ox, oy, time);
+  drawFires(ctx, game, ox, oy, time);
   drawBombs(ctx, game, ox, oy, time);
   drawChaser(ctx, game, ox, oy, time);
   drawChaseGauge(ctx, game, time);

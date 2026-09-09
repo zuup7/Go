@@ -102,6 +102,16 @@ export const HARD_PHASES = [
     laserAim: 0.9,
     laserFire: 1.6,
     laserSweep: 96,
+    /**
+     * **앨범 회오리.** 아래쪽 반원을 촘촘히 덮되 한 군데만 비운다.
+     * 탄 사이를 지나가는 게 아니라 **빈 자리로 미리 가 있어야** 한다 —
+     * 2페이즈(위에서 떨어짐)·3·4페이즈(뛰어넘기)와 피하는 축이 다르다.
+     */
+    whirlEvery: 5.5,
+    whirlAim: 0.9,
+    whirlShots: 16,
+    whirlGapWidth: 0.34,
+    whirlSpeed: 90,
   },
   {
     id: 2,
@@ -122,6 +132,19 @@ export const HARD_PHASES = [
     laserAim: 0.85,
     laserFire: 1.6,
     laserSweep: 100,
+    /**
+     * **천장 붕괴.** 판에서 배운 "하늘에서 떨어지는 땅" 을 보스가 써먹는다.
+     * 자리를 띄워 놓아서 사이로 달릴 수 있다 — 다 막으면 못 지나가는 기술이 된다.
+     */
+    ceilEvery: 4.2,
+    ceilLanes: 4,
+    ceilWarn: 0.5,
+    ceilFall: 300,
+    whirlEvery: 6.5,
+    whirlAim: 0.8,
+    whirlShots: 18,
+    whirlGapWidth: 0.3,
+    whirlSpeed: 105,
   },
   {
     id: 3,

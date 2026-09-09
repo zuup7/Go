@@ -292,9 +292,10 @@ test('하드 판은 최소한의 밀도를 지킨다', () => {
     // 칼날이 세 칸으로 길어진 뒤로는 하나만 잘 놓아도 충분히 무섭다.
     // 개수보다 **닿는 자리에 있는지**가 중요하고, 그건 stages.test.js 가 본다.
     assert.ok(world.ceilSpikes.length >= 1, `${stage.id}: 천장 가시가 하나도 없다`);
-    // 추격 판은 일부러 하나만 둔다 (chase.test.js 가 따로 지킨다)
+    // 추격 판은 하나, 함정 판은 둘. 되돌아가는 벌이 세야 외우게 된다 —
+    // 넷씩 두면 바로 앞에서 다시 시작해서 배우는 게 아니라 밀고 지나가게 된다.
     if (!stage.chase) {
-      assert.ok(checks >= 3, `${stage.id}: 체크포인트가 ${checks}개뿐이라 죽으면 너무 멀리 돌아간다`);
+      assert.ok(checks >= 2, `${stage.id}: 체크포인트가 ${checks}개뿐이다`);
     }
   }
 });

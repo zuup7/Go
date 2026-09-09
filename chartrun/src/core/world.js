@@ -34,6 +34,7 @@ export const T = {
   ZONE_REVERSE: 'R', // 좌우가 뒤바뀌는 역재생 구간
   ZONE_BLACKOUT: '@', // 화면이 깜깜해지는 정전 구간
   ZONE_BOMBS: 'B', // 하늘에서 폭탄이 떨어지는 구간
+  DROPSLAB: 'D', // 1층 바닥. 밟으면 머리 위 슬래브가 **바로** 떨어진다
 };
 
 const SOLID_CHARS = new Set([
@@ -49,6 +50,8 @@ const SOLID_CHARS = new Set([
   T.ICE,
   T.SPRING,
   T.CEILSPIKE,
+  // 밟아야 발동하므로 딛고 설 수 있어야 한다
+  T.DROPSLAB,
 ]);
 // 깜빡이는 발판은 켜져 있을 때만 관통 발판이다. 꺼지면 game 이 글자를 지운다.
 const ONEWAY_CHARS = new Set([T.PLATFORM, T.FAKE, T.BLINK]);
@@ -102,6 +105,8 @@ export function createWorld(stage) {
     albumSpawns: [],
     pickups: [],
     popSpikes: [],
+    /** 밟으면 위에서 땅덩이가 떨어지는 칸 (1층 바닥) */
+    dropSlabs: [],
     risingWalls: [],
     zones: [],
     /** 부순/써버린 칸을 원래대로 되돌리기 위한 기록 */
@@ -165,6 +170,10 @@ export function createWorld(stage) {
           break;
         case T.POPSPIKE:
           world.popSpikes.push({ tx, ty, x, y, popped: false, t: 0 });
+          break;
+        case T.DROPSLAB:
+          // 밟을 수 있어야 하므로 격자에는 **땅으로 남긴다** (아래 SOLID_CHARS 참고)
+          world.dropSlabs.push({ tx, ty, x, y, fired: false });
           break;
         case T.WALL:
           // 솟기 전에는 아무것도 아니다. 지나가면 그 자리에 벽이 선다.

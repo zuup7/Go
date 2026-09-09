@@ -17,6 +17,8 @@ import {
   laserBeams,
   tailBand,
   shockWaves,
+  ceilingSlabs,
+  whirlGapX,
 } from './boss.js';
 import { ZONE_EFFECTS, emptyEffects, createTrapMemory, trapKey } from '../data/traps.js';
 import { CUTSCENE, CUTSCENE_LENGTH, beatsCrossed } from '../data/cutscene.js';
@@ -90,6 +92,8 @@ export function createGame(options = {}) {
     bombs: [],
     bombTimer: 0,
     bombPhase: 0,
+    /** 폭탄이 터진 자리에 남은 불 { x, groundY, t } */
+    fires: [],
     /** 쓰러지는 컷신을 이미 틀었나 (한 번만 튼다) */
     downShown: false,
     particles: [],
@@ -179,8 +183,16 @@ function spawnEntities(game) {
   game.bombs = [];
   game.bombTimer = 0;
   game.bombPhase = 0;
+  game.fires = [];
   game.downShown = false;
   for (const p of game.world.pickups) p.taken = false;
+  // 떨어진 땅덩이는 되살아나면 도로 매달린다 — 한 번 죽으면 그 구간이 통째로
+  // 비어버리면 "알고 나서 2층으로 넘어간다"는 공략이 사라진다
+  for (const slab of game.world.dropSlabs) {
+    slab.fired = false;
+    slab.done = false;
+    slab.y = 0;
+  }
   for (const f of game.world.fakeGoals) {
     f.fleeing = false;
     f.offset = 0;
@@ -380,6 +392,14 @@ function handleGroundSweeps(game) {
       return;
     }
   }
+  // 천장에서 떨어지는 조각 — 예고 중(warn > 0)에는 안 아프다
+  for (const slab of ceilingSlabs(game.boss)) {
+    if (slab.warn > 0) continue;
+    if (overlaps(game.player, slab)) {
+      hurt(game);
+      return;
+    }
+  }
 }
 
 function handleShots(game, dt) {
@@ -526,6 +546,49 @@ function handleZones(game, dt) {
   }
 }
 
+/** 떨어지는 땅덩이 — 빠르다. 예고가 없는 대신 **빠르게 지나간다** */
+const SLAB_FALL = 620;
+/** 땅덩이가 매달려 있는 높이 (밟는 칸에서 위로 몇 칸) */
+export const SLAB_HANG = 5;
+
+/**
+ * **하늘에서 떨어지는 땅.** 1층을 밟는 순간 머리 위 슬래브가 바로 떨어진다.
+ *
+ * 이 게임의 다른 함정과 달리 **시간 예고가 없다.** 대신 두 가지가 받쳐준다.
+ *   1. 매달린 슬래브가 2층 밑에 **그려져 있다** — 지형을 읽으면 알 수 있다
+ *   2. 한 번 당하면 그 칸이 붉게 남는다 (trapMemory)
+ * 공략은 피하는 게 아니라 **애초에 1층으로 안 가는 것**이다. 2층으로 넘어간다.
+ */
+function handleDropSlabs(game, dt) {
+  const { player, world } = game;
+  for (const slab of world.dropSlabs) {
+    const cx = slab.tx * TILE + TILE / 2;
+    const near = Math.abs(player.x + player.w / 2 - cx) < 18;
+    // **딛고 선 층이 같아야** 발동한다. 2층으로 넘어가면 안 떨어진다 —
+    // 이게 이 장치의 전부다. 층을 안 보면 위를 지나가도 터져서 공략이 사라진다.
+    const sameFloor = Math.abs(player.y + player.h - slab.ty * TILE) < TILE * 2;
+    if (!slab.fired && near && sameFloor && !player.dead) {
+      slab.fired = true;
+      slab.y = (slab.ty - SLAB_HANG) * TILE;
+      game.trapMemory.reveal(markKey(game, slab.tx, slab.ty));
+      shakeCamera(game.camera, 0.8);
+      emit(game, 'trap', { kind: 'dropSlab' });
+    }
+    if (!slab.fired || slab.done) continue;
+    slab.y += SLAB_FALL * dt;
+    const box = { x: slab.tx * TILE, y: slab.y, w: TILE, h: TILE };
+    if (!player.dead && overlaps(player, box) && damagePlayer(player)) killPlayer(game);
+    if (slab.y >= slab.ty * TILE - TILE) {
+      slab.done = true;
+      addParticles(game, cx, slab.ty * TILE, 10, ['#c9c9c9', '#8a8a8a', '#fff'], {
+        speed: 90,
+        life: 0.4,
+      });
+      shakeCamera(game.camera, 0.7);
+    }
+  }
+}
+
 function handlePopSpikes(game, dt) {
   const { player, world } = game;
   for (const spike of world.popSpikes) {
@@ -627,12 +690,12 @@ function handleCeilSpikes(game, dt) {
 
 // ── 하늘에서 떨어지는 폭탄 ──────────────────────────────────
 /** 폭탄 하나를 떨어뜨리는 간격(초) */
-const BOMB_EVERY = 0.55;
+const BOMB_EVERY = 0.4;
 /**
  * 떨어질 자리에 **그림자만 보이는** 시간.
  * 이게 없으면 하늘에서 예고 없이 죽는 것이고, 그건 트롤이 아니라 불합리한 게임이다.
  */
-export const BOMB_WARN = 0.6;
+export const BOMB_WARN = 0.35;
 /**
  * 잇달아 떨어지는 폭탄 사이에 비워두는 칸 수.
  * 붙여서 떨어뜨리면 설 자리가 없어져 못 지나가는 구간이 된다 — 테스트가 지킨다.
@@ -641,6 +704,10 @@ export const BOMB_GAP = 4;
 const BOMB_FALL = 240;
 /** 터질 때 휩쓰는 범위 */
 const BOMB_BLAST = 12;
+/** 터진 자리에 불이 남는 시간. 폭탄이 "때리는 것"에서 **설 자리를 지우는 것**이 된다 */
+export const FIRE_TIME = 1.5;
+/** 떨어지며 좌우로 흔들리는 폭. 그림자 자리를 그대로 믿고 서 있으면 맞는다 */
+const BOMB_SWAY = 7;
 
 /** 그 칸 아래로 처음 나오는 바닥의 윗면 y (없으면 판 바닥) */
 function groundBelow(world, tx, fromTy) {
@@ -668,6 +735,9 @@ function spawnBomb(game) {
     tx,
     groundY: groundBelow(world, tx, 0),
     warn: BOMB_WARN,
+    /** 흔들리는 위상. 폭탄마다 달라야 줄줄이 같은 궤적으로 안 떨어진다 */
+    sway: game.rng.float() * Math.PI * 2,
+    baseX: tx * TILE + TILE / 2,
   });
 }
 
@@ -694,6 +764,9 @@ function handleBombs(game, dt) {
       return true;
     }
     bomb.y += BOMB_FALL * dt;
+    // 좌우로 흔들며 내려온다 — 그림자 자리에 그대로 서 있으면 맞는다
+    bomb.sway += dt * 7;
+    bomb.x = bomb.baseX + Math.sin(bomb.sway) * BOMB_SWAY;
     const hitGround = bomb.y >= bomb.groundY;
     const box = { x: bomb.x - 5, y: bomb.y - 5, w: 10, h: 10 };
     const hitPlayer = !player.dead && overlaps(player, box);
@@ -712,8 +785,20 @@ function handleBombs(game, dt) {
       life: 0.4,
     });
     shakeCamera(game.camera, 0.5);
+    // 터진 자리에 불이 남는다 — 여기가 이번 강화의 핵심이다.
+    // 맞는 걸 피하는 게 아니라 **설 자리를 계속 옮겨야** 한다.
+    game.fires.push({ x: bomb.x, groundY: bomb.groundY, t: FIRE_TIME });
     emit(game, 'trap', { kind: 'bomb' });
     return false;
+  });
+
+  // 남은 불 — 시간이 지나면 꺼진다. 안 꺼지면 판이 통째로 막힌다.
+  game.fires = game.fires.filter((fire) => {
+    fire.t -= dt;
+    if (fire.t <= 0) return false;
+    const box = { x: fire.x - 9, y: fire.groundY - 12, w: 18, h: 12 };
+    if (!player.dead && overlaps(player, box) && damagePlayer(player)) killPlayer(game);
+    return true;
   });
 }
 
@@ -951,6 +1036,7 @@ function updatePlay(game, input, dt) {
   handleRisingWalls(game, dt);
   handleZones(game, dt);
   handlePopSpikes(game, dt);
+  handleDropSlabs(game, dt);
   handleBlinkers(game);
   handleFakeChecks(game);
   handleCeilSpikes(game, dt);
@@ -1182,6 +1268,12 @@ function updateBossScene(game, input, dt) {
     onTailAim: () => emit(game, 'tailaim', {}),
     onTail: () => emit(game, 'tail', {}),
     onStompAim: () => emit(game, 'stompaim', {}),
+    onWhirlAim: () => emit(game, 'laseraim', {}),
+    onWhirl: () => emit(game, 'trap', { kind: 'whirl' }),
+    onCeiling: () => {
+      shakeCamera(game.camera, 0.6);
+      emit(game, 'trap', { kind: 'ceiling' });
+    },
     onStomp: () => {
       shakeCamera(game.camera, 1.2);
       emit(game, 'stomp', {});
