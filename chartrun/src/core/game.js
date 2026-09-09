@@ -213,7 +213,7 @@ function isStomp(player, target) {
   return player.vy > 0 && player.y + player.h - target.y <= target.h * 0.65;
 }
 
-function handleAlbums(game, dt) {
+function handleAlbums(game, dt, held = false) {
   const { player, world } = game;
   const ctx = {
     world,
@@ -234,7 +234,7 @@ function handleAlbums(game, dt) {
         if (damagePlayer(player)) killPlayer(game);
         continue;
       }
-      bounce(player, result === 'dead');
+      bounce(player, result === 'dead', held);
       emit(game, 'stomp', {});
       addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 8, album.def.palette, {
         speed: 70,
@@ -496,15 +496,29 @@ function updateRank(game) {
 const applyEffects = (game, input) =>
   game.effects.reversed > 0 ? { ...input, left: input.right, right: input.left } : input;
 
+/** 세게 떨어졌을 때만 발밑에 먼지. 걸음마다 피우면 화면이 지저분해진다. */
+function landingDust(game, landed) {
+  if (!landed || landed.impact < 0.45) return;
+  const p = game.player;
+  addParticles(game, p.x + p.w / 2, p.y + p.h, 4 + Math.round(landed.impact * 4), ['#e8ecf7', '#b3aecd'], {
+    speed: 40 * landed.impact,
+    life: 0.32,
+    lift: -6,
+    gravity: 120,
+    size: 1,
+  });
+}
+
 function updatePlay(game, input, dt) {
   const events = updatePlayer(game.player, applyEffects(game, input), game.world, dt);
   if (events.jumped) emit(game, 'jump', {});
+  landingDust(game, events.landed);
   handleBlocks(game, events);
   handleCrumbling(game, dt);
   handleRisingWalls(game, dt);
   handleZones(game, dt);
   handlePopSpikes(game, dt);
-  handleAlbums(game, dt);
+  handleAlbums(game, dt, input.jump);
   handleShots(game, dt);
   handlePickups(game);
   handleCheckpoints(game);
@@ -668,6 +682,7 @@ function updateBossScene(game, input, dt) {
 
   const events = updatePlayer(game.player, applyEffects(game, input), game.world, dt);
   if (events.jumped) emit(game, 'jump', {});
+  landingDust(game, events.landed);
 
   const ctx = {
     player: game.player,
@@ -687,14 +702,14 @@ function updateBossScene(game, input, dt) {
 
   handleMics(game, dt);
   handleThrown(game, dt, () => damageBoss(game, { ranged: true }));
-  handleAlbums(game, dt);
+  handleAlbums(game, dt, input.jump);
   handleShots(game, dt);
 
   if (boss.state !== 'defeated' && !game.player.dead) {
     // 약점 밟기 — 붙어야 해서 위험하지만 마이크를 기다릴 필요가 없다
     if (overlaps(game.player, boss)) {
       if (boss.vulnerable && isStomp(game.player, boss)) {
-        if (damageBoss(game)) bounce(game.player, true);
+        if (damageBoss(game)) bounce(game.player, true, input.jump);
       } else if (damagePlayer(game.player)) {
         killPlayer(game);
       }

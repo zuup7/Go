@@ -56,14 +56,17 @@
       <!-- 버튼을 원하는 자리로 끌어다 놓기 -->
       <button type="button" class="pad-edit" id="pad-edit" aria-label="버튼 위치 바꾸기">✥</button>
       <div class="pad-bar" id="pad-bar" hidden>
-        <span>끌어서 옮기기</span>
+        <span class="pad-hint">끌어서 옮기고, 눌러서 고른다</span>
         <!-- 크기는 슬라이더가 아니라 버튼이다. 눕힌 화면은 90도 돌아가 있어
              끌기 좌표가 틀어진다 (버튼 옮기기에서 한 번 물렸던 함정) -->
         <span class="pad-size">
           <button type="button" id="pad-smaller" aria-label="버튼 작게">−</button>
-          <b id="pad-scale-text">100%</b>
+          <b id="pad-scale-text">전체 100%</b>
           <button type="button" id="pad-bigger" aria-label="버튼 크게">+</button>
         </span>
+        <button type="button" id="pad-all">전체</button>
+        <button type="button" id="pad-alpha">투명도 100%</button>
+        <button type="button" id="pad-mirror">좌우 바꾸기</button>
         <button type="button" id="pad-reset">처음대로</button>
         <button type="button" id="pad-done">완료</button>
       </div>

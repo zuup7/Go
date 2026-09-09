@@ -467,7 +467,12 @@ canvas#game {
   border-color: #ffd7e2;
 }
 
-.touch button[disabled] {
+/* 조작 버튼 투명도. 편집 바에서 고른다 (--pad-alpha 는 touchLayout 이 body 에 얹는다) */
+.touch button[data-action] {
+  opacity: var(--pad-alpha, 1);
+}
+
+.touch button[data-action][disabled] {
   opacity: 0.3;
 }
 
@@ -539,10 +544,20 @@ body.custom-pads .touch button.pause-btn {
   border: 2px solid var(--warn);
   border-radius: 6px;
   font-size: 12px;
-  white-space: nowrap;
+  /* 조절할 게 늘어서 한 줄에 안 들어간다. 좁은 폰에서는 두 줄로 접힌다. */
+  flex-wrap: wrap;
+  justify-content: center;
   max-width: calc(100% - 24px);
   pointer-events: auto;
   z-index: 4;
+}
+
+.pad-hint {
+  /* 안내는 제 줄을 차지한다 — 버튼들 사이에 끼면 좁은 폰에서 줄이 엉킨다 */
+  flex-basis: 100%;
+  text-align: center;
+  color: var(--dim);
+  font-size: 11px;
 }
 
 .pad-bar button {
@@ -621,6 +636,11 @@ body.pad-editing .touch button.pad-edit {
   display: none;
 }
 
+/* 편집 바와 안내가 같은 자리라 겹친다. 편집 중에는 안내를 걷는다. */
+body.pad-editing .rotate-note {
+  display: none;
+}
+
 /* 일시정지 메뉴 — .ui 전체가 pointer-events: none 이라 여기서 되살린다 (숫자판과 같은 이유) */
 .pause-panel .menu {
   pointer-events: auto;
@@ -633,6 +653,13 @@ body.pad-editing .touch button.pad-edit {
 .touch button.is-moving {
   outline-color: var(--good);
   background: var(--hot);
+}
+
+/* −/+ 가 겨누고 있는 버튼 — 어느 걸 조절 중인지 보여야 한다 */
+body.pad-editing .touch button.is-picked {
+  outline: 3px solid var(--good);
+  outline-offset: 3px;
+  opacity: 1;
 }
 
 /* 세로로 든 폰에서 화면을 통째로 돌렸을 때 뜨는 안내 */

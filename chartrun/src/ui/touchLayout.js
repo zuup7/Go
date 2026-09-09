@@ -22,6 +22,15 @@ export const MIN_SCALE = 0.7;
 export const MAX_SCALE = 1.8;
 export const SCALE_STEP = 0.1;
 
+/**
+ * 버튼 투명도 단계. 조작 버튼이 게임 화면을 덮고 있어서, 진하면 앞이 안 보이고
+ * 흐리면 어디를 누르는지 모른다. 사람마다 갈리는 취향이라 고를 수 있게 둔다.
+ */
+export const ALPHA_STEPS = [0.4, 0.6, 0.8, 1];
+
+/** 한 칸 다음. 끝에서 처음으로 돈다 (모르는 값은 indexOf 가 -1 이라 맨 앞으로 떨어진다). */
+export const nextAlpha = (a) => ALPHA_STEPS[(ALPHA_STEPS.indexOf(a) + 1) % ALPHA_STEPS.length];
+
 export const layoutMode = (rotated) => (rotated ? 'rotated' : 'landscape');
 
 /**
@@ -61,7 +70,16 @@ export function clampSpot(x, y, { box, size, mode }) {
   };
 }
 
-const emptyLayout = () => ({ landscape: {}, rotated: {}, scale: { landscape: 1, rotated: 1 } });
+const emptyLayout = () => ({
+  landscape: {},
+  rotated: {},
+  /** 모드별 전체 배율 */
+  scale: { landscape: 1, rotated: 1 },
+  /** 모드별 **버튼 하나하나**의 배율 (전체 배율에 곱해진다). 없으면 1 */
+  size: { landscape: {}, rotated: {} },
+  /** 모드별 투명도 */
+  alpha: { landscape: 1, rotated: 1 },
+});
 
 const storage = () => (typeof localStorage === 'undefined' ? null : localStorage);
 
@@ -70,8 +88,16 @@ export function sanitize(raw) {
   const out = emptyLayout();
   if (!raw || typeof raw !== 'object') return out;
   for (const mode of Object.keys(out.scale)) {
-    // 크기 칸이 없는 옛 저장값도 그대로 읽힌다 — 없으면 1
+    // 크기·투명도 칸이 없는 옛 저장값도 그대로 읽힌다 — 없으면 기본값
     out.scale[mode] = clampScale(raw.scale?.[mode] ?? 1);
+    const alpha = raw.alpha?.[mode];
+    out.alpha[mode] = ALPHA_STEPS.includes(alpha) ? alpha : 1;
+    const sizes = raw.size?.[mode];
+    if (sizes && typeof sizes === 'object') {
+      for (const [action, v] of Object.entries(sizes)) {
+        if (typeof v === 'number' && Number.isFinite(v)) out.size[mode][action] = clampScale(v);
+      }
+    }
     const spots = raw[mode];
     if (!spots || typeof spots !== 'object') continue;
     for (const [action, spot] of Object.entries(spots)) {
@@ -113,6 +139,9 @@ export function writeLayout(layout) {
  * onEdit    편집 모드가 켜지고 꺼질 때 (게임을 멈추라고 알려준다)
  * isRotated 지금 화면을 눕혀 놨는지
  */
+/** 편집 바에 보여줄 버튼 이름 */
+const LABELS = { left: '◀', right: '▶', jump: '점프', throw: '마이크', pause: '일시정지' };
+
 export function createTouchLayout({ root, onEdit, isRotated }) {
   const buttons = [...root.querySelectorAll('[data-action]')];
   const handle = root.querySelector('#pad-edit');
@@ -120,11 +149,16 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
   const doneBtn = root.querySelector('#pad-done');
   const resetBtn = root.querySelector('#pad-reset');
   const smallerBtn = root.querySelector('#pad-smaller');
+  const allBtn = root.querySelector('#pad-all');
+  const alphaBtn = root.querySelector('#pad-alpha');
+  const mirrorBtn = root.querySelector('#pad-mirror');
   const biggerBtn = root.querySelector('#pad-bigger');
   const scaleText = root.querySelector('#pad-scale-text');
 
   let layout = loadLayout();
   let editing = false;
+  /** −/+ 가 겨누는 버튼. null 이면 전체 */
+  let selected = null;
   /** 편집 중 드래그하는 버튼 (pointerId → { el, dx, dy }) */
   const dragging = new Map();
 
@@ -177,12 +211,38 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
   const readSpots = (list) => new Map(list.map((el) => [el, spotOf(el)]));
 
   const scaleOf = () => clampScale(layout.scale?.[mode()] ?? 1);
+  const sizeOf = (action) => clampScale(layout.size?.[mode()]?.[action] ?? 1);
+  const alphaOf = () => {
+    const a = layout.alpha?.[mode()];
+    return ALPHA_STEPS.includes(a) ? a : 1;
+  };
 
-  /** 버튼 크기를 화면에 먹인다. CSS 가 --pad-scale 을 곱해서 쓴다. */
+  /**
+   * 크기와 투명도를 화면에 먹인다.
+   *
+   * 전체 배율은 body 에, 버튼별 배율은 그 버튼에 직접 얹는다 — 인라인 --pad-scale 이
+   * body 것을 덮으므로, 얹을 때 **곱해서** 넣어야 전체 조절이 같이 먹는다.
+   */
   function applyScale() {
     const scale = scaleOf();
     document.body.style.setProperty('--pad-scale', String(scale));
-    if (scaleText) scaleText.textContent = `${Math.round(scale * 100)}%`;
+    document.body.style.setProperty('--pad-alpha', String(alphaOf()));
+    for (const el of buttons) {
+      const own = sizeOf(el.dataset.action);
+      if (own === 1) el.style.removeProperty('--pad-scale');
+      else el.style.setProperty('--pad-scale', String(Math.round(scale * own * 100) / 100));
+    }
+    refreshBar();
+  }
+
+  /** 편집 바의 글자 — 지금 뭘 조절하고 있는지 */
+  function refreshBar() {
+    if (scaleText) {
+      const pct = Math.round((selected ? scaleOf() * sizeOf(selected) : scaleOf()) * 100);
+      scaleText.textContent = `${selected ? LABELS[selected] ?? selected : '전체'} ${pct}%`;
+    }
+    if (alphaBtn) alphaBtn.textContent = `투명도 ${Math.round(alphaOf() * 100)}%`;
+    for (const el of buttons) el.classList.toggle('is-picked', editing && el.dataset.action === selected);
   }
 
   /**
@@ -207,14 +267,50 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
     }
   }
 
-  /** −/+ 한 번에 0.1씩 */
+  /**
+   * −/+ 한 번에 0.1씩. 버튼을 하나 골라뒀으면 **그 버튼만**, 아니면 전체.
+   * 점프만 크게 쓰는 사람이 있고 방향키만 크게 쓰는 사람이 있다.
+   */
   function changeScale(delta) {
-    const next = clampScale(scaleOf() + delta);
-    if (next === scaleOf()) return;
-    layout.scale[mode()] = next;
+    if (selected) {
+      const now = sizeOf(selected);
+      const next = clampScale(now + delta);
+      if (next === now) return;
+      layout.size[mode()][selected] = next;
+    } else {
+      const next = clampScale(scaleOf() + delta);
+      if (next === scaleOf()) return;
+      layout.scale[mode()] = next;
+    }
     applyScale();
     reclamp(); // 크기가 바뀐 뒤의 offsetWidth 로 재야 하므로 순서가 중요하다
     writeLayout(layout);
+  }
+
+  /** 투명도 한 칸 */
+  function cycleAlpha() {
+    layout.alpha[mode()] = nextAlpha(alphaOf());
+    applyScale();
+    writeLayout(layout);
+  }
+
+  /**
+   * 좌우 바꾸기 — 왼손잡이용. 자리를 비율로 들고 있어서 1 에서 빼면 그대로 거울이 된다.
+   * 바꾼 뒤에는 반드시 다시 가둔다 (눕힌 화면은 좌우 여백이 84 라 그냥 뒤집으면 밖으로 나간다).
+   */
+  function mirror() {
+    const spots = layout[mode()];
+    if (!spots) return;
+    for (const action of Object.keys(spots)) spots[action] = { ...spots[action], x: 1 - spots[action].x };
+    for (const el of buttons) if (spots[el.dataset.action]) place(el, spots[el.dataset.action]);
+    reclamp();
+    writeLayout(layout);
+  }
+
+  /** 편집 중에 버튼을 집으면 그 버튼이 골라진다 (−/+ 가 그 버튼에만 먹는다) */
+  function select(action) {
+    selected = selected === action ? null : action;
+    refreshBar();
   }
 
   /** 저장된 자리가 있으면 얹는다. 없으면 CSS 가 정한 기본 자리 그대로 둔다. */
@@ -245,6 +341,7 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
     if (editing === on) return;
     editing = on;
     dragging.clear();
+    selected = null;
     document.body.classList.toggle('pad-editing', on);
     bar.hidden = !on;
     handle.hidden = on;
@@ -260,6 +357,7 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
         layout[mode()][el.dataset.action] = spot;
         place(el, spot);
       }
+      refreshBar();
     } else {
       for (const el of buttons) {
         if (el.dataset.wasHidden) el.hidden = true;
@@ -267,6 +365,7 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
       }
       writeLayout(layout);
     }
+    refreshBar();
     onEdit?.(on);
   }
 
@@ -284,6 +383,8 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
       const at = pointerToBox(e.clientX, e.clientY);
       dragging.set(e.pointerId, { el, dx: centre.x - at.x, dy: centre.y - at.y });
       el.classList.add('is-moving');
+      // 집은 버튼이 −/+ 의 대상이 된다. 같은 걸 또 집으면 전체로 돌아간다.
+      select(el.dataset.action);
     },
     true,
   );
@@ -317,9 +418,18 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
   doneBtn.addEventListener('click', () => setEditing(false));
   smallerBtn?.addEventListener('click', () => changeScale(-SCALE_STEP));
   biggerBtn?.addEventListener('click', () => changeScale(SCALE_STEP));
+  allBtn?.addEventListener('click', () => {
+    selected = null;
+    refreshBar();
+  });
+  alphaBtn?.addEventListener('click', cycleAlpha);
+  mirrorBtn?.addEventListener('click', mirror);
   resetBtn.addEventListener('click', () => {
     layout[mode()] = {};
     layout.scale[mode()] = 1;
+    layout.size[mode()] = {};
+    layout.alpha[mode()] = 1;
+    selected = null;
     applyScale();
     toDefault();
     writeLayout(layout);

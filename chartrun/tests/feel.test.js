@@ -1,8 +1,8 @@
 // 조작감. 숫자를 만질 때 레벨이 조용히 못 깨는 판이 되지 않게 못 박아 둔다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { moveBody, TILE, SOLID } from '../src/core/physics.js';
-import { createPlayer, updatePlayer, PLAYER } from '../src/core/player.js';
+import { moveBody, TILE, SOLID, COYOTE_FRAMES, BUFFER_FRAMES } from '../src/core/physics.js';
+import { createPlayer, updatePlayer, bounce, PLAYER } from '../src/core/player.js';
 
 const DT = 1 / 60;
 
@@ -134,4 +134,76 @@ test('보정을 끄면(corner=0) 예전처럼 그대로 막힌다', () => {
   const body = { x: 77, y: 4 * TILE + 2, w: 10, h: 14, vx: 0, vy: -200 };
   const res = moveBody(body, 0, -6, oneBlock(4));
   assert.equal(res.hitCeil, true);
+});
+
+// ── 밟기 ────────────────────────────────────────────────────
+test('밟을 때 점프를 누르고 있으면 더 높이 튄다', () => {
+  // 밟기가 "닿으면 알아서 튀는 것"이 아니라 노려서 쓰는 이동 수단이 되는 지점이다
+  const tap = createPlayer({ x: 0, y: 0 });
+  const hold = createPlayer({ x: 0, y: 0 });
+  bounce(tap, false, false);
+  bounce(hold, false, true);
+  assert.ok(hold.vy < tap.vy, `누르고 있어도 같게 튄다 (${hold.vy} vs ${tap.vy})`);
+  assert.ok(PLAYER.stompHold > 1);
+});
+
+test('세게 밟았을 때도 누르고 있으면 더 높다', () => {
+  const weak = createPlayer({ x: 0, y: 0 });
+  const strong = createPlayer({ x: 0, y: 0 });
+  bounce(weak, true, false);
+  bounce(strong, true, true);
+  assert.ok(strong.vy < weak.vy);
+});
+
+// ── 착지 ────────────────────────────────────────────────────
+test('착지하면 알려주고, 세게 떨어질수록 세기가 크다', () => {
+  /** height 칸 높이에서 떨어뜨려 착지 순간의 impact 를 잰다 */
+  const dropFrom = (height) => {
+    const player = createPlayer({ x: 100, y: 12 * TILE - 14 - height * TILE });
+    for (let i = 0; i < 300; i++) {
+      const e = updatePlayer(player, keys(), flat, DT);
+      if (e.landed) return e.landed;
+    }
+    return null;
+  };
+  const soft = dropFrom(1);
+  const hard = dropFrom(9);
+  assert.ok(soft, '착지를 안 알려준다 — 먼지도 찌그러짐도 못 붙인다');
+  assert.ok(hard.impact > soft.impact, `가볍게(${soft.impact}) 와 세게(${hard.impact}) 가 같다`);
+  assert.ok(hard.impact <= 1 && soft.impact >= 0, '세기는 0~1 이어야 한다');
+});
+
+test('땅에 서 있는 동안에는 착지를 계속 알리지 않는다', () => {
+  const player = createPlayer({ x: 100, y: 12 * TILE - 14 });
+  let count = 0;
+  for (let i = 0; i < 60; i++) if (updatePlayer(player, keys({ right: true }), flat, DT).landed) count += 1;
+  assert.ok(count <= 1, `걷기만 했는데 착지가 ${count}번 — 먼지가 계속 피어오른다`);
+});
+
+test('찌그러짐은 저절로 풀린다', () => {
+  // 안 풀리면 납작해진 채로 남는다
+  const player = createPlayer({ x: 100, y: 12 * TILE - 14 - 6 * TILE });
+  for (let i = 0; i < 300; i++) {
+    const e = updatePlayer(player, keys(), flat, DT);
+    if (e.landed) break;
+  }
+  assert.ok(player.squash > 0, '착지했는데 안 납작해졌다');
+  for (let i = 0; i < 120; i++) updatePlayer(player, keys(), flat, DT);
+  assert.equal(player.squash, 0, '찌그러진 채로 남았다');
+});
+
+test('점프하면 길쭉해졌다가 풀린다', () => {
+  const player = createPlayer({ x: 100, y: 12 * TILE - 14 });
+  updatePlayer(player, keys(), flat, DT);
+  updatePlayer(player, keys({ jump: true, jumpPressed: true }), flat, DT);
+  assert.ok(player.stretch > 0);
+  for (let i = 0; i < 120; i++) updatePlayer(player, keys({ jump: true }), flat, DT);
+  assert.equal(player.stretch, 0);
+});
+
+// ── 관대함 ──────────────────────────────────────────────────
+test('코요테 타임과 점프 버퍼가 넉넉하다', () => {
+  // 프레임 단위라 값이 작으면 폰에서 특히 억울하다 (터치는 키보드보다 늦게 들어온다)
+  assert.ok(COYOTE_FRAMES >= 8, `코요테가 ${COYOTE_FRAMES}프레임 — 발판을 떠난 직후가 너무 빡빡하다`);
+  assert.ok(BUFFER_FRAMES >= 10, `버퍼가 ${BUFFER_FRAMES}프레임 — 착지 직전 입력이 자꾸 씹힌다`);
 });

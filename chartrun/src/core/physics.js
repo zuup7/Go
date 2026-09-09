@@ -142,8 +142,8 @@ export function groundedAt(body, tileAt) {
  * 점프 판정 도우미. 코요테 타임(발판을 떠난 직후)과 점프 버퍼(착지 직전 입력)를
  * 함께 본다 — 마리오처럼 관대한 조작감이 여기서 나온다.
  */
-export const COYOTE_FRAMES = 6;
-export const BUFFER_FRAMES = 8;
+export const COYOTE_FRAMES = 8;
+export const BUFFER_FRAMES = 10;
 
 export function updateJumpAssist(state, { onGround, jumpPressed }) {
   state.coyote = onGround ? COYOTE_FRAMES : Math.max(0, state.coyote - 1);

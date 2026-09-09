@@ -567,7 +567,21 @@ function drawPlayer(ctx, player, ox, oy, time) {
     ctx.fillStyle = 'rgba(255,209,102,0.35)';
     ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 14, 18);
   }
-  drawSprite(ctx, frame, x, y, player.dir < 0);
+
+  // 찌그러짐 — 착지에 납작, 점프에 길쭉. 물리는 그대로고 그림만 늘였다 줄인다.
+  // 조작이 화면에 즉시 보이는 게 조작감의 절반이다.
+  const sy = 1 + player.stretch * 0.22 - player.squash * 0.3;
+  if (Math.abs(sy - 1) < 0.01) {
+    drawSprite(ctx, frame, x, y, player.dir < 0);
+    return;
+  }
+  const sx = 1 / sy; // 부피를 지킨다 — 세로로 늘면 가로로 준다
+  ctx.save();
+  // 발밑을 기준으로 늘린다. 가운데를 기준으로 하면 착지할 때 땅에 파묻힌다.
+  ctx.translate(Math.round(x) + 6, Math.round(y) + 16);
+  ctx.scale(sx, sy);
+  drawSprite(ctx, frame, -6, -16, player.dir < 0);
+  ctx.restore();
 }
 
 // ── 보스 ────────────────────────────────────────────────────

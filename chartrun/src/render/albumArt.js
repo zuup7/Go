@@ -199,17 +199,34 @@ export function drawAlbum(ctx, e, ox, oy, time) {
 
   ctx.drawImage(coverCanvas(e.def), 0, 0, BASE, BASE, 0, 0, size, size);
 
-  // 위에 박힌 가시 — 밟으면 안 되는 놈
+  // 밟으면 안 되는 놈. **뛰기 전에** 알아야 하므로 한 가지로는 부족하다 —
+  // 붉은 테두리 + 붉은 가시 + 늘 찌푸린 눈으로 셋을 겹쳐 둔다.
+  // (흰 가시 세 개만 있던 시절에는 다른 앨범과 구분이 안 돼서 밟고 죽었다)
   if (!e.stompable) {
-    ctx.fillStyle = '#f2f5ff';
-    for (let i = 0; i < 3; i++) {
-      const sx = 2 + i * (size - 5) * 0.5;
+    const beat = 0.55 + Math.abs(Math.sin(time * 5)) * 0.45;
+    ctx.save();
+    // 몸을 두르는 붉은 테 — 멀리서도 이것만 보고 피할 수 있어야 한다
+    ctx.globalAlpha = beat;
+    ctx.strokeStyle = '#ff2e63';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-0.5, -0.5, size + 1, size + 1);
+    ctx.globalAlpha = beat * 0.35;
+    ctx.strokeRect(-2.5, -2.5, size + 5, size + 5);
+    ctx.globalAlpha = 1;
+    // 가시 — 붉게, 끝만 하얗게. 숨쉬듯 오르내린다.
+    const lift = Math.round(Math.abs(Math.sin(time * 5)) * 1.5);
+    for (let i = 0; i < 4; i++) {
+      const sx = 1 + i * (size - 4) / 3;
+      ctx.fillStyle = '#ff2e63';
       ctx.beginPath();
       ctx.moveTo(sx, 0);
-      ctx.lineTo(sx + 2, -4);
+      ctx.lineTo(sx + 2, -6 - lift);
       ctx.lineTo(sx + 4, 0);
       ctx.fill();
+      ctx.fillStyle = '#fff0f5';
+      ctx.fillRect(Math.round(sx + 1), -5 - lift, 1, 2);
     }
+    ctx.restore();
   }
 
   // 눈 — 가끔 깜빡인다
@@ -224,6 +241,13 @@ export function drawAlbum(ctx, e, ox, oy, time) {
     const look = e.dir > 0 ? 1 : 0;
     ctx.fillRect(Math.round(size * 0.2) + look, eyeY + 1, 1, eyeW - 1);
     ctx.fillRect(Math.round(size * 0.6) + look, eyeY + 1, 1, eyeW - 1);
+  }
+
+  // 밟으면 안 되는 놈은 늘 찌푸리고 있다 — 표정도 같은 말을 해야 한 번에 읽힌다
+  if (!e.stompable) {
+    ctx.fillStyle = '#ff2e63';
+    ctx.fillRect(Math.round(size * 0.18), eyeY - 2, eyeW + 1, 1);
+    ctx.fillRect(Math.round(size * 0.58), eyeY - 2, eyeW + 1, 1);
   }
 
   // 덤비기 직전이면 화난 눈썹 — 준비 중에는 깜빡여서 예고가 된다
