@@ -210,6 +210,23 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
    */
   const readSpots = (list) => new Map(list.map((el) => [el, spotOf(el)]));
 
+  /**
+   * 숨어 있는 버튼도 **잠깐 꺼내서** 자리를 잰다.
+   *
+   * 숨은 버튼은 크기가 0 이라 그대로 재면 화면 구석으로 눌려버리고, 그 자리가
+   * 저장까지 되면 다시는 제자리로 안 돌아온다. 던지기(🎤)와 대시(💨)는 보스전에서만
+   * 뜨므로, 판에서 열면 정확히 이 상황이 된다.
+   */
+  function measureHidden(list) {
+    const was = list.map((el) => el.hidden);
+    for (const el of list) el.hidden = false;
+    const spots = readSpots(list);
+    list.forEach((el, i) => {
+      el.hidden = was[i];
+    });
+    return spots;
+  }
+
   const scaleOf = () => clampScale(layout.scale?.[mode()] ?? 1);
   const sizeOf = (action) => clampScale(layout.size?.[mode()]?.[action] ?? 1);
   const alphaOf = () => {
@@ -323,7 +340,7 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
     }
     // 일부만 저장돼 있으면 나머지는 기본 자리를 읽어서 채운다 (읽기가 먼저)
     toDefault();
-    const measured = readSpots(buttons.filter((el) => !spots[el.dataset.action]));
+    const measured = measureHidden(buttons.filter((el) => !spots[el.dataset.action]));
     document.body.classList.add('custom-pads');
     for (const [el, spot] of measured) spots[el.dataset.action] = spot;
     for (const el of buttons) place(el, spots[el.dataset.action]);

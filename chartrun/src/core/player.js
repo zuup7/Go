@@ -125,6 +125,11 @@ export function updatePlayer(player, input, world, dt) {
   player.squash = Math.max(0, player.squash - dt * PLAYER.squashDecay);
   player.stretch = Math.max(0, player.stretch - dt * PLAYER.squashDecay);
 
+  // 어느 쪽을 누르고 있나. **대시보다 먼저** 봐야 한다 —
+  // 폰에서는 ◀ 와 💨 가 한 프레임에 같이 들어오는 게 보통이라, 이걸 나중에 보면
+  // 피하려던 반대쪽으로 대시해서 레이저 안으로 들어간다.
+  const want = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+
   // 대시 — 바라보는 쪽으로 짧고 굵게. 중력은 그대로 둔다.
   // 공중 대시가 낙하를 멈추면 부양기가 되고, 레벨 디자인이 통째로 무너진다.
   player.dashCool = Math.max(0, player.dashCool - dt);
@@ -134,6 +139,7 @@ export function updatePlayer(player, input, world, dt) {
     // 한참을 미끄러져서, 34px 만 가라고 잡아둔 것이 실제로는 두 배 가까이 간다.
     if (player.dashTime === 0) player.vx = clamp(player.vx, -PLAYER.maxSpeed, PLAYER.maxSpeed);
   } else if (input.dashPressed && player.dashCool <= 0) {
+    if (want !== 0) player.dir = want; // 누른 쪽으로 나간다
     player.dashTime = PLAYER.dashTime;
     // 대시가 끝난 뒤부터 쿨이 도는 셈이 되게 길이를 더해둔다
     player.dashCool = PLAYER.dashCool + PLAYER.dashTime;
@@ -142,7 +148,6 @@ export function updatePlayer(player, input, world, dt) {
   }
 
   // 좌우 이동 — 공중에서는 살짝 둔하게, 반대로 꺾을 때는 더 빠르게
-  const want = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   const turning = want !== 0 && player.vx * want < 0;
   const accel = (player.onGround ? PLAYER.accel : PLAYER.airAccel) * (turning ? PLAYER.turnBoost : 1);
   if (player.dashTime > 0) {

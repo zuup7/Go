@@ -271,3 +271,24 @@ test('대시 거리가 짧다 — 두 칸 남짓', () => {
   assert.ok(reach > 24, `${Math.round(reach)}px 면 레이저 발자국(14px)도 못 벗어난다`);
   assert.ok(reach < TILE * 3, `${Math.round(reach)}px 는 너무 멀다 — 세 칸을 넘으면 안 된다`);
 });
+
+test('같은 프레임에 누른 방향으로 대시한다', () => {
+  // 폰에서는 ◀ 와 💨 가 한 프레임에 같이 들어오는 게 보통이다.
+  // 이걸 놓치면 피하려던 **반대쪽**으로 대시해서 레이저 안으로 들어간다.
+  const player = createPlayer({ x: 400, y: 100 });
+  for (let i = 0; i < 120 && !player.onGround; i++) updatePlayer(player, keys(), flat, DT);
+  assert.equal(player.dir, 1, '처음엔 오른쪽을 본다');
+
+  updatePlayer(player, keys({ left: true, dashPressed: true }), flat, DT);
+  assert.equal(player.dir, -1, '왼쪽을 눌렀는데 오른쪽으로 대시했다');
+  assert.ok(player.vx < -PLAYER.maxSpeed, `왼쪽으로 안 간다 (${player.vx.toFixed(0)})`);
+});
+
+test('방향을 안 누르면 보던 쪽으로 대시한다', () => {
+  const player = createPlayer({ x: 400, y: 100 });
+  for (let i = 0; i < 120 && !player.onGround; i++) updatePlayer(player, keys(), flat, DT);
+  for (let i = 0; i < 20; i++) updatePlayer(player, keys({ left: true }), flat, DT);
+  assert.equal(player.dir, -1);
+  updatePlayer(player, keys({ dashPressed: true }), flat, DT);
+  assert.ok(player.vx < 0, '보던 쪽으로 안 간다');
+});

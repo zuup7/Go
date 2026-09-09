@@ -264,15 +264,34 @@ function handleAlbums(game, dt, held = false) {
 }
 
 /**
+ * 한 대 맞았다고 알린다. **실제로 뭔가 벌어졌을 때만** 소리를 낸다.
+ *
+ * damagePlayer 는 무적일 때도 false 를 돌려준다. 그걸 그냥 "안 죽었다"로 읽고
+ * 소리를 내면, 계속 닿아 있는 것(레이저 기둥 같은 것) 안에서는 무적 1.2초 동안
+ * 프레임마다 아픈 소리가 터진다 — 70번쯤.
+ */
+function hurt(game) {
+  const before = game.player.power;
+  if (damagePlayer(game.player)) {
+    killPlayer(game);
+    return true;
+  }
+  // 파워업을 잃었으면 뭔가 벌어진 것이고, 그대로면 무적이라 아무 일도 없었던 것이다
+  if (game.player.power !== before) {
+    emit(game, 'hurt', {});
+    return true;
+  }
+  return false;
+}
+
+/**
  * 레이저에 닿았나. 예고선(aim)은 안 아프다 — beam.live 하나로 갈린다.
  * 사각형은 boss.js 의 laserBeam 이 정한다. 그림도 같은 걸 본다.
  */
 function handleLaser(game) {
   const beam = laserBeam(game.boss);
   if (!beam?.live || game.player.dead) return;
-  if (!overlaps(game.player, beam)) return;
-  if (damagePlayer(game.player)) killPlayer(game);
-  else emit(game, 'hurt', {});
+  if (overlaps(game.player, beam)) hurt(game);
 }
 
 function handleShots(game, dt) {
@@ -281,8 +300,7 @@ function handleShots(game, dt) {
     const alive = updateShot(shot, world, dt);
     if (!alive) return false;
     if (!player.dead && overlaps(player, shot)) {
-      if (damagePlayer(player)) killPlayer(game);
-      else emit(game, 'hurt', {});
+      hurt(game);
       return false;
     }
     return true;

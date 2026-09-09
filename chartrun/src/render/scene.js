@@ -472,20 +472,66 @@ function drawTile(ctx, ch, x, y, stage, revealed, time, buried = false) {
   }
 }
 
+/**
+ * 시간에 따라 움직이는 칸. 이것만 매 프레임 새로 그리고, 나머지는 구워서 쓴다.
+ */
+const LIVE_TILES = new Set([T.ITEM, T.BAIT, T.REVERSE]);
+
+/**
+ * 한 번 당해야 표시가 뜨는 칸. **이것만** 함정 기억을 뒤진다.
+ *
+ * trapKey 는 칸마다 문자열을 하나 만든다. 화면의 대부분은 땅과 발판인데
+ * 걔들한테까지 물어보면 1초에 2만 개짜리 쓰레기가 나온다 — 표시가 뜰 리 없는 칸이다.
+ */
+const MARKABLE = new Set([T.FAKE, T.INVISIBLE, T.CRUMBLE, T.POPSPIKE, T.BAIT]);
+
+/**
+ * 구워둔 칸 그림. 땅 한 칸이 fillRect 다섯 번인데 화면에 수백 칸이 깔린다 —
+ * 한 번 구워두고 drawImage 한 번으로 찍으면 그리기 호출이 통째로 줄어든다.
+ *
+ * 굽는 것도 drawTile 을 그대로 쓴다. 그림을 두 벌 적어두면 언젠가 서로 어긋난다.
+ */
+const tileCache = new Map();
+let tileCacheFor = null;
+
+const tileKeyOf = (ch, revealed, buried) =>
+  ch.charCodeAt(0) * 4 + (revealed ? 2 : 0) + (buried ? 1 : 0);
+
+function tileCanvas(ch, stage, revealed, buried) {
+  // 무대가 바뀌면 땅 색이 바뀐다 — 그때만 통째로 버린다
+  if (tileCacheFor !== stage) {
+    tileCache.clear();
+    tileCacheFor = stage;
+  }
+  const key = tileKeyOf(ch, revealed, buried);
+  let canvas = tileCache.get(key);
+  if (canvas) return canvas;
+  canvas = makeCanvas(TILE, TILE);
+  const g = canvas.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  drawTile(g, ch, 0, 0, stage, revealed, 0, buried);
+  tileCache.set(key, canvas);
+  return canvas;
+}
+
 function drawTiles(ctx, game, ox, oy, time) {
   const { world, trapMemory } = game;
+  const stage = world.stage;
   const tx0 = Math.max(0, Math.floor(ox / TILE) - 1);
   const tx1 = Math.min(world.width - 1, Math.floor((ox + VIEW.w) / TILE) + 1);
   const ty0 = Math.max(0, Math.floor(oy / TILE) - 1);
   const ty1 = Math.min(world.height - 1, Math.floor((oy + VIEW.h) / TILE) + 1);
   for (let ty = ty0; ty <= ty1; ty++) {
+    const y = ty * TILE - oy;
     for (let tx = tx0; tx <= tx1; tx++) {
       const ch = world.charAt(tx, ty);
       if (ch === T.EMPTY) continue;
-      const revealed = trapMemory.has(trapKey(tx, ty));
+      const x = tx * TILE - ox;
+      const revealed = MARKABLE.has(ch) && trapMemory.has(trapKey(tx, ty));
       const above = world.charAt(tx, ty - 1);
       const buried = above === T.GROUND || above === T.POPSPIKE || above === T.CRUMBLE;
-      drawTile(ctx, ch, tx * TILE - ox, ty * TILE - oy, world.stage, revealed, time, buried);
+      if (LIVE_TILES.has(ch)) drawTile(ctx, ch, x, y, stage, revealed, time, buried);
+      else ctx.drawImage(tileCanvas(ch, stage, revealed, buried), x, y);
     }
   }
 }

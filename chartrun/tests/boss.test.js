@@ -11,6 +11,8 @@ import {
 } from '../src/core/boss.js';
 import { BOSS_MAX_HP, PHASES, phaseFor } from '../src/data/bossData.js';
 import { PLAYER } from '../src/core/player.js';
+import { createGame, loadBoss, updateGame } from '../src/core/game.js';
+import { emptySave } from '../src/core/save.js';
 import { CUTSCENE, CUTSCENE_LENGTH, phaseAt } from '../src/data/cutscene.js';
 
 const ctx = (extra = {}) => ({
@@ -295,3 +297,67 @@ test('빔 칸은 바이저에서 바닥까지 이어진다', () => {
   // 발판(y=160) 높이를 지나므로 발판 위에 서도 안전하지 않다
   assert.ok(beam.y < 160 && beam.y + beam.h > 160, '발판 높이를 안 지나면 그냥 서서 피한다');
 });
+
+test('무적일 때는 아픈 소리가 안 난다', () => {
+  // damagePlayer 는 무적일 때도 false 를 준다. 그걸 "안 죽었다"로 읽고 소리를 내면,
+  // 계속 닿아 있는 레이저 기둥 안에서 무적 1.2초 내내 프레임마다 소리가 터진다.
+  const game = createGame({ seed: 3, save: { ...emptySave(), seenOpening: true } });
+  loadBoss(game);
+  for (let i = 0; i < 900 && game.bossCut; i++) updateGame(game, idleInput(), DT);
+
+  const heard = [];
+  game.onEvent = (name) => heard.push(name);
+
+  // 3페이즈 레이저를 켜고, 그 한복판에 무적인 채로 세워둔다
+  const boss = game.boss;
+  boss.hp = 3;
+  boss.phaseId = 3;
+  boss.state = 'laser';
+  boss.timer = 5;
+  boss.beamX = game.player.x + game.player.w / 2;
+  game.player.invuln = 5;
+  game.player.power = 'none';
+
+  for (let i = 0; i < 60; i++) {
+    boss.beamX = game.player.x + game.player.w / 2; // 계속 안에 있게 붙들어둔다
+    updateGame(game, idleInput(), DT);
+  }
+  const hurts = heard.filter((n) => n === 'hurt').length;
+  assert.equal(hurts, 0, `무적인데 아픈 소리가 ${hurts}번 났다`);
+  assert.equal(game.player.dead, false, '무적인데 죽었다');
+});
+
+test('파워업을 잃을 때는 한 번만 소리가 난다', () => {
+  const game = createGame({ seed: 3, save: { ...emptySave(), seenOpening: true } });
+  loadBoss(game);
+  for (let i = 0; i < 900 && game.bossCut; i++) updateGame(game, idleInput(), DT);
+
+  const heard = [];
+  game.onEvent = (name) => heard.push(name);
+
+  const boss = game.boss;
+  boss.hp = 3;
+  boss.phaseId = 3;
+  boss.state = 'laser';
+  boss.timer = 5;
+  game.player.invuln = 0;
+  game.player.power = 'mic'; // 한 대 버틴다
+
+  for (let i = 0; i < 60; i++) {
+    boss.beamX = game.player.x + game.player.w / 2;
+    updateGame(game, idleInput(), DT);
+  }
+  const hurts = heard.filter((n) => n === 'hurt').length;
+  assert.equal(hurts, 1, `한 번이어야 하는데 ${hurts}번 났다`);
+  assert.equal(game.player.power, 'none', '파워업을 안 잃었다');
+});
+
+/** 아무 키도 안 누른 입력 */
+function idleInput() {
+  return {
+    left: false, right: false, jump: false, jumpPressed: false,
+    leftPressed: false, rightPressed: false, throwPressed: false, dashPressed: false,
+    confirmPressed: false, restartPressed: false, pausePressed: false,
+    mutePressed: false, anyPressed: false,
+  };
+}
