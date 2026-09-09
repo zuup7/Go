@@ -14,6 +14,7 @@ import {
 } from '../src/data/bossCutscenes.js';
 import { CUT_SOUND, soundFor } from '../src/data/cutSound.js';
 import { INTRO_CUT } from '../src/data/introCutscene.js';
+import { CAUGHT_CUT } from '../src/data/caughtCut.js';
 
 const DT = 1 / 60;
 
@@ -72,6 +73,7 @@ const TIMELINES = {
   phase2: PHASE2_CUT,
   phase3: PHASE3_CUT,
   phase4: PHASE4_CUT,
+  caught: CAUGHT_CUT,
   ending: ENDING_CUT,
 };
 
@@ -157,4 +159,12 @@ test('컷신이 끝나면 끝났다고 알린다 — 건너뛰어도 나온다',
     }
     assert.deepEqual(done, ['phase2'], skip ? '건너뛰었을 때 안 나왔다' : '끝났을 때 안 나왔다');
   }
+});
+
+test('잡히는 컷신은 껐던 음악을 반드시 다시 켠다', () => {
+  // app.js 는 'caught' 를 받으면 음악을 끈다. 'stage' 는 판을 새로 불러올 때만
+  // 나오는 소식이라, 이 컷신이 끝에서 다시 안 켜면 한 번 잡힌 뒤로 그 판이
+  // 끝까지 조용해진다. 소리가 사라진 건 눈에 안 보여서 아무도 못 잡아낸다.
+  const last = CAUGHT_CUT[CAUGHT_CUT.length - 1];
+  assert.equal(soundFor('caught', last.kind)?.bgm, 'stage');
 });

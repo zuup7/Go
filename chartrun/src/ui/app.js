@@ -151,6 +151,10 @@ function handleEvent(name, data) {
     case 'portal':
       audio.play('swirl');
       break;
+    case 'caught':
+      audio.stopBgm();
+      audio.play('roar');
+      break;
     case 'spring':
       audio.play('power');
       break;

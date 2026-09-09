@@ -28,7 +28,7 @@ export const T = {
   ICE: '_', // 미끄러운 바닥. 멈추려 해도 밀린다
   SPRING: '!', // 밟으면 크게 튄다
   CEILSPIKE: 'T', // 천장에 붙어 있다 아래를 지나가면 내려온다
-  ZONE_CHASE: '>', // 왼쪽에서 가시벽이 따라오는 구간
+  ZONE_SURGE: '>', // 여기부터 쫓아오는 것이 확 빨라진다
   NPC: 'N', // 한 바퀴를 돈 뒤에만 나타나는 사람. 말을 걸면 포탈이 열린다
   PORTAL: 'P', // 하드모드로 가는 문. NPC 에게 말을 걸기 전에는 닫혀 있다
   ZONE_REVERSE: 'R', // 좌우가 뒤바뀌는 역재생 구간
@@ -56,7 +56,7 @@ const ONEWAY_CHARS = new Set([T.PLATFORM, T.FAKE, T.BLINK]);
 export const ZONE_KINDS = {
   [T.ZONE_REVERSE]: 'reversed',
   [T.ZONE_BLACKOUT]: 'blackout',
-  [T.ZONE_CHASE]: 'chased',
+  [T.ZONE_SURGE]: 'surge',
 };
 
 export function tileKind(ch) {
@@ -136,7 +136,7 @@ export function createWorld(stage) {
         case T.CEILSPIKE:
           world.ceilSpikes.push({ tx, ty, x, y, popped: false, t: 0 });
           break;
-        case T.ZONE_CHASE:
+        case T.ZONE_SURGE:
           world.zones.push({ kind: ZONE_KINDS[ch], tx, ty, x, y, fired: false });
           grid[ty][tx] = T.EMPTY;
           break;

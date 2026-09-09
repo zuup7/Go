@@ -21,6 +21,7 @@ import { CUTSCENE, CUTSCENE_LENGTH, beatsCrossed } from '../data/cutscene.js';
 import { BOSS_CUTS, bossCutLength, cutForPhase } from '../data/bossCutscenes.js';
 import { INTRO_CUT, introLength } from '../data/introCutscene.js';
 import { NPC_TALK, npcTalkLength } from '../data/npcTalk.js';
+import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
 import { clamp, overlaps } from './util.js';
@@ -71,8 +72,10 @@ export function createGame(options = {}) {
     bossCut: null,
     /** NPC 와 이야기하는 중 { t, length }. 있는 동안 판이 멈춘다 (bossCut 과 같은 모양) */
     npcTalk: null,
-    /** 쫓아오는 가시벽 { x }. 구간에 들어섰을 때만 있다 */
+    /** 뒤에서 쫓아오는 거대 로봇 { x }. 추격 판에서만 있다 */
     chaser: null,
+    /** 잡혀서 컷신이 도는 중 { t, length } (npcTalk 과 같은 모양) */
+    caught: null,
     /** 깜빡이는 발판이 지금 켜져 있나 (바뀔 때만 격자를 손대려고 들고 있다) */
     blinkOn: null,
     particles: [],
@@ -154,6 +157,7 @@ function spawnEntities(game) {
   game.bossCut = null;
   game.crumbling.clear();
   game.chaser = null;
+  game.caught = null;
   game.blinkOn = null;
   for (const p of game.world.pickups) p.taken = false;
   for (const f of game.world.fakeGoals) {
@@ -242,6 +246,9 @@ function reviveAtCheckpoint(game) {
   respawnPlayer(game.player, game.checkpoint);
   game.scene = game.boss ? 'boss' : 'play';
   game.sceneTime = 0;
+  game.caught = null;
+  // 쫓아오는 것을 내 뒤로 물린다. 안 하면 눈뜨자마자 다시 잡혀서 빠져나올 수가 없다.
+  if (isChase(game)) game.chaser = { x: game.player.x - CHASE_LEAD };
   if (game.boss) {
     // 보스는 체력을 유지한다 — 다시 처음부터는 너무 가혹하다
     game.boss.state = 'recover';
@@ -561,23 +568,53 @@ function handleCeilSpikes(game, dt) {
   }
 }
 
-/** 가시벽이 쫓아오는 속도. 달리기(124)보다 느려야 도망칠 수 있다 */
+/**
+ * 쫓아오는 속도. **달리기(PLAYER.maxSpeed = 124)보다 반드시 느려야 한다.**
+ *
+ * 여기를 넘기는 순간 "어려운 판"이 아니라 "달리기 속도를 시험하는 판"이 되고,
+ * 그건 실력이 아니라 그냥 못 깨는 판이다. 잡히는 건 벽에 막혀 멈췄을 때,
+ * 함정에 걸려 멈췄을 때, 길을 잘못 골랐을 때여야 한다.
+ */
 export const CHASE_SPEED = 82;
+/** `>` 구간을 밟으면 잠깐 이만큼 빨라진다. 그래도 달리기보다는 느리다 */
+export const SURGE_SPEED = 108;
+/**
+ * 되살아날 때 쫓아오는 것을 이만큼 뒤로 물린다.
+ * 82px/s 로 오므로 약 4초 — 눈뜨고 상황을 보고 달리기 시작할 틈이다.
+ * 200 이었을 때는 2.4초라 죽고 살아나면 곧바로 또 잡혔다.
+ */
+export const CHASE_LEAD = 330;
+/** 추격 판에서 카메라를 이만큼 뒤로 물린다 — 뒤가 보여야 도망칠 마음이 든다 */
+export const CHASE_BACK = 70;
+
+/** 이 판이 추격 판인가 */
+export const isChase = (game) => !!game.world?.stage?.chase;
+
+/** 지금 쫓아오는 속도 */
+const chaseSpeed = (game) => (game.effects.surge > 0 ? SURGE_SPEED : CHASE_SPEED);
 
 /**
- * 쫓아오는 가시벽. 구간에 들어서면 화면 왼쪽 밖에서 나타나 일정 속도로 밀고 온다.
- * 닿으면 죽는다. **달리기보다 느리다** — 계속 달리기만 하면 반드시 도망칠 수 있다.
+ * 뒤에서 밀고 오는 거대 로봇.
+ *
+ * 추격 판은 시작하자마자 붙는다 — 구간을 밟아야 시작하면 "올 것이 온다"는
+ * 긴장이 아니라 그냥 갑자기 죽는 것이 된다.
+ * 판정은 **세로 띠 하나**다. 그림이 아무리 커도 죽는 자리가 하나여야 헷갈리지 않는다.
  */
 function handleChaser(game, dt) {
-  if (game.effects.chased <= 0) {
+  if (!isChase(game)) {
     game.chaser = null;
     return;
   }
-  if (!game.chaser) game.chaser = { x: game.player.x - 150 };
-  game.chaser.x += CHASE_SPEED * dt;
-  if (game.player.dead) return;
-  const wall = { x: game.chaser.x - 12, y: 0, w: 14, h: game.world.pixelHeight };
-  if (overlaps(game.player, wall) && damagePlayer(game.player)) killPlayer(game);
+  if (!game.chaser) game.chaser = { x: game.player.x - CHASE_LEAD };
+  game.chaser.x += chaseSpeed(game) * dt;
+  if (game.player.dead || game.caught) return;
+  const front = { x: game.chaser.x - 10, y: 0, w: 14, h: game.world.pixelHeight };
+  if (!overlaps(game.player, front)) return;
+  // 잡혔다 — 컷신이 돌고, 끝나면 **평소 죽음과 같은 길**로 체크포인트에 간다
+  game.caught = { t: 0, length: caughtLength() };
+  game.player.vx = 0;
+  shakeCamera(game.camera, 1.4);
+  emit(game, 'caught', {});
 }
 
 function handleFakeGoal(game, dt) {
@@ -725,6 +762,19 @@ function landingDust(game, landed) {
 }
 
 function updatePlay(game, input, dt) {
+  // 잡힌 동안에도 아무것도 안 움직인다. 끝나면 평소 죽음과 같은 길로 간다 —
+  // 새 길을 만들면 "죽으면 체크포인트" 라는 이미 배운 규칙이 안 통하게 된다.
+  if (game.caught) {
+    const was = game.caught.t;
+    game.caught.t += dt;
+    beat(game, 'caught', CAUGHT_CUT, was, game.caught.t);
+    if (game.caught.t >= game.caught.length) {
+      game.caught = null;
+      killPlayer(game);
+    }
+    return;
+  }
+
   // NPC 와 이야기하는 동안에는 아무것도 안 움직인다 — 보스 컷신과 같은 규칙이다
   if (game.npcTalk) {
     const was = game.npcTalk.t;
@@ -764,7 +814,7 @@ function updatePlay(game, input, dt) {
   } else if (events.hazard && damagePlayer(game.player)) {
     killPlayer(game);
   }
-  updateCamera(game.camera, game.player, game.world, dt);
+  updateCamera(game.camera, game.player, game.world, dt, isChase(game) ? CHASE_BACK : 0);
 }
 
 /** 엔딩 컷신이 끝나면 통계 화면으로 */

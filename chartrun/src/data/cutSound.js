@@ -73,6 +73,17 @@ export const CUT_SOUND = {
     title: { sfx: 'title' },
     end: {},
   },
+  /**
+   * 추격 판에서 잡혔을 때. 시작할 때 음악을 끄므로 **끝에서 반드시 다시 켠다** —
+   * 'stage' 는 판을 새로 불러올 때만 나오는 소식이라, 여기서 안 켜면
+   * 한 번 잡힌 뒤로 그 판이 끝까지 조용해진다.
+   */
+  caught: {
+    shadow: { sfx: 'rumble' },
+    grab: { sfx: 'thud' },
+    black: { sfx: 'death' },
+    end: { bgm: 'stage' },
+  },
   ending: {
     crack: { sfx: 'crack' },
     burst: { sfx: 'burst' },

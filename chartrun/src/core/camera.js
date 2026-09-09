@@ -5,10 +5,15 @@ export function createCamera(viewW, viewH) {
   return { x: 0, y: 0, viewW, viewH, shake: 0, shakeX: 0, shakeY: 0 };
 }
 
-/** 플레이어보다 살짝 앞을 보여준다 — 달리는 게임이라 앞이 넓어야 편하다 */
-export function updateCamera(cam, target, world, dt) {
+/**
+ * 플레이어보다 살짝 앞을 보여준다 — 달리는 게임이라 앞이 넓어야 편하다.
+ *
+ * back 은 **뒤를 더 보여주는 정도**다. 추격 판에서 쓴다 —
+ * 뒤에서 뭐가 오는데 안 보이면 그건 긴장이 아니라 그냥 답답함이다.
+ */
+export function updateCamera(cam, target, world, dt, back = 0) {
   const lead = clamp(target.vx / 112, -1, 1) * 34;
-  const wantX = target.x + target.w / 2 + lead - cam.viewW / 2;
+  const wantX = target.x + target.w / 2 + lead - back - cam.viewW / 2;
   const wantY = target.y + target.h / 2 - cam.viewH * 0.58;
 
   cam.x += (wantX - cam.x) * Math.min(1, dt * 7);

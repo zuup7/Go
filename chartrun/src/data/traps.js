@@ -55,7 +55,7 @@ export const TRAPS = {
   ceilingSpike: {
     char: 'T',
   },
-  chaseWall: {
+  surgeZone: {
     char: '>',
   },
 };
@@ -64,8 +64,11 @@ export const TRAPS = {
 export const ZONE_EFFECTS = {
   reversed: { seconds: 4 },
   blackout: { seconds: 3.5 },
-  /** 가시벽이 따라오는 시간. 이 안에 구간을 빠져나가야 한다 */
-  chased: { seconds: 6 },
+  /**
+   * 쫓아오는 것이 확 빨라지는 시간.
+   * 추격 판은 판 자체에 chase 가 적혀 있어 처음부터 붙는다 — 이건 그 위에 얹는 완급이다.
+   */
+  surge: { seconds: 3 },
 };
 
 /** 구간 효과 이름 → 0 인 상태. game.effects 를 두 곳에 손으로 적어두지 않으려고 여기서 만든다 */

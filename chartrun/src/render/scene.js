@@ -7,6 +7,7 @@ import { drawAlbum, drawCoverAt } from './albumArt.js';
 import { drawSprite, crisp, makeCanvas } from './pixel.js';
 import { npcInReach } from '../core/game.js';
 import { NPC_TALK } from '../data/npcTalk.js';
+import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
@@ -711,24 +712,123 @@ function drawFakeChecks(ctx, game, ox, oy, time) {
   }
 }
 
-/** 쫓아오는 가시벽. 화면에 계속 보여야 도망칠 마음이 든다 */
+/**
+ * 뒤에서 밀고 오는 거대 로봇.
+ *
+ * **새로 그리지 않는다** — 3페이즈 배경용으로 이미 구워둔 giantCanvas 를 옆으로 세워 쓴다.
+ * 죽는 자리는 세로 띠 하나(chaser.x)뿐이다. 그림이 아무리 커도 판정이 하나여야
+ * "저기 닿으면 죽는다"가 안 헷갈린다.
+ */
 function drawChaser(ctx, game, ox, oy, time) {
   if (!game.chaser) return;
   const x = Math.round(game.chaser.x - ox);
-  const h = game.world.pixelHeight;
+  const surging = game.effects.surge > 0;
+  const color = surging ? '#ff3b3b' : '#7c5cff';
+  const canvas = giantCanvas(color);
+  const { w, h } = giantBaked;
+
   ctx.save();
-  // 벽 뒤는 아예 어둡게 — 저기로는 못 돌아간다
-  ctx.fillStyle = 'rgba(20,2,10,0.85)';
-  ctx.fillRect(x - 400, -oy, 400, h);
-  ctx.fillStyle = '#3d0a1c';
-  ctx.fillRect(x - 12, -oy, 12, h);
-  ctx.fillStyle = '#ff2e63';
-  for (let y = -oy % 12; y < h; y += 12) {
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + 6 + Math.sin(time * 12 + y) * 1.5, y + 6);
-    ctx.lineTo(x, y + 12);
-    ctx.fill();
+  // 로봇 뒤는 아예 어둡게 — 저기로는 못 돌아간다
+  ctx.fillStyle = 'rgba(10,2,16,0.92)';
+  ctx.fillRect(x - VIEW.w, 0, VIEW.w, VIEW.h);
+
+  // 몸통 — 화면 왼쪽 밖에서 절반쯤 걸쳐 밀고 들어온다
+  ctx.globalAlpha = 0.9;
+  const bob = Math.sin(time * 3) * 2;
+  ctx.drawImage(canvas, Math.round(x - w * 0.62), Math.round(VIEW.h - h * 0.9 + bob));
+
+  // 앞으로 뻗은 손 — 여기가 판정선이다
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = color;
+  ctx.fillRect(x - 10, 0, 3, VIEW.h);
+  ctx.fillStyle = surging ? '#fff0c4' : '#d5cbff';
+  for (let y = -oy % 14; y < VIEW.h; y += 14) {
+    const reach = 4 + Math.sin(time * 9 + y * 0.3) * 2;
+    ctx.fillRect(x - 10, y, reach, 4);
+  }
+  ctx.restore();
+}
+
+/**
+ * 얼마나 붙었는지 — 화면 왼쪽 가장자리의 얇은 띠. 가까울수록 붉어진다.
+ * 숫자는 안 쓴다. 이 게임에는 글자가 없다.
+ */
+function drawChaseGauge(ctx, game, time) {
+  if (!game.chaser) return;
+  const gap = game.player.x - game.chaser.x;
+  const near = Math.max(0, Math.min(1, 1 - gap / 220));
+  ctx.save();
+  ctx.fillStyle = 'rgba(10,2,16,0.65)';
+  ctx.fillRect(0, 0, 5, VIEW.h);
+  const color = near > 0.7 ? '#ff2e63' : near > 0.4 ? '#ffc93c' : '#7c5cff';
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.6 + near * 0.4;
+  ctx.fillRect(0, 0, 5, Math.round(VIEW.h * near));
+  // 바짝 붙으면 화면 왼쪽 가장자리가 같이 뛴다 — 3px 짜리 띠는 달리면서 못 본다
+  if (near > 0.6) {
+    ctx.globalAlpha = (near - 0.6) * 1.6 * (0.5 + Math.sin(time * 14) * 0.5);
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, 26, VIEW.h);
+  }
+  ctx.restore();
+}
+
+/**
+ * 잡혔다. 그림자 → 손 → 암전. **글자는 없다.**
+ * 어느 단계인지는 타임라인이 정한다 (시각을 여기 또 적지 않는다).
+ */
+function drawCaught(ctx, game, ox, oy, time) {
+  const c = game.caught;
+  if (!c) return;
+  const kind = beatKind(CAUGHT_CUT, c.t);
+  if (!kind || kind === 'end') return;
+  const px = game.player.x - ox + game.player.w / 2;
+  const py = game.player.y - oy;
+
+  ctx.save();
+  if (kind === 'shadow') {
+    // 왼쪽부터 덮인다
+    const k = clamp01((c.t - CAUGHT_AT.shadow) / 0.7);
+    ctx.fillStyle = 'rgba(10,2,16,0.8)';
+    ctx.fillRect(0, 0, VIEW.w * k, VIEW.h);
+  } else {
+    ctx.fillStyle = 'rgba(10,2,16,0.8)';
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
+
+  // 덮개 **위에** 주인공을 다시 그린다 — 잡히는 건 나인데
+  // 어둠에 같이 묻히면 무슨 일이 일어났는지 안 보인다.
+  if (kind !== 'black') {
+    drawSprite(
+      ctx,
+      playerFrame({ ...game.player, invuln: 0 }),
+      Math.round(game.player.x - ox + PLAYER_OFFSET.x),
+      Math.round(game.player.y - oy + PLAYER_OFFSET.y),
+      game.player.dir < 0,
+    );
+  }
+
+  if (kind === 'grab') {
+    // 거대한 손이 위에서 내려와 붙잡는다
+    const k = clamp01((c.t - CAUGHT_AT.grab) / 0.9);
+    const handY = -60 + (py + 10) * k;
+    ctx.fillStyle = '#5c4a70';
+    ctx.fillRect(px - 26, handY - 40, 52, 44);
+    ctx.fillStyle = '#241a33';
+    ctx.fillRect(px - 22, handY - 36, 44, 36);
+    // 손가락 넷이 내려와 감싼다
+    ctx.fillStyle = '#5c4a70';
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(px - 24 + i * 13, handY, 9, 16 + i % 2 * 4);
+    }
+    ctx.fillStyle = '#ff3b3b';
+    ctx.fillRect(px - 18, handY - 30, 36, 3);
+  }
+
+  if (kind === 'black') {
+    const k = clamp01((c.t - CAUGHT_AT.black) / 0.8);
+    ctx.fillStyle = `rgba(0,0,0,${k})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   }
   ctx.restore();
 }
@@ -2813,7 +2913,9 @@ export function drawScene(ctx, game, time) {
   ctx.globalAlpha = 1;
 
   drawChaser(ctx, game, ox, oy, time);
+  drawChaseGauge(ctx, game, time);
   drawNpcTalk(ctx, game, ox, oy, time);
+  drawCaught(ctx, game, ox, oy, time);
   drawEffects(ctx, game, ox, oy, time);
 
   if (game.flash > 0) {

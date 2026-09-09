@@ -209,13 +209,13 @@ test('하드모드 함정 표시가 보통 판 표시를 물려받지 않는다'
 
 // ── 하드 판이 실제로 새 함정을 쓰는가 ───────────────────────
 test('새 함정이 하드모드 어딘가에는 다 나온다', () => {
-  const seen = { blink: 0, fakeCheck: 0, ice: 0, spring: 0, ceil: 0, chase: 0 };
+  const seen = { blink: 0, fakeCheck: 0, ice: 0, spring: 0, ceil: 0, surge: 0 };
   for (const stage of HARD_STAGES) {
     const w = createWorld(stage);
     seen.blink += w.blinkers.length;
     seen.fakeCheck += w.fakeChecks.length;
     seen.ceil += w.ceilSpikes.length;
-    seen.chase += w.zones.filter((z) => z.kind === 'chased').length;
+    seen.surge += w.zones.filter((z) => z.kind === 'surge').length;
     for (const row of stage.rows) {
       seen.ice += (row.match(/_/g) ?? []).length;
       seen.spring += (row.match(/!/g) ?? []).length;
