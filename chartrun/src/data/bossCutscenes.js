@@ -33,6 +33,21 @@ export const PHASE3_CUT = [
 ];
 
 /**
+ * 4페이즈 (하드모드에만) — 이미 합체한 로봇이 한계를 넘는다.
+ *
+ * 새 몸을 그리지 않는다. 있는 로봇을 벌겋게 달구고 뒤의 거대 로봇이 일어서는 것으로
+ * "한 단계 더"를 보여준다 — 여기서 또 새 형태를 만들면 3페이즈 합체가 시시해진다.
+ */
+export const PHASE4_CUT = [
+  { at: 0.0, kind: 'shake' },
+  { at: 0.8, kind: 'overheat' }, // 이음새마다 빛이 새어 나온다
+  { at: 2.0, kind: 'rise' }, // 뒤의 거대 로봇이 일어선다
+  { at: 3.4, kind: 'core' }, // 코어가 붉게 터진다
+  { at: 4.4, kind: 'title' },
+  { at: 5.8, kind: 'end' },
+];
+
+/**
  * 엔딩 — 보스가 터지고, 흩어진 앨범이 차트가 되고, 그 꼭대기에 내가 선다.
  * 그리고 차트가 결혼식장이 된다. 앨범 열일곱 장이 하객이다.
  */
@@ -55,6 +70,7 @@ export const ENDING_CUT = [
 export const BOSS_CUTS = {
   phase2: { timeline: PHASE2_CUT, title: 'PHASE 2' },
   phase3: { timeline: PHASE3_CUT, title: 'PHASE 3' },
+  phase4: { timeline: PHASE4_CUT, title: 'FINAL' },
   ending: { timeline: ENDING_CUT, title: '#1' },
 };
 
@@ -69,7 +85,8 @@ const atOf = (timeline) => Object.fromEntries(timeline.map((s) => [s.kind, s.at]
 
 export const PHASE2_AT = atOf(PHASE2_CUT);
 export const PHASE3_AT = atOf(PHASE3_CUT);
+export const PHASE4_AT = atOf(PHASE4_CUT);
 export const ENDING_AT = atOf(ENDING_CUT);
 
 /** 페이즈가 바뀔 때 틀 컷신 id (1페이즈는 시작이라 없다) */
-export const cutForPhase = (phaseId) => (phaseId === 2 ? 'phase2' : phaseId === 3 ? 'phase3' : null);
+export const cutForPhase = (phaseId) => (phaseId >= 2 && phaseId <= 4 ? `phase${phaseId}` : null);

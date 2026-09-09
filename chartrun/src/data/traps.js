@@ -39,13 +39,37 @@ export const TRAPS = {
   blackout: {
     char: '@',
   },
+  // ── 하드모드 ─────────────────────────────────────────────
+  blinkPlatform: {
+    char: ':',
+  },
+  fakeCheck: {
+    char: ';',
+  },
+  icyFloor: {
+    char: '_',
+  },
+  spring: {
+    char: '!',
+  },
+  ceilingSpike: {
+    char: 'T',
+  },
+  chaseWall: {
+    char: '>',
+  },
 };
 
 /** 시간이 지나면 저절로 풀리는 구간 효과 (영구히 걸리면 게임이 끝난다) */
 export const ZONE_EFFECTS = {
   reversed: { seconds: 4 },
   blackout: { seconds: 3.5 },
+  /** 가시벽이 따라오는 시간. 이 안에 구간을 빠져나가야 한다 */
+  chased: { seconds: 6 },
 };
+
+/** 구간 효과 이름 → 0 인 상태. game.effects 를 두 곳에 손으로 적어두지 않으려고 여기서 만든다 */
+export const emptyEffects = () => Object.fromEntries(Object.keys(ZONE_EFFECTS).map((k) => [k, 0]));
 
 export const TRAP_KINDS = Object.keys(TRAPS);
 
@@ -64,4 +88,11 @@ export function createTrapMemory(revealed = []) {
   };
 }
 
-export const trapKey = (tx, ty) => `${tx},${ty}`;
+/**
+ * 함정을 어디서 당했는지 기억하는 열쇠.
+ *
+ * ns 는 스테이지 이름이다. 이게 없으면 **스테이지가 달라도 같은 칸이면 같은 열쇠**라,
+ * 하드모드 (12,9) 가 스테이지 1 에서 당한 표시를 물려받아 처음부터 붉게 뜬다.
+ * 보통 판은 ns 없이 예전 형식 그대로 둔다 — 형식을 바꾸면 이미 저장된 표시가 다 날아간다.
+ */
+export const trapKey = (tx, ty, ns = '') => (ns ? `${ns}:${tx},${ty}` : `${tx},${ty}`);

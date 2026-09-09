@@ -1,6 +1,6 @@
 // 게임 전체의 상태 기계. 그리기는 하지 않는다 — render/ 가 이 상태를 보고 그린다.
 import { createWorld, T } from './world.js';
-import { STAGES, BOSS_STAGE } from '../data/stages.js';
+import { STAGES, HARD_STAGES, BOSS_STAGE } from '../data/stages.js';
 import { createPlayer, respawnPlayer, updatePlayer, bounce, damagePlayer } from './player.js';
 import { spawnAlbum, updateAlbum, stompAlbum, updateShot } from './enemy.js';
 import { createCamera, updateCamera, shakeCamera } from './camera.js';
@@ -14,21 +14,32 @@ import {
   throwMic,
   updateThrown,
   laserBeam,
+  laserBeams,
 } from './boss.js';
-import {
-  ZONE_EFFECTS,
-  createTrapMemory,
-  trapKey,
-} from '../data/traps.js';
+import { ZONE_EFFECTS, emptyEffects, createTrapMemory, trapKey } from '../data/traps.js';
 import { CUTSCENE, CUTSCENE_LENGTH, beatsCrossed } from '../data/cutscene.js';
 import { BOSS_CUTS, bossCutLength, cutForPhase } from '../data/bossCutscenes.js';
 import { INTRO_CUT, introLength } from '../data/introCutscene.js';
+import { NPC_TALK, npcTalkLength } from '../data/npcTalk.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
 import { clamp, overlaps } from './util.js';
 import { TILE } from './physics.js';
 
 export const VIEW = { w: 384, h: 224 };
+
+/**
+ * 이 판이 볼 스테이지 표.
+ *
+ * HARD_STAGES 를 STAGES 에 덧붙이지 않는 이유: 순위 구간(core/chart.js)이 네 칸이라
+ * 다섯 번째 스테이지는 마지막 구간을 조용히 재사용하고, 스테이지 선택 칸 번호도
+ * 통째로 밀린다. 표를 나누면 1회차 쪽은 손댈 일이 없다.
+ *
+ * **읽는 곳이 넷이다** — loadStage, 다음 판 계산, 그리고 HUD 두 곳.
+ * 하나라도 빠지면 하드모드에서 엉뚱한 스테이지 이름이 뜬다.
+ */
+export const stageTable = (game) => (game?.hard ? HARD_STAGES : STAGES);
+export const stageCount = (game) => stageTable(game).length;
 
 /** 가짜 발판이 무너지기까지 (짧아야 웃기다) */
 const CRUMBLE_TIME = 0.14;
@@ -55,9 +66,15 @@ export function createGame(options = {}) {
     mics: [],
     thrown: [],
     /** 구간 효과 남은 시간(초). 0 이면 안 걸린 것 */
-    effects: { reversed: 0, blackout: 0 },
+    effects: emptyEffects(),
     /** 보스전 중간에 끼어드는 컷신 { id, t, length }. 있는 동안 싸움이 멈춘다 */
     bossCut: null,
+    /** NPC 와 이야기하는 중 { t, length }. 있는 동안 판이 멈춘다 (bossCut 과 같은 모양) */
+    npcTalk: null,
+    /** 쫓아오는 가시벽 { x }. 구간에 들어섰을 때만 있다 */
+    chaser: null,
+    /** 깜빡이는 발판이 지금 켜져 있나 (바뀔 때만 격자를 손대려고 들고 있다) */
+    blinkOn: null,
     particles: [],
     texts: [],
     camera: createCamera(VIEW.w, VIEW.h),
@@ -87,11 +104,23 @@ export function createGame(options = {}) {
      * 이런 판은 기록을 갱신하지 않는다 — 안 그러면 보스만 골라 이기고 최고 기록이 된다.
      */
     partial: false,
+    /**
+     * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
+     * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
+     */
+    hard: false,
   };
   return game;
 }
 
 const emit = (game, name, data) => game.onEvent(name, data ?? {});
+
+/**
+ * 이 판에서 함정 표시를 기억할 열쇠.
+ * 하드모드만 스테이지 이름을 앞에 붙인다 — 보통 판의 형식을 바꾸면
+ * 이미 저장돼 있던 표시가 전부 안 맞게 된다.
+ */
+const markKey = (game, tx, ty) => trapKey(tx, ty, game.hard ? game.world.stage.id : '');
 
 function addParticles(game, x, y, count, colors, opts = {}) {
   for (let i = 0; i < count; i++) {
@@ -121,9 +150,11 @@ function spawnEntities(game) {
   game.shots = [];
   game.mics = [];
   game.thrown = [];
-  game.effects = { reversed: 0, blackout: 0 };
+  game.effects = emptyEffects();
   game.bossCut = null;
   game.crumbling.clear();
+  game.chaser = null;
+  game.blinkOn = null;
   for (const p of game.world.pickups) p.taken = false;
   for (const f of game.world.fakeGoals) {
     f.fleeing = false;
@@ -135,7 +166,7 @@ function spawnEntities(game) {
 
 export function loadStage(game, index) {
   game.stageIndex = index;
-  game.world = createWorld(STAGES[index]);
+  game.world = createWorld(stageTable(game)[index]);
   game.player = createPlayer(game.world.spawn);
   game.checkpoint = { ...game.world.spawn };
   game.boss = null;
@@ -155,7 +186,7 @@ export function loadBoss(game) {
   game.checkpoint = { ...game.world.spawn };
   spawnEntities(game);
   // 레이저가 닿을 바닥 — 아레나 맨 아래 두 줄이 땅이다
-  game.boss = createBoss(game.world.pixelWidth, game.world.pixelHeight - TILE * 2);
+  game.boss = createBoss(game.world.pixelWidth, game.world.pixelHeight - TILE * 2, game.hard);
   game.camera = createCamera(VIEW.w, VIEW.h);
   game.scene = 'boss';
   game.sceneTime = 0;
@@ -167,7 +198,8 @@ export function loadBoss(game) {
  * 새 판. index 를 주면 그 스테이지부터 시작한다 (개발자 모드에서만 쓴다).
  * index 가 마지막 스테이지 다음이면 보스전으로 바로 들어간다.
  */
-export function startRun(game, index = 0) {
+export function startRun(game, index = 0, { hard = false } = {}) {
+  game.hard = hard;
   game.chartOuts = 0;
   game.plays = 0;
   game.score = 0;
@@ -176,8 +208,9 @@ export function startRun(game, index = 0) {
   game.ending = null;
   game.partial = index > 0;
   // 처음부터 달리는 판이고 오프닝을 아직 안 봤으면, 스테이지보다 먼저 오프닝을 튼다
-  if (index === 0 && !game.save.seenOpening) startIntro(game);
-  else if (index >= STAGES.length) loadBoss(game);
+  // 오프닝은 1회차에서만. 하드모드는 이미 다 본 사람이 들어오는 곳이다.
+  if (index === 0 && !hard && !game.save.seenOpening) startIntro(game);
+  else if (index >= stageCount(game)) loadBoss(game);
   else loadStage(game, index);
 }
 
@@ -289,9 +322,14 @@ function hurt(game) {
  * 사각형은 boss.js 의 laserBeam 이 정한다. 그림도 같은 걸 본다.
  */
 function handleLaser(game) {
-  const beam = laserBeam(game.boss);
-  if (!beam?.live || game.player.dead) return;
-  if (overlaps(game.player, beam)) hurt(game);
+  if (game.player.dead) return;
+  for (const beam of laserBeams(game.boss)) {
+    if (!beam.live) continue;
+    if (overlaps(game.player, beam)) {
+      hurt(game);
+      return; // 한 프레임에 두 기둥에 두 번 맞을 이유가 없다
+    }
+  }
 }
 
 function handleShots(game, dt) {
@@ -465,6 +503,83 @@ function handlePopSpikes(game, dt) {
   }
 }
 
+/**
+ * 깜빡이는 발판. 다 같은 박자로 껐다 켠다 — 제각각이면 언제 건널지 못 잰다.
+ * 격자를 직접 갈아끼우므로 물리(tileAt)가 그대로 이걸 본다.
+ */
+const BLINK_PERIOD = 2.0;
+/** 켜져 있는 시간. 꺼진 0.7초보다 훨씬 길어야 건널 틈이 난다 */
+const BLINK_ON = 1.3;
+
+function handleBlinkers(game) {
+  const { world } = game;
+  if (!world.blinkers.length) return;
+  const on = game.sceneTime % BLINK_PERIOD < BLINK_ON;
+  if (game.blinkOn === on) return; // 바뀔 때만 손댄다
+  game.blinkOn = on;
+  for (const b of world.blinkers) world.setLive(b.tx, b.ty, on ? T.BLINK : T.EMPTY);
+}
+
+/** 체크포인트인 척하는 것. 먹으면 **저장이 안 되고** 사라진다 */
+function handleFakeChecks(game) {
+  for (const fc of game.world.fakeChecks) {
+    if (fc.taken || game.player.dead) continue;
+    const box = { x: fc.x - 6, y: fc.y - TILE, w: TILE + 12, h: TILE * 2 };
+    if (!overlaps(game.player, box)) continue;
+    fc.taken = true;
+    game.trapMemory.reveal(markKey(game, fc.tx, fc.ty));
+    shakeCamera(game.camera, 0.5);
+    emit(game, 'trap', { kind: 'fakeCheck' });
+  }
+}
+
+/** 천장 가시 — 아래를 지나가면 내려온다. 솟는 가시를 위아래만 뒤집은 것이다 */
+function handleCeilSpikes(game, dt) {
+  const { player, world } = game;
+  for (const spike of world.ceilSpikes) {
+    const cx = spike.tx * TILE + TILE / 2;
+    const near = Math.abs(player.x + player.w / 2 - cx) < 20;
+    const below = player.y > spike.ty * TILE && player.y - spike.ty * TILE < TILE * 4;
+    if (!spike.popped && near && below && !player.dead) {
+      spike.popped = true;
+      spike.t = 0;
+      game.trapMemory.reveal(markKey(game, spike.tx, spike.ty));
+      shakeCamera(game.camera, 0.4);
+      emit(game, 'trap', { kind: 'ceilingSpike' });
+    }
+    if (!spike.popped) continue;
+    spike.t = Math.min(1, spike.t + dt * 5);
+    const blade = {
+      x: spike.tx * TILE + 2,
+      y: (spike.ty + 1) * TILE - 2,
+      w: TILE - 4,
+      h: TILE * spike.t,
+    };
+    if (!player.dead && spike.t > 0.35 && overlaps(player, blade)) {
+      if (damagePlayer(player)) killPlayer(game);
+    }
+  }
+}
+
+/** 가시벽이 쫓아오는 속도. 달리기(124)보다 느려야 도망칠 수 있다 */
+export const CHASE_SPEED = 82;
+
+/**
+ * 쫓아오는 가시벽. 구간에 들어서면 화면 왼쪽 밖에서 나타나 일정 속도로 밀고 온다.
+ * 닿으면 죽는다. **달리기보다 느리다** — 계속 달리기만 하면 반드시 도망칠 수 있다.
+ */
+function handleChaser(game, dt) {
+  if (game.effects.chased <= 0) {
+    game.chaser = null;
+    return;
+  }
+  if (!game.chaser) game.chaser = { x: game.player.x - 150 };
+  game.chaser.x += CHASE_SPEED * dt;
+  if (game.player.dead) return;
+  const wall = { x: game.chaser.x - 12, y: 0, w: 14, h: game.world.pixelHeight };
+  if (overlaps(game.player, wall) && damagePlayer(game.player)) killPlayer(game);
+}
+
 function handleFakeGoal(game, dt) {
   const { player, world } = game;
   for (const fake of world.fakeGoals) {
@@ -505,6 +620,57 @@ function handleCheckpoints(game) {
     cp.taken = true;
     game.checkpoint = { x: cp.x, y: cp.y };
     emit(game, 'checkpoint', {});
+  }
+}
+
+/**
+ * 한 바퀴를 돌기 전에는 NPC 도 포탈도 **없는 셈** 친다.
+ * 처음 하는 사람의 튜토리얼 판에 낯선 사람이 서 있으면 그냥 헷갈리기만 한다.
+ * 스테이지 1 사본을 따로 두지 않는 이유이기도 하다 — 두 벌이 되면 한쪽만 고치는 날이 온다.
+ */
+const hubOpen = (game) => !!game.save?.clearedOnce && !game.hard;
+
+/** 지금 말을 걸 수 있는 NPC (가까이 서 있고, 아직 안 걸었다). 없으면 null */
+export function npcInReach(game) {
+  if (!hubOpen(game) || game.player.dead || game.npcTalk) return null;
+  for (const npc of game.world.npcs) {
+    if (npc.talked) continue;
+    const box = { x: npc.x - 14, y: npc.y - TILE, w: TILE + 28, h: TILE * 2 };
+    if (overlaps(game.player, box)) return npc;
+  }
+  return null;
+}
+
+/**
+ * NPC 에게 말 걸기와 포탈.
+ *
+ * 말 걸기는 **점프 키 그대로**다 (input.confirmPressed 가 confirm || jump).
+ * 새 키를 만들면 폰에 버튼이 하나 더 붙어야 하는데, 딱 한 번 쓰는 것 때문에
+ * 조작 화면을 더 복잡하게 만들 이유가 없다.
+ */
+function handleNpc(game, input) {
+  if (!hubOpen(game)) return;
+  const npc = npcInReach(game);
+  if (npc && input.confirmPressed) {
+    npc.talked = true;
+    game.npcTalk = { t: 0, length: npcTalkLength() };
+    game.player.vx = 0;
+    emit(game, 'talk', {});
+  }
+  // 말을 걸어야 문이 열린다
+  const talked = game.world.npcs.some((n) => n.talked);
+  for (const portal of game.world.portals) portal.open = talked && !game.npcTalk;
+}
+
+/** 열린 포탈에 들어가면 2회차가 시작된다 */
+function handlePortal(game) {
+  if (!hubOpen(game) || game.player.dead) return;
+  for (const portal of game.world.portals) {
+    if (!portal.open) continue;
+    if (!overlaps(game.player, portal)) continue;
+    emit(game, 'portal', {});
+    startRun(game, 0, { hard: true });
+    return;
   }
 }
 
@@ -559,18 +725,35 @@ function landingDust(game, landed) {
 }
 
 function updatePlay(game, input, dt) {
+  // NPC 와 이야기하는 동안에는 아무것도 안 움직인다 — 보스 컷신과 같은 규칙이다
+  if (game.npcTalk) {
+    const was = game.npcTalk.t;
+    game.npcTalk.t += dt;
+    beat(game, 'talk', NPC_TALK, was, game.npcTalk.t);
+    if (input.confirmPressed && game.npcTalk.t > 0.4) game.npcTalk.t = game.npcTalk.length;
+    if (game.npcTalk.t >= game.npcTalk.length) game.npcTalk = null;
+    return;
+  }
+
   const events = updatePlayer(game.player, noDash(applyEffects(game, input)), game.world, dt);
   if (events.jumped) emit(game, 'jump', {});
+  if (events.sprung) emit(game, 'spring', {});
   landingDust(game, events.landed);
   handleBlocks(game, events);
   handleCrumbling(game, dt);
   handleRisingWalls(game, dt);
   handleZones(game, dt);
   handlePopSpikes(game, dt);
+  handleBlinkers(game);
+  handleFakeChecks(game);
+  handleCeilSpikes(game, dt);
+  handleChaser(game, dt);
   handleAlbums(game, dt, input.jump);
   handleShots(game, dt);
   handlePickups(game);
   handleCheckpoints(game);
+  handleNpc(game, input);
+  handlePortal(game);
   handleFakeGoal(game, dt);
   handleGoal(game);
   updateRank(game);
@@ -594,21 +777,39 @@ function finishRun(game) {
     score: game.score + 2000,
     defeated: game.defeated,
     timeMs: game.elapsedMs,
+    hard: game.hard,
   };
   game.scene = 'ending';
   game.sceneTime = 0;
   emit(game, 'ending', game.ending);
 }
 
+/**
+ * 엔딩을 본 뒤 스테이지 1 로 돌아온다. 거기 NPC 가 서 있고, 말을 걸면 하드모드로 가는
+ * 포탈이 열린다.
+ *
+ * **반드시 partial 로 둔다.** startRun 만 elapsedMs·chartOuts 를 지우는데(startRun),
+ * 여기는 그걸 안 거치므로 1회차의 시간을 그대로 안고 판을 돈다 — 그 시간이 기록으로
+ * 올라가면 최고 기록이 거짓말이 된다.
+ */
+function returnToHub(game) {
+  game.hard = false;
+  game.partial = true;
+  game.ending = null;
+  loadStage(game, 0);
+}
+
 /** 타이틀에서 고를 수 있는 줄 수 (개발자 모드일 때: 처음부터 / 스테이지 선택) */
 const TITLE_ROWS = 2;
 
 // 스테이지 선택 화면의 칸. 0..STAGES.length 는 스테이지와 보스라 startRun 에 그대로 넘긴다.
+/** 하드모드 1판부터 (NPC 를 안 거치고 바로 — 개발자 모드에서만) */
+export const SELECT_HARD = STAGES.length + 1;
 /** 오프닝 다시 보기 (한 번 보면 저절로는 안 뜨므로 여기서만 다시 볼 수 있다) */
-export const SELECT_OPENING = STAGES.length + 1;
+export const SELECT_OPENING = STAGES.length + 2;
 /** 개발자 모드 끄기 */
-export const SELECT_DEV_OFF = STAGES.length + 2;
-export const SELECT_SLOTS = STAGES.length + 3;
+export const SELECT_DEV_OFF = STAGES.length + 3;
+export const SELECT_SLOTS = STAGES.length + 4;
 
 /** 개발자 모드를 켜고 끈다. 비번 판정은 ui 가 하고 결과만 여기로 온다. */
 export function setDevMode(game, on) {
@@ -869,7 +1070,8 @@ export function updateGame(game, input, dt) {
         game.scene = 'title';
         game.sceneTime = 0;
       } else if (input.confirmPressed) {
-        if (game.selectIndex === SELECT_OPENING) startIntro(game);
+        if (game.selectIndex === SELECT_HARD) startRun(game, 0, { hard: true });
+        else if (game.selectIndex === SELECT_OPENING) startIntro(game);
         else if (game.selectIndex === SELECT_DEV_OFF) {
           setDevMode(game, false);
           game.scene = 'title';
@@ -916,7 +1118,7 @@ export function updateGame(game, input, dt) {
     case 'stageClear':
       if (game.sceneTime >= CLEAR_HOLD) {
         const next = game.stageIndex + 1;
-        if (next < STAGES.length) loadStage(game, next);
+        if (next < stageCount(game)) loadStage(game, next);
         else {
           game.scene = 'cutscene';
           game.cutsceneTime = 0;
@@ -943,8 +1145,12 @@ export function updateGame(game, input, dt) {
 
     case 'ending':
       if (game.sceneTime > 1.5 && input.confirmPressed) {
-        game.scene = 'title';
-        game.sceneTime = 0;
+        // 한 바퀴를 돈 사람은 타이틀이 아니라 **판으로 돌아온다** — 거기 NPC 가 서 있다
+        if (game.save.clearedOnce) returnToHub(game);
+        else {
+          game.scene = 'title';
+          game.sceneTime = 0;
+        }
       }
       break;
 
@@ -962,4 +1168,6 @@ export const runSummary = (game) => ({
   timeMs: game.ending ? game.ending.timeMs : null,
   // 골라 들어간 판인지. 저장 쪽(mergeRun)이 이걸 보고 기록 갱신을 건너뛴다.
   partial: game.partial,
+  /** 하드모드 판인지. 기록이 어느 칸으로 갈지 이걸로 갈린다 */
+  hard: game.hard,
 });

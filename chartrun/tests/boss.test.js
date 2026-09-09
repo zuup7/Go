@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  laserBeams,
   createBoss,
   updateBoss,
   hitBoss,
@@ -9,7 +10,7 @@ import {
   bossHealthRatio,
   laserBeam,
 } from '../src/core/boss.js';
-import { BOSS_MAX_HP, PHASES, phaseFor } from '../src/data/bossData.js';
+import { BOSS_MAX_HP, PHASES, HARD_PHASES, phaseFor } from '../src/data/bossData.js';
 import { PLAYER } from '../src/core/player.js';
 import { createGame, loadBoss, updateGame } from '../src/core/game.js';
 import { emptySave } from '../src/core/save.js';
@@ -361,3 +362,53 @@ function idleInput() {
     mutePressed: false, anyPressed: false,
   };
 }
+
+// ── 하드 4페이즈 — 못 피하는 판이 되지 않게 ──────────────────
+test('하드의 모든 페이즈에서 훑는 속도가 달리기보다 느리다', () => {
+  // 여기를 넘기는 순간 달려서 못 피하는 판이 된다. 하드라고 예외가 아니다.
+  for (const p of HARD_PHASES) {
+    assert.ok(p.laserEvery > 0, `하드 ${p.id}페이즈에 레이저가 없다`);
+    assert.ok(
+      p.laserSweep < PLAYER.maxSpeed,
+      `하드 ${p.id}페이즈: 훑는 속도 ${p.laserSweep} 가 달리기 ${PLAYER.maxSpeed} 보다 빠르다`,
+    );
+  }
+});
+
+test('쌍둥이 레이저 둘 사이에 설 자리가 남는다', () => {
+  // 양쪽에서 마주 오는데 가운데가 다 덮이면 어디에도 못 선다 —
+  // 그건 어려운 게 아니라 그냥 죽으라는 것이다.
+  const p4 = HARD_PHASES.find((p) => p.twinLaser);
+  assert.ok(p4, '쌍둥이 레이저를 쓰는 페이즈가 없다');
+
+  const arena = 640;
+  const swept = p4.laserSweep * p4.laserFire;
+  // 8 에서 오른쪽으로, arena-8 에서 왼쪽으로
+  const leftEnd = 8 + swept;
+  const rightEnd = arena - 8 - swept;
+  const gap = rightEnd - leftEnd;
+  assert.ok(gap > 60, `둘 사이에 ${Math.round(gap)}px 밖에 안 남는다 — 설 자리가 없다`);
+});
+
+test('하드 4페이즈에서 기둥이 둘, 그 전에는 하나다', () => {
+  const boss = createBoss(640, 192, true);
+  const ctx4 = () => ctx({ arenaWidth: 640 });
+  // 체력 12 를 넷으로 나누면 3대씩이다 — 12~10 은 1페이즈, 3~0 은 이미 4페이즈다
+  for (const [hp, want] of [[12, 1], [8, 1], [5, 1], [2, 2]]) {
+    boss.hp = hp;
+    boss.phaseId = 1;
+    syncPhase(boss);
+    boss.state = 'attack';
+    boss.timer = 99;
+    boss.laserTimer = 0;
+    let got = 0;
+    for (let i = 0; i < 60 * 20; i++) {
+      updateBoss(boss, ctx4(), DT);
+      if (boss.state === 'laser') {
+        got = laserBeams(boss).length;
+        break;
+      }
+    }
+    assert.equal(got, want, `체력 ${hp}(${boss.phaseId}페이즈): 기둥이 ${got}개`);
+  }
+});

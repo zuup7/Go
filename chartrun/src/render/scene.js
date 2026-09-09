@@ -5,14 +5,16 @@ import { cameraOffset } from '../core/camera.js';
 import { trapKey } from '../data/traps.js';
 import { drawAlbum, drawCoverAt } from './albumArt.js';
 import { drawSprite, crisp, makeCanvas } from './pixel.js';
+import { npcInReach } from '../core/game.js';
+import { NPC_TALK } from '../data/npcTalk.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import { phaseAt, phaseAtIn, CUT_AT } from '../data/cutscene.js';
-import { BOSS_CUTS, PHASE2_AT, PHASE3_AT, ENDING_AT } from '../data/bossCutscenes.js';
+import { BOSS_CUTS, PHASE2_AT, PHASE3_AT, PHASE4_AT, ENDING_AT } from '../data/bossCutscenes.js';
 import { INTRO_CUT, INTRO_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
-import { bossPhase, princessCaged, bossCombined, laserBeam } from '../core/boss.js';
+import { bossPhase, princessCaged, bossCombined, laserBeams } from '../core/boss.js';
 import { PLAYER } from '../core/player.js';
 
 // ── 배경 ────────────────────────────────────────────────────
@@ -51,6 +53,9 @@ function drawSky(ctx, stage, ox, time) {
       break;
     case 'building':
       drawCeilingLights(ctx, ox, time);
+      break;
+    case 'ice':
+      drawAurora(ctx, ox, time);
       break;
     default:
       drawStars(ctx, time);
@@ -294,6 +299,50 @@ function drawChartBars(ctx, stage, ox, time) {
   ctx.restore();
 }
 
+// ── 얼음 ────────────────────────────────────────────────────
+/** 하늘에 천천히 흐르는 오로라 띠 */
+function drawAurora(ctx, ox, time) {
+  ctx.save();
+  for (let L = 0; L < 3; L++) {
+    ctx.globalAlpha = 0.13 - L * 0.03;
+    ctx.fillStyle = L % 2 ? '#8fd8ff' : '#7cffd0';
+    ctx.beginPath();
+    ctx.moveTo(0, 20 + L * 16);
+    for (let x = 0; x <= VIEW.w; x += 8) {
+      const t = (x - ox * 0.05) * 0.02 + time * 0.3 + L;
+      ctx.lineTo(x, 20 + L * 16 + Math.sin(t) * 9 + Math.sin(t * 2.1) * 4);
+    }
+    for (let x = VIEW.w; x >= 0; x -= 8) {
+      const t = (x - ox * 0.05) * 0.02 + time * 0.3 + L;
+      ctx.lineTo(x, 34 + L * 16 + Math.sin(t) * 9);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+  drawStars(ctx, time);
+}
+
+/** 원경의 빙산 — 각진 실루엣이라 언덕과 확실히 다르게 읽힌다 */
+function drawBergs(ctx, stage, ox) {
+  ctx.save();
+  ctx.fillStyle = stage.far;
+  band(ox, 0.3, 56, (x, i) => {
+    const h = 34 + ((i * 37) % 46);
+    ctx.beginPath();
+    ctx.moveTo(x - 26, VIEW.h - 34);
+    ctx.lineTo(x - 6, VIEW.h - 34 - h);
+    ctx.lineTo(x + 8, VIEW.h - 34 - h * 0.62);
+    ctx.lineTo(x + 30, VIEW.h - 34);
+    ctx.closePath();
+    ctx.fill();
+  });
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = stage.ground[0];
+  ctx.fillRect(0, VIEW.h - 36, VIEW.w, 3);
+  ctx.restore();
+}
+
 /** 스테이지마다 다른 원경 — 시차를 줘서 달리는 느낌을 낸다 */
 function drawParallax(ctx, stage, ox, time) {
   switch (stage.theme) {
@@ -309,6 +358,9 @@ function drawParallax(ctx, stage, ox, time) {
     case 'building':
       drawBuilding(ctx, stage, ox);
       drawPipes(ctx, stage, ox);
+      break;
+    case 'ice':
+      drawBergs(ctx, stage, ox);
       break;
     default:
       drawChartBars(ctx, stage, ox, time);
@@ -467,6 +519,46 @@ function drawTile(ctx, ch, x, y, stage, revealed, time, buried = false) {
         ctx.fillRect(x + 11, y + 1, 2, 1);
       }
       break;
+    case T.ICE:
+      // 얼음 — 미끄러워 보여야 밟기 전에 안다
+      ctx.fillStyle = '#0a0512';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#4e7fa8';
+      ctx.fillRect(x, y + 1, TILE - 1, TILE - 1);
+      ctx.fillStyle = '#bfe6ff';
+      ctx.fillRect(x, y, TILE, 3);
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillRect(x + 2, y + 5, 5, 1);
+      ctx.fillRect(x + 9, y + 9, 4, 1);
+      break;
+    case T.SPRING: {
+      // 용수철 — 감긴 모양이라 "밟으면 튄다"가 그림으로 읽힌다
+      ctx.fillStyle = '#0a0512';
+      ctx.fillRect(x, y + 4, TILE, TILE - 4);
+      ctx.fillStyle = '#39ff9a';
+      ctx.fillRect(x + 1, y + 4, TILE - 2, 3);
+      ctx.fillStyle = '#1c8f5a';
+      for (let i = 0; i < 3; i++) ctx.fillRect(x + 3, y + 8 + i * 3, TILE - 6, 2);
+      break;
+    }
+    case T.BLINK:
+      // 켜져 있을 때만 그린다 — 꺼진 동안은 game 이 글자를 지우므로 여기 안 온다
+      ctx.fillStyle = '#0a0512';
+      ctx.fillRect(x, y, TILE, 7);
+      ctx.fillStyle = '#8fd8ff';
+      ctx.fillRect(x, y, TILE, 4);
+      ctx.fillStyle = '#2d6f96';
+      ctx.fillRect(x, y + 4, TILE, 2);
+      break;
+    case T.CEILSPIKE:
+      // 천장에 붙은 채로는 평범한 천장인 척한다. 내려오는 건 drawCeilSpikes 가 그린다.
+      ctx.fillStyle = '#0a0512';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = dark;
+      ctx.fillRect(x, y, TILE - 1, TILE - 1);
+      ctx.fillStyle = light;
+      ctx.fillRect(x, y + TILE - 3, TILE, 3);
+      break;
     default:
       break;
   }
@@ -476,6 +568,7 @@ function drawTile(ctx, ch, x, y, stage, revealed, time, buried = false) {
  * 시간에 따라 움직이는 칸. 이것만 매 프레임 새로 그리고, 나머지는 구워서 쓴다.
  */
 const LIVE_TILES = new Set([T.ITEM, T.BAIT, T.REVERSE]);
+// (깜빡이는 발판은 글자 자체가 사라졌다 나타나므로 구워도 된다 — 켜져 있을 때만 그려진다)
 
 /**
  * 한 번 당해야 표시가 뜨는 칸. **이것만** 함정 기억을 뒤진다.
@@ -579,6 +672,203 @@ function drawZoneHints(ctx, game, ox, oy, time) {
   }
 }
 
+/** 내려오는 천장 가시 — 솟는 가시를 위아래만 뒤집은 것이다 */
+function drawCeilSpikes(ctx, world, ox, oy) {
+  for (const spike of world.ceilSpikes) {
+    if (!spike.popped || spike.t <= 0) continue;
+    const x = spike.tx * TILE - ox;
+    const top = (spike.ty + 1) * TILE - oy;
+    const len = TILE * spike.t;
+    ctx.fillStyle = '#8b93a8';
+    ctx.fillRect(x, top - 2, TILE, 2);
+    ctx.fillStyle = '#f2f5ff';
+    for (let i = 0; i < 3; i++) {
+      const sx = x + 2 + i * 4;
+      ctx.beginPath();
+      ctx.moveTo(sx, top);
+      ctx.lineTo(sx + 2, top + len);
+      ctx.lineTo(sx + 4, top);
+      ctx.fill();
+    }
+  }
+}
+
+/** 아직 안 먹은 가짜 체크포인트. 진짜와 똑같이 생겼다 — 그게 함정이다 */
+function drawFakeChecks(ctx, game, ox, oy, time) {
+  for (const fc of game.world.fakeChecks) {
+    if (fc.taken) continue;
+    const marked = game.trapMemory.has(trapKey(fc.tx, fc.ty, game.hard ? game.world.stage.id : ''));
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    drawSprite(ctx, DISC, fc.x - ox - 3, fc.y - oy - 2 + Math.sin(time * 3) * 1.5);
+    // 한 번 당한 뒤에야 가짜라는 표시가 뜬다
+    if (marked) {
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#ff2e63';
+      ctx.fillRect(Math.round(fc.x - ox - 2), Math.round(fc.y - oy - 6), 10, 2);
+    }
+    ctx.restore();
+  }
+}
+
+/** 쫓아오는 가시벽. 화면에 계속 보여야 도망칠 마음이 든다 */
+function drawChaser(ctx, game, ox, oy, time) {
+  if (!game.chaser) return;
+  const x = Math.round(game.chaser.x - ox);
+  const h = game.world.pixelHeight;
+  ctx.save();
+  // 벽 뒤는 아예 어둡게 — 저기로는 못 돌아간다
+  ctx.fillStyle = 'rgba(20,2,10,0.85)';
+  ctx.fillRect(x - 400, -oy, 400, h);
+  ctx.fillStyle = '#3d0a1c';
+  ctx.fillRect(x - 12, -oy, 12, h);
+  ctx.fillStyle = '#ff2e63';
+  for (let y = -oy % 12; y < h; y += 12) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 6 + Math.sin(time * 12 + y) * 1.5, y + 6);
+    ctx.lineTo(x, y + 12);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** 2회차의 NPC. 한 바퀴를 돈 사람에게만 보인다 */
+function drawNpc(ctx, game, ox, oy, time) {
+  for (const npc of game.world.npcs) {
+    const x = Math.round(npc.x - ox);
+    const y = Math.round(npc.y - oy);
+    ctx.save();
+    // 몸 — 두건을 쓴 작은 사람
+    ctx.fillStyle = '#241a33';
+    ctx.fillRect(x, y - 2, 10, 16);
+    ctx.fillStyle = '#7c5cff';
+    ctx.fillRect(x + 1, y - 1, 8, 6);
+    ctx.fillStyle = '#ffd9b3';
+    ctx.fillRect(x + 2, y + 5, 6, 3);
+    ctx.fillStyle = '#241a33';
+    ctx.fillRect(x + 3, y + 6, 1, 1);
+    ctx.fillRect(x + 6, y + 6, 1, 1);
+    // 지팡이
+    ctx.fillStyle = '#8a7fb8';
+    ctx.fillRect(x + 10, y - 4, 1, 18);
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(x + 9, y - 6, 3, 3);
+    // 말을 걸 수 있으면 머리 위에 꼭지가 뜬다 (대사는 없다 — 누를 수 있다는 신호뿐)
+    if (!npc.talked && npcInReach(game)) {
+      const bob = Math.sin(time * 5) * 1.5;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 3, Math.round(y - 12 + bob), 4, 4);
+      ctx.fillStyle = '#241a33';
+      ctx.fillRect(x + 4, Math.round(y - 11 + bob), 2, 2);
+    }
+    ctx.restore();
+  }
+}
+
+/**
+ * NPC 의 말풍선. **글자는 없다.**
+ *
+ * 이 게임은 오프닝부터 엔딩까지 글자 한 줄 없이 굴러왔다. NPC 하나 때문에 그걸 깨느니
+ * 그림 세 장으로 말한다 — 트로피(1등은 했다) → 갈라진 트로피와 더 뻗는 차트(위가 있다)
+ * → 문(저기로 가라).
+ */
+function drawNpcTalk(ctx, game, ox, oy, time) {
+  const talk = game.npcTalk;
+  if (!talk) return;
+  const npc = game.world.npcs[0];
+  if (!npc) return;
+  const kind = beatKind(NPC_TALK, talk.t);
+  if (!kind || kind === 'end') return;
+
+  const bx = Math.round(npc.x - ox - 14);
+  const by = Math.round(npc.y - oy - 44);
+  const w = 40;
+  const h = 34;
+
+  // 말풍선
+  ctx.save();
+  ctx.fillStyle = 'rgba(14,8,28,0.94)';
+  ctx.fillRect(bx, by, w, h);
+  ctx.strokeStyle = '#a98cff';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1);
+  ctx.fillStyle = 'rgba(14,8,28,0.94)';
+  ctx.fillRect(bx + 14, by + h, 5, 5);
+
+  const cx = bx + w / 2;
+  const cy = by + h / 2;
+
+  if (kind === 'trophy') {
+    // 트로피 — 1등은 했다
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(cx - 6, cy - 9, 12, 8);
+    ctx.fillRect(cx - 2, cy - 1, 4, 5);
+    ctx.fillRect(cx - 7, cy + 4, 14, 3);
+    ctx.fillStyle = '#fff3c4';
+    ctx.fillRect(cx - 5, cy - 8, 3, 2);
+    // 손잡이
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(cx - 9, cy - 8, 2, 4);
+    ctx.fillRect(cx + 7, cy - 8, 2, 4);
+  } else if (kind === 'crack') {
+    // 금이 간 트로피 + 위로 더 뻗는 차트
+    ctx.fillStyle = '#8a7a4a';
+    ctx.fillRect(cx - 12, cy - 6, 10, 7);
+    ctx.fillRect(cx - 13, cy + 1, 12, 2);
+    ctx.fillStyle = '#0e081c';
+    ctx.fillRect(cx - 8, cy - 6, 1, 7);
+    ctx.fillRect(cx - 6, cy - 3, 1, 4);
+    // 차트가 위로 뻗는다
+    ctx.fillStyle = '#ff5d8f';
+    for (let i = 0; i < 4; i++) ctx.fillRect(cx + 1 + i * 4, cy + 3 - i * 3, 3, 3 + i * 3);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(cx + 13, cy - 10, 3, 1);
+    ctx.fillRect(cx + 14, cy - 11, 1, 3);
+  } else if (kind === 'portal') {
+    // 문 — 저기로 가라
+    ctx.fillStyle = '#140828';
+    ctx.fillRect(cx - 6, cy - 10, 12, 20);
+    for (let i = 0; i < 3; i++) {
+      const k = ((time * 0.9 + i * 0.33) % 1);
+      ctx.globalAlpha = 1 - k;
+      ctx.strokeStyle = i % 2 ? '#ff5d8f' : '#7c5cff';
+      ctx.strokeRect(cx - 6 * k, cy - 10 * k, 12 * k, 20 * k);
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+/** 하드모드로 가는 문. 말을 걸기 전에는 자리만 흐릿하다 */
+function drawPortal(ctx, game, ox, oy, time) {
+  for (const p of game.world.portals) {
+    const x = Math.round(p.x - ox);
+    const y = Math.round(p.y - oy);
+    ctx.save();
+    if (!p.open) {
+      ctx.globalAlpha = 0.18;
+      ctx.strokeStyle = '#7c5cff';
+      ctx.setLineDash([2, 3]);
+      ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE * 2 - 1);
+      ctx.setLineDash([]);
+      ctx.restore();
+      continue;
+    }
+    // 열린 문 — 안쪽으로 빨려드는 고리
+    ctx.fillStyle = '#140828';
+    ctx.fillRect(x, y, TILE, TILE * 2);
+    for (let i = 0; i < 4; i++) {
+      const k = (time * 0.8 + i * 0.25) % 1;
+      ctx.globalAlpha = 1 - k;
+      ctx.strokeStyle = i % 2 ? '#ff5d8f' : '#7c5cff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + TILE / 2 - (TILE / 2) * k, y + TILE - TILE * k, TILE * k, TILE * 2 * k);
+    }
+    ctx.restore();
+  }
+}
+
 function drawPopSpikes(ctx, world, ox, oy) {
   for (const spike of world.popSpikes) {
     if (!spike.popped || spike.t <= 0) continue;
@@ -675,8 +965,10 @@ function drawPlayer(ctx, player, ox, oy, time) {
  * 둘이 한눈에 달라 보여야 "지금 맞는 건가"를 안 헷갈린다.
  */
 function drawLaser(ctx, boss, ox, oy, time, color) {
-  const beam = laserBeam(boss);
-  if (!beam) return;
+  for (const beam of laserBeams(boss)) drawBeam(ctx, beam, ox, oy, time, color);
+}
+
+function drawBeam(ctx, beam, ox, oy, time, color) {
   const x = beam.x - ox;
   const y = beam.y - oy;
   const cx = x + beam.w / 2;
@@ -1106,6 +1398,25 @@ export const ROBOT_BOTTOM = RB.footBot;
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
+/** 타임라인에서 지금 어느 단계인지 (시각은 자료 쪽에만 적혀 있다) */
+function beatKind(timeline, t) {
+  let cur = null;
+  for (const step of timeline) {
+    if (t >= step.at) cur = step.kind;
+    else break;
+  }
+  return cur;
+}
+
+/** #rrggbb 두 색을 k(0~1) 만큼 섞는다 */
+function mixHex(a, b, k) {
+  const n = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [ar, ag, ab] = n(a);
+  const [br, bg, bb] = n(b);
+  const c = (x, y) => Math.round(x + (y - x) * k).toString(16).padStart(2, '0');
+  return `#${c(ar, br)}${c(ag, bg)}${c(ab, bb)}`;
+}
+
 /**
  * 가슴 코어실의 반쪽 크기. 작은 몸에서는 코어(반지름 11)가 들어갈 최소치를 지키고,
  * 큰 몸에서는 가슴 비율을 따라 같이 커진다 — 배경의 거대 로봇도 이 식을 쓴다.
@@ -1408,6 +1719,7 @@ export function drawBossCut(ctx, game, time) {
 
   if (game.bossCut.id === 'phase2') drawPhase2Cut(ctx, t, phase, time);
   else if (game.bossCut.id === 'phase3') drawPhase3Cut(ctx, t, phase, time);
+  else if (game.bossCut.id === 'phase4') drawPhase4Cut(ctx, t, phase, time);
   else drawEndingCut(ctx, t, phase, time);
 
   ctx.restore();
@@ -1491,6 +1803,60 @@ function drawQuarters(ctx, cx, cy, r, p, time) {
 // ── 페이즈 3: 실시간 차트를 대놓고 조작한다 ─────────────────
 /** 합체 단계들 — 차트를 조작한 뒤 조각들이 불려와 로봇이 된다 */
 const P3_ROBOT = ['call', 'assemble', 'lock', 'core', 'title'];
+
+/**
+ * 4페이즈 (하드모드) — 이미 합체한 로봇이 한계를 넘는다.
+ *
+ * **새 몸을 그리지 않는다.** 여기서 또 새 형태를 만들면 3페이즈 합체가 시시해진다.
+ * 있는 drawRobotBody 를 벌겋게 달구고, 이음새에서 빛이 새어 나오게 하는 것으로 끝낸다.
+ */
+const P4_HOT = '#ff3b3b';
+
+function drawPhase4Cut(ctx, t, phase, time) {
+  const r = 52;
+  if (phase === 'shake') {
+    ctx.save();
+    ctx.translate(CUT_CX + Math.sin(time * 63) * 3, CUT_CY);
+    drawRobotBody(ctx, r, time, '#7c5cff', 1, false);
+    ctx.restore();
+    return;
+  }
+
+  // 과열 — 이음새마다 빛이 샌다. 색이 보라에서 붉게 넘어간다.
+  const heat = clamp01((t - PHASE4_AT.overheat) / 1.4);
+  const color = phase === 'overheat' ? mixHex('#7c5cff', P4_HOT, heat) : P4_HOT;
+
+  ctx.save();
+  const jolt = phase === 'core' ? Math.sin(time * 90) * 2 : Math.sin(time * 40) * heat;
+  ctx.translate(CUT_CX + jolt, CUT_CY);
+  drawRobotBody(ctx, r, time, color, 1, false);
+  ctx.restore();
+  drawBossCore(ctx, CUT_CX + jolt, CUT_CY, phase === 'core' || phase === 'title', time, 14);
+
+  // 이음새에서 새는 빛
+  if (heat > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.35 + Math.sin(time * 18) * 0.2 * heat;
+    ctx.fillStyle = '#fff0c4';
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2 + time * 0.6;
+      ctx.fillRect(CUT_CX + Math.cos(a) * r * 0.7 - 2, CUT_CY + Math.sin(a) * r * 0.7 - 1, 5, 2);
+    }
+    ctx.restore();
+  }
+
+  // 뒤의 거대 로봇이 일어선다 — 크기가 그림으로 읽히는 자리다
+  if (phase === 'rise' || phase === 'core' || phase === 'title') {
+    const up = clamp01((t - PHASE4_AT.rise) / 1.2);
+    ctx.save();
+    ctx.globalAlpha = 0.3 * up;
+    ctx.fillStyle = P4_HOT;
+    ctx.fillRect(0, VIEW.h - VIEW.h * up, VIEW.w, VIEW.h * up);
+    ctx.restore();
+  }
+
+  if (phase === 'title') drawCutTitle(ctx, 'FINAL', t - PHASE4_AT.title, 4, 14);
+}
 
 function drawPhase3Cut(ctx, t, phase, time) {
   if (phase === 'shake') {
@@ -2388,6 +2754,7 @@ export function drawScene(ctx, game, time) {
   if (game.boss && bossCombined(game.boss)) drawGiantRobot(ctx, game.boss, ox, time);
   drawTiles(ctx, game, ox, oy, time);
   drawPopSpikes(ctx, game.world, ox, oy);
+  drawCeilSpikes(ctx, game.world, ox, oy);
   drawWallHints(ctx, game, ox, oy, time);
   drawZoneHints(ctx, game, ox, oy, time);
 
@@ -2411,6 +2778,10 @@ export function drawScene(ctx, game, time) {
     drawFlag(ctx, fake.x + fake.offset - ox, fake.y - oy, time, '#ff5d8f', fake.fade ?? 1);
   }
   if (game.world.goal) drawFlag(ctx, game.world.goal.x - ox, game.world.goal.y - oy, time, '#39ff9a');
+
+  drawFakeChecks(ctx, game, ox, oy, time);
+  if (game.world.portals.length) drawPortal(ctx, game, ox, oy, time);
+  if (game.world.npcs.length) drawNpc(ctx, game, ox, oy, time);
 
   for (const album of game.albums) drawAlbum(ctx, album, ox, oy, time);
 
@@ -2441,6 +2812,8 @@ export function drawScene(ctx, game, time) {
   }
   ctx.globalAlpha = 1;
 
+  drawChaser(ctx, game, ox, oy, time);
+  drawNpcTalk(ctx, game, ox, oy, time);
   drawEffects(ctx, game, ox, oy, time);
 
   if (game.flash > 0) {

@@ -142,7 +142,17 @@ function handleEvent(name, data) {
     case 'ending':
       audio.stopBgm();
       audio.play('ending');
-      persist({ timeMs: data.timeMs, rank: 1 });
+      // 한 바퀴를 돌았다고 남긴다 — 이걸로 NPC 와 하드모드가 열린다
+      persist({ timeMs: data.timeMs, rank: 1, clearedOnce: true, clearedHard: data.hard });
+      break;
+    case 'talk':
+      audio.play('blip');
+      break;
+    case 'portal':
+      audio.play('swirl');
+      break;
+    case 'spring':
+      audio.play('power');
       break;
     default:
       break;

@@ -55,6 +55,10 @@ export const PLAYER = {
   dashCool: 0.7,
   /** 역주행 바닥이 밀어내는 속도 */
   conveyor: 46,
+  /** 미끄러운 바닥에서의 마찰. 평소의 1/8 이라 놓아도 한참 밀린다 */
+  iceFriction: 130,
+  /** 튕기는 발판이 올려주는 높이 (평소 점프 320 보다 훨씬 높다) */
+  springV: 430,
 };
 
 export function createPlayer(spawn) {
@@ -112,12 +116,32 @@ export function respawnPlayer(player, spawn) {
   player.stride = 0;
 }
 
+/** 발밑 한 줄에 그 글자가 깔려 있나 (역주행 바닥이 보는 것과 같은 자리) */
+function standingOn(player, world, ch) {
+  if (!player.onGround) return false;
+  const feetTy = Math.floor((player.y + player.h + 1) / TILE);
+  const tx0 = Math.floor(player.x / TILE);
+  const tx1 = Math.floor((player.x + player.w - 0.001) / TILE);
+  for (let tx = tx0; tx <= tx1; tx++) if (world.charAt(tx, feetTy) === ch) return true;
+  return false;
+}
+
+const onIce = (player, world) => standingOn(player, world, T.ICE);
+
 /**
  * 한 프레임 갱신. 반환값으로 이번 프레임에 벌어진 일을 알려준다.
  * input: { left, right, jump, jumpPressed }
  */
 export function updatePlayer(player, input, world, dt) {
-  const events = { jumped: false, landed: null, bonked: null, hazard: false, fell: false, dashed: false };
+  const events = {
+    jumped: false,
+    landed: null,
+    bonked: null,
+    hazard: false,
+    fell: false,
+    dashed: false,
+    sprung: false,
+  };
   if (player.dead) return events;
 
   player.animTime += dt;
@@ -157,7 +181,9 @@ export function updatePlayer(player, input, world, dt) {
     player.vx = approach(player.vx, want * PLAYER.maxSpeed, accel * dt);
     player.dir = want;
   } else if (player.onGround) {
-    player.vx = approach(player.vx, 0, PLAYER.friction * dt);
+    // 얼음 위에서는 놓아도 한참 밀린다 — 멈추는 것도 실력이 된다
+    const friction = onIce(player, world) ? PLAYER.iceFriction : PLAYER.friction;
+    player.vx = approach(player.vx, 0, friction * dt);
   }
 
   // 점프 — 코요테 타임 + 점프 버퍼로 마리오처럼 관대하게
@@ -215,6 +241,14 @@ export function updatePlayer(player, input, world, dt) {
         break;
       }
     }
+  }
+
+  // 튕기는 발판 — 착지한 순간에만 본다 (올라가는 중에 또 밟히면 무한히 뜬다)
+  if (wasAir && player.onGround && falling > 0 && standingOn(player, world, T.SPRING)) {
+    player.vy = -PLAYER.springV;
+    player.onGround = false;
+    player.stretch = 1;
+    events.sprung = true;
   }
 
   // 가시에 닿았나

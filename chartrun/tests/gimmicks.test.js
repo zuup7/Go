@@ -81,7 +81,12 @@ test('존 글자는 격자에서 빠지고 목록으로 간다', () => {
   assert.equal(world.zones.length, 2);
   assert.deepEqual(world.zones.map((z) => z.kind).sort(), ['blackout', 'reversed']);
   assert.equal(world.charAt(1, 11), T.EMPTY, '트리거 글자는 지형에 안 남는다');
-  assert.deepEqual(Object.keys(ZONE_KINDS).sort(), ['@', 'R']);
+  // 글자 목록을 그대로 못 박지 않는다 — 구간 효과를 더할 때마다 깨지기만 한다.
+  // 지켜야 하는 건 "모든 구간 글자에 효과가 짝지어져 있다" 는 규칙이다.
+  for (const [ch, kind] of Object.entries(ZONE_KINDS)) {
+    assert.ok(ch.length === 1, `구간 글자 '${ch}' 가 한 글자가 아니다`);
+    assert.ok(ZONE_EFFECTS[kind], `구간 '${ch}' 의 효과 ${kind} 가 표에 없다`);
+  }
 });
 
 // ── 무너지는 바닥 ───────────────────────────────────────────

@@ -65,6 +65,14 @@ export const CUT_SOUND = {
    * 엔딩 — 1부는 차트를 타고 올라가는 승리, 2부는 결혼식.
    * aisle 에서 웨딩 마치로 갈아탄다.
    */
+  phase4: {
+    shake: { sfx: 'rumble' },
+    overheat: { sfx: 'gather' },
+    rise: { sfx: 'thud' },
+    core: { sfx: 'flash' },
+    title: { sfx: 'title' },
+    end: {},
+  },
   ending: {
     crack: { sfx: 'crack' },
     burst: { sfx: 'burst' },

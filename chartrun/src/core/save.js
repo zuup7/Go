@@ -21,6 +21,16 @@ export const emptySave = () => ({
   seenOpening: false,
   /** 개발자 모드 (비번 1234). 켜면 스테이지를 골라 들어갈 수 있다 */
   dev: false,
+  /**
+   * 한 바퀴를 끝냈는가. 이걸로 스테이지 1 의 NPC 와 하드모드가 열린다.
+   * (칸을 더하는 건 공짜다 — deserialize 가 emptySave() 위에 덮어쓰므로
+   *  이 칸이 없는 옛 저장은 false 로 열린다. seenOpening 과 같은 방식이다.)
+   */
+  clearedOnce: false,
+  /** 하드모드까지 끝냈는가 */
+  clearedHard: false,
+  /** 하드모드 최고 기록. 보통 기록과 **따로** 둔다 — 둘은 같은 판이 아니다 */
+  bestHardTimeMs: null,
 });
 
 export function serialize(data) {
@@ -65,8 +75,10 @@ export function clearSave() {
  * 이번 기록이 최고 기록을 깼는가. 기록이 아직 없으면 처음 세운 것이니 참이다.
  * (mergeRun 이 실제로 갱신하는 조건과 같은 판단이라, 화면 표시와 저장이 어긋나지 않는다)
  */
-export const beatRecord = (save, timeMs) =>
-  timeMs != null && (save?.bestTimeMs == null || timeMs < save.bestTimeMs);
+export const beatRecord = (save, timeMs, hard = false) => {
+  const best = hard ? save?.bestHardTimeMs : save?.bestTimeMs;
+  return timeMs != null && (best == null || timeMs < best);
+};
 
 /** 이번 판의 결과를 기록에 합친다 */
 export function mergeRun(save, run) {
@@ -81,8 +93,13 @@ export function mergeRun(save, run) {
   if (run.revealedTraps) {
     next.revealedTraps = [...new Set([...(save.revealedTraps ?? []), ...run.revealedTraps])];
   }
-  if (!run.partial && run.timeMs != null && (save.bestTimeMs == null || run.timeMs < save.bestTimeMs)) {
-    next.bestTimeMs = run.timeMs;
+  if (run.clearedOnce) next.clearedOnce = true;
+  if (run.clearedHard) next.clearedHard = true;
+  // 하드 기록은 하드 칸으로 간다. 안 나누면 어려운 판을 깬 시간이 보통 기록을 덮어써서
+  // "최고 기록"이 무슨 판의 기록인지 알 수 없게 된다.
+  if (!run.partial && run.timeMs != null && beatRecord(save, run.timeMs, run.hard)) {
+    if (run.hard) next.bestHardTimeMs = run.timeMs;
+    else next.bestTimeMs = run.timeMs;
   }
   return next;
 }

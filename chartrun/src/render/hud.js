@@ -4,7 +4,7 @@ import { timeText } from '../core/util.js';
 import { beatRecord } from '../core/save.js';
 import { STAGES } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
-import { PAUSE_ROWS } from '../core/game.js';
+import { PAUSE_ROWS, stageTable } from '../core/game.js';
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -102,6 +102,10 @@ export function createHud(root) {
             ${menu}
             <p class="record">BEST #${game.save.bestRank} · ${
               game.save.bestTimeMs == null ? '--:--' : timeText(game.save.bestTimeMs)
+            }${
+              game.save.bestHardTimeMs == null
+                ? ''
+                : ` · ★ ${timeText(game.save.bestHardTimeMs)}`
             }</p>
             <button type="button" class="dev-open" data-key="open" aria-label="개발자 모드">⚙</button>
           </div>`;
@@ -110,6 +114,7 @@ export function createHud(root) {
         const slots = [
           ...STAGES.map((s) => ({ icon: s.icon, label: `STAGE ${s.number}` })),
           { icon: '👑', label: '보스전' },
+          { icon: '🔥', label: '하드모드 1판부터' },
           { icon: '🎬', label: '오프닝 다시 보기' },
           { icon: '🚪', label: '개발자 모드 끄기' },
         ];
@@ -130,7 +135,8 @@ export function createHud(root) {
           </div>`;
       }
       case 'stageIntro': {
-        const stage = STAGES[game.stageIndex];
+        // **하드모드에서는 하드 표를 봐야 한다** — STAGES 를 직접 보면 이름이 어긋난다
+        const stage = stageTable(game)[game.stageIndex];
         return `
           <div class="panel">
             <p class="stage-icon">${esc(stage.icon)}</p>
@@ -140,7 +146,7 @@ export function createHud(root) {
       case 'death':
         return '<div class="panel death"><h2>차트아웃</h2></div>';
       case 'stageClear': {
-        const stage = STAGES[game.stageIndex];
+        const stage = stageTable(game)[game.stageIndex];
         return `
           <div class="panel good">
             <h2>STAGE ${stage.number} ✓</h2>
@@ -151,10 +157,10 @@ export function createHud(root) {
         const e = game.ending ?? {};
         // 기록은 저장하기 전에 판정해야 한다 — 저장하고 나면 항상 "안 깼다" 가 된다.
         // (game.save 는 아직 이번 판이 반영되기 전 상태다)
-        const fresh = beatRecord(game.save, e.timeMs);
+        const fresh = beatRecord(game.save, e.timeMs, e.hard);
         return `
           <div class="panel ending">
-            <h1>#1</h1>
+            <h1>${e.hard ? '#1 ★' : '#1'}</h1>
             <ul class="stats">
               <li><span>TIME</span><b>${timeText(e.timeMs ?? 0)}${fresh ? ' <i class="fresh">신기록</i>' : ''}</b></li>
               <li><span>차트아웃</span><b>${e.chartOuts ?? 0}</b></li>

@@ -8,6 +8,7 @@ import {
   BOSS_CUTS,
   PHASE2_CUT,
   PHASE3_CUT,
+  PHASE4_CUT,
   ENDING_CUT,
   bossCutLength,
 } from '../src/data/bossCutscenes.js';
@@ -70,6 +71,7 @@ const TIMELINES = {
   merge: CUTSCENE,
   phase2: PHASE2_CUT,
   phase3: PHASE3_CUT,
+  phase4: PHASE4_CUT,
   ending: ENDING_CUT,
 };
 

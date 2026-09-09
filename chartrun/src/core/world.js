@@ -22,6 +22,15 @@ export const T = {
   CHECK: 'C',
   GOAL: 'G',
   FAKEGOAL: 'F',
+  // ── 하드모드 함정 ──────────────────────────────────────
+  BLINK: ':', // 주기적으로 사라졌다 나타나는 발판
+  FAKECHECK: ';', // 체크포인트인 척하지만 저장이 안 되고 사라진다
+  ICE: '_', // 미끄러운 바닥. 멈추려 해도 밀린다
+  SPRING: '!', // 밟으면 크게 튄다
+  CEILSPIKE: 'T', // 천장에 붙어 있다 아래를 지나가면 내려온다
+  ZONE_CHASE: '>', // 왼쪽에서 가시벽이 따라오는 구간
+  NPC: 'N', // 한 바퀴를 돈 뒤에만 나타나는 사람. 말을 걸면 포탈이 열린다
+  PORTAL: 'P', // 하드모드로 가는 문. NPC 에게 말을 걸기 전에는 닫혀 있다
   ZONE_REVERSE: 'R', // 좌우가 뒤바뀌는 역재생 구간
   ZONE_BLACKOUT: '@', // 화면이 깜깜해지는 정전 구간
 };
@@ -36,13 +45,18 @@ const SOLID_CHARS = new Set([
   T.USED,
   T.CRUMBLE,
   T.RISEN,
+  T.ICE,
+  T.SPRING,
+  T.CEILSPIKE,
 ]);
-const ONEWAY_CHARS = new Set([T.PLATFORM, T.FAKE]);
+// 깜빡이는 발판은 켜져 있을 때만 관통 발판이다. 꺼지면 game 이 글자를 지운다.
+const ONEWAY_CHARS = new Set([T.PLATFORM, T.FAKE, T.BLINK]);
 
 /** 존 트리거 글자 → 효과 이름 */
 export const ZONE_KINDS = {
   [T.ZONE_REVERSE]: 'reversed',
   [T.ZONE_BLACKOUT]: 'blackout',
+  [T.ZONE_CHASE]: 'chased',
 };
 
 export function tileKind(ch) {
@@ -74,6 +88,13 @@ export function createWorld(stage) {
     pixelHeight: height * TILE,
     spawn: { x: TILE * 2, y: TILE * (height - 3) },
     goal: null,
+    /** 2회차용. 한 바퀴를 돌기 전에는 game 쪽에서 없는 셈 친다 */
+    npcs: [],
+    portals: [],
+    /** 하드모드 함정들 */
+    blinkers: [],
+    fakeChecks: [],
+    ceilSpikes: [],
     fakeGoals: [],
     checkpoints: [],
     albumSpawns: [],
@@ -102,6 +123,30 @@ export function createWorld(stage) {
           break;
         case T.CHECK:
           world.checkpoints.push({ tx, ty, x: x + 3, y: y + 2, taken: false });
+          grid[ty][tx] = T.EMPTY;
+          break;
+        case T.BLINK:
+          // 글자는 격자에 남겨둔다 — 켜져 있는 동안은 진짜 관통 발판이다
+          world.blinkers.push({ tx, ty, x, y });
+          break;
+        case T.FAKECHECK:
+          world.fakeChecks.push({ tx, ty, x: x + 3, y: y + 2, taken: false });
+          grid[ty][tx] = T.EMPTY;
+          break;
+        case T.CEILSPIKE:
+          world.ceilSpikes.push({ tx, ty, x, y, popped: false, t: 0 });
+          break;
+        case T.ZONE_CHASE:
+          world.zones.push({ kind: ZONE_KINDS[ch], tx, ty, x, y, fired: false });
+          grid[ty][tx] = T.EMPTY;
+          break;
+        case T.NPC:
+          // 체크포인트와 같은 모양 — 안 막고, 가까이 가면 반응하는 표시일 뿐이다
+          world.npcs.push({ tx, ty, x: x + 2, y: y + 2, talked: false });
+          grid[ty][tx] = T.EMPTY;
+          break;
+        case T.PORTAL:
+          world.portals.push({ tx, ty, x, y, w: TILE, h: TILE * 2, open: false });
           grid[ty][tx] = T.EMPTY;
           break;
         case T.GOAL:
@@ -147,6 +192,16 @@ export function createWorld(stage) {
     return tileKind(grid[ty][tx]);
   };
 
+  /**
+   * 되돌릴 필요 없이 **살아 움직이는** 칸 (깜빡이는 발판).
+   * setChar 로 하면 changed 에 쌓여서, 죽고 되살아날 때 깜빡이던 어느 순간이
+   * "원래 모습"으로 굳어버린다.
+   */
+  world.setLive = (tx, ty, ch) => {
+    if (ty < 0 || ty >= height || tx < 0 || tx >= width) return;
+    grid[ty][tx] = ch;
+  };
+
   world.setChar = (tx, ty, ch) => {
     if (ty < 0 || ty >= height || tx < 0 || tx >= width) return;
     const key = `${tx},${ty}`;
@@ -170,6 +225,13 @@ export function createWorld(stage) {
       wall.t = 0;
     }
     for (const zone of world.zones) zone.fired = false;
+    for (const c of world.ceilSpikes) {
+      c.popped = false;
+      c.t = 0;
+    }
+    for (const f of world.fakeChecks) f.taken = false;
+    // 깜빡이는 발판은 되돌릴 것이 없다 — 저 혼자 계속 깜빡인다
+    // NPC 는 되돌리지 않는다 — 한 번 말을 걸었으면 죽어도 다시 말 걸 필요가 없다
   };
 
   /** 픽셀 좌표가 어떤 글자 위에 있는지 */

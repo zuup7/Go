@@ -1,11 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { STAGES, BOSS_STAGE, ROWS, CHUNK_W } from '../src/data/stages.js';
+import { STAGES, HARD_STAGES, BOSS_STAGE, ROWS, CHUNK_W } from '../src/data/stages.js';
 import { createWorld, T, tileKind } from '../src/core/world.js';
 import { SOLID, ONEWAY, TILE } from '../src/core/physics.js';
 import { ALBUM_BY_ID } from '../src/data/albums.js';
 
-const ALL = [...STAGES, BOSS_STAGE];
+/**
+ * 줄 길이·타일 같은 **모양** 검사를 받는 판 (보스 무대 포함).
+ * 보스 무대는 골도 체크포인트도 없으므로 아래 PLAYABLE 검사는 안 받는다.
+ */
+const ALL = [...STAGES, ...HARD_STAGES, BOSS_STAGE];
+
+/**
+ * **걸어서 끝까지 가야 하는** 판. 골·체크포인트·구멍·가시 검사를 전부 받는다.
+ * 하드모드 판을 여기 안 넣으면 새 판만 검사 없이 지나가서,
+ * 못 넘는 자리가 생겨도 아무도 모른다.
+ */
+const PLAYABLE = [...STAGES, ...HARD_STAGES];
 
 test('스테이지는 4개 + 보스 무대', () => {
   assert.equal(STAGES.length, 4);
@@ -26,7 +37,7 @@ test('모든 줄의 길이가 같고 구간 단위로 떨어진다', () => {
 });
 
 test('스테이지마다 시작점과 골이 있다', () => {
-  for (const stage of STAGES) {
+  for (const stage of PLAYABLE) {
     const world = createWorld(stage);
     assert.ok(world.goal, `${stage.id}: 골이 없다`);
     assert.ok(world.spawn.x > 0, `${stage.id}: 시작점이 없다`);
@@ -48,7 +59,7 @@ test('타일맵에 쓴 앨범 글자가 전부 실제 앨범이다', () => {
 });
 
 test('스테이지마다 그 스테이지 앨범이 등장한다', () => {
-  for (const stage of STAGES) {
+  for (const stage of PLAYABLE) {
     const world = createWorld(stage);
     assert.ok(world.albumSpawns.length >= 6, `${stage.id}: 적이 너무 적다`);
     const own = world.albumSpawns.filter((s) => ALBUM_BY_ID.get(s.id).stage === stage.number);
@@ -58,7 +69,7 @@ test('스테이지마다 그 스테이지 앨범이 등장한다', () => {
 
 test('앨범 17종이 게임 어딘가에는 모두 나온다', () => {
   const seen = new Set();
-  for (const stage of STAGES) {
+  for (const stage of ALL) {
     for (const spawn of createWorld(stage).albumSpawns) seen.add(spawn.id);
   }
   for (const id of ALBUM_BY_ID.keys()) {
@@ -116,7 +127,7 @@ const MAX_JUMP = 3;
 
 test('바닥의 가시 구간은 점프로 넘을 수 있는 폭이다', () => {
   const floorRow = ROWS - 2;
-  for (const stage of STAGES) {
+  for (const stage of ALL) {
     const row = stage.rows[floorRow];
     let run = 0;
     for (let x = 0; x <= row.length; x++) {
@@ -128,7 +139,7 @@ test('바닥의 가시 구간은 점프로 넘을 수 있는 폭이다', () => {
 
 test('낙하 앨범은 구멍 위가 아니라 착지할 땅 위에 걸어둔다', () => {
   // 구멍 위에 매달아 두면 뛰어넘는 순간에만 떨어져서, 피할 방법 없이 밀어 떨어뜨리는 함정이 된다.
-  for (const stage of STAGES) {
+  for (const stage of ALL) {
     const world = createWorld(stage);
     for (const spawn of world.albumSpawns) {
       if (ALBUM_BY_ID.get(spawn.id).behavior !== 'dropper') continue;
@@ -162,7 +173,7 @@ test('구멍은 한 번에 건너뛸 수 있거나, 위에 딛고 갈 발판이 
   const isOpen = (stage, x) =>
     tileKind(stage.rows[floorRow][x]) === null && tileKind(stage.rows[ROWS - 1][x]) === null;
 
-  for (const stage of STAGES) {
+  for (const stage of ALL) {
     const width = stage.rows[0].length;
     let start = null;
     for (let x = 0; x <= width; x++) {

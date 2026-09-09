@@ -72,8 +72,107 @@ export const PHASES = [
   },
 ];
 
+/**
+ * 하드모드 — 네 페이즈.
+ *
+ * 1페이즈부터 레이저를 쓰고, 4페이즈에서는 **기둥이 둘**이 되어 양쪽에서 훑어 온다.
+ * 훑는 속도는 여전히 달리기(124)보다 느리다 — 여기를 넘기면 못 피하는 판이 된다.
+ */
+export const HARD_PHASES = [
+  {
+    id: 1,
+    from: 3 / 4,
+    color: '#ff5d8f',
+    micEvery: 4.2,
+    fireEvery: 1.2,
+    shots: 7,
+    shotSpeed: 95,
+    openEvery: 3.6,
+    openFor: 1.9,
+    descendTo: 118,
+    minionEvery: 0,
+    quarters: 0,
+    laserEvery: 6.0,
+    laserAim: 0.9,
+    laserFire: 1.6,
+    laserSweep: 96,
+  },
+  {
+    id: 2,
+    from: 2 / 4,
+    color: '#ffc93c',
+    micEvery: 3.8,
+    fireEvery: 1.0,
+    shots: 9,
+    shotSpeed: 110,
+    openEvery: 3.0,
+    openFor: 1.7,
+    descendTo: 126,
+    minionEvery: 4.0,
+    minions: ['a01', 'a06'],
+    quarters: 4,
+    quarterSpeed: 175,
+    laserEvery: 5.2,
+    laserAim: 0.85,
+    laserFire: 1.6,
+    laserSweep: 100,
+  },
+  {
+    id: 3,
+    from: 1 / 4,
+    color: '#7c5cff',
+    micEvery: 3.2,
+    fireEvery: 0.8,
+    shots: 11,
+    shotSpeed: 124,
+    openEvery: 2.6,
+    openFor: 1.5,
+    descendTo: 132,
+    minionEvery: 3.0,
+    minions: ['a01', 'a06', 'a02'],
+    quarters: 4,
+    quarterSpeed: 195,
+    laserEvery: 4.4,
+    laserAim: 0.8,
+    laserFire: 1.7,
+    laserSweep: 104,
+  },
+  {
+    id: 4,
+    from: -1,
+    color: '#ff3b3b',
+    micEvery: 2.8,
+    fireEvery: 0.7,
+    shots: 12,
+    shotSpeed: 132,
+    openEvery: 2.4,
+    openFor: 1.4,
+    descendTo: 134,
+    minionEvery: 2.6,
+    minions: ['a01', 'a06', 'a02', 'a15'],
+    quarters: 6,
+    quarterSpeed: 210,
+    laserEvery: 3.8,
+    laserAim: 0.8,
+    laserFire: 1.8,
+    laserSweep: 108,
+    /**
+     * 기둥이 둘. 양쪽에서 안쪽으로 훑어 온다.
+     * 둘 사이에는 반드시 설 자리가 남아야 한다 — 테스트가 그걸 지킨다.
+     */
+    twinLaser: true,
+  },
+];
+
+/** 하드모드 체력. 페이즈당 세 대는 그대로 두고 페이즈만 하나 늘린다 */
+export const HARD_MAX_HP = 12;
+
+/** 이 판이 볼 페이즈 표와 체력 */
+export const phasesFor = (hard) => (hard ? HARD_PHASES : PHASES);
+export const maxHpFor = (hard) => (hard ? HARD_MAX_HP : BOSS_MAX_HP);
+
 /** 남은 체력 비율로 페이즈를 고른다 */
-export function phaseFor(hp, maxHp = BOSS_MAX_HP) {
+export function phaseFor(hp, maxHp = BOSS_MAX_HP, phases = PHASES) {
   const ratio = Math.max(0, hp) / maxHp;
-  return PHASES.find((p) => ratio > p.from) ?? PHASES[PHASES.length - 1];
+  return phases.find((p) => ratio > p.from) ?? phases[phases.length - 1];
 }

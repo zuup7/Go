@@ -1,5 +1,5 @@
 // 보스전. 체력에 따라 세 페이즈를 지나며, 페이즈는 절대 되돌아가지 않는다.
-import { BOSS_MAX_HP, PHASES, phaseFor } from '../data/bossData.js';
+import { phasesFor, maxHpFor, phaseFor } from '../data/bossData.js';
 import { spawnAlbum } from './enemy.js';
 import { clamp } from './util.js';
 
@@ -13,15 +13,23 @@ export const LASER_W = 14;
  * floorY 는 레이저가 닿을 바닥 높이다. 기본값을 두는 이유는
  * tests/boss.test.js 가 createBoss(640) 로 부르기 때문이다.
  */
-export function createBoss(arenaWidth, floorY = 192) {
+export function createBoss(arenaWidth, floorY = 192, hard = false) {
+  const phases = phasesFor(hard);
+  const maxHp = maxHpFor(hard);
   return {
     x: arenaWidth / 2 - BOSS_W / 2,
     y: 40,
     w: BOSS_W,
     h: BOSS_H,
     homeY: 40,
-    hp: BOSS_MAX_HP,
-    maxHp: BOSS_MAX_HP,
+    hp: maxHp,
+    maxHp,
+    /**
+     * 이 보스가 볼 페이즈 표. 보스에 담아두고 **여기서만** 읽는다 —
+     * PHASES 를 직접 보는 곳이 흩어져 있으면 하나만 빠져도 하드에서 3페이즈에 멈춘다.
+     */
+    phases,
+    hard,
     phaseId: 1,
     /** 'attack' | 'open' | 'recover' | 'defeated' */
     state: 'attack',
@@ -39,6 +47,8 @@ export function createBoss(arenaWidth, floorY = 192) {
     floorY,
     /** 레이저 기둥의 가운데 x. 'aim' / 'laser' 동안에만 뜻이 있다 */
     beamX: 0,
+    /** 쌍둥이 레이저의 둘째 기둥 (하드 4페이즈에만 뜻이 있다) */
+    beamX2: 0,
     beamDir: 1,
     laserTimer: 0,
   };
@@ -62,6 +72,19 @@ export function laserBeam(boss) {
     /** 예고선은 안 아프다. 예고에 맞아 죽으면 그건 예고가 아니다. */
     live: boss.state === 'laser',
   };
+}
+
+/**
+ * 지금 훑고 있는 기둥 **전부**. 보통은 하나, 하드 4페이즈는 둘이다.
+ *
+ * 판정도 그림도 이 하나를 본다. 둘째 기둥을 그리는 쪽에서만 따로 계산하면
+ * 보이는 자리와 죽는 자리가 어긋난다.
+ */
+export function laserBeams(boss) {
+  const first = laserBeam(boss);
+  if (!first) return [];
+  if (!bossPhase(boss).twinLaser) return [first];
+  return [first, { ...first, x: boss.beamX2 - LASER_W / 2 }];
 }
 
 /** 던져서 맞히는 마이크. 보스가 주기적으로 흘린다. */
@@ -97,11 +120,14 @@ export function updateThrown(mic, world, dt) {
   return mic.x > -30 && mic.x < world.pixelWidth + 30;
 }
 
-export const bossPhase = (boss) => PHASES.find((p) => p.id === boss.phaseId) ?? PHASES[0];
+export const bossPhase = (boss) => {
+  const table = boss?.phases ?? phasesFor(false);
+  return table.find((p) => p.id === boss.phaseId) ?? table[0];
+};
 
 /** 체력이 깎이면 페이즈를 다시 본다. 뒤로는 가지 않는다. */
 export function syncPhase(boss) {
-  const next = phaseFor(boss.hp, boss.maxHp);
+  const next = phaseFor(boss.hp, boss.maxHp, boss.phases ?? phasesFor(false));
   if (next.id > boss.phaseId) {
     boss.phaseId = next.id;
     boss.announce = next.id;
@@ -212,9 +238,10 @@ export function updateBoss(boss, ctx, dt) {
     }
     case 'laser': {
       boss.vulnerable = false;
-      boss.beamX += boss.beamDir * phase.laserSweep * dt;
-      // 아레나 밖으로는 안 나간다 — 나가면 화면 밖에서 훑는 셈이라 볼 수가 없다
-      boss.beamX = clamp(boss.beamX, 8, ctx.arenaWidth - 8);
+      const step = phase.laserSweep * dt;
+      boss.beamX = clamp(boss.beamX + boss.beamDir * step, 8, ctx.arenaWidth - 8);
+      // 둘째 기둥은 반대쪽에서 마주 온다
+      if (phase.twinLaser) boss.beamX2 = clamp(boss.beamX2 - step, 8, ctx.arenaWidth - 8);
       if (boss.timer <= 0) {
         boss.state = 'recover';
         boss.timer = 0.9;
@@ -258,9 +285,18 @@ function startLaser(boss, phase, ctx) {
   boss.laserTimer = 0;
   boss.state = 'aim';
   boss.timer = phase.laserAim;
-  boss.beamX = boss.x + boss.w / 2;
   const px = ctx.player.x + ctx.player.w / 2;
-  boss.beamDir = px >= boss.beamX ? 1 : -1;
+  if (phase.twinLaser) {
+    // 양쪽 끝에서 안쪽으로 훑어 온다. 가운데에 반드시 설 자리가 남는다.
+    boss.beamX = 8;
+    boss.beamX2 = ctx.arenaWidth - 8;
+    boss.beamDir = 1;
+  } else {
+    boss.beamX = boss.x + boss.w / 2;
+    boss.beamX2 = boss.beamX;
+    // 쫓아온다는 게 읽혀야 피해야 하는 것이 된다
+    boss.beamDir = px >= boss.beamX ? 1 : -1;
+  }
   ctx.onAim?.();
 }
 
