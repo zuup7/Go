@@ -119,11 +119,14 @@ export function createGame(options = {}) {
 const emit = (game, name, data) => game.onEvent(name, data ?? {});
 
 /**
- * 이 판에서 함정 표시를 기억할 열쇠.
- * 하드모드만 스테이지 이름을 앞에 붙인다 — 보통 판의 형식을 바꾸면
- * 이미 저장돼 있던 표시가 전부 안 맞게 된다.
+ * 함정 표시를 기억하는 열쇠. 하드모드에서는 **판 이름을 붙인다** —
+ * 안 그러면 같은 칸이면 같은 열쇠라, 하드 (12,9) 가 스테이지 1 에서 당한 표시를
+ * 물려받아 처음부터 붉게 뜬다.
+ *
+ * 표시를 **켜는 쪽(game)과 그리는 쪽(scene)이 반드시 같은 열쇠**를 써야 한다.
+ * 한쪽만 이름을 붙이면 표시가 켜져도 안 그려지므로, 두 곳이 이 함수 하나를 같이 쓴다.
  */
-const markKey = (game, tx, ty) => trapKey(tx, ty, game.hard ? game.world.stage.id : '');
+export const markKey = (game, tx, ty) => trapKey(tx, ty, game.hard ? game.world.stage.id : '');
 
 function addParticles(game, x, y, count, colors, opts = {}) {
   for (let i = 0; i < count; i++) {
@@ -369,7 +372,7 @@ function handleBlocks(game, events) {
   if (!events.bonked) return;
   const { tx, ty, ch } = events.bonked;
   const world = game.world;
-  const key = trapKey(tx, ty);
+  const key = markKey(game, tx, ty);
   addParticles(game, tx * TILE + 8, ty * TILE + 12, 6, ['#ffd166', '#fff'], { speed: 50, life: 0.4 });
 
   if (ch === T.ITEM) {
@@ -451,7 +454,7 @@ function handleRisingWalls(game, dt) {
       wall.risen = true;
       wall.t = 0;
       for (let i = 0; i < WALL_HEIGHT; i++) world.setChar(wall.tx, wall.ty - i, T.RISEN);
-      game.trapMemory.reveal(trapKey(wall.tx, wall.ty));
+      game.trapMemory.reveal(markKey(game, wall.tx, wall.ty));
       shakeCamera(game.camera, 0.8);
       addParticles(game, cx, wall.ty * TILE, 8, ['#e8ecf7', '#8b93a8'], { speed: 60, life: 0.5 });
       emit(game, 'trap', { kind: 'risingWall' });
@@ -471,7 +474,7 @@ function handleZones(game, dt) {
     zone.fired = true;
     const spec = ZONE_EFFECTS[zone.kind];
     game.effects[zone.kind] = spec.seconds;
-    game.trapMemory.reveal(trapKey(zone.tx, zone.ty));
+    game.trapMemory.reveal(markKey(game, zone.tx, zone.ty));
     shakeCamera(game.camera, 0.6);
     emit(game, 'trap', { kind: zone.kind });
   }
@@ -492,7 +495,7 @@ function handlePopSpikes(game, dt) {
     if (!spike.popped && near && sameFloor && !player.dead) {
       spike.popped = true;
       spike.t = 0;
-      game.trapMemory.reveal(trapKey(spike.tx, spike.ty));
+      game.trapMemory.reveal(markKey(game, spike.tx, spike.ty));
       shakeCamera(game.camera, 0.4);
       emit(game, 'trap', { kind: 'popSpike' });
     }
@@ -575,15 +578,23 @@ function handleCeilSpikes(game, dt) {
  * 그건 실력이 아니라 그냥 못 깨는 판이다. 잡히는 건 벽에 막혀 멈췄을 때,
  * 함정에 걸려 멈췄을 때, 길을 잘못 골랐을 때여야 한다.
  */
-export const CHASE_SPEED = 82;
+export const CHASE_SPEED = 108;
 /** `>` 구간을 밟으면 잠깐 이만큼 빨라진다. 그래도 달리기보다는 느리다 */
-export const SURGE_SPEED = 108;
+export const SURGE_SPEED = 120;
 /**
- * 되살아날 때 쫓아오는 것을 이만큼 뒤로 물린다.
- * 82px/s 로 오므로 약 4초 — 눈뜨고 상황을 보고 달리기 시작할 틈이다.
- * 200 이었을 때는 2.4초라 죽고 살아나면 곧바로 또 잡혔다.
+ * **되살아날 때** 쫓아오는 것을 이만큼 뒤로 물린다.
+ * 108px/s 로 오므로 3.3초 — 눈뜨고 상황을 보고 달리기 시작할 틈이다.
+ * 짧게 잡으면 눈뜨자마자 다시 잡혀서 빠져나올 수 없는 판이 된다.
  */
-export const CHASE_LEAD = 330;
+export const CHASE_LEAD = 360;
+/**
+ * **판을 시작할 때** 벌려두는 거리. 되살아날 때(CHASE_LEAD)보다 짧다.
+ *
+ * 둘을 같은 값으로 두면 시작이 너무 여유로워서, 잘 달리는 사람은 로봇을
+ * 한 번도 못 보고 판을 끝낸다 — 쫓기는 판인데 쫓기는 느낌이 없다.
+ * 되살아날 때는 반대로 넉넉해야 한다. 눈뜨자마자 다시 잡히면 빠져나올 수가 없다.
+ */
+export const CHASE_START_LEAD = 200;
 /** 추격 판에서 카메라를 이만큼 뒤로 물린다 — 뒤가 보여야 도망칠 마음이 든다 */
 export const CHASE_BACK = 70;
 
@@ -605,7 +616,7 @@ function handleChaser(game, dt) {
     game.chaser = null;
     return;
   }
-  if (!game.chaser) game.chaser = { x: game.player.x - CHASE_LEAD };
+  if (!game.chaser) game.chaser = { x: game.player.x - CHASE_START_LEAD };
   game.chaser.x += chaseSpeed(game) * dt;
   if (game.player.dead || game.caught) return;
   const front = { x: game.chaser.x - 10, y: 0, w: 14, h: game.world.pixelHeight };
@@ -625,7 +636,7 @@ function handleFakeGoal(game, dt) {
     const dx = player.x - box.x;
     if (!fake.fleeing && Math.abs(dx) < 52) {
       fake.fleeing = true;
-      game.trapMemory.reveal(trapKey(fake.tx, fake.ty));
+      game.trapMemory.reveal(markKey(game, fake.tx, fake.ty));
       emit(game, 'trap', { kind: 'fakeGoal' });
     }
     if (fake.fleeing) {

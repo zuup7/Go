@@ -17,7 +17,7 @@ import { PLAYER } from '../src/core/player.js';
 import { emptySave } from '../src/core/save.js';
 import { createWorld, T } from '../src/core/world.js';
 import { caughtLength } from '../src/data/caughtCut.js';
-import { SOLID } from '../src/core/physics.js';
+import { SOLID, TILE } from '../src/core/physics.js';
 
 const DT = 1 / 60;
 const idle = (over = {}) => ({
@@ -67,32 +67,66 @@ test('쫓아오는 속도가 달리기보다 느리다 — 빨라져도 그렇�
   assert.ok(SURGE_SPEED > CHASE_SPEED, '빨라지는 구간인데 안 빨라진다');
 });
 
-test('계속 달리기만 하면 안 잡히고, 판을 끝까지 간다', () => {
-  // 이 판의 약속이다 — 잡히는 건 벽에 막혀 멈췄을 때지, 달리기가 느려서가 아니다.
-  // 지금 재는 건 **추격**이라 앨범한테 죽는 건 빼둔다. 안 그러면 적한테 죽은 것을
-  // "안 잡혔다"로 읽어서 아무것도 확인 못 한다.
-  const game = inHard(2);
+/**
+ * 오른쪽으로 달리면서 **한 칸 앞을 보고** 뛰는 봇. 사람이 하는 만큼만 한다.
+ *
+ * 예전 봇은 막혔을 때만 뛰어서, 판에 구멍을 파는 순간 그냥 빠져 죽었다.
+ * 그 봇으로는 "달리면 도망칠 수 있다"를 잰 게 아니라 "평지인가"를 잰 것이다.
+ */
+function runBot(game, frames = 60 * 40) {
   const goal = game.world.goal.x;
   let far = game.player.x;
   let hold = 0;
+  let gapAtEnd = null;
 
-  for (let i = 0; i < 60 * 30; i++) {
-    game.player.invuln = 99;
-    // 점프를 **붙잡고** 있어야 한다. 놓으면 jumpCut 이 높이를 42% 로 깎아서
-    // 두 칸짜리 벽을 못 넘는다 — 사람은 당연히 누르고 있다.
-    const blocked = Math.abs(game.player.vx) < 24 && game.player.onGround;
-    if (blocked) hold = 12;
+  for (let i = 0; i < frames; i++) {
+    game.player.invuln = 99; // 지금 재는 건 추격이다 — 앨범한테 죽는 건 빼둔다
+    const p = game.player;
+    const ahead = p.x + p.w + 10;
+    const footTy = Math.floor((p.y + p.h + 2) / TILE);
+    // 앞이 낭떠러지인가 (발밑 높이에 딛을 것이 없다)
+    const gap = p.onGround && game.world.tileAt(Math.floor(ahead / TILE), footTy) !== SOLID;
+    // 앞이 막혔나 (벽에 붙어 속도가 죽었다)
+    const blocked = p.onGround && Math.abs(p.vx) < 24;
+    // 점프는 **붙잡고** 있어야 한다. 놓으면 jumpCut 이 높이를 42%로 깎는다.
+    if ((gap || blocked) && hold === 0) hold = 12;
     const jump = hold > 0;
+    const pressed = hold === 12;
     if (hold > 0) hold -= 1;
-    updateGame(game, idle({ right: true, jump, jumpPressed: blocked }), DT);
-    if (game.scene === 'play') far = Math.max(far, game.player.x);
-    if (game.caught) break;
-    // 골에 닿으면 판이 넘어간다 — 거기까지 갔으면 된 것이다
-    if (game.scene !== 'play' && game.scene !== 'death') break;
-  }
 
-  assert.equal(game.caught, null, `달리기만 했는데 잡혔다 (x ${Math.round(far)} / ${goal})`);
-  assert.ok(far > goal - 40, `골(${goal})까지 못 갔다 — ${Math.round(far)} 에서 멈췄다`);
+    updateGame(game, idle({ right: true, jump, jumpPressed: pressed }), DT);
+    if (game.scene === 'play') {
+      far = Math.max(far, game.player.x);
+      if (game.chaser) gapAtEnd = game.player.x - game.chaser.x;
+    }
+    if (game.caught) break;
+    if (game.scene !== 'play' && game.scene !== 'death') break; // 골에 닿아 판이 넘어갔다
+  }
+  return { far, goal, gapAtEnd };
+}
+
+test('잘 달리고 잘 뛰면 골까지 간다', () => {
+  // 이 판의 약속이다 — 잡히는 건 실수했을 때지, 달리기가 느려서가 아니다.
+  for (const index of [2, 3]) {
+    const game = inHard(index);
+    const { far, goal } = runBot(game);
+    assert.equal(game.caught, null, `하드 ${index + 1}판: 잘 달렸는데 잡혔다 (x ${Math.round(far)} / ${goal})`);
+    assert.ok(far > goal - 40, `하드 ${index + 1}판: 골(${goal})까지 못 갔다 — ${Math.round(far)} 에서 멈췄다`);
+  }
+});
+
+test('완주해도 여유가 넉넉하지는 않다 — 뒤가 보이는 거리다', () => {
+  // 완벽하게 달린 사람이 한 화면 넘게 벌리고 끝나면 추격이 있으나 마나다.
+  // 반대로 코앞까지 붙으면 실수 한 번에 못 깨는 판이 된다. 이 사이를 지킨다.
+  for (const index of [2, 3]) {
+    const game = inHard(index);
+    const { gapAtEnd } = runBot(game);
+    assert.ok(gapAtEnd != null, `하드 ${index + 1}판: 쫓아오는 것이 없다`);
+    assert.ok(
+      gapAtEnd > 60 && gapAtEnd < 420,
+      `하드 ${index + 1}판: 완주 시 간격이 ${Math.round(gapAtEnd)}px — 60~420px 사이여야 한다`,
+    );
+  }
 });
 
 // ── 추격이 붙는가 ───────────────────────────────────────────

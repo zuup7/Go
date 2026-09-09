@@ -2,10 +2,9 @@
 import { TILE } from '../core/physics.js';
 import { T } from '../core/world.js';
 import { cameraOffset } from '../core/camera.js';
-import { trapKey } from '../data/traps.js';
 import { drawAlbum, drawCoverAt } from './albumArt.js';
 import { drawSprite, crisp, makeCanvas } from './pixel.js';
-import { npcInReach } from '../core/game.js';
+import { npcInReach, markKey } from '../core/game.js';
 import { NPC_TALK } from '../data/npcTalk.js';
 import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
@@ -574,7 +573,7 @@ const LIVE_TILES = new Set([T.ITEM, T.BAIT, T.REVERSE]);
 /**
  * 한 번 당해야 표시가 뜨는 칸. **이것만** 함정 기억을 뒤진다.
  *
- * trapKey 는 칸마다 문자열을 하나 만든다. 화면의 대부분은 땅과 발판인데
+ * markKey 는 칸마다 문자열을 하나 만든다. 화면의 대부분은 땅과 발판인데
  * 걔들한테까지 물어보면 1초에 2만 개짜리 쓰레기가 나온다 — 표시가 뜰 리 없는 칸이다.
  */
 const MARKABLE = new Set([T.FAKE, T.INVISIBLE, T.CRUMBLE, T.POPSPIKE, T.BAIT]);
@@ -621,7 +620,7 @@ function drawTiles(ctx, game, ox, oy, time) {
       const ch = world.charAt(tx, ty);
       if (ch === T.EMPTY) continue;
       const x = tx * TILE - ox;
-      const revealed = MARKABLE.has(ch) && trapMemory.has(trapKey(tx, ty));
+      const revealed = MARKABLE.has(ch) && trapMemory.has(markKey(game, tx, ty));
       const above = world.charAt(tx, ty - 1);
       const buried = above === T.GROUND || above === T.POPSPIKE || above === T.CRUMBLE;
       if (LIVE_TILES.has(ch)) drawTile(ctx, ch, x, y, stage, revealed, time, buried);
@@ -649,7 +648,7 @@ function drawFlag(ctx, x, y, time, color, alpha = 1) {
 /** 아직 안 솟은 벽은 한 번 당한 뒤에야 자리가 표시된다 */
 function drawWallHints(ctx, game, ox, oy, time) {
   for (const wall of game.world.risingWalls) {
-    if (wall.risen || !game.trapMemory.has(trapKey(wall.tx, wall.ty))) continue;
+    if (wall.risen || !game.trapMemory.has(markKey(game, wall.tx, wall.ty))) continue;
     ctx.save();
     ctx.globalAlpha = 0.35 + Math.sin(time * 4) * 0.15;
     ctx.strokeStyle = '#ff5d8f';
@@ -664,7 +663,7 @@ function drawWallHints(ctx, game, ox, oy, time) {
 function drawZoneHints(ctx, game, ox, oy, time) {
   const colors = { reversed: '#39d0ff', blackout: '#ffd166' };
   for (const zone of game.world.zones) {
-    if (!game.trapMemory.has(trapKey(zone.tx, zone.ty))) continue;
+    if (!game.trapMemory.has(markKey(game, zone.tx, zone.ty))) continue;
     ctx.save();
     ctx.globalAlpha = 0.3 + Math.sin(time * 3 + zone.tx) * 0.12;
     ctx.fillStyle = colors[zone.kind] ?? '#fff';
@@ -698,7 +697,7 @@ function drawCeilSpikes(ctx, world, ox, oy) {
 function drawFakeChecks(ctx, game, ox, oy, time) {
   for (const fc of game.world.fakeChecks) {
     if (fc.taken) continue;
-    const marked = game.trapMemory.has(trapKey(fc.tx, fc.ty, game.hard ? game.world.stage.id : ''));
+    const marked = game.trapMemory.has(markKey(game, fc.tx, fc.ty));
     ctx.save();
     ctx.globalAlpha = 0.55;
     drawSprite(ctx, DISC, fc.x - ox - 3, fc.y - oy - 2 + Math.sin(time * 3) * 1.5);

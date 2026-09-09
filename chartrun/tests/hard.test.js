@@ -14,11 +14,12 @@ import {
   SELECT_OPENING,
   SELECT_DEV_OFF,
   SELECT_SLOTS,
+  markKey,
 } from '../src/core/game.js';
 import { STAGES, HARD_STAGES } from '../src/data/stages.js';
 import { emptySave, mergeRun, beatRecord, deserialize, serialize } from '../src/core/save.js';
 import { trapKey } from '../src/data/traps.js';
-import { createWorld } from '../src/core/world.js';
+import { createWorld, tileKind } from '../src/core/world.js';
 import { HARD_PHASES, HARD_MAX_HP, phaseFor } from '../src/data/bossData.js';
 import { createBoss, syncPhase } from '../src/core/boss.js';
 
@@ -207,6 +208,21 @@ test('하드모드 함정 표시가 보통 판 표시를 물려받지 않는다'
   assert.equal(trapKey(12, 9), '12,9');
 });
 
+test('함정 표시는 종류를 안 가리고 판 이름이 붙는다', () => {
+  // 예전에는 천장 가시와 가짜 체크포인트만 이름이 붙고, 솟는 벽·불쑥 가시·
+  // 구간·가짜 골은 맨 열쇠를 썼다. 종류에 따라 갈리면 어떤 함정은 스테이지 1 의
+  // 표시를 물려받고 어떤 건 아닌, 설명할 수 없는 상태가 된다.
+  const hard = createGame({ seed: 1 });
+  hard.hard = true;
+  loadStage(hard, 0);
+  const plain = createGame({ seed: 1 });
+  loadStage(plain, 0);
+
+  assert.equal(markKey(hard, 12, 9), trapKey(12, 9, hard.world.stage.id));
+  assert.equal(markKey(plain, 12, 9), trapKey(12, 9));
+  assert.notEqual(markKey(hard, 12, 9), markKey(plain, 12, 9));
+});
+
 // ── 하드 판이 실제로 새 함정을 쓰는가 ───────────────────────
 test('새 함정이 하드모드 어딘가에는 다 나온다', () => {
   const seen = { blink: 0, fakeCheck: 0, ice: 0, spring: 0, ceil: 0, surge: 0 };
@@ -245,4 +261,32 @@ test('하드 보스는 페이즈 넷을 다 지나간다 — 뒤로는 안 간�
     if (boss.phaseId !== seen[seen.length - 1]) seen.push(boss.phaseId);
   }
   assert.deepEqual(seen, [1, 2, 3, 4], `본 페이즈: ${seen.join(',')}`);
+});
+
+/**
+ * 하드 판이 다시 밋밋해지지 않게 **바닥선**을 그어둔다.
+ *
+ * 처음 만든 하드모드가 안 어려웠던 이유는 설계가 아니라 밀도였다 —
+ * 160칸짜리 판에 앨범이 6마리, 추격 판 셋은 구멍이 아예 없는 통짜 활주로였다.
+ * 눈으로는 "판이 있다"로 보여서 아무도 못 알아챈다. 숫자로 잡는다.
+ */
+test('하드 판은 최소한의 밀도를 지킨다', () => {
+  const floorRow = 12;
+  for (const stage of HARD_STAGES) {
+    const world = createWorld(stage);
+    const rows = stage.rows;
+    const width = rows[0].length;
+
+    let pits = 0;
+    let checks = 0;
+    for (let x = 0; x < width; x++) {
+      if (tileKind(rows[floorRow][x]) === null && tileKind(rows[floorRow + 1][x]) === null) pits += 1;
+      for (let y = 0; y < rows.length; y++) if (rows[y][x] === 'C') checks += 1;
+    }
+
+    assert.ok(world.albumSpawns.length >= 10, `${stage.id}: 앨범이 ${world.albumSpawns.length}마리뿐이다`);
+    assert.ok(pits >= 20, `${stage.id}: 낭떠러지가 ${pits}칸뿐이라 달리기만 해도 지나간다`);
+    assert.ok(world.ceilSpikes.length >= 3, `${stage.id}: 천장 가시가 ${world.ceilSpikes.length}개뿐이다`);
+    assert.ok(checks >= 3, `${stage.id}: 체크포인트가 ${checks}개뿐이라 죽으면 너무 멀리 돌아간다`);
+  }
 });

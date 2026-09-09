@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, updateGame, loadStage, loadBoss, WALL_HEIGHT } from '../src/core/game.js';
 import { createWorld, T, tileKind, ZONE_KINDS } from '../src/core/world.js';
+import { createPlayer, updatePlayer } from '../src/core/player.js';
 import { SOLID, TILE } from '../src/core/physics.js';
 import { TRAPS, TRAP_KINDS, ZONE_EFFECTS, trapKey } from '../src/data/traps.js';
-import { STAGES } from '../src/data/stages.js';
+import { STAGES, HARD_STAGES } from '../src/data/stages.js';
 import { createBoss, createMic, throwMic, updateThrown, updateBoss, MIC_SIZE } from '../src/core/boss.js';
 import { BOSS_MAX_HP } from '../src/data/bossData.js';
 import { emptySave } from '../src/core/save.js';
@@ -189,7 +190,9 @@ test('모든 구간 효과는 저절로 풀리는 시간이 정해져 있다', (
 
 test('모든 솟는 벽은 넘어갈 수 있게 놓여 있다', () => {
   // 벽은 두 칸이다. 바로 위가 단단하면 길이 영영 막힌다.
-  for (const stage of STAGES) {
+  // 하드 판도 같이 본다 — 예전에 여기가 STAGES 만 돌아서, 하드 4판의 벽 하나가
+  // 구멍 위에 떠 있는 채로 그냥 지나갔다.
+  for (const stage of [...STAGES, ...HARD_STAGES]) {
     const world = createWorld(stage);
     for (const wall of world.risingWalls) {
       assert.notEqual(
@@ -207,7 +210,7 @@ test('모든 솟는 벽은 넘어갈 수 있게 놓여 있다', () => {
 });
 
 test('구간 트리거는 지나갈 수 있는 자리에 있다', () => {
-  for (const stage of STAGES) {
+  for (const stage of [...STAGES, ...HARD_STAGES]) {
     const world = createWorld(stage);
     for (const zone of world.zones) {
       assert.equal(
@@ -349,4 +352,92 @@ test('보스전에서는 대시가 나간다', () => {
   step(game, { ...idle, dashPressed: true });
   assert.ok(game.player.dashTime > 0, '보스전인데 대시가 안 나간다');
   assert.ok(Math.abs(game.player.vx) > 124, '대시인데 달리기보다 안 빠르다');
+});
+
+// ── 튕기는 발판이 진짜로 튕기는가 ────────────────────────────
+/** 스프링 한 칸을 놓고 공중에서 떨어뜨려, 튄 높이를 칸으로 잰다 */
+function springHeight(holdJump) {
+  const W = 24;
+  const rows = [];
+  for (let y = 0; y < 14; y++) rows.push(y >= 12 ? '#'.repeat(W) : ' '.repeat(W));
+  rows[12] = '#'.repeat(8) + T.SPRING + '#'.repeat(W - 9);
+  rows[11] = ' S' + ' '.repeat(W - 2);
+  const world = createWorld({ id: 'spring-test', number: 1, rows });
+  const player = createPlayer(world.spawn);
+  // 공중에서 내려와야 발판이 반응한다 (올라가는 중에 또 밟히면 무한히 뜬다)
+  player.x = 8 * TILE + 3;
+  player.y = (12 - 5) * TILE;
+  player.onGround = false;
+  player.vy = 10;
+
+  const floor = 11 * TILE;
+  let top = Infinity;
+  let sprung = false;
+  for (let i = 0; i < 400; i++) {
+    const events = updatePlayer(player, { ...idle, jump: holdJump }, world, 1 / 60);
+    if (events.sprung) sprung = true;
+    if (!sprung) continue;
+    top = Math.min(top, player.y);
+    if (player.onGround && top < floor - 8) break;
+  }
+  return sprung ? (floor - top) / TILE : null;
+}
+
+/** 아무것도 없는 바닥에서 점프를 끝까지 눌러 뛴 높이 */
+function jumpHeight() {
+  const W = 24;
+  const rows = [];
+  for (let y = 0; y < 14; y++) rows.push(y >= 12 ? '#'.repeat(W) : ' '.repeat(W));
+  rows[11] = ' S' + ' '.repeat(W - 2);
+  const world = createWorld({ id: 'jump-test', number: 1, rows });
+  const player = createPlayer(world.spawn);
+  const floor = player.y;
+  let top = player.y;
+  for (let i = 0; i < 200; i++) {
+    updatePlayer(player, { ...idle, jump: true, jumpPressed: i === 2 }, world, 1 / 60);
+    top = Math.min(top, player.y);
+    if (i > 8 && player.onGround && top < floor - 4) break;
+  }
+  return (floor - top) / TILE;
+}
+
+test('튕기는 발판은 점프키를 쥐고 있든 말든 같은 높이로 튄다', () => {
+  // 점프컷(키를 떼면 낮게 뜬다)은 **내가 누른 점프**에만 걸려야 한다.
+  // 발판이 밀어 올린 속도까지 깎으면, 플레이어는 이유를 알 수 없는 방식으로
+  // 낮게 뜬다 — 그냥 밟았을 때 0.4칸이면 발판이 있으나 마나다.
+  const held = springHeight(true);
+  const free = springHeight(false);
+  assert.ok(held != null && free != null, '발판이 아예 안 튀었다');
+  assert.ok(
+    Math.abs(held - free) < 0.5,
+    `점프키를 쥐면 ${held.toFixed(2)}칸, 놓으면 ${free.toFixed(2)}칸 — 발판이 키에 휘둘린다`,
+  );
+});
+
+test('튕기는 발판은 보통 점프보다 확실히 높이 올려준다', () => {
+  // 아니면 발판이 존재할 이유가 없다.
+  const spring = springHeight(false);
+  const jump = jumpHeight();
+  assert.ok(
+    spring > jump * 1.5,
+    `발판 ${spring.toFixed(2)}칸 vs 보통 점프 ${jump.toFixed(2)}칸 — 발판을 밟을 이유가 없다`,
+  );
+});
+
+test('튕기는 발판은 걸어 들어가도 튄다', () => {
+  // 평지를 달리다 발판을 밟는 게 제일 흔한 경우다. 여기서 아무 일도 안 일어나면
+  // 플레이어는 발판이 고장난 줄 알고 다시는 안 쓴다.
+  const W = 24;
+  const rows = [];
+  for (let y = 0; y < 14; y++) rows.push(y >= 12 ? '#'.repeat(W) : ' '.repeat(W));
+  rows[12] = '#'.repeat(10) + T.SPRING + '#'.repeat(W - 11);
+  rows[11] = ' S' + ' '.repeat(W - 2);
+  const world = createWorld({ id: 'walk-spring', number: 1, rows });
+  const player = createPlayer(world.spawn);
+
+  let sprung = false;
+  for (let i = 0; i < 240 && !sprung; i++) {
+    if (updatePlayer(player, { ...idle, right: true }, world, 1 / 60).sprung) sprung = true;
+  }
+  assert.ok(sprung, '발판 위를 걸어 지나갔는데 안 튀었다');
 });

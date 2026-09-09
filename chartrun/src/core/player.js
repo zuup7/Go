@@ -84,6 +84,12 @@ export function createPlayer(spawn) {
     squash: 0,
     stretch: 0,
     jumpHeld: false,
+    /**
+     * 게임이 밀어 올렸나 (튕기는 발판 · 밟기 반동).
+     * 켜져 있는 동안은 점프컷이 안 걸린다 — 내가 안 누른 점프를 키를 뗐다고
+     * 깎으면 안 된다. 올라가는 힘이 다하면(vy 가 컷 위로 오면) 저절로 꺼진다.
+     */
+    launched: false,
     assist: newJumpAssist(),
     /** 파워업: 'none' | 'mic' (한 대 버팀) */
     power: 'none',
@@ -105,6 +111,7 @@ export function respawnPlayer(player, spawn) {
   player.cleared = false;
   player.invuln = 0.8;
   player.onGround = false;
+  player.launched = false;
   player.assist = newJumpAssist();
   player.power = 'none';
   player.ammo = 0;
@@ -193,9 +200,14 @@ export function updatePlayer(player, input, world, dt) {
     player.stretch = 1;
     events.jumped = true;
   }
-  // 키를 일찍 떼면 낮게 뜬다 (누른 시간만큼 높이 뛴다)
+  // 키를 일찍 떼면 낮게 뜬다 (누른 시간만큼 높이 뛴다).
+  //
+  // **내가 누른 점프에만 건다.** 발판이나 밟기 반동처럼 게임이 밀어 올린 속도까지
+  // 깎으면, 플레이어는 이유를 알 수 없는 방식으로 낮게 뜬다 — 튕기는 발판이
+  // 그냥 밟았을 때 0.4칸밖에 안 올라가서 있으나 마나였던 게 이것 때문이다.
   const cut = -PLAYER.jumpV * PLAYER.jumpCut;
-  if (!input.jump && player.vy < cut) player.vy = cut;
+  if (player.launched && player.vy >= cut) player.launched = false;
+  if (!input.jump && !player.launched && player.vy < cut) player.vy = cut;
 
   // 중력은 구간마다 다르다. 올라갈 때는 그대로, 정점에서는 가볍게, 내려올 때는 무겁게.
   // 같은 높이를 뛰면서도 체공이 짧아져서 "붕 뜬다"는 느낌이 사라진다.
@@ -243,11 +255,17 @@ export function updatePlayer(player, input, world, dt) {
     }
   }
 
-  // 튕기는 발판 — 착지한 순간에만 본다 (올라가는 중에 또 밟히면 무한히 뜬다)
-  if (wasAir && player.onGround && falling > 0 && standingOn(player, world, T.SPRING)) {
+  // 튕기는 발판 — **딛고 있으면** 튄다. 달려서 들어가든 떨어져서 밟든 똑같다.
+  //
+  // 예전에는 `wasAir && falling > 0` 이라 **공중에서 내려앉을 때만** 튀었다.
+  // 평지를 달리다 밟는 게 제일 흔한 경우인데 그때 아무 일도 안 일어나서,
+  // 플레이어는 발판이 고장난 줄 알고 다시는 안 썼다.
+  // 아래에서 onGround 를 끄므로 올라가는 동안 다시 밟히지 않는다.
+  if (player.onGround && standingOn(player, world, T.SPRING)) {
     player.vy = -PLAYER.springV;
     player.onGround = false;
     player.stretch = 1;
+    player.launched = true;
     events.sprung = true;
   }
 
@@ -276,6 +294,9 @@ export function bounce(player, strong = false, held = false) {
   player.vy = -PLAYER.stompBounce * (strong ? 1.25 : 1) * (held ? PLAYER.stompHold : 1);
   player.assist.coyote = 0;
   player.stretch = 1;
+  // 점프컷이 이 속도를 깎으면 strong 도 held 도 다 같은 높이가 되어 버린다.
+  // 높이 튈지 말지는 위 곱셈이 이미 정했다.
+  player.launched = true;
 }
 
 /** 맞았다. 파워업이 있으면 그걸 잃고 버틴다. 죽었으면 true */

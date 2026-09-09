@@ -206,3 +206,82 @@ test('보스 무대는 넓고 평평하다', () => {
   assert.equal(world.goal, null, '보스 무대에는 깃발이 없다');
   assert.ok(world.spawn.x > 0);
 });
+
+// ── 장치가 진짜로 작동하는 자리에 있는가 ─────────────────────
+/**
+ * 천장 가시는 **딛고 설 바닥 딱 2칸 위**에만 위협이 된다.
+ *
+ * handleCeilSpikes 를 보면 이유가 나온다: 가시에서 4칸 이내로 들어와야
+ * 발동하고(`< TILE * 4`), 칼날은 1칸까지만 내려온다(`h: TILE * spike.t`).
+ * 그래서 바닥에서 6칸 위에 달아두면 발동조차 안 한다 — 이 규칙이 없던 동안
+ * 하드모드의 천장 가시 16개가 전부 그냥 그림이었다.
+ */
+test('천장 가시는 닿는 자리에 달려 있다 — 바닥 2칸 위', () => {
+  for (const stage of PLAYABLE) {
+    const world = createWorld(stage);
+    for (const spike of world.ceilSpikes) {
+      const floorTy = spike.ty + 2;
+      const under = floorTy < world.height ? world.charAt(spike.tx, floorTy) : T.GROUND;
+      assert.ok(
+        tileKind(under) !== null,
+        `${stage.id}: (${spike.tx},${spike.ty}) 천장 가시 2칸 아래가 비었다 — 아무도 못 맞는 장식이다`,
+      );
+    }
+  }
+});
+
+/**
+ * 하드모드의 무너지는 바닥은 **밑이 뚫려 있어야** 함정이다.
+ * 아래 줄에 또 바닥이 있으면 꺼져도 한 칸 떨어지고 끝이라, 밟아도 아무 일이 없다.
+ *
+ * 보통 스테이지 1 은 일부러 안전하게 둔다 — 거기서 이 장치를 처음 배우기 때문에,
+ * 처음 밟자마자 죽으면 뭘 배울 수가 없다.
+ */
+test('하드모드의 무너지는 바닥 밑은 뚫려 있다 — 꺼지면 떨어져야 한다', () => {
+  for (const stage of HARD_STAGES) {
+    const width = stage.rows[0].length;
+    for (let ty = 0; ty < ROWS; ty++) {
+      for (let tx = 0; tx < width; tx++) {
+        if (stage.rows[ty][tx] !== T.CRUMBLE) continue;
+        let solidBelow = null;
+        for (let y = ty + 1; y < ROWS; y++) {
+          if (stage.rows[y][tx] === T.CRUMBLE) continue;
+          if (tileKind(stage.rows[y][tx]) !== null) solidBelow = y;
+          break;
+        }
+        assert.equal(
+          solidBelow,
+          null,
+          `${stage.id}: (${tx},${ty}) 무너지는 바닥 밑 ${solidBelow}줄에 바닥이 있다 — 꺼져도 안 떨어진다`,
+        );
+      }
+    }
+  }
+});
+
+/**
+ * 천장 가시가 **구멍 가장자리 위**에 있으면 안 된다.
+ * 구멍은 뛰어야 넘는데, 뛰어오르는 자리 위가 막혀 있으면 뛸 수가 없다 —
+ * 어려운 게 아니라 못 지나가는 자리가 된다.
+ */
+test('천장 가시는 구멍 앞을 막지 않는다', () => {
+  const floorRow = ROWS - 2;
+  for (const stage of PLAYABLE) {
+    const width = stage.rows[0].length;
+    const isPit = (x) =>
+      x >= 0 &&
+      x < width &&
+      tileKind(stage.rows[floorRow][x]) === null &&
+      tileKind(stage.rows[ROWS - 1][x]) === null;
+
+    const world = createWorld(stage);
+    for (const spike of world.ceilSpikes) {
+      for (let dx = -2; dx <= 2; dx++) {
+        assert.ok(
+          !isPit(spike.tx + dx),
+          `${stage.id}: (${spike.tx},${spike.ty}) 천장 가시 ${Math.abs(dx)}칸 옆이 구멍이라 뛸 수가 없다`,
+        );
+      }
+    }
+  }
+});
