@@ -29,6 +29,37 @@ export const CUT_SOUND = {
     end: {},
   },
 
+  /**
+   * 2회차 시작 — 다 이룬 자리가 갈라지고, 밟아 없앴던 것들이 진화해서 돌아온다.
+   * 앞은 조용하다가 graves 에서부터 불길해진다. stand 에서 판 브금으로 갈아탄다 —
+   * 마이크를 다시 쥐는 순간 이미 달리기가 시작된 것이다.
+   */
+  hardopen: {
+    after: {},
+    crack: { sfx: 'crack' },
+    graves: { sfx: 'blip' },
+    evolve: { sfx: 'roar' },
+    taken: { sfx: 'trap' },
+    drop: { sfx: 'thud' },
+    stand: { sfx: 'power', bgm: 'stage' },
+    end: {},
+  },
+
+  /**
+   * 2회차 엔딩 — 차트가 무대가 된다. 결혼식 곡이 아니라 **승리 곡**이다.
+   * 1회차는 사적인 결말(결혼식)이었고 여기는 가수로서의 결말이라 곡도 달라야 한다.
+   */
+  hardEnd: {
+    free: { sfx: 'burst' },
+    calm: { sfx: 'scatter' },
+    stage: { sfx: 'chartline', bgm: 'victory' },
+    crowd: { sfx: 'chime' },
+    duet: { sfx: 'power' },
+    encore: { sfx: 'climb' },
+    star: { sfx: 'crown' },
+    end: {},
+  },
+
   /** 합체 컷신 — 앨범 열일곱 장이 하나로 뭉친다 */
   merge: {
     gather: { sfx: 'gather' },

@@ -19,8 +19,9 @@ import {
   HARD3_AT,
   BOSS_DOWN_AT,
   ENDING_AT,
+  HARD_END_AT,
 } from '../data/bossCutscenes.js';
-import { INTRO_CUT, INTRO_AT } from '../data/introCutscene.js';
+import { INTRO_CUT, INTRO_AT, HARD_OPEN_CUT, HARD_OPEN_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
 import {
   bossPhase,
@@ -2148,6 +2149,7 @@ export function drawBossCut(ctx, game, time) {
   else if (game.bossCut.id === 'hard3') drawHard3Cut(ctx, t, phase, time);
   else if (game.bossCut.id === 'phase4') drawPhase4Cut(ctx, t, phase, time);
   else if (game.bossCut.id === 'bossdown') drawBossDownCut(ctx, t, phase, time);
+  else if (game.bossCut.id === 'hardEnd') drawHardEndCut(ctx, t, phase, time);
   else drawEndingCut(ctx, t, phase, time);
 
   ctx.restore();
@@ -3093,7 +3095,7 @@ export function drawIntroCut(ctx, t) {
 
   // ── 1부: 방 ──────────────────────────────────────────────
   const inRoom = ['room', 'note', 'upload'].includes(phase);
-  const snatching = phase === 'snatch' || phase === 'reach';
+  const snatching = phase === 'taken' || phase === 'reach';
   const grabbing = phase === 'grab' || phase === 'run';
   if (inRoom || snatching || grabbing) {
     drawRoom(ctx, time);
@@ -3223,6 +3225,350 @@ export function drawIntroCut(ctx, t) {
   }
 }
 
+// ── 2회차 시작: 다 이룬 자리가 갈라진다 ─────────────────────
+//
+// 1회차 오프닝과 짝이 맞는 그림이어야 한다. 그때는 방구석에서 올려다봤고,
+// 여기는 **꼭대기에서 떨어진다.** 마지막에 다시 #100 칸에 서는 것도 같은 이유다 —
+// 오프닝에서 쓰던 그림(drawIntroRow · drawMineRow)을 그대로 쓴다.
+
+/** 결혼식이 끝난 자리의 바닥 높이 */
+const HO_FLOOR = 150;
+
+/**
+ * 진화한 앨범 한 장 — 커버는 그대로인데 가시가 돋고 벌겋게 달아오른다.
+ *
+ * **커버를 다시 그리지 않는다.** 1회차에서 밟아 없앤 바로 그 앨범이라는 게
+ * 한눈에 읽혀야 해서, 있는 그림 위에 가시와 붉은 기만 얹는다.
+ */
+function evolvedCover(ctx, album, cx, cy, size, grow, time) {
+  const half = size / 2;
+  if (grow > 0) {
+    ctx.save();
+    ctx.fillStyle = '#ff3b3b';
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + time * 0.7;
+      const len = half * 0.9 * grow * (0.7 + Math.sin(time * 9 + i) * 0.3);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a - 0.3) * half, cy + Math.sin(a - 0.3) * half);
+      ctx.lineTo(cx + Math.cos(a) * (half + len), cy + Math.sin(a) * (half + len));
+      ctx.lineTo(cx + Math.cos(a + 0.3) * half, cy + Math.sin(a + 0.3) * half);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  drawCoverAt(ctx, album, cx - half, cy - half, size);
+  if (grow <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = grow * 0.45;
+  ctx.fillStyle = '#ff3b3b';
+  ctx.fillRect(Math.round(cx - half), Math.round(cy - half), Math.round(size), Math.round(size));
+  ctx.restore();
+  // 노려보는 눈 — 오프닝에서 차트가 나를 내려다볼 때 쓴 그 눈이다
+  drawWatchingEyes(ctx, cx - half, cy - half, size, time, true);
+}
+
+function drawHardOpenCut(ctx, t) {
+  const phase = phaseAtIn(HARD_OPEN_CUT, t, 'after');
+  const time = t;
+  const cx = VIEW.w / 2;
+  const floor = HO_FLOOR;
+  ctx.fillStyle = '#0a0410';
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  // 여기는 **차트 꼭대기**다. 검은 허공에 세워두면 어디인지가 안 읽힌다 —
+  // 뒤로 차트 막대를 흐리게 세워서 "다 올라온 자리" 라는 걸 그림으로 말한다.
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  for (let i = 0; i < 11; i++) {
+    const h = 30 + ((i * 31) % 74);
+    ctx.fillStyle = i % 2 ? '#241a33' : '#2e2140';
+    ctx.fillRect(i * 36 + 2, HO_FLOOR - h, 28, h);
+  }
+  ctx.restore();
+  drawStars(ctx, time);
+
+  // 바닥이 꺼지면 세상이 위로 달아난다 — 내가 떨어지는 것이다
+  const dropP = t >= HARD_OPEN_AT.drop ? ease((t - HARD_OPEN_AT.drop) / 1.3) : 0;
+  const shake =
+    phase === 'crack' ? Math.sin(time * 60) * 2 : phase === 'graves' || phase === 'evolve' ? Math.sin(time * 40) * 1.2 : 0;
+
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, 1 - dropP * 1.2);
+  ctx.translate(Math.round(shake), Math.round(-dropP * 260));
+
+  // ── 결혼식이 끝난 자리 ──────────────────────────────────
+  drawArch(ctx, cx, floor - 66, 40, 1);
+  ctx.fillStyle = '#8e2340';
+  ctx.fillRect(0, floor, VIEW.w, 26);
+  ctx.fillStyle = '#c33a5c';
+  ctx.fillRect(0, floor + 2, VIEW.w, 20);
+  ctx.fillStyle = '#ffd166';
+  ctx.fillRect(0, floor + 2, VIEW.w, 1);
+  ctx.fillRect(0, floor + 21, VIEW.w, 1);
+  drawPetals(ctx, time, phase === 'after' ? 1 : 0.3);
+
+  // ── 금이 간다 ───────────────────────────────────────────
+  if (t >= HARD_OPEN_AT.crack) {
+    const p = clamp01((t - HARD_OPEN_AT.crack) / 1.2);
+    ctx.save();
+    ctx.strokeStyle = '#12060f';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 5; i++) {
+      const x0 = 42 + i * 76;
+      ctx.beginPath();
+      ctx.moveTo(x0, floor + 1);
+      for (let k = 1; k <= 3; k++) ctx.lineTo(x0 + Math.sin(i * 2.3 + k) * 12 * p, floor + 1 + k * 8 * p);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ── 밟아 없앴던 것들이 떠오르고, 진화한다 ────────────────
+  if (t >= HARD_OPEN_AT.graves) {
+    const rise = clamp01((t - HARD_OPEN_AT.graves) / 1.4);
+    const grow = t >= HARD_OPEN_AT.evolve ? clamp01((t - HARD_OPEN_AT.evolve) / 1.4) : 0;
+    for (let i = 0; i < 9; i++) {
+      const gx = 26 + i * 42;
+      const gy = floor + 14 - rise * (32 + (i % 3) * 12);
+      ctx.save();
+      ctx.globalAlpha *= rise;
+      evolvedCover(ctx, ALBUMS[(i * 2) % ALBUMS.length], gx, gy, 18, grow, time);
+      ctx.restore();
+    }
+  }
+
+  // ── 둘이 서 있다. 그리고 다시 빼앗긴다 ───────────────────
+  const snatch = t >= HARD_OPEN_AT.taken ? clamp01((t - HARD_OPEN_AT.taken) / 1.1) : 0;
+  const standY = floor - 16;
+  const groomX = cx - 30;
+  // 빼앗기는 동안에는 손을 뻗는다 — 가만히 서 있으면 "놓쳤다" 로 안 읽힌다
+  const reachUp = snatch > 0 ? Math.sin(clamp01(snatch * 1.6) * Math.PI) * 14 : 0;
+  drawSprite(ctx, playerFrame({ onGround: snatch <= 0, vx: 0, vy: -1 }), groomX, standY - 4 - reachUp);
+  drawCrown(ctx, groomX + 1, standY - 13 - reachUp, time);
+
+  const brideX = cx + 8;
+  const lift = ease(snatch) * 170;
+  const wriggle = snatch > 0 ? Math.sin(time * 30) * 2 : 0;
+  drawSprite(ctx, BRIDE, Math.round(brideX + wriggle), Math.round(floor - BRIDE.h - lift));
+  if (snatch > 0) {
+    evolvedCover(ctx, ALBUMS[0], brideX + 10 + wriggle, floor - BRIDE.h - lift - 12, 22, 1, time);
+  }
+  ctx.restore();
+
+  // ── 바닥까지 떨어진다. 다시 #100 이다 ────────────────────
+  if (dropP <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = dropP;
+  const slide = (1 - dropP) * 170;
+  for (let i = 0; i < 9; i++) {
+    const y = IN_MINE_Y - (i + 1) * IN_ROW + slide;
+    if (y + IN_ROW < 0) continue;
+    ctx.save();
+    ctx.globalAlpha *= Math.max(0.45, 1 - i * 0.06);
+    drawIntroRow(ctx, y, ALBUMS[i % ALBUMS.length], 0.4 + i * 0.06, time, true);
+    ctx.restore();
+  }
+  drawMineRow(ctx, IN_MINE_Y + slide, time, phase === 'stand');
+  ctx.restore();
+
+  // 마이크를 다시 쥔다 — 오프닝의 grab 과 같은 그림이다
+  if (phase !== 'stand' && phase !== 'end') return;
+  const grab = clamp01((t - HARD_OPEN_AT.stand) / 0.9);
+  ctx.save();
+  ctx.globalAlpha = grab;
+  ctx.translate(IN_X + 24, IN_MINE_Y + 4);
+  drawMicShape(ctx, 11);
+  ctx.restore();
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const d = (1 - grab) * (46 + noise(i, 40) * 24);
+    ctx.save();
+    // 닿는 순간 사라진다 — 안 사라지면 손 위에 금빛 덩어리가 남는다
+    ctx.globalAlpha = Math.min(0.35 + grab * 0.65, clamp01((1 - grab) * 4));
+    drawSprite(ctx, NOTE, IN_X + 24 + Math.cos(a) * d, IN_MINE_Y + 4 + Math.sin(a) * d * 0.8);
+    ctx.restore();
+  }
+}
+
+// ── 2회차 엔딩: 차트가 무대가 된다 ──────────────────────────
+//
+// 1회차 엔딩은 결혼식이었다. 사적인 결말이라 같은 걸 또 보여주면 두 번 달린 값이 없다.
+// 여기는 **가수로서의 결말**이다 — 나를 막아섰던 열일곱 장이 관객으로 앉고,
+// 그 앞에 내가 선다. #100 방구석에서 시작한 이야기가 여기서 닫힌다.
+
+/** 무대 바닥 높이 */
+const HE_STAGE_Y = 138;
+
+/** 무대 조명 한 줄기 — 위에서 부채꼴로 내려온다 */
+function drawSpot(ctx, x, w, color, alpha, sweep) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x - 4, 0);
+  ctx.lineTo(x + 4, 0);
+  ctx.lineTo(x + w / 2 + sweep, HE_STAGE_Y);
+  ctx.lineTo(x - w / 2 + sweep, HE_STAGE_Y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/** 픽셀 별 — 두 번째 1위에는 ★ 가 붙는다 */
+function drawStar(ctx, cx, cy, r, time) {
+  if (r <= 0) return;
+  const spin = Math.sin(time * 2) * 0.08;
+  ctx.save();
+  ctx.fillStyle = '#ffd166';
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i / 10) * Math.PI * 2 + spin;
+    const d = i % 2 ? r * 0.44 : r;
+    const x = cx + Math.cos(a) * d;
+    const y = cy + Math.sin(a) * d;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#fff3c4';
+  ctx.fillRect(Math.round(cx - r * 0.2), Math.round(cy - r * 0.5), Math.max(1, Math.round(r * 0.2)), 2);
+  ctx.restore();
+}
+
+/** 관객이 된 앨범 열일곱 장. 흩어진 자리에서 무대 아래로 모인다 */
+function drawAudience(ctx, gather, cool, time) {
+  const base = VIEW.h - 16;
+  if (gather > 0.5) {
+    ctx.save();
+    ctx.globalAlpha = (gather - 0.5) * 2;
+    ctx.fillStyle = '#1a1026';
+    ctx.fillRect(0, base + 8, VIEW.w, VIEW.h - base - 8);
+    ctx.restore();
+  }
+  for (let i = 0; i < ALBUMS.length; i++) {
+    const row = i % 2;
+    const col = Math.floor(i / 2);
+    const toX = 16 + col * 40 + row * 20;
+    const toY = base - row * 16;
+    // 흩어져 있던 자리 (엔딩 1부의 scatterAt 과 같은 배치라 이어지는 그림이 된다)
+    const from = scatterAt(i, 1, time);
+    const x = from.x + (toX - from.x) * gather;
+    const jump = gather >= 1 ? Math.abs(Math.sin(time * 4 + i * 0.7)) * 5 : 0;
+    const y = from.y + (toY - from.y) * gather - jump;
+    // 아직 다 안 식었으면 벌건 기가 남아 있다
+    evolvedCover(ctx, ALBUMS[i], x, y, 14, Math.max(0, 1 - cool), time);
+    // 야광봉 — 관객이라는 게 한눈에 읽혀야 한다
+    if (gather < 0.6) continue;
+    ctx.save();
+    ctx.globalAlpha = (gather - 0.6) * 2.5;
+    ctx.fillStyle = i % 3 === 0 ? '#39ff9a' : i % 3 === 1 ? '#8fd8ff' : '#ffd166';
+    const wave = Math.sin(time * 4 + i) * 3;
+    ctx.fillRect(Math.round(x + 7), Math.round(y - 12 + wave), 2, 9);
+    ctx.restore();
+  }
+}
+
+function drawHardEndCut(ctx, t, phase, time) {
+  const cx = VIEW.w / 2;
+  ctx.fillStyle = '#0a0410';
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  // ── 풀려난다 ────────────────────────────────────────────
+  if (phase === 'free') {
+    const p = clamp01((t - HARD_END_AT.free) / 1.6);
+    ctx.save();
+    ctx.fillStyle = `rgba(255,255,255,${Math.max(0, 0.9 - p * 1.3)})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    ctx.restore();
+    drawCage(ctx, cx, 74, time, p);
+    return;
+  }
+
+  const cool = clamp01((t - HARD_END_AT.calm) / 1.5);
+  const stage = t >= HARD_END_AT.stage ? ease((t - HARD_END_AT.stage) / 1.4) : 0;
+  const gather = t >= HARD_END_AT.crowd ? ease((t - HARD_END_AT.crowd) / 1.4) : 0;
+  const encore = t >= HARD_END_AT.encore ? clamp01((t - HARD_END_AT.encore) / 1.0) : 0;
+
+  // ── 무대 뒤 조명 ────────────────────────────────────────
+  if (stage > 0) {
+    const sweep = Math.sin(time * 1.6) * 40;
+    drawSpot(ctx, 70, 90, '#7c5cff', 0.14 * stage + encore * 0.1, sweep);
+    drawSpot(ctx, cx, 100, '#ffd166', 0.16 * stage + encore * 0.12, -sweep * 0.6);
+    drawSpot(ctx, VIEW.w - 70, 90, '#ff5d8f', 0.14 * stage + encore * 0.1, -sweep);
+  }
+
+  // ── 차트 막대가 솟아 무대가 된다 ────────────────────────
+  const top = VIEW.h - (VIEW.h - HE_STAGE_Y) * stage;
+  if (stage > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    for (let i = 0; i < 10; i++) {
+      const h = (26 + ((i * 29) % 64)) * stage;
+      ctx.fillStyle = i % 2 ? '#3a1f52' : '#4a2a66';
+      ctx.fillRect(i * 40 + 4, top - h, 30, h);
+    }
+    ctx.restore();
+    // 무대 상판
+    ctx.fillStyle = '#241a33';
+    ctx.fillRect(0, top, VIEW.w, VIEW.h - top);
+    ctx.fillStyle = '#5c4a70';
+    ctx.fillRect(0, top, VIEW.w, 3);
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(0, top + 3, VIEW.w, 1);
+  }
+
+  // ── 적이 관객이 된다 ────────────────────────────────────
+  drawAudience(ctx, gather, cool, time);
+
+  // ── 둘이 무대에 선다 ────────────────────────────────────
+  if (t >= HARD_END_AT.duet) {
+    const up = ease((t - HARD_END_AT.duet) / 0.9);
+    const standY = top - 16 + (1 - up) * 30;
+    const groomX = cx - 26;
+    const brideX = cx + 6;
+    ctx.save();
+    ctx.globalAlpha = up;
+    drawSprite(ctx, playerFrame({ onGround: true, vx: 0 }), groomX, standY - 4);
+    drawCrown(ctx, groomX + 1, standY - 13, time);
+    drawSprite(ctx, BRIDE, Math.round(brideX), Math.round(top - BRIDE.h));
+    // 마이크가 둘이다 — 이번엔 같이 부른다
+    for (const [mx, my] of [
+      [groomX + 13, standY - 2],
+      [brideX + 20, top - BRIDE.h + 8],
+    ]) {
+      ctx.save();
+      ctx.translate(Math.round(mx), Math.round(my));
+      drawMicShape(ctx, 9);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // ── 앙코르 — 조명이 터지고 종이가 날린다 ────────────────
+  if (encore > 0) {
+    const since = t - HARD_END_AT.encore;
+    ctx.save();
+    for (let i = 0; i < 70; i++) {
+      const a = (i / 70) * Math.PI * 2 + noise(i, 31) * 0.6;
+      const speed = 30 + noise(i, 32) * 80;
+      const x = cx + Math.cos(a) * speed * since;
+      const y = HE_STAGE_Y - 20 + Math.sin(a) * speed * since * 0.6 + since * since * 26;
+      if (y > VIEW.h || y < -4) continue;
+      ctx.globalAlpha = Math.max(0, 1 - since / 4);
+      ctx.fillStyle = ['#ffd166', '#ff9ec4', '#7ee0a0', '#8fbaff', '#fff6ef'][i % 5];
+      ctx.fillRect(Math.round(x), Math.round(y), 2, 2);
+    }
+    ctx.restore();
+  }
+
+  // ── ★ 두 번째 1위 ──────────────────────────────────────
+  if (phase !== 'star' && phase !== 'end') return;
+  const pop = ease((t - HARD_END_AT.star) / 0.6);
+  drawStar(ctx, cx, 24, 17 * pop, time);
+  // 무대 위의 둘을 가리지 않게 위쪽에 얹는다 — 이 컷의 주인공은 저 둘이다
+  drawCutTitle(ctx, '#1', t - HARD_END_AT.star - 0.3, 4, 46);
+}
+
 // ── 타이틀 배경 ─────────────────────────────────────────────
 /** 앞으로 만날 앨범 열일곱 장이 천천히 흘러간다 */
 export function drawTitle(ctx, time) {
@@ -3270,7 +3616,9 @@ export function drawScene(ctx, game, time) {
     return;
   }
   if (game.scene === 'intro') {
-    drawIntroCut(ctx, game.cutsceneTime);
+    // 1회차 오프닝과 2회차 시작은 같은 장면을 타고 그림만 다르다
+    if (game.introCut === 'hardopen') drawHardOpenCut(ctx, game.cutsceneTime);
+    else drawIntroCut(ctx, game.cutsceneTime);
     return;
   }
   if (game.scene === 'cutscene') {

@@ -10,7 +10,11 @@ import {
   startRun,
   stageTable,
   npcInReach,
+  startIntro,
+  runSummary,
   SELECT_HARD,
+  SELECT_HUB,
+  SELECT_HARD_OPEN,
   SELECT_OPENING,
   SELECT_DEV_OFF,
   SELECT_SLOTS,
@@ -25,6 +29,8 @@ import { createWorld, tileKind, T } from '../src/core/world.js';
 import { SOLID, TILE } from '../src/core/physics.js';
 import { HARD_PHASES, HARD_MAX_HP, phaseFor } from '../src/data/bossData.js';
 import { createBoss, syncPhase } from '../src/core/boss.js';
+import { HARD_OPEN_CUT, hardOpenLength, INTRO_CUT } from '../src/data/introCutscene.js';
+import { HARD_END_CUT, ENDING_CUT, endingCut, isEndingCut, BOSS_CUTS, bossCutLength } from '../src/data/bossCutscenes.js';
 
 const DT = 1 / 60;
 const idle = (over = {}) => ({
@@ -94,7 +100,7 @@ test('깬 사람에게는 말을 걸 수 있고, 말을 걸어야 문이 열린�
   assert.equal(game.world.portals[0].open, true, '말을 걸었는데 문이 안 열렸다');
 });
 
-test('열린 문에 들어가면 하드모드가 시작된다', () => {
+test('열린 문에 들어가면 2회차 시작 컷신을 거쳐 하드모드가 시작된다', () => {
   const game = inStage1({ clearedOnce: true });
   const npc = game.world.npcs[0];
   game.player.x = npc.x;
@@ -106,6 +112,11 @@ test('열린 문에 들어가면 하드모드가 시작된다', () => {
   game.player.x = portal.x;
   game.player.y = portal.y;
   step(game, idle(), 2);
+
+  // 판을 바로 열지 않는다 — **왜 또 달리는지**를 먼저 보여준다
+  assert.equal(game.scene, 'intro', '문에 들어갔는데 시작 컷신이 안 뜬다');
+  assert.equal(game.introCut, 'hardopen', '1회차 오프닝이 떴다');
+  step(game, idle(), Math.round((hardOpenLength() + 0.5) / DT));
 
   assert.equal(game.hard, true, '문에 들어갔는데 하드모드가 아니다');
   assert.equal(stageTable(game), HARD_STAGES, '스테이지 표가 안 바뀌었다');
@@ -385,4 +396,158 @@ test('선택 칸의 이름과 실제로 열리는 판이 어긋나지 않는다'
   }
   const hardStages = SELECT_ITEMS.filter((s) => s.run?.hard && s.run.index < HARD_STAGES.length);
   assert.equal(hardStages.length, HARD_STAGES.length, '하드 판 칸 수가 판 수와 다르다');
+});
+
+
+// ── 2회차 시작 컷신 ─────────────────────────────────────────
+test('2회차 시작 타임라인이 앞으로만 가고 end 로 끝난다', () => {
+  for (let i = 1; i < HARD_OPEN_CUT.length; i++) {
+    assert.ok(HARD_OPEN_CUT[i].at >= HARD_OPEN_CUT[i - 1].at, `${i}번째 단계가 뒤로 갔다`);
+  }
+  assert.equal(HARD_OPEN_CUT[HARD_OPEN_CUT.length - 1].kind, 'end');
+  assert.ok(hardOpenLength() > 1, '너무 짧아 읽을 수가 없다');
+  assert.equal(HARD_OPEN_CUT.filter((s) => s.kind === 'line').length, 0, '대사가 있다');
+});
+
+test('2회차 시작은 오프닝과 이야기가 겹치지 않는다', () => {
+  // 오프닝은 방구석에서 올려다보는 이야기고, 여기는 꼭대기에서 떨어지는 이야기다.
+  // 단계 이름이 통째로 같으면 같은 컷신을 두 번 보여주는 셈이다.
+  const opening = new Set(INTRO_CUT.map((s) => s.kind));
+  const shared = HARD_OPEN_CUT.filter((s) => s.kind !== 'end' && opening.has(s.kind));
+  assert.equal(shared.length, 0, `겹치는 단계: ${shared.map((s) => s.kind).join(', ')}`);
+});
+
+test('이야기 순서가 뜻대로 짜여 있다 — 이룬 뒤에 잃고, 잃은 뒤에 다시 쥔다', () => {
+  const at = (kind) => HARD_OPEN_CUT.findIndex((s) => s.kind === kind);
+  assert.ok(at('after') < at('crack'), '다 이룬 자리가 먼저 나와야 금이 가는 게 뜻이 된다');
+  assert.ok(at('graves') < at('evolve'), '떠오른 다음에 진화한다');
+  assert.ok(at('evolve') < at('taken'), '진화한 것들이 채가야 2회차 이야기가 된다');
+  assert.ok(at('taken') < at('drop'), '빼앗기고 나서 떨어진다');
+  assert.ok(at('drop') < at('stand'), '떨어진 뒤에 다시 일어선다');
+});
+
+test('시작 컷신 도중에는 시간이 안 흐르고, 반드시 저절로 끝나 하드모드로 이어진다', () => {
+  const game = createGame({ seed: 3, save: { ...emptySave(), seenOpening: true } });
+  loadStage(game, 0);
+  startIntro(game, 'hardopen');
+  step(game, idle(), Math.round(2 / DT));
+  assert.equal(game.scene, 'intro', '2초 만에 끝나버렸다');
+  assert.equal(game.elapsedMs, 0, '컷신 시간이 기록에 얹혔다');
+
+  step(game, idle(), Math.round((hardOpenLength() + 0.5) / DT));
+  assert.notEqual(game.scene, 'intro', '컷신이 안 끝난다');
+  assert.equal(game.hard, true, '컷신 뒤에 하드모드로 안 이어졌다');
+  assert.equal(game.stageIndex, 0);
+});
+
+test('시작 컷신은 건너뛸 수 있고, 단계가 한꺼번에 쏟아지지 않는다', () => {
+  const game = createGame({ seed: 3, save: { ...emptySave(), seenOpening: true } });
+  const beats = [];
+  game.onEvent = (name, data) => {
+    if (name === 'cutbeat' && data.cut === 'hardopen') beats.push(data.kind);
+  };
+  loadStage(game, 0);
+  startIntro(game, 'hardopen');
+  step(game, idle({ confirmPressed: true }), Math.round(0.8 / DT));
+  assert.ok(beats.length <= 2, `건너뛰었는데 ${beats.length}개가 울렸다`);
+  assert.notEqual(game.scene, 'intro', '건너뛰기가 안 먹는다');
+});
+
+test('시작 컷신은 seenOpening 을 건드리지 않는다', () => {
+  // introdone 은 1회차 오프닝만 내는 소식이다 — 여기서 내면 오프닝을 영영 못 보는 사람이 생긴다
+  const game = createGame({ seed: 3, save: { ...emptySave(), seenOpening: false } });
+  const seen = [];
+  game.onEvent = (name) => seen.push(name);
+  loadStage(game, 0);
+  startIntro(game, 'hardopen');
+  step(game, idle(), Math.round((hardOpenLength() + 0.5) / DT));
+  assert.equal(seen.filter((n) => n === 'introdone').length, 0, '2회차 시작이 오프닝을 본 걸로 쳤다');
+});
+
+// ── 2회차 엔딩 ──────────────────────────────────────────────
+test('2회차 엔딩 타임라인이 앞으로만 가고 end 로 끝난다', () => {
+  for (let i = 1; i < HARD_END_CUT.length; i++) {
+    assert.ok(HARD_END_CUT[i].at >= HARD_END_CUT[i - 1].at, `${i}번째 단계가 뒤로 갔다`);
+  }
+  assert.equal(HARD_END_CUT[HARD_END_CUT.length - 1].kind, 'end');
+  assert.equal(HARD_END_CUT.filter((s) => s.kind === 'line').length, 0, '대사가 있다');
+});
+
+test('1회차 엔딩과 다른 결말이다 — 결혼식을 또 보여주지 않는다', () => {
+  const wedding = new Set(ENDING_CUT.map((s) => s.kind));
+  const shared = HARD_END_CUT.filter((s) => s.kind !== 'end' && wedding.has(s.kind));
+  assert.equal(shared.length, 0, `겹치는 단계: ${shared.map((s) => s.kind).join(', ')}`);
+});
+
+test('엔딩 갈래를 한 곳에서만 정한다', () => {
+  assert.equal(endingCut(true), 'hardEnd');
+  assert.equal(endingCut(false), 'ending');
+  assert.ok(isEndingCut('hardEnd') && isEndingCut('ending'));
+  assert.ok(!isEndingCut('bossdown'), '쓰러지는 컷신이 엔딩으로 세어졌다');
+  for (const id of ['hardEnd', 'ending']) assert.ok(BOSS_CUTS[id], `${id} 컷신이 없다`);
+});
+
+test('하드 보스를 쓰러뜨리면 2회차 엔딩이, 보통이면 결혼식이 이어진다', () => {
+  for (const hard of [false, true]) {
+    const game = createGame({ seed: 7, save: { ...emptySave(), seenOpening: true } });
+    game.hard = hard;
+    loadBoss(game);
+    game.boss.hp = 0;
+    game.boss.state = 'defeated';
+    game.boss.defeatedAt = 1.2;
+    step(game, idle(), 2);
+    assert.equal(game.bossCut?.id, 'bossdown', '쓰러지는 컷신이 안 떴다');
+
+    step(game, idle(), Math.round((bossCutLength('bossdown') + 0.2) / DT));
+    assert.equal(game.bossCut?.id, endingCut(hard), `${hard ? '하드' : '보통'}에서 엉뚱한 엔딩이 떴다`);
+
+    step(game, idle(), Math.round((bossCutLength(endingCut(hard)) + 0.5) / DT));
+    assert.equal(game.scene, 'ending', '엔딩 컷신이 안 끝난다');
+    assert.equal(game.ending.hard, hard, '기록에 남는 회차가 어긋났다');
+  }
+});
+
+// ── 포탈 스테이지 1 (개발자 모드) ───────────────────────────
+test('개발자 선택에 포탈 스테이지 1 과 2회차 시작 컷신이 있다', () => {
+  assert.ok(SELECT_HUB >= 0, '포탈 스테이지 칸이 없다');
+  assert.ok(SELECT_HARD_OPEN >= 0, '2회차 시작 컷신 칸이 없다');
+  assert.equal(new Set([SELECT_HARD, SELECT_HUB, SELECT_HARD_OPEN, SELECT_OPENING, SELECT_DEV_OFF]).size, 5);
+});
+
+test('포탈 스테이지 칸은 한 바퀴를 안 돈 사람에게도 포탈을 열어준다', () => {
+  const game = createGame({ seed: 9, save: { ...emptySave(), seenOpening: true, dev: true } });
+  game.scene = 'select';
+  game.selectIndex = SELECT_HUB;
+  step(game, idle({ confirmPressed: true }), 1);
+  step(game, idle(), 200);
+
+  assert.equal(game.hard, false, '하드모드로 바로 뛰어들었다 — 입구를 보려고 만든 칸이다');
+  assert.equal(game.world.stage.id, STAGES[0].id);
+  assert.ok(game.world.npcs.length > 0);
+
+  const npc = game.world.npcs[0];
+  game.player.x = npc.x;
+  game.player.y = npc.y;
+  step(game, idle(), 1);
+  assert.ok(npcInReach(game), '포탈 칸으로 들어왔는데 NPC 가 없는 셈이다');
+
+  step(game, idle({ confirmPressed: true }), 1);
+  step(game, idle(), 60 * 5);
+  assert.ok(game.world.portals[0].open, '말을 걸었는데 문이 안 열렸다');
+
+  const portal = game.world.portals[0];
+  game.player.x = portal.x;
+  game.player.y = portal.y;
+  step(game, idle(), 2);
+  assert.equal(game.introCut, 'hardopen', '문으로 들어갔는데 2회차 시작 컷신이 안 떴다');
+});
+
+test('포탈 스테이지 칸이 저장을 건드리지 않는다', () => {
+  // clearedOnce 를 켜버리면 1회차를 안 깬 사람의 타이틀 화면까지 바뀐다
+  const game = createGame({ seed: 9, save: { ...emptySave(), seenOpening: true, dev: true } });
+  game.scene = 'select';
+  game.selectIndex = SELECT_HUB;
+  step(game, idle({ confirmPressed: true }), 1);
+  assert.equal(game.save.clearedOnce, false, '저장에 한 바퀴 돈 걸로 남았다');
+  assert.equal(runSummary(game).partial, true, '골라 들어간 판인데 기록에 올라간다');
 });

@@ -22,8 +22,8 @@ import {
 } from './boss.js';
 import { ZONE_EFFECTS, emptyEffects, createTrapMemory, trapKey } from '../data/traps.js';
 import { CUTSCENE, CUTSCENE_LENGTH, beatsCrossed } from '../data/cutscene.js';
-import { BOSS_CUTS, bossCutLength, cutForPhase } from '../data/bossCutscenes.js';
-import { INTRO_CUT, introLength } from '../data/introCutscene.js';
+import { BOSS_CUTS, bossCutLength, cutForPhase, endingCut, isEndingCut } from '../data/bossCutscenes.js';
+import { introTimeline, introCutLength } from '../data/introCutscene.js';
 import { NPC_TALK, npcTalkLength } from '../data/npcTalk.js';
 import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
 import { emptySave } from './save.js';
@@ -125,6 +125,16 @@ export function createGame(options = {}) {
      * 이런 판은 기록을 갱신하지 않는다 — 안 그러면 보스만 골라 이기고 최고 기록이 된다.
      */
     partial: false,
+    /**
+     * 지금 'intro' 장면이 틀고 있는 컷신 ('intro' | 'hardopen').
+     * 그리는 쪽도 이걸 보고 어느 그림을 그릴지 정한다.
+     */
+    introCut: 'intro',
+    /**
+     * 한 바퀴를 돈 셈 쳐준다 (개발자 모드에서 포탈 판을 바로 열 때).
+     * **저장에는 안 남는다** — 저장을 건드리면 1회차를 안 깬 사람의 타이틀까지 바뀐다.
+     */
+    forceHub: false,
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -246,17 +256,25 @@ export function startRun(game, index = 0, { hard = false } = {}) {
   game.partial = index > 0;
   // 처음부터 달리는 판이고 오프닝을 아직 안 봤으면, 스테이지보다 먼저 오프닝을 튼다
   // 오프닝은 1회차에서만. 하드모드는 이미 다 본 사람이 들어오는 곳이다.
+  // 개발자 모드로 열어둔 포탈 판에서 넘어왔을 수도 있다 — 새 판에서는 원래 규칙으로
+  game.forceHub = false;
   if (index === 0 && !hard && !game.save.seenOpening) startIntro(game);
   else if (index >= stageCount(game)) loadBoss(game);
   else loadStage(game, index);
 }
 
-/** 오프닝 컷신을 튼다. 끝나면 스테이지 1 로 이어진다. */
-export function startIntro(game) {
+/**
+ * 판 앞에 끼어드는 컷신을 튼다. 끝나면 스테이지 1 로 이어진다.
+ *
+ * id 는 'intro'(1회차 오프닝) 또는 'hardopen'(2회차 시작). **같은 장면 기계**를 탄다 —
+ * 건너뛰기·소리·시간 안 흐르기를 두 벌 적으면 한쪽만 고치는 날이 온다.
+ */
+export function startIntro(game, id = 'intro') {
   game.scene = 'intro';
+  game.introCut = id;
   game.cutsceneTime = 0;
   game.sceneTime = 0;
-  emit(game, 'cutscene', { id: 'intro' });
+  emit(game, 'cutscene', { id });
 }
 
 // ── 죽음과 부활 ──────────────────────────────────────────────
@@ -907,7 +925,19 @@ function handleCheckpoints(game) {
  * 처음 하는 사람의 튜토리얼 판에 낯선 사람이 서 있으면 그냥 헷갈리기만 한다.
  * 스테이지 1 사본을 따로 두지 않는 이유이기도 하다 — 두 벌이 되면 한쪽만 고치는 날이 온다.
  */
-const hubOpen = (game) => !!game.save?.clearedOnce && !game.hard;
+const hubOpen = (game) => !game.hard && (!!game.save?.clearedOnce || !!game.forceHub);
+
+/**
+ * 포탈이 열려 있는 스테이지 1 로 바로 간다 (개발자 모드).
+ *
+ * 2회차 입구를 보려고 한 바퀴를 다 돌게 하면 아무도 안 본다. **한 바퀴 돈 셈만**
+ * 쳐주고(forceHub) 저장은 안 건드린다 — clearedOnce 를 켜버리면 그 기기에서
+ * 1회차를 안 깬 사람의 타이틀 화면까지 바뀐다.
+ */
+export function openHub(game) {
+  game.forceHub = true;
+  returnToHub(game);
+}
 
 /** 지금 말을 걸 수 있는 NPC (가까이 서 있고, 아직 안 걸었다). 없으면 null */
 export function npcInReach(game) {
@@ -948,7 +978,9 @@ function handlePortal(game) {
     if (!portal.open) continue;
     if (!overlaps(game.player, portal)) continue;
     emit(game, 'portal', {});
-    startRun(game, 0, { hard: true });
+    // 판을 바로 열지 않고 **왜 또 달리는지**를 먼저 보여준다.
+    // 컷신이 끝나면 아래 'intro' 장면이 startRun 으로 이어붙인다.
+    startIntro(game, 'hardopen');
     return;
   }
 }
@@ -1114,7 +1146,13 @@ export const SELECT_ITEMS = [
     run: { index: i, hard: true },
   })),
   { icon: '💀', label: '하드 보스전', run: { index: HARD_STAGES.length, hard: true } },
+  /**
+   * 포탈이 열려 있는 스테이지 1. NPC 에게 말을 걸고 문으로 들어가면 2회차가 시작된다 —
+   * 하드 판으로 바로 뛰어드는 위 칸들과 달리 **입구 전체**를 볼 수 있다.
+   */
+  { icon: '🌀', label: '포탈 스테이지 1', action: 'hub' },
   { icon: '🎬', label: '오프닝 다시 보기', action: 'opening' },
+  { icon: '🌌', label: '2회차 시작 컷신', action: 'hardopen' },
   { icon: '🚪', label: '개발자 모드 끄기', action: 'devOff' },
 ];
 
@@ -1125,6 +1163,10 @@ export const SELECT_HARD = slotOf((s) => s.run?.hard && s.run.index === 0);
 export const SELECT_HARD_BOSS = slotOf((s) => s.run?.hard && s.run.index === HARD_STAGES.length);
 /** 오프닝 다시 보기 (한 번 보면 저절로는 안 뜨므로 여기서만 다시 볼 수 있다) */
 export const SELECT_OPENING = slotOf((s) => s.action === 'opening');
+/** 포탈이 열려 있는 스테이지 1 (2회차 입구를 통째로 보는 칸) */
+export const SELECT_HUB = slotOf((s) => s.action === 'hub');
+/** 2회차 시작 컷신 다시 보기 */
+export const SELECT_HARD_OPEN = slotOf((s) => s.action === 'hardopen');
 /** 개발자 모드 끄기 */
 export const SELECT_DEV_OFF = slotOf((s) => s.action === 'devOff');
 export const SELECT_SLOTS = SELECT_ITEMS.length;
@@ -1244,8 +1286,8 @@ function updateBossScene(game, input, dt) {
       // 컷신 때문에 꺼둔 것(브금 같은 것)을 여기서 되돌리면 안전하다.
       emit(game, 'cutdone', { cut: finished });
       // 쓰러지는 컷신이 끝나면 곧바로 엔딩으로 이어진다
-      if (finished === 'bossdown') startBossCut(game, 'ending');
-      if (finished === 'ending') finishRun(game);
+      if (finished === 'bossdown') startBossCut(game, endingCut(game.hard));
+      if (isEndingCut(finished)) finishRun(game);
     }
     return;
   }
@@ -1412,7 +1454,9 @@ export function updateGame(game, input, dt) {
       } else if (input.confirmPressed) {
         const pick = SELECT_ITEMS[game.selectIndex];
         if (pick?.run) startRun(game, pick.run.index, { hard: !!pick.run.hard });
-        else if (pick?.action === 'opening') startIntro(game);
+        else if (pick?.action === 'opening') startIntro(game, 'intro');
+        else if (pick?.action === 'hardopen') startIntro(game, 'hardopen');
+        else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'devOff') {
           setDevMode(game, false);
           game.scene = 'title';
@@ -1423,11 +1467,18 @@ export function updateGame(game, input, dt) {
     }
 
     case 'intro': {
+      const id = game.introCut ?? 'intro';
+      const length = introCutLength(id);
       const wasIntro = game.cutsceneTime;
       game.cutsceneTime += dt;
-      beat(game, 'intro', INTRO_CUT, wasIntro, game.cutsceneTime);
-      if (input.confirmPressed && game.cutsceneTime > 0.6) game.cutsceneTime = introLength();
-      if (game.cutsceneTime >= introLength()) {
+      beat(game, id, introTimeline(id), wasIntro, game.cutsceneTime);
+      if (input.confirmPressed && game.cutsceneTime > 0.6) game.cutsceneTime = length;
+      if (game.cutsceneTime >= length) {
+        if (id === 'hardopen') {
+          // 2회차가 여기서 시작된다. startRun 이 시간·차트아웃을 지우므로 기록이 안 섞인다.
+          startRun(game, 0, { hard: true });
+          break;
+        }
         // 건너뛰어도 여기를 지나므로 반드시 한 번 나온다 — 저장이 여기 달려 있다
         emit(game, 'introdone', {});
         loadStage(game, 0);

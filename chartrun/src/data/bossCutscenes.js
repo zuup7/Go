@@ -102,6 +102,28 @@ export const ENDING_CUT = [
   { at: 18.0, kind: 'end' },
 ];
 
+/**
+ * **2회차 엔딩** — 진화가 풀리고, 차트가 무대가 된다.
+ *
+ * 1회차 엔딩은 결혼식이었다. 사적인 결말이라 같은 걸 또 보여주면 2회차에 남는 게 없다.
+ * 여기는 **가수로서의 결말**이다 — 나를 막아섰던 열일곱 장이 이번엔 관객으로 앉고,
+ * 내가 그 앞에 선다. #100 방구석에서 시작한 이야기가 여기서 닫힌다.
+ *
+ * 대사는 없다. 순서가 곧 이야기다 —
+ * 풀려나고(free) → 진화가 식고(calm) → 차트가 무대가 되고(stage) →
+ * 적이 관객이 되고(crowd) → 둘이 선다(duet) → 앙코르(encore) → ★(star).
+ */
+export const HARD_END_CUT = [
+  { at: 0.0, kind: 'free' }, // 새장이 부서지고 그녀가 내려온다
+  { at: 1.7, kind: 'calm' }, // 벌겋게 달았던 앨범들이 식어 평범한 레코드로 돌아간다
+  { at: 3.4, kind: 'stage' }, // 차트 막대가 솟아 무대가 된다
+  { at: 5.0, kind: 'crowd' }, // 열일곱 장이 무대 아래로 모여 앉는다
+  { at: 6.6, kind: 'duet' }, // 둘이 무대에 선다. 마이크가 둘이다
+  { at: 8.4, kind: 'encore' }, // 조명이 터지고 관객이 뛴다
+  { at: 10.2, kind: 'star' }, // ★ — 두 번째 1위
+  { at: 12.8, kind: 'end' },
+];
+
 export const BOSS_CUTS = {
   phase2: { timeline: PHASE2_CUT, title: 'PHASE 2' },
   phase3: { timeline: PHASE3_CUT, title: 'PHASE 3' },
@@ -110,6 +132,8 @@ export const BOSS_CUTS = {
   phase4: { timeline: PHASE4_CUT, title: 'FINAL' },
   bossdown: { timeline: BOSS_DOWN_CUT, title: null },
   ending: { timeline: ENDING_CUT, title: '#1' },
+  /** 2회차 엔딩. 1회차와 **다른 결말**이라야 두 번 달린 값이 있다 */
+  hardEnd: { timeline: HARD_END_CUT, title: '#1' },
 };
 
 export const bossCutLength = (id) => lengthOf(BOSS_CUTS[id].timeline);
@@ -127,6 +151,15 @@ export const BOSS_DOWN_AT = atOf(BOSS_DOWN_CUT);
 export const PHASE3_AT = atOf(PHASE3_CUT);
 export const PHASE4_AT = atOf(PHASE4_CUT);
 export const ENDING_AT = atOf(ENDING_CUT);
+export const HARD_END_AT = atOf(HARD_END_CUT);
+
+/**
+ * 이 판이 볼 엔딩 컷신 id. **읽는 곳이 둘이다** — 쓰러지는 컷신 뒤에 이어 붙일 때와,
+ * 그게 끝났는지 볼 때. 두 곳에 삼항연산자를 따로 적으면 하드에서 엔딩이 안 끝난다.
+ */
+export const endingCut = (hard) => (hard ? 'hardEnd' : 'ending');
+/** 이 id 가 엔딩인가 (끝나면 통계 화면으로 간다) */
+export const isEndingCut = (id) => id === 'ending' || id === 'hardEnd';
 
 /**
  * 페이즈가 바뀔 때 틀 컷신 id (1페이즈는 시작이라 없다).

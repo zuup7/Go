@@ -13,9 +13,10 @@ import {
   bossCutLength,
   HARD3_CUT,
   BOSS_DOWN_CUT,
+  HARD_END_CUT,
 } from '../src/data/bossCutscenes.js';
 import { CUT_SOUND, soundFor } from '../src/data/cutSound.js';
-import { INTRO_CUT } from '../src/data/introCutscene.js';
+import { INTRO_CUT, HARD_OPEN_CUT } from '../src/data/introCutscene.js';
 import { CAUGHT_CUT } from '../src/data/caughtCut.js';
 
 const DT = 1 / 60;
@@ -71,6 +72,8 @@ test('경계를 정확히 한 번만 넘긴다', () => {
  */
 const TIMELINES = {
   intro: INTRO_CUT,
+  hardopen: HARD_OPEN_CUT,
+  hardEnd: HARD_END_CUT,
   merge: CUTSCENE,
   phase2: PHASE2_CUT,
   phase3: PHASE3_CUT,

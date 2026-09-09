@@ -33,3 +33,47 @@ export const INTRO_CUT = [
 export const INTRO_AT = Object.fromEntries(INTRO_CUT.map((s) => [s.kind, s.at]));
 
 export const introLength = () => lengthOf(INTRO_CUT);
+
+// ── 2회차 시작 컷신 ─────────────────────────────────────────
+//
+// **왜 또 달리는가.** 1회차 오프닝과 짝이 맞아야 한다 —
+// 그때는 방구석에서 시작해 차트에 막히고 그녀를 빼앗겼다.
+// 이번엔 **다 이룬 자리에서** 빼앗긴다. 결혼식이 끝난 그 바닥이 갈라지고,
+// 내가 밟아 없앴던 앨범들이 거기서 떠오른다.
+//
+// 대사는 없다. 순서가 곧 이야기다 —
+// 이룬 것(after) → 금이 간다(crack) → 죽은 것들이 돌아온다(graves) →
+// 진화한다(evolve) → 다시 빼앗긴다(snatch) → 바닥까지 떨어진다(drop) →
+// 마이크를 다시 쥔다(stand).
+
+export const HARD_OPEN_CUT = [
+  { at: 0.0, kind: 'after' }, // 결혼식이 끝난 자리. 둘이 나란히 서 있다
+  { at: 1.5, kind: 'crack' }, // 발밑 차트 바닥에 금이 간다
+  { at: 2.8, kind: 'graves' }, // 밟아 없앴던 앨범들이 바닥에서 떠오른다
+  { at: 4.4, kind: 'evolve' }, // 가시와 뿔이 돋는다 — 진화한 것들이다
+  { at: 6.0, kind: 'taken' }, // 다시 그녀를 채간다
+  { at: 7.3, kind: 'drop' }, // 바닥이 꺼지고 차트가 통째로 위로 달아난다
+  { at: 8.7, kind: 'stand' }, // 맨 밑에서 마이크를 다시 쥔다
+  { at: 10.2, kind: 'end' },
+];
+
+export const HARD_OPEN_AT = Object.fromEntries(HARD_OPEN_CUT.map((s) => [s.kind, s.at]));
+
+export const hardOpenLength = () => lengthOf(HARD_OPEN_CUT);
+
+/**
+ * 'intro' 장면이 틀 수 있는 컷신 한 벌.
+ *
+ * 1회차 오프닝과 2회차 시작이 **같은 장면 기계**를 탄다 — 둘 다 판 앞에 끼어들고,
+ * 건너뛸 수 있고, 끝나면 스테이지 1 로 이어진다. 장면을 따로 만들면 건너뛰기·소리·
+ * 시간 안 흐르기를 두 벌 적게 되고, 한쪽만 고치는 날이 온다.
+ */
+export const INTRO_CUTS = {
+  intro: { timeline: INTRO_CUT, length: introLength },
+  hardopen: { timeline: HARD_OPEN_CUT, length: hardOpenLength },
+};
+
+/** 그 컷신의 길이(초). 모르는 이름이면 오프닝으로 본다 */
+export const introCutLength = (id) => (INTRO_CUTS[id] ?? INTRO_CUTS.intro).length();
+/** 그 컷신의 타임라인 */
+export const introTimeline = (id) => (INTRO_CUTS[id] ?? INTRO_CUTS.intro).timeline;
