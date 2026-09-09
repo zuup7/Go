@@ -11,6 +11,9 @@ const PAL = {
   w: '#ffffff',
 };
 
+const W = 12;
+const BLANK = '............';
+
 const HEAD = [
   '....kkkk....',
   '...kkkkkk...',
@@ -21,38 +24,146 @@ const HEAD = [
   '...kssssk...',
 ];
 
-const TORSO = [
-  '..jjjjjjjj..',
-  '.jjjjrrjjjj.',
-  '.jjjjjjjjjjm',
-  '.sjjjjjjjjs.',
-  '..jjjjjjjj..',
-  '..pppppppp..',
-  '..pppppppp..',
+/** 달릴 때 앞으로 숙인 머리 — 한 칸 앞으로 나간다 */
+const HEAD_LEAN = [
+  '.....kkkk...',
+  '....kkkkkk..',
+  '...kkkkkkkk.',
+  '...kssssssk.',
+  '...kskssksk.',
+  '...ksskkssk.',
+  '....kssssk..',
 ];
+
+const TORSO = {
+  /** 가만히 — 두 팔이 몸 옆에 */
+  idle: [
+    '..jjjjjjjj..',
+    '.jjjjrrjjjj.',
+    '.jjjjjjjjjjm',
+    '.sjjjjjjjjs.',
+    '..jjjjjjjj..',
+    '..pppppppp..',
+    '..pppppppp..',
+  ],
+  /** 달리기 A — 앞팔이 앞으로 */
+  swingA: [
+    '..jjjjjjjj..',
+    '.jjjjrrjjjj.',
+    '.jjjjjjjjjjm',
+    '.jjjjjjjjjss',
+    '.sjjjjjjjj..',
+    '..pppppppp..',
+    '..pppppppp..',
+  ],
+  /** 달리기 B — 앞팔이 뒤로 (팔이 반대로 흔들린다) */
+  swingB: [
+    '..jjjjjjjj..',
+    '.jjjjrrjjjj.',
+    '.jjjjjjjjjjm',
+    'ssjjjjjjjjj.',
+    '..jjjjjjjjs.',
+    '..pppppppp..',
+    '..pppppppp..',
+  ],
+  /** 대시 — 두 팔을 뒤로 완전히 젖힌다. 몸이 앞으로 쏠린 자세다 */
+  dash: [
+    '..jjjjjjjj..',
+    '.jjjjrrjjjj.',
+    's.jjjjjjjjjm',
+    'ss.jjjjjjjj.',
+    '...jjjjjjjj.',
+    '..pppppppp..',
+    '..pppppppp..',
+  ],
+  /** 뜬 순간 — 두 팔이 위로 */
+  rise: [
+    's.jjjjjjjj.s',
+    '.jjjjrrjjjj.',
+    '.jjjjjjjjjjm',
+    '.jjjjjjjjjj.',
+    '..jjjjjjjj..',
+    '..pppppppp..',
+    '..pppppppp..',
+  ],
+  /** 떨어지는 중 — 두 팔이 균형 잡느라 옆으로 벌어진다 */
+  fall: [
+    '..jjjjjjjj..',
+    '.jjjjrrjjjj.',
+    'sjjjjjjjjjjm',
+    's.jjjjjjjj.s',
+    '..jjjjjjjj.s',
+    '..pppppppp..',
+    '..pppppppp..',
+  ],
+};
 
 const LEGS = {
   stand: ['..kkk..kkk..', '..kkk..kkk..'],
-  runA: ['..kkkkkk....', '.kkk....kkk.'],
-  runB: ['....kkkkkk..', '.kkk....kkk.'],
+  /** 두 다리가 몸 밑에서 스치는 순간 (몸이 제일 높다) */
+  passA: ['...kkkkkk...', '...kk.kkk...'],
+  passB: ['...kkkkkk...', '...kkk.kk...'],
+  /** 발이 땅에 닿아 벌어진 순간 (몸이 한 칸 내려앉는다) */
+  reachA: ['..kkkkkk....', '.kkk....kkk.'],
+  reachB: ['....kkkkkk..', '.kkk....kkk.'],
   jump: ['.kkk....kkk.', '..kk......k.'],
+  /** 떨어질 때는 두 다리를 모아 버틴다 */
+  fall: ['..kk....kk..', '.kkk....kkk.'],
+  /** 대시 — 다리가 뒤로 쭉 뻗는다 */
+  dash: ['.kkkkkkkkk..', 'kk..........'],
 };
 
-const build = (legs) => sprite([...HEAD, ...TORSO, ...legs], PAL);
+/**
+ * 프레임 하나. 항상 12×16 이다.
+ *
+ * drop 은 "몸이 주저앉은 정도". 위에 빈 줄을 그만큼 넣고 **몸통에서** 같은 수만큼
+ * 덜어낸다. 다리에서 덜면 접지 프레임마다 다리가 사라져서 걷는 게 안 보인다 —
+ * 실제로 한 번 그렇게 만들어놓고 화면에서 다리를 잃어버렸다.
+ * 몸통이 줄어드는 건 발이 땅을 찰 때 상체가 눌리는 것이라 그림으로도 맞다.
+ */
+const build = (head, torso, legs, drop = 0) => {
+  const body = drop > 0 ? torso.slice(0, torso.length - drop) : torso;
+  const rows = [...Array(drop).fill(BLANK), ...head, ...body, ...legs];
+  if (rows.length !== 16) throw new Error(`프레임이 ${rows.length}줄이다 — 16줄이어야 한다`);
+  return sprite(rows, PAL);
+};
 
 export const PLAYER_SPRITES = {
-  stand: build(LEGS.stand),
-  runA: build(LEGS.runA),
-  runB: build(LEGS.runB),
-  jump: build(LEGS.jump),
+  stand: build(HEAD, TORSO.idle, LEGS.stand),
+  runPassA: build(HEAD_LEAN, TORSO.swingA, LEGS.passA),
+  runReachA: build(HEAD_LEAN, TORSO.swingA, LEGS.reachA, 1),
+  runPassB: build(HEAD_LEAN, TORSO.swingB, LEGS.passB),
+  runReachB: build(HEAD_LEAN, TORSO.swingB, LEGS.reachB, 1),
+  jump: build(HEAD, TORSO.rise, LEGS.jump),
+  fall: build(HEAD, TORSO.fall, LEGS.fall),
+  dash: build(HEAD_LEAN, TORSO.dash, LEGS.dash),
 };
+
+/**
+ * 달리기 한 바퀴. 닿음 → 스침 → 닿음(반대) → 스침(반대).
+ * 몸이 닿음에서 내려앉고 스침에서 올라와, 걸음마다 위아래로 까딱인다.
+ */
+const RUN_CYCLE = [
+  PLAYER_SPRITES.runReachA,
+  PLAYER_SPRITES.runPassA,
+  PLAYER_SPRITES.runReachB,
+  PLAYER_SPRITES.runPassB,
+];
+
+/** 이만큼 달릴 때마다 발이 한 칸 넘어간다 (픽셀) */
+const STRIDE = 9;
+
+/** 이보다 빨리 떨어지고 있으면 떨어지는 그림 */
+const FALLING = 40;
 
 /** 상태에 맞는 프레임 하나 고르기 */
 export function playerFrame(player) {
-  if (!player.onGround) return PLAYER_SPRITES.jump;
+  if (player.dashTime > 0) return PLAYER_SPRITES.dash;
+  if (!player.onGround) return player.vy > FALLING ? PLAYER_SPRITES.fall : PLAYER_SPRITES.jump;
   if (Math.abs(player.vx) < 6) return PLAYER_SPRITES.stand;
-  const phase = Math.floor(player.animTime * 10) % 2;
-  return phase === 0 ? PLAYER_SPRITES.runA : PLAYER_SPRITES.runB;
+  // **시간이 아니라 달린 거리**로 돈다. 시간으로 돌리면 느리게 걸을 때 발이 미끄러진다.
+  const step = Math.floor((player.stride ?? 0) / STRIDE) % RUN_CYCLE.length;
+  return RUN_CYCLE[step];
 }
 
 /** 스프라이트를 히트박스 기준으로 놓을 때의 보정 */

@@ -71,6 +71,11 @@ export function createPlayer(spawn) {
     cleared: false,
     invuln: 0,
     animTime: 0,
+    /**
+     * 실제로 달린 거리(픽셀). 발 프레임을 **시간이 아니라 거리**로 돌린다 —
+     * 시간으로 돌리면 느리게 걸을 때 발이 땅을 미끄러진다.
+     */
+    stride: 0,
     /** 착지에서 납작해진 정도 0~1, 점프에서 길쭉해진 정도 0~1 (그리는 쪽만 쓴다) */
     squash: 0,
     stretch: 0,
@@ -104,6 +109,7 @@ export function respawnPlayer(player, spawn) {
   // 여기서 안 풀어주면 죽은 자리의 쿨을 그대로 안고 되살아난다
   player.dashTime = 0;
   player.dashCool = 0;
+  player.stride = 0;
 }
 
 /**
@@ -170,8 +176,13 @@ export function updatePlayer(player, input, world, dt) {
   // 착지를 잡으려면 부딪히기 **전** 속도를 들고 있어야 한다 — moveBody 가 vy 를 0 으로 만든다
   const wasAir = !player.onGround;
   const falling = player.vy;
+  const fromX = player.x;
   const res = moveBody(player, player.vx * dt, player.vy * dt, world.tileAt, PLAYER.cornerNudge);
   player.onGround = res.hitGround || groundedAt(player, world.tileAt);
+
+  // 발 프레임은 **실제로 움직인 거리**로 돈다. 속도로 미리 계산하면 벽에 막혔을 때도
+  // 발이 계속 돌아서 제자리걸음이 되고, 가속 중에는 한 프레임씩 어긋난다.
+  if (player.onGround) player.stride += Math.abs(player.x - fromX);
 
   if (wasAir && player.onGround && falling > 0) {
     // 세게 떨어질수록 납작해진다. 게임 쪽은 이걸 보고 먼지를 피운다.
