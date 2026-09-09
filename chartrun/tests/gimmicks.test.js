@@ -7,6 +7,7 @@ import { TRAPS, TRAP_KINDS, ZONE_EFFECTS, trapKey } from '../src/data/traps.js';
 import { STAGES } from '../src/data/stages.js';
 import { createBoss, createMic, throwMic, updateThrown, updateBoss, MIC_SIZE } from '../src/core/boss.js';
 import { BOSS_MAX_HP } from '../src/data/bossData.js';
+import { emptySave } from '../src/core/save.js';
 
 const idle = {
   left: false,
@@ -315,4 +316,32 @@ test('마이크 아홉 번이면 보스가 쓰러진다 — 3페이즈까지 실
   }
   assert.deepEqual([...seen].sort(), [1, 2, 3]);
   assert.equal(game.boss.state, 'defeated');
+});
+
+// ── 대시는 보스전에서만 ─────────────────────────────────────
+test('판에서는 대시가 안 나간다', () => {
+  // 스테이지는 걷기와 점프만으로 넘도록 짜여 있다. 여기서 대시가 되면
+  // 구멍이 구멍이 아니게 되고, 넘으라고 만든 자리를 그냥 지나쳐 버린다.
+  const game = createGame({ seed: 7, save: { ...emptySave(), seenOpening: true } });
+  loadStage(game, 0);
+  step(game, idle, 200);
+  assert.equal(game.scene, 'play');
+
+  const before = game.player.x;
+  step(game, { ...idle, dashPressed: true }, 8);
+  assert.equal(game.player.dashTime, 0, '판에서 대시가 나갔다');
+  assert.equal(game.player.dashCool, 0, '판에서 쿨이 돌기 시작했다');
+  assert.ok(Math.abs(game.player.x - before) < 1, '가만히 있어야 하는데 움직였다');
+});
+
+test('보스전에서는 대시가 나간다', () => {
+  const game = createGame({ seed: 7, save: { ...emptySave(), seenOpening: true } });
+  loadBoss(game);
+  // 등장 컷신을 넘긴다
+  for (let i = 0; i < 900 && game.bossCut; i++) step(game, idle);
+  assert.equal(game.bossCut, null, '컷신이 안 끝났다');
+
+  step(game, { ...idle, dashPressed: true });
+  assert.ok(game.player.dashTime > 0, '보스전인데 대시가 안 나간다');
+  assert.ok(Math.abs(game.player.vx) > 124, '대시인데 달리기보다 안 빠르다');
 });

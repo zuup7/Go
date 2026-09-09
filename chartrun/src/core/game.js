@@ -518,6 +518,15 @@ function updateRank(game) {
 const applyEffects = (game, input) =>
   game.effects.reversed > 0 ? { ...input, left: input.right, right: input.left } : input;
 
+/**
+ * 대시는 **보스전에서만** 쓴다.
+ *
+ * 스테이지 1~4 는 걷기와 점프만으로 넘도록 짜여 있다. 판에서도 대시가 나가면
+ * 구멍이 구멍이 아니게 되고, 넘으라고 만든 자리를 그냥 지나쳐 버린다.
+ * 대시가 있어야 하는 건 아레나 하나뿐이다 — 3페이즈 레이저를 비켜서는 자리.
+ */
+const noDash = (input) => (input.dashPressed ? { ...input, dashPressed: false } : input);
+
 /** 세게 떨어졌을 때만 발밑에 먼지. 걸음마다 피우면 화면이 지저분해진다. */
 function landingDust(game, landed) {
   if (!landed || landed.impact < 0.45) return;
@@ -532,9 +541,8 @@ function landingDust(game, landed) {
 }
 
 function updatePlay(game, input, dt) {
-  const events = updatePlayer(game.player, applyEffects(game, input), game.world, dt);
+  const events = updatePlayer(game.player, noDash(applyEffects(game, input)), game.world, dt);
   if (events.jumped) emit(game, 'jump', {});
-  if (events.dashed) emit(game, 'dash', {});
   landingDust(game, events.landed);
   handleBlocks(game, events);
   handleCrumbling(game, dt);

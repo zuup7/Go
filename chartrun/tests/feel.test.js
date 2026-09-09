@@ -263,3 +263,11 @@ test('죽고 살아나면 대시가 돌아와 있다', () => {
   assert.equal(player.dashCool, 0, '죽은 자리의 쿨을 안고 되살아난다');
   assert.equal(player.dashTime, 0);
 });
+
+test('대시 거리가 짧다 — 두 칸 남짓', () => {
+  // 멀리 가면 순간이동처럼 보여서 어디에 설지를 못 겨눈다.
+  // 그리고 세 칸(48px)을 넘기면 레벨이 기대는 구멍을 그냥 지나쳐 버린다.
+  const reach = PLAYER.dashSpeed * PLAYER.dashTime;
+  assert.ok(reach > 24, `${Math.round(reach)}px 면 레이저 발자국(14px)도 못 벗어난다`);
+  assert.ok(reach < TILE * 3, `${Math.round(reach)}px 는 너무 멀다 — 세 칸을 넘으면 안 된다`);
+});

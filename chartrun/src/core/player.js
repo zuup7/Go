@@ -40,14 +40,18 @@ export const PLAYER = {
    * 무적을 주면 앨범도 탄막도 보스 몸도 다 통과해서 게임 전체가 무너진다.
    * 속도뿐이라야 3페이즈 레이저가 끝까지 진짜 위협으로 남는다.
    */
-  dashSpeed: 300,
+  dashSpeed: 260,
   /**
-   * 0.18초 * 300 ≈ 54px.
-   * 이걸로 **레이저 기둥을 통과하지는 못한다** — 무적이 없으니 들어가면 그냥 죽는다.
-   * 대시는 기둥이 설 자리에서 **비켜서는** 수단이다: 예고 0.9초 안에 발자국 밖으로
-   * 빠지고, 훑고 지나가면 곧바로 보스 밑으로 돌아와 약점을 밟는다.
+   * 0.13초 * 260 ≈ 34px — **두 칸 남짓**이다. 짧게 잡은 이유가 둘 있다.
+   *
+   * 하나, 이걸로 **레이저 기둥을 통과하지는 못한다** — 무적이 없으니 들어가면 그냥 죽는다.
+   * 대시는 기둥이 설 자리에서 **비켜서는** 수단이다: 예고 0.9초 안에 발자국(14px) 밖으로
+   * 빠지고, 훑고 지나가면 곧바로 보스 밑으로 돌아와 약점을 밟는다. 그러려면 이만큼이면 된다.
+   *
+   * 둘, 더 멀리 가면 순간이동처럼 보여서 어디에 설지를 못 겨눈다. 짧게 끊어야
+   * "한 발 옆으로" 가 되고, 그게 겨눌 수 있는 움직임이다.
    */
-  dashTime: 0.18,
+  dashTime: 0.13,
   dashCool: 0.7,
   /** 역주행 바닥이 밀어내는 속도 */
   conveyor: 46,
@@ -120,6 +124,9 @@ export function updatePlayer(player, input, world, dt) {
   player.dashCool = Math.max(0, player.dashCool - dt);
   if (player.dashTime > 0) {
     player.dashTime = Math.max(0, player.dashTime - dt);
+    // 끝나는 순간 속도를 평소 최고속도로 깎는다. 안 그러면 대시 속도를 그대로 안고
+    // 한참을 미끄러져서, 34px 만 가라고 잡아둔 것이 실제로는 두 배 가까이 간다.
+    if (player.dashTime === 0) player.vx = clamp(player.vx, -PLAYER.maxSpeed, PLAYER.maxSpeed);
   } else if (input.dashPressed && player.dashCool <= 0) {
     player.dashTime = PLAYER.dashTime;
     // 대시가 끝난 뒤부터 쿨이 도는 셈이 되게 길이를 더해둔다
