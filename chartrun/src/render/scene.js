@@ -13,6 +13,7 @@ import { BOSS_CUTS, PHASE2_AT, PHASE3_AT, ENDING_AT } from '../data/bossCutscene
 import { INTRO_CUT, INTRO_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
 import { bossPhase, princessCaged, bossCombined } from '../core/boss.js';
+import { PLAYER } from '../core/player.js';
 
 // ── 배경 ────────────────────────────────────────────────────
 //
@@ -551,7 +552,13 @@ function drawPopSpikes(ctx, world, ox, oy) {
 }
 
 function drawPlayer(ctx, player, ox, oy, time) {
-  if (player.invuln > 0 && Math.floor(time * 20) % 2 === 0) return;
+  // 피격 무적. 그냥 일정하게 깜빡이면 **언제 끝나는지** 알 수가 없어서,
+  // 끝이 가까울수록 빨리 깜빡이고 둘레의 테도 같이 옅어진다.
+  const guard = player.invuln > 0 ? Math.min(1, player.invuln / PLAYER.invulnTime) : 0;
+  if (guard > 0) {
+    const rate = 14 + (1 - guard) * 34; // 남을수록 느리게, 끝날 때 다급하게
+    if (Math.floor(time * rate) % 2 === 0) return;
+  }
   const frame = playerFrame(player);
   const x = player.x - ox + PLAYER_OFFSET.x;
   const y = player.y - oy + PLAYER_OFFSET.y;
@@ -566,6 +573,16 @@ function drawPlayer(ctx, player, ox, oy, time) {
   if (player.power === 'mic') {
     ctx.fillStyle = 'rgba(255,209,102,0.35)';
     ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 14, 18);
+  }
+
+  // 무적이 얼마나 남았는지 — 둘레의 테가 같이 옅어진다
+  if (guard > 0) {
+    ctx.save();
+    ctx.globalAlpha = guard * 0.8;
+    ctx.strokeStyle = '#8fd8ff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(Math.round(x) - 1.5, Math.round(y) - 1.5, 15, 19);
+    ctx.restore();
   }
 
   // 찌그러짐 — 착지에 납작, 점프에 길쭉. 물리는 그대로고 그림만 늘였다 줄인다.

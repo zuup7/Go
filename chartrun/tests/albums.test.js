@@ -95,6 +95,31 @@ test('밟으면 죽고, 체력 2 짜리는 한 번은 버틴다', () => {
   assert.equal(stompAlbum(tough, ctx), 'dead');
 });
 
+test('한 번 밟아서 안 죽는 놈이 실제로 있다', () => {
+  // 남은 대수를 머리 위에 점으로 띄우는 표시(render/albumArt.js)가 붙어 있다.
+  // 이런 앨범이 하나도 없어지면 그 표시는 아무 데도 안 나오는 죽은 코드가 되고,
+  // 아무 테스트도 안 깨져서 사라진 줄도 모른다.
+  const shown = ALBUMS.filter((a) => a.stompable !== false && a.hp > 1);
+  assert.ok(shown.length > 0, '밟아도 한 번은 버티는 앨범이 있어야 표시가 뜻이 있다');
+
+  for (const def of shown) {
+    const e = spawnAlbum(def.id, 0, 0);
+    assert.equal(e.hp, def.hp, `${def.id}: 시작 체력이 정의와 달라 점 개수가 어긋난다`);
+    assert.equal(stompAlbum(e, { addAlbum: () => {} }), 'hurt');
+    assert.equal(e.hp, def.hp - 1, `${def.id}: 한 대에 한 칸씩 줄어야 점이 진행을 보여준다`);
+  }
+});
+
+test('밟을 수 없는 놈은 체력이 몇이든 못 깎는다', () => {
+  // 그래서 그런 놈에게는 남은 대수를 안 띄운다 — 띄우면 "몇 대 때리면 죽는다"는 거짓말이 된다
+  for (const def of ALBUMS.filter((a) => a.stompable === false)) {
+    const e = spawnAlbum(def.id, 0, 0);
+    for (let i = 0; i < 5; i++) assert.equal(stompAlbum(e, { addAlbum: () => {} }), 'blocked');
+    assert.equal(e.hp, def.hp, `${def.id}: 막혔는데 체력이 줄었다`);
+    assert.equal(e.alive, true);
+  }
+});
+
 test('밟혀 죽은 앨범은 잠깐 찌그러졌다 사라진다', () => {
   const world = flatWorld();
   const album = spawnAlbum('a01', TILE * 3, TILE);
