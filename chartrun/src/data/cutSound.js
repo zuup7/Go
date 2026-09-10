@@ -30,18 +30,19 @@ export const CUT_SOUND = {
   },
 
   /**
-   * 2회차 시작 — 다 이룬 자리가 갈라지고, 밟아 없앴던 것들이 진화해서 돌아온다.
-   * 앞은 조용하다가 graves 에서부터 불길해진다. stand 에서 판 브금으로 갈아탄다 —
-   * 마이크를 다시 쥐는 순간 이미 달리기가 시작된 것이다.
+   * 2회차 시작 — 부서진 앨범들이 도로 붙어 진화하고, 복수하러 온다.
+   * grave 는 **일부러 조용하다.** 아무 소리도 없는 잔해에서 조각 하나가 떨리는 게
+   * 이 컷신의 첫 사건이라, 앞이 조용해야 stir 의 blip 한 번이 산다.
    */
   hardopen: {
-    after: {},
-    crack: { sfx: 'crack' },
-    graves: { sfx: 'blip' },
+    grave: {},
+    stir: { sfx: 'blip' },
+    mend: { sfx: 'crack' },
     evolve: { sfx: 'roar' },
-    taken: { sfx: 'trap' },
-    drop: { sfx: 'thud' },
-    stand: { sfx: 'power', bgm: 'stage' },
+    smash: { sfx: 'split' },
+    cage: { sfx: 'trap' },
+    // 여기서 판 브금으로 갈아탄다 — 저들이 몰려오는 순간 이미 달리기가 시작된 것이다
+    march: { sfx: 'title', bgm: 'stage' },
     end: {},
   },
 

@@ -417,13 +417,24 @@ test('2회차 시작은 오프닝과 이야기가 겹치지 않는다', () => {
   assert.equal(shared.length, 0, `겹치는 단계: ${shared.map((s) => s.kind).join(', ')}`);
 });
 
-test('이야기 순서가 뜻대로 짜여 있다 — 이룬 뒤에 잃고, 잃은 뒤에 다시 쥔다', () => {
+test('이야기 순서가 뜻대로 짜여 있다 — 부서진 것이 붙고, 붙은 것이 진화해서 온다', () => {
   const at = (kind) => HARD_OPEN_CUT.findIndex((s) => s.kind === kind);
-  assert.ok(at('after') < at('crack'), '다 이룬 자리가 먼저 나와야 금이 가는 게 뜻이 된다');
-  assert.ok(at('graves') < at('evolve'), '떠오른 다음에 진화한다');
-  assert.ok(at('evolve') < at('taken'), '진화한 것들이 채가야 2회차 이야기가 된다');
-  assert.ok(at('taken') < at('drop'), '빼앗기고 나서 떨어진다');
-  assert.ok(at('drop') < at('stand'), '떨어진 뒤에 다시 일어선다');
+  assert.ok(at('grave') < at('stir'), '조각이 놓여 있는 걸 본 뒤에 떨려야 뜻이 된다');
+  assert.ok(at('stir') < at('mend'), '떨린 다음에 붙는다');
+  assert.ok(at('mend') < at('evolve'), '도로 붙고 나서 진화한다 — 순서가 뒤집히면 딴 놈이 된다');
+  assert.ok(at('evolve') < at('smash'), '진화한 뒤에 표적을 정한다');
+  assert.ok(at('smash') < at('cage'), '표적을 정하고 인질을 잡는다');
+  assert.ok(at('cage') < at('march'), '인질을 잡고 나서 몰려온다');
+});
+
+test('2회차 시작은 저들의 이야기다 — 밟아 없앤 앨범이 되살아나 진화한다', () => {
+  // 하드모드의 전제가 여기서 서지 않으면 뒤의 모든 것이 "그냥 어려운 판 네 개" 가 된다
+  const kinds = HARD_OPEN_CUT.map((s) => s.kind);
+  for (const need of ['grave', 'mend', 'evolve']) {
+    assert.ok(kinds.includes(need), `${need} 단계가 없다 — 복수 이야기가 성립하지 않는다`);
+  }
+  // 새장은 보스전에서 그녀가 왜 갇혀 있는지를 설명한다. 빠지면 보스전이 붕 뜬다.
+  assert.ok(kinds.includes('cage'), '인질을 잡는 단계가 없으면 보스전의 새장이 설명되지 않는다');
 });
 
 test('시작 컷신 도중에는 시간이 안 흐르고, 반드시 저절로 끝나 하드모드로 이어진다', () => {

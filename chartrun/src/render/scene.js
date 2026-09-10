@@ -3225,20 +3225,21 @@ export function drawIntroCut(ctx, t) {
   }
 }
 
-// ── 2회차 시작: 다 이룬 자리가 갈라진다 ─────────────────────
+// ── 2회차 시작: 졌던 것들이 되살아나 복수하러 온다 ──────────
 //
-// 1회차 오프닝과 짝이 맞는 그림이어야 한다. 그때는 방구석에서 올려다봤고,
-// 여기는 **꼭대기에서 떨어진다.** 마지막에 다시 #100 칸에 서는 것도 같은 이유다 —
-// 오프닝에서 쓰던 그림(drawIntroRow · drawMineRow)을 그대로 쓴다.
-
-/** 결혼식이 끝난 자리의 바닥 높이 */
-const HO_FLOOR = 150;
+// **내가 안 나온다.** 하드모드는 내 이야기가 아니라 저들 이야기다 —
+// 1회차에서 내가 밟아 부순 앨범 열일곱 장이 조각난 채로 되살아나 진화한다.
+// 화면에 나오는 나는 저들이 부수는 왕관과 저들이 들어 올리는 새장뿐이다.
+//
+// 1회차 오프닝(방구석·차트)도 엔딩(결혼식)도 여기서는 다시 안 쓴다.
+// 다시 쓰면 전에 본 장면이 되고, 2회차가 새로 시작하는 느낌이 안 난다.
 
 /**
  * 진화한 앨범 한 장 — 커버는 그대로인데 가시가 돋고 벌겋게 달아오른다.
  *
  * **커버를 다시 그리지 않는다.** 1회차에서 밟아 없앤 바로 그 앨범이라는 게
- * 한눈에 읽혀야 해서, 있는 그림 위에 가시와 붉은 기만 얹는다.
+ * 한눈에 읽혀야 해서, 있는 그림 위에 가시와 붉은 기와 노려보는 눈만 얹는다.
+ * 2회차 엔딩(진화가 식는 장면)도 같은 함수를 grow 만 거꾸로 줘서 쓴다.
  */
 function evolvedCover(ctx, album, cx, cy, size, grow, time) {
   const half = size / 2;
@@ -3267,126 +3268,208 @@ function evolvedCover(ctx, album, cx, cy, size, grow, time) {
   drawWatchingEyes(ctx, cx - half, cy - half, size, time, true);
 }
 
+/** 잔해가 깔린 바닥 높이 */
+const HO_FLOOR = 176;
+/** 되살아나는 앨범 수. 열일곱을 다 세우면 한 장이 12px 이라 조각이 안 보인다 */
+const HO_COUNT = 13;
+
+/** i 번째가 다시 설 자리 (뒷줄 · 앞줄 두 겹으로 세운다) */
+function hoSpot(i) {
+  const back = i < 6;
+  const n = back ? 6 : HO_COUNT - 6;
+  const k = back ? i : i - 6;
+  return {
+    x: (VIEW.w / (n + 1)) * (k + 1) + (back ? 0 : -10),
+    y: back ? HO_FLOOR - 46 : HO_FLOOR - 20,
+    size: back ? 18 : 24,
+  };
+}
+
+/**
+ * 부서진 커버 한 장. 네 조각이 바닥에 흩어져 있다가 `mend` 로 도로 붙는다.
+ *
+ * 조각은 **커버를 잘라서** 만든다 — 조각용 그림을 따로 그리면 되살아난 뒤의 커버와
+ * 안 맞아서, 부서진 게 그 앨범이었다는 게 안 읽힌다.
+ */
+function shatteredCover(ctx, album, spot, mend, jitter, time, seed) {
+  const s = spot.size;
+  const half = s / 2;
+  for (let j = 0; j < 4; j++) {
+    const jx = j % 2;
+    const jy = j >> 1;
+    // 흩어져 있던 자리 — 바닥에 널브러져 있다
+    const away = 22 + noise(seed + j, 5) * 54;
+    const dir = (j === 0 || j === 2 ? -1 : 1) * (0.5 + noise(seed + j, 6));
+    const fromX = spot.x + dir * away;
+    // 위아래로도 흩어놔야 **널브러진 잔해**로 보인다. 한 줄로 세우면 진열대가 된다.
+    const fromY = HO_FLOOR - 4 - noise(seed + j, 7) * 26;
+    const toX = spot.x - half + jx * half;
+    const toY = spot.y - half + jy * half;
+    const wob = jitter * (Math.sin(time * 26 + seed + j * 2) * 1.6);
+    const x = Math.round(fromX + (toX - fromX) * mend + wob);
+    const y = Math.round(fromY + (toY - fromY) * mend + wob * 0.6);
+    // 아직 안 붙은 조각은 아무렇게나 뒹군다. 붙으면서 반듯해진다.
+    const ang = (1 - mend) * (noise(seed + j, 8) - 0.5) * 1.6;
+    ctx.save();
+    ctx.translate(x + half / 2, y + half / 2);
+    ctx.rotate(ang);
+    ctx.translate(-(x + half / 2), -(y + half / 2));
+    ctx.beginPath();
+    ctx.rect(x, y, half, half);
+    ctx.clip();
+    drawCoverAt(ctx, album, x - jx * half, y - jy * half, s);
+    ctx.restore();
+  }
+  // 도로 붙어도 금은 남는다 — 되살아난 것이지 새것이 아니다.
+  // **다 붙은 뒤에만** 긋는다. 조각이 아직 날아오는 중에 그으면 허공에 십자선이 뜬다.
+  if (mend <= 0.72) return;
+  ctx.save();
+  ctx.globalAlpha = (mend - 0.72) / 0.28;
+  ctx.strokeStyle = '#0b0510';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(spot.x, spot.y - half);
+  ctx.lineTo(spot.x, spot.y + half);
+  ctx.moveTo(spot.x - half, spot.y);
+  ctx.lineTo(spot.x + half, spot.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** 바닥에서 피어오르는 잉걸 — 여기가 무엇이 죽은 자리인지 말해준다 */
+function drawEmbers(ctx, time, amount) {
+  if (amount <= 0) return;
+  ctx.save();
+  for (let i = 0; i < 26; i++) {
+    if (i / 26 > amount) break;
+    const speed = 12 + noise(i, 12) * 18;
+    const x = (noise(i, 13) * VIEW.w + Math.sin(time * 0.9 + i) * 6) % VIEW.w;
+    const y = HO_FLOOR - ((time * speed + noise(i, 14) * 200) % (HO_FLOOR + 20));
+    ctx.globalAlpha = Math.max(0, (y / HO_FLOOR) * 0.8);
+    ctx.fillStyle = i % 3 === 0 ? '#ffd166' : '#ff5d3c';
+    ctx.fillRect(Math.round(x), Math.round(y), 1, 2);
+  }
+  ctx.restore();
+}
+
 function drawHardOpenCut(ctx, t) {
-  const phase = phaseAtIn(HARD_OPEN_CUT, t, 'after');
+  const phase = phaseAtIn(HARD_OPEN_CUT, t, 'grave');
   const time = t;
   const cx = VIEW.w / 2;
-  const floor = HO_FLOOR;
-  ctx.fillStyle = '#0a0410';
+
+  // ── 잔해가 깔린 바닥 ────────────────────────────────────
+  const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
+  grad.addColorStop(0, '#0a0410');
+  grad.addColorStop(1, '#2a0810');
+  ctx.fillStyle = grad;
   ctx.fillRect(0, 0, VIEW.w, VIEW.h);
-  // 여기는 **차트 꼭대기**다. 검은 허공에 세워두면 어디인지가 안 읽힌다 —
-  // 뒤로 차트 막대를 흐리게 세워서 "다 올라온 자리" 라는 걸 그림으로 말한다.
-  ctx.save();
-  ctx.globalAlpha = 0.5;
-  for (let i = 0; i < 11; i++) {
-    const h = 30 + ((i * 31) % 74);
-    ctx.fillStyle = i % 2 ? '#241a33' : '#2e2140';
-    ctx.fillRect(i * 36 + 2, HO_FLOOR - h, 28, h);
-  }
-  ctx.restore();
-  drawStars(ctx, time);
 
-  // 바닥이 꺼지면 세상이 위로 달아난다 — 내가 떨어지는 것이다
-  const dropP = t >= HARD_OPEN_AT.drop ? ease((t - HARD_OPEN_AT.drop) / 1.3) : 0;
-  const shake =
-    phase === 'crack' ? Math.sin(time * 60) * 2 : phase === 'graves' || phase === 'evolve' ? Math.sin(time * 40) * 1.2 : 0;
+  const rage = t >= HARD_OPEN_AT.evolve ? clamp01((t - HARD_OPEN_AT.evolve) / 2.2) : 0;
+  const march = t >= HARD_OPEN_AT.march ? ease((t - HARD_OPEN_AT.march) / 1.8) : 0;
 
-  ctx.save();
-  ctx.globalAlpha = Math.max(0, 1 - dropP * 1.2);
-  ctx.translate(Math.round(shake), Math.round(-dropP * 260));
-
-  // ── 결혼식이 끝난 자리 ──────────────────────────────────
-  drawArch(ctx, cx, floor - 66, 40, 1);
-  ctx.fillStyle = '#8e2340';
-  ctx.fillRect(0, floor, VIEW.w, 26);
-  ctx.fillStyle = '#c33a5c';
-  ctx.fillRect(0, floor + 2, VIEW.w, 20);
-  ctx.fillStyle = '#ffd166';
-  ctx.fillRect(0, floor + 2, VIEW.w, 1);
-  ctx.fillRect(0, floor + 21, VIEW.w, 1);
-  drawPetals(ctx, time, phase === 'after' ? 1 : 0.3);
-
-  // ── 금이 간다 ───────────────────────────────────────────
-  if (t >= HARD_OPEN_AT.crack) {
-    const p = clamp01((t - HARD_OPEN_AT.crack) / 1.2);
+  // 밑에서 새어 나오는 붉은 빛 — stir 부터 커진다
+  const glow = t >= HARD_OPEN_AT.stir ? clamp01((t - HARD_OPEN_AT.stir) / 1.6) : 0;
+  if (glow > 0) {
     ctx.save();
-    ctx.strokeStyle = '#12060f';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 5; i++) {
-      const x0 = 42 + i * 76;
-      ctx.beginPath();
-      ctx.moveTo(x0, floor + 1);
-      for (let k = 1; k <= 3; k++) ctx.lineTo(x0 + Math.sin(i * 2.3 + k) * 12 * p, floor + 1 + k * 8 * p);
-      ctx.stroke();
-    }
+    ctx.globalAlpha = glow * (0.25 + rage * 0.35) * (0.8 + Math.sin(time * 5) * 0.2);
+    const g2 = ctx.createLinearGradient(0, HO_FLOOR - 60, 0, HO_FLOOR);
+    g2.addColorStop(0, 'rgba(255,59,59,0)');
+    g2.addColorStop(1, '#ff3b3b');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, HO_FLOOR - 60, VIEW.w, 60);
+    ctx.restore();
+  }
+  drawEmbers(ctx, time, glow);
+
+  ctx.fillStyle = '#150a1c';
+  ctx.fillRect(0, HO_FLOOR, VIEW.w, VIEW.h - HO_FLOOR);
+  ctx.fillStyle = '#2a1533';
+  ctx.fillRect(0, HO_FLOOR, VIEW.w, 2);
+
+  // 몰려오는 동안 화면이 붉게 덮인다. 무리보다 **먼저** 깔아야 저들이 그 앞에 선다.
+  if (march > 0) {
+    ctx.save();
+    ctx.globalAlpha = march * 0.4;
+    ctx.fillStyle = '#ff3b3b';
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
     ctx.restore();
   }
 
-  // ── 밟아 없앴던 것들이 떠오르고, 진화한다 ────────────────
-  if (t >= HARD_OPEN_AT.graves) {
-    const rise = clamp01((t - HARD_OPEN_AT.graves) / 1.4);
-    const grow = t >= HARD_OPEN_AT.evolve ? clamp01((t - HARD_OPEN_AT.evolve) / 1.4) : 0;
-    for (let i = 0; i < 9; i++) {
-      const gx = 26 + i * 42;
-      const gy = floor + 14 - rise * (32 + (i % 3) * 12);
+  // ── 조각이 떨리고, 붙고, 진화한다 ───────────────────────
+  const mend = t >= HARD_OPEN_AT.mend ? ease((t - HARD_OPEN_AT.mend) / 1.5) : 0;
+  const jitter = t >= HARD_OPEN_AT.stir ? clamp01((t - HARD_OPEN_AT.stir) / 0.6) * (1 - mend) : 0;
+  // 앞으로 나선 놈이 있는 동안에는 나머지를 눌러 둔다 — 안 그러면 어디를 봐야 할지 모른다
+  const front = phase === 'smash' ? 'smash' : phase === 'cage' || phase === 'march' ? 'cage' : null;
+  const dim = phase === 'smash' || phase === 'cage';
+
+  ctx.save();
+  // 몰려오는 동안에는 통째로 커지며 이쪽으로 내려온다
+  if (march > 0) {
+    ctx.translate(cx, HO_FLOOR);
+    ctx.scale(1 + march * 0.5, 1 + march * 0.5);
+    ctx.translate(-cx, -HO_FLOOR + march * 14);
+  }
+  if (dim) ctx.globalAlpha = 0.4;
+  for (let i = 0; i < HO_COUNT; i++) {
+    const spot = hoSpot(i);
+    const album = ALBUMS[(i * 3) % ALBUMS.length];
+    const step = march * (8 + (i % 4) * 5);
+    ctx.save();
+    ctx.translate(0, Math.round(step));
+    if (rage <= 0) shatteredCover(ctx, album, spot, mend, jitter, time, i * 7);
+    else evolvedCover(ctx, album, spot.x, spot.y, spot.size, rage, time);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // ── 앞으로 나선 하나 ────────────────────────────────────
+  //
+  // **화면 앞까지 걸어 나온다.** 줄 안에서 조금 커지는 것으로는 왕관도 새장도
+  // 12픽셀짜리라 아무것도 안 읽힌다. 앞으로 나와야 무엇을 하는지가 보인다.
+  if (!front) return;
+  const fy = HO_FLOOR - 34 + march * 26;
+  const fsize = 40 + march * 22;
+
+  if (front === 'smash') {
+    const p = clamp01((t - HARD_OPEN_AT.smash) / 1.2);
+    const walk = ease(clamp01(p * 2.4));
+    const x = cx - 40 + walk * 40;
+    evolvedCover(ctx, ALBUMS[4], x, fy - (1 - walk) * 14, fsize * (0.7 + walk * 0.3), 1, time);
+    // 집어 든 왕관 — 크게 그려야 "내 것" 이라는 게 읽힌다
+    const top = fy - fsize / 2 - 14;
+    if (p < 0.55) {
       ctx.save();
-      ctx.globalAlpha *= rise;
-      evolvedCover(ctx, ALBUMS[(i * 2) % ALBUMS.length], gx, gy, 18, grow, time);
+      ctx.translate(x, top);
+      ctx.scale(2.4, 2.4);
+      drawCrown(ctx, -5, -4, time);
+      ctx.restore();
+    } else {
+      // 쪼갠다
+      const k = (p - 0.55) / 0.45;
+      ctx.save();
+      ctx.fillStyle = '#ffd166';
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2 + 0.3;
+        ctx.globalAlpha = Math.max(0, 1 - k);
+        ctx.fillRect(
+          Math.round(x + Math.cos(a) * k * 46),
+          Math.round(top + Math.sin(a) * k * 26 + k * k * 40),
+          3,
+          3,
+        );
+      }
       ctx.restore();
     }
+    return;
   }
 
-  // ── 둘이 서 있다. 그리고 다시 빼앗긴다 ───────────────────
-  const snatch = t >= HARD_OPEN_AT.taken ? clamp01((t - HARD_OPEN_AT.taken) / 1.1) : 0;
-  const standY = floor - 16;
-  const groomX = cx - 30;
-  // 빼앗기는 동안에는 손을 뻗는다 — 가만히 서 있으면 "놓쳤다" 로 안 읽힌다
-  const reachUp = snatch > 0 ? Math.sin(clamp01(snatch * 1.6) * Math.PI) * 14 : 0;
-  drawSprite(ctx, playerFrame({ onGround: snatch <= 0, vx: 0, vy: -1 }), groomX, standY - 4 - reachUp);
-  drawCrown(ctx, groomX + 1, standY - 13 - reachUp, time);
+  // 인질 — 보스전에서 그녀가 왜 갇혀 있는지를 여기서 설명한다
+  const p = clamp01((t - HARD_OPEN_AT.cage) / 1.3);
+  const walk = ease(clamp01(p * 2.4));
+  const x = cx + 34 - walk * 34;
+  evolvedCover(ctx, ALBUMS[9], x, fy - (1 - walk) * 14, fsize * (0.7 + walk * 0.3), 1, time);
+  drawCage(ctx, x, fy - fsize / 2 - 20 - ease(p) * 12, time);
 
-  const brideX = cx + 8;
-  const lift = ease(snatch) * 170;
-  const wriggle = snatch > 0 ? Math.sin(time * 30) * 2 : 0;
-  drawSprite(ctx, BRIDE, Math.round(brideX + wriggle), Math.round(floor - BRIDE.h - lift));
-  if (snatch > 0) {
-    evolvedCover(ctx, ALBUMS[0], brideX + 10 + wriggle, floor - BRIDE.h - lift - 12, 22, 1, time);
-  }
-  ctx.restore();
-
-  // ── 바닥까지 떨어진다. 다시 #100 이다 ────────────────────
-  if (dropP <= 0) return;
-  ctx.save();
-  ctx.globalAlpha = dropP;
-  const slide = (1 - dropP) * 170;
-  for (let i = 0; i < 9; i++) {
-    const y = IN_MINE_Y - (i + 1) * IN_ROW + slide;
-    if (y + IN_ROW < 0) continue;
-    ctx.save();
-    ctx.globalAlpha *= Math.max(0.45, 1 - i * 0.06);
-    drawIntroRow(ctx, y, ALBUMS[i % ALBUMS.length], 0.4 + i * 0.06, time, true);
-    ctx.restore();
-  }
-  drawMineRow(ctx, IN_MINE_Y + slide, time, phase === 'stand');
-  ctx.restore();
-
-  // 마이크를 다시 쥔다 — 오프닝의 grab 과 같은 그림이다
-  if (phase !== 'stand' && phase !== 'end') return;
-  const grab = clamp01((t - HARD_OPEN_AT.stand) / 0.9);
-  ctx.save();
-  ctx.globalAlpha = grab;
-  ctx.translate(IN_X + 24, IN_MINE_Y + 4);
-  drawMicShape(ctx, 11);
-  ctx.restore();
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
-    const d = (1 - grab) * (46 + noise(i, 40) * 24);
-    ctx.save();
-    // 닿는 순간 사라진다 — 안 사라지면 손 위에 금빛 덩어리가 남는다
-    ctx.globalAlpha = Math.min(0.35 + grab * 0.65, clamp01((1 - grab) * 4));
-    drawSprite(ctx, NOTE, IN_X + 24 + Math.cos(a) * d, IN_MINE_Y + 4 + Math.sin(a) * d * 0.8);
-    ctx.restore();
-  }
 }
 
 // ── 2회차 엔딩: 차트가 무대가 된다 ──────────────────────────
