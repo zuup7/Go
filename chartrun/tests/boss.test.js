@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  bossBody,
   laserBeams,
   createBoss,
   updateBoss,
@@ -547,4 +548,51 @@ test('천장 붕괴 사이에는 설 자리가 남는다', () => {
   }
   // 예고가 먼저다
   assert.ok(slabs.every((s) => s.warn > 0), '예고 없이 떨어진다');
+});
+
+// ── 어떤 몸으로 그릴까 ──────────────────────────────────────
+//
+// 이 규칙이 그리는 쪽에 흩어져 있어서 실제로 어긋났다 — 2회차인데 컷신에서는
+// 1회차의 매끈한 원반이 찢어졌고, 보통 모드인데 쓰러지는 컷신에서는 있지도 않던
+// 공룡이 무너졌다. bossBody 한 곳으로 모았으니 여기서 못을 박는다.
+
+/** hp 를 깎아 그 페이즈까지 올린다 */
+const atPhase = (hard, phaseId) => {
+  const boss = createBoss(640, 192, hard);
+  for (let hp = boss.maxHp; hp >= 0 && boss.phaseId < phaseId; hp--) {
+    boss.hp = hp;
+    syncPhase(boss);
+  }
+  assert.equal(boss.phaseId, phaseId, `${hard ? '하드' : '보통'} ${phaseId}페이즈까지 못 갔다`);
+  return boss;
+};
+
+test('보통 모드 1·2페이즈는 매끈한 원반이다', () => {
+  assert.equal(bossBody(createBoss(640, 192, false)), 'disc');
+  assert.equal(bossBody(atPhase(false, 2)), 'disc');
+});
+
+test('하드 1·2페이즈는 진화한 원반이다 — 1회차와 같은 몸이면 2회차에 새 볼거리가 없다', () => {
+  assert.equal(bossBody(createBoss(640, 192, true)), 'evolved');
+  assert.equal(bossBody(atPhase(true, 2)), 'evolved');
+});
+
+test('3페이즈부터 몸이 바뀐다 — 보통은 합체 로봇, 하드는 공룡', () => {
+  assert.equal(bossBody(atPhase(false, 3)), 'robot');
+  assert.equal(bossBody(atPhase(true, 3)), 'dino');
+});
+
+test('하드는 4페이즈까지 가도 공룡으로 남는다', () => {
+  assert.equal(bossBody(atPhase(true, 4)), 'dino');
+});
+
+test('두 모드의 몸이 어느 페이즈에서도 겹치지 않는다', () => {
+  // 겹치면 "저놈이 진화한 놈"이라는 게 안 읽힌다
+  for (const phaseId of [1, 2, 3]) {
+    assert.notEqual(
+      bossBody(atPhase(false, phaseId)),
+      bossBody(atPhase(true, phaseId)),
+      `${phaseId}페이즈에서 두 모드가 같은 몸이다`,
+    );
+  }
 });

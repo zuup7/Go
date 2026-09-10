@@ -660,6 +660,24 @@ export function hitBoss(boss, { ranged = false } = {}) {
 export const bossCombined = (boss) => !!boss && boss.phaseId >= 3;
 
 /**
+ * 이 보스를 **어떤 몸으로 그릴지**.
+ *
+ * 그리는 쪽이 저마다 판단하면 어긋난다 — 실제로 그랬다. 2회차인데 컷신에서는
+ * 1회차의 매끈한 원반이 찢어졌고, 보통 모드인데 쓰러지는 컷신에서는 있지도 않던
+ * 공룡이 무너졌다. 갈림길을 여기 한 곳에 두고 그리는 쪽은 물어보기만 한다.
+ *
+ * disc     보통 1·2페이즈 — 매끈한 거대 LP
+ * evolved  하드 1·2페이즈 — 1회차에서 부순 앨범들이 도로 붙어 진화한 원반
+ * robot    보통 3페이즈 — 합체 로봇
+ * dino     하드 3페이즈부터 — 껍질을 찢고 나온 공룡로봇
+ */
+export const bossBody = (boss) => {
+  if (!boss) return 'disc';
+  if (!bossCombined(boss)) return boss.hard ? 'evolved' : 'disc';
+  return bossPhase(boss).dino ? 'dino' : 'robot';
+};
+
+/**
  * 강아지 공주가 아직 갇혀 있는가.
  *
  * 오프닝에서 앨범들이 채간 뒤로 보스 위 새장에 갇혀 있다.

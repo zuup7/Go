@@ -27,6 +27,7 @@ import {
   bossPhase,
   princessCaged,
   bossCombined,
+  bossBody,
   laserBeams,
   tailBand,
   shockWaves,
@@ -1491,15 +1492,181 @@ function drawSparks(ctx, cx, cy, r, since, color) {
   ctx.restore();
 }
 
+/**
+ * 하드 1·2페이즈의 몸 — **진화한 원반**.
+ *
+ * 보통 모드의 원반은 매끈한 LP 였다. 여기 있는 건 1회차에서 내가 밟아 부순 걸
+ * 도로 붙여 만든 것이라, 몸이 갈라져 있고 그 틈으로 붉은 열이 샌다.
+ *
+ * **무섭게 보이는 건 표면 무늬가 아니라 실루엣이다.** 몸이 56px 짜리라
+ * 안에 아무리 그려 넣어도 멀리서는 뭉개진다. 그래서 뿔을 길고 어둡게 뻗어
+ * **원을 깨뜨린다** — 매끈한 원(1회차)과 톱니 실루엣(2회차)은 한눈에 갈린다.
+ *
+ * **열일곱 장은 쇠 소켓에 물려 박혀 있다.** 그냥 얹으면 스티커로 보인다.
+ * 다만 소켓은 **어둡다** — armorCover 의 밝은 테를 열일곱 개 두르면 몸이
+ * 사진 격자로 보이고, 저것들이 몸을 이룬다는 게 안 읽힌다.
+ *
+ * 두 고리 사이와 사이사이는 **일부러 비워둔다.** 빈틈으로 검은 몸과 붉은 금이
+ * 보여야 "앨범이 몸에 박힌 것"이지, 꽉 채우면 "앨범을 붙인 판"이 된다.
+ * 앨범 위에 눈은 안 그린다 — 6px 커버에 눈을 그리면 어느 앨범인지가 사라진다.
+ *
+ * grade 0 = 1페이즈, 1 = 2페이즈. 같은 몸이 한 단계 더 자란 것으로 보여야
+ * 3페이즈의 공룡 변신이 갑자기 튀어나온 게 아니게 된다.
+ */
+function drawEvolvedDisc(ctx, r, time, color, hurt, grade = 0, spin = 0) {
+  const breathe = 1 + Math.sin(time * 2.2) * 0.03;
+  const heat = 0.5 + Math.sin(time * 4) * 0.5; // 틈에서 새는 열의 맥박
+  ctx.save();
+  ctx.scale(breathe, breathe);
+
+  // ── 뿔. 몸보다 느리게 돈다 — 같은 속도로 돌면 통째로 도는 바퀴가 된다
+  ctx.save();
+  ctx.rotate(spin * 0.45);
+  const horns = 8 + grade * 4;
+  for (let i = 0; i < horns; i++) {
+    const a = (i / horns) * Math.PI * 2;
+    // 길이를 하나씩 어긋나게 — 고르게 뻗으면 톱니바퀴가 되고 살아 있지 않다
+    const len = r * (0.4 + 0.28 * grade) * (0.66 + ((i * 3) % 4) * 0.17);
+    const tip = a + 0.2; // 한쪽으로 휜다
+    const tx = Math.cos(tip) * (r + len);
+    const ty = Math.sin(tip) * (r + len);
+    wedge(
+      ctx,
+      [
+        [Math.cos(a - 0.24) * r * 0.86, Math.sin(a - 0.24) * r * 0.86],
+        [tx, ty],
+        [Math.cos(a + 0.24) * r * 0.86, Math.sin(a + 0.24) * r * 0.86],
+      ],
+      { hurt, face: HORN, edge: '#000000', lit: '#cbb8e8' },
+    );
+    if (hurt) continue;
+    // 끝이 벌겋게 달아 있다. 날 안쪽까지 물들여야 '달군 쇠'지, 끝에만 찍으면 핀 대가리다
+    ctx.save();
+    ctx.globalAlpha = 0.45 + heat * 0.45;
+    ctx.fillStyle = '#ff3b3b';
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a - 0.13) * (r + len * 0.35), Math.sin(a - 0.13) * (r + len * 0.35));
+    ctx.lineTo(tx, ty);
+    ctx.lineTo(Math.cos(a + 0.13) * (r + len * 0.35), Math.sin(a + 0.13) * (r + len * 0.35));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // ── 몸에서 새는 열. 검은 덩어리만 있으면 식은 쇳덩이로 보인다
+  if (!hurt) {
+    const glow = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 1.5);
+    glow.addColorStop(0, `rgba(255,46,99,${0.3 + heat * 0.2})`);
+    glow.addColorStop(1, 'rgba(255,46,99,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── 몸 — 검은 덩어리. 앨범 사이로 이게 보여야 "박혀 있다"가 된다
+  ctx.fillStyle = hurt ? '#ffffff' : VINYL;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── 박힌 앨범 열일곱 장. 두 고리는 **반대로** 돈다 — 통째로 도는 원반과
+  //    "따로따로 박혀 있는 것들"은 여기서 갈린다.
+  // 안쪽 고리는 코어 밖에서 시작하고, 바깥 고리는 안쪽 고리 밖에서 시작한다 —
+  // 겹치면 두 겹이 한 덩어리로 뭉개져서 몇 장이 박혀 있는지가 안 세어진다.
+  const rings = [
+    { n: 10, d: 0.86, s: 0.26, dir: 1 },
+    { n: ALBUMS.length - 10, d: 0.56, s: 0.22, dir: -0.55 },
+  ];
+  let idx = 0;
+  for (const ring of rings) {
+    for (let k = 0; k < ring.n; k++) {
+      const a = (k / ring.n) * Math.PI * 2 + spin * ring.dir + (ring.dir < 0 ? Math.PI / ring.n : 0);
+      const px = Math.cos(a) * r * ring.d;
+      const py = Math.sin(a) * r * ring.d;
+      const size = Math.max(5, Math.round(r * ring.s));
+      // 소켓 — 어두운 쇠테. 커버는 이 안에 물린다
+      plate(ctx, px - size / 2 - 1, py - size / 2 - 1, size + 2, size + 2, {
+        hurt,
+        face: DARK,
+        edge: DARK,
+        lit: METAL,
+      });
+      if (!hurt) {
+        drawCoverAt(ctx, ALBUMS[idx], Math.round(px - size / 2), Math.round(py - size / 2), size);
+        // 몸에서 나온 열이 커버에도 비친다 — 열일곱 장이 한 몸으로 묶인다.
+        // 다만 **옅게.** 진하게 덮으면 죄다 붉은 네모가 되고, 어느 앨범이 박혀 있는지가
+        // 안 보인다 — 저것들이 1회차에서 밟은 그 앨범이라는 게 이 보스의 정체다.
+        ctx.save();
+        ctx.globalAlpha = 0.1 + heat * 0.1 + grade * 0.05;
+        ctx.fillStyle = '#ff2e63';
+        ctx.fillRect(Math.round(px - size / 2), Math.round(py - size / 2), size, size);
+        ctx.restore();
+      }
+      idx++;
+    }
+  }
+
+  // ── 갈라진 금. **앨범을 그린 뒤**에 긋는다 — 밑에 깔면 소켓이 덮어서
+  //    한 픽셀도 안 보인다. 바깥 고리 열 개 **사이**를 지나게 각도를 맞추고
+  //    같은 속도로 돌리니 금은 계속 그 틈에 머문다. 곧게 그으면 바퀴살이
+  //    되므로 한 번 꺾는다.
+  if (!hurt) {
+    ctx.save();
+    ctx.rotate(spin);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+      const a = ((i * 2 + 1) / 10) * Math.PI * 2;
+      // 짧게, 바깥 테 쪽만. 가운데까지 길게 그으면 앨범 위를 쓸고 지나가서
+      // 몸이 갈라진 게 아니라 빛나는 바람개비로 보인다.
+      const path = () => {
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a - 0.07) * r * 0.68, Math.sin(a - 0.07) * r * 0.68);
+        ctx.lineTo(Math.cos(a + 0.05) * r * 0.86, Math.sin(a + 0.05) * r * 0.86);
+        ctx.lineTo(Math.cos(a - 0.03) * r * 1.03, Math.sin(a - 0.03) * r * 1.03);
+      };
+      // 붉은 번짐 위에 흰 심 — 한 겹만 그으면 어두운 몸에 묻혀서 안 보인다
+      ctx.globalAlpha = 0.35 + heat * 0.3;
+      ctx.strokeStyle = '#ff2e63';
+      ctx.lineWidth = 3;
+      path();
+      ctx.stroke();
+      ctx.globalAlpha = 0.55 + heat * 0.35;
+      ctx.strokeStyle = '#ffd7de';
+      ctx.lineWidth = 1;
+      path();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ── 바깥 테 — 몸이 여기서 끝난다
+  if (!hurt) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.55 + heat * 0.35;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
 export function drawBoss(ctx, boss, ox, oy, time) {
   const cx = boss.x - ox + boss.w / 2;
   const cy = boss.y - oy + boss.h / 2;
   const phaseColor = bossPhase(boss).color;
   const r = boss.w / 2;
 
+  // 어떤 몸인지는 core/boss.js 의 bossBody 한 곳에서만 정한다
+  const body = bossBody(boss);
+
   // 3페이즈는 합체한 로봇이다 — 원반이 어깨가 되고 마디 나뉜 팔다리가 붙는다.
   // 격파해도 로봇으로 남긴다. 이긴 순간에 몸이 도로 원반으로 바뀌면 이긴 것 같지가 않다.
-  if (bossCombined(boss)) {
+  if (body === 'robot' || body === 'dino') {
     const down = boss.state === 'defeated';
     ctx.save();
     ctx.translate(cx, cy);
@@ -1507,7 +1674,7 @@ export function drawBoss(ctx, boss, ox, oy, time) {
     if (down) ctx.rotate(Math.min(0.7, boss.defeatedAt * 0.6));
     // 하드 3페이즈부터는 **공룡로봇**이다. 껍질을 찢고 나온 모습이라
     // 서 있는 로봇과 실루엣이 아예 다르다 (가로로 길고 목과 꼬리가 뻗는다).
-    if (bossPhase(boss).dino) drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0);
+    if (body === 'dino') drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0);
     else drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
     ctx.restore();
     drawBossCore(ctx, cx, cy, boss.vulnerable, time);
@@ -1521,6 +1688,19 @@ export function drawBoss(ctx, boss, ox, oy, time) {
 
   ctx.save();
   ctx.translate(cx, cy);
+
+  // 하드 1·2페이즈는 **진화한 원반**이다. 매끈한 LP 를 그대로 쓰면 2회차인데도
+  // 1회차와 똑같은 놈이 나온 것이 되고, 3페이즈의 공룡 변신도 뜬금없어진다.
+  if (body === 'evolved') {
+    drawEvolvedDisc(ctx, r, time, phaseColor, boss.hurtFlash > 0, boss.phaseId >= 2 ? 1 : 0, boss.spin);
+    ctx.restore();
+    drawBossCore(ctx, cx, cy, boss.vulnerable, time);
+    drawQuarterShards(ctx, boss, ox, oy, phaseColor);
+    if (boss.state !== 'defeated') drawBossHealth(ctx, boss, ox, oy, phaseColor);
+    if (princessCaged(boss)) drawCage(ctx, cx, boss.y - oy - 30, time);
+    return;
+  }
+
   ctx.rotate(boss.spin);
 
   // 거대 LP
@@ -1544,8 +1724,16 @@ export function drawBoss(ctx, boss, ox, oy, time) {
 
   drawBossCore(ctx, cx, cy, boss.vulnerable, time);
 
-  // 분열 조각 — 페이즈 색으로 테두리를 둘러 어느 페이즈인지 눈에 들어오게
-  const color = phaseColor;
+  drawQuarterShards(ctx, boss, ox, oy, phaseColor);
+
+  if (boss.state !== 'defeated') drawBossHealth(ctx, boss, ox, oy, phaseColor);
+
+  // 싸우는 내내 그녀가 보스 위에 갇혀 있다 — 왜 여기까지 왔는지가 화면에 남아 있어야 한다
+  if (princessCaged(boss)) drawCage(ctx, cx, boss.y - oy - 26, time);
+}
+
+/** 넷으로 쪼개진 조각 — 페이즈 색으로 테를 둘러 어느 페이즈인지 눈에 들어오게 */
+function drawQuarterShards(ctx, boss, ox, oy, color) {
   for (const q of boss.quarters) {
     if (q.delay > 0) continue;
     ctx.save();
@@ -1558,11 +1746,6 @@ export function drawBoss(ctx, boss, ox, oy, time) {
     drawCoverAt(ctx, ALBUMS[(q.index * 4) % ALBUMS.length], -q.w / 2 + 3, -q.h / 2 + 3, q.w - 6);
     ctx.restore();
   }
-
-  if (boss.state !== 'defeated') drawBossHealth(ctx, boss, ox, oy, color);
-
-  // 싸우는 내내 그녀가 보스 위에 갇혀 있다 — 왜 여기까지 왔는지가 화면에 남아 있어야 한다
-  if (princessCaged(boss)) drawCage(ctx, cx, boss.y - oy - 26, time);
 }
 
 /** 보스가 흘린 마이크(바닥)와 던진 마이크(공중) */
@@ -1599,7 +1782,7 @@ function drawMicShape(ctx, size) {
 }
 
 // ── 합체 컷신 ───────────────────────────────────────────────
-export function drawCutscene(ctx, t) {
+export function drawCutscene(ctx, t, hard = false) {
   const phase = phaseAt(t);
   ctx.fillStyle = '#0a0410';
   ctx.fillRect(0, 0, VIEW.w, VIEW.h);
@@ -1649,7 +1832,7 @@ export function drawCutscene(ctx, t) {
   if (phase === 'reveal' || phase === 'end') {
     const grow = Math.min(1, (t - CUT_AT.reveal) / 1.2);
     const r = 20 + 44 * grow;
-    drawBossDisc(ctx, cx, cy, r, t * 1.4);
+    drawBossDisc(ctx, cx, cy, r, t * 1.4, t, hard, 0);
     ctx.fillStyle = '#39ff9a';
     ctx.beginPath();
     ctx.arc(cx, cy, 10 * grow, 0, Math.PI * 2);
@@ -1669,6 +1852,8 @@ const DARK = '#241a33';
 const METAL = '#5c4a70';
 const LIT = '#a98cff';
 const VINYL = '#14101d';
+/** 진화한 원반의 뿔 — 배경보다 밝아야 실루엣이 보인다 (VINYL 이면 테두리만 남는다) */
+const HORN = '#4a3560';
 
 /**
  * 장갑판 한 장 — 어두운 테두리 + 금속 면 + 위·왼쪽 1px 하이라이트.
@@ -2100,9 +2285,21 @@ function drawCage(ctx, cx, cy, time, broken = 0) {
   ctx.restore();
 }
 
-function drawBossDisc(ctx, cx, cy, r, spin) {
+/**
+ * 컷신 속 1·2페이즈 보스 몸통.
+ *
+ * **어느 몸을 그릴지 여기 한 곳에서만 고른다.** 컷신마다 따로 고르면 2회차에서
+ * 방금까지 싸우던 놈과 컷신에 나오는 놈이 달라진다 — 실제로 그랬다.
+ * 싸움 화면의 drawBoss 도 같은 갈림길(hard → 진화한 원반)을 쓴다.
+ */
+function drawBossDisc(ctx, cx, cy, r, spin, time = 0, hard = false, grade = 0) {
   ctx.save();
   ctx.translate(cx, cy);
+  if (hard) {
+    drawEvolvedDisc(ctx, r, time, '#7c5cff', false, grade, spin);
+    ctx.restore();
+    return;
+  }
   ctx.rotate(spin);
   ctx.fillStyle = '#14101d';
   ctx.beginPath();
@@ -2144,11 +2341,11 @@ export function drawBossCut(ctx, game, time) {
   ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   ctx.globalAlpha = fade;
 
-  if (game.bossCut.id === 'phase2') drawPhase2Cut(ctx, t, phase, time);
+  if (game.bossCut.id === 'phase2') drawPhase2Cut(ctx, t, phase, time, game.hard);
   else if (game.bossCut.id === 'phase3') drawPhase3Cut(ctx, t, phase, time);
   else if (game.bossCut.id === 'hard3') drawHard3Cut(ctx, t, phase, time);
   else if (game.bossCut.id === 'phase4') drawPhase4Cut(ctx, t, phase, time);
-  else if (game.bossCut.id === 'bossdown') drawBossDownCut(ctx, t, phase, time);
+  else if (game.bossCut.id === 'bossdown') drawBossDownCut(ctx, t, phase, time, game.hard);
   else if (game.bossCut.id === 'hardEnd') drawHardEndCut(ctx, t, phase, time);
   else drawEndingCut(ctx, t, phase, time);
 
@@ -2190,14 +2387,15 @@ function drawCracks(ctx, cx, cy, r, p) {
 }
 
 // ── 페이즈 2: 한 장이 네 조각으로 ───────────────────────────
-function drawPhase2Cut(ctx, t, phase, time) {
+function drawPhase2Cut(ctx, t, phase, time, hard) {
   const r = 40;
   if (phase === 'split' || phase === 'title') {
     const p = Math.min(1, (t - PHASE2_AT.split) / 1.1);
     drawQuarters(ctx, CUT_CX, CUT_CY, r, p * p * (3 - 2 * p), time);
   } else {
     const amp = phase === 'crack' ? 3 : 1.4;
-    drawBossDisc(ctx, CUT_CX + Math.sin(time * 57) * amp, CUT_CY + Math.cos(time * 63) * amp, r, time * 0.8);
+    // 2회차면 1페이즈 내내 보던 **진화한 원반**에 금이 가야 한다 (grade 0 = 1페이즈)
+    drawBossDisc(ctx, CUT_CX + Math.sin(time * 57) * amp, CUT_CY + Math.cos(time * 63) * amp, r, time * 0.8, time, hard, 0);
     if (phase === 'crack') drawCracks(ctx, CUT_CX, CUT_CY, r, Math.min(1, (t - PHASE2_AT.crack) / 0.7));
   }
     // 조각들이 빠져나가 텅 빈 한가운데에 박는다
@@ -2274,8 +2472,9 @@ function drawHard3Cut(ctx, t, phase, time) {
   ctx.translate(CUT_CX + Math.sin(time * 63) * shakeAmt, CUT_CY);
 
   if (phase === 'shake' || phase === 'graves' || phase === 'swarm' || phase === 'shell') {
-    // 아직 원반 로봇이다. 껍질에 금이 간다.
-    drawRobotBody(ctx, r, time, '#7c5cff', 1, false);
+    // 아직 **진화한 원반**이다 — 이 컷신 직전까지 2페이즈로 싸우던 그 몸.
+    // 여기서 로봇을 그리면 있지도 않았던 놈이 찢어지는 게 된다.
+    drawEvolvedDisc(ctx, r, time, '#7c5cff', false, 1, time * 0.5);
     if (phase === 'shell') {
       const crack = clamp01((t - HARD3_AT.shell) / 1.0);
       ctx.strokeStyle = '#ffd166';
@@ -2311,7 +2510,7 @@ function drawHard3Cut(ctx, t, phase, time) {
  * 보스가 쓰러진다 — **박혀 있던 앨범이 하나씩 떨어져 나간다.**
  * 진화가 풀리는 것이 곧 패배다. 그냥 사라지면 이긴 것 같지가 않다.
  */
-function drawBossDownCut(ctx, t, phase, time) {
+function drawBossDownCut(ctx, t, phase, time, hard) {
   const r = 52;
   const kneel = clamp01((t - BOSS_DOWN_AT.kneel) / 1.0);
   const gone = clamp01((t - BOSS_DOWN_AT.burst) / 0.8);
@@ -2323,7 +2522,11 @@ function drawBossDownCut(ctx, t, phase, time) {
   ctx.globalAlpha = 1 - gone;
   // hurt 는 **한 프레임짜리** 피격 번쩍임이다. 컷신 내내 켜두면 몸이 하얗게 날아가
   // 무엇이 쓰러지는지가 안 보인다. 색이 식는 것으로 죽어가는 걸 보여준다.
-  drawDinoBody(ctx, r, time, mixHex('#ff3b3b', '#3a2a4e', kneel), false);
+  // 쓰러지는 건 **방금까지 싸우던 그 몸**이다 — 보통 모드는 합체 로봇,
+  // 하드는 껍질을 찢고 나온 공룡. 하나로 고정하면 한쪽은 딴 놈이 죽는다.
+  const dying = mixHex('#ff3b3b', '#3a2a4e', kneel);
+  if (hard) drawDinoBody(ctx, r, time, dying, false);
+  else drawRobotBody(ctx, r, time, dying, 1, false);
   ctx.restore();
 
   // 박혀 있던 앨범이 튕겨 나간다
@@ -3705,7 +3908,7 @@ export function drawScene(ctx, game, time) {
     return;
   }
   if (game.scene === 'cutscene') {
-    drawCutscene(ctx, game.cutsceneTime);
+    drawCutscene(ctx, game.cutsceneTime, game.hard);
     return;
   }
   if (!game.world) {
