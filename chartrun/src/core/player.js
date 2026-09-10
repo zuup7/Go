@@ -1,0 +1,313 @@
+// 주인공 — 차트 1위를 노리는 신인 가수.
+import { moveBody, groundedAt, newJumpAssist, updateJumpAssist, TILE } from './physics.js';
+import { approach, clamp } from './util.js';
+import { charsUnder, T } from './world.js';
+
+export const PLAYER = {
+  w: 10,
+  h: 14,
+  maxSpeed: 124,
+  accel: 880,
+  airAccel: 620,
+  friction: 1000,
+  gravity: 1050,
+  jumpV: 320,
+  /** 점프 키를 일찍 떼면 높이가 이만큼으로 깎인다 */
+  jumpCut: 0.42,
+  /** 정점 근처(속도가 이 아래)에서는 중력을 덜 준다 — 뜬 채로 겨눌 틈이 생긴다 */
+  apexBand: 60,
+  apexGravity: 0.58,
+  /** 내려올 때는 더 빨리 — 붕 뜨는 느낌이 사라지고 착지가 딱 떨어진다 */
+  fallGravity: 1.45,
+  /** 가던 방향과 반대를 누르면 더 빨리 꺾인다 */
+  turnBoost: 2.1,
+  /** 천장 모서리를 이만큼 이하로 스치면 옆으로 밀어 통과시킨다 */
+  cornerNudge: 5,
+  maxFall: 460,
+  stompBounce: 210,
+  /**
+   * 밟는 순간 점프를 누르고 있으면 이만큼 더 튄다.
+   * 밟기가 "닿으면 알아서 튀는 것"이 아니라 **노려서 쓰는 것**이 된다 —
+   * 앨범을 밟아 높은 발판으로 올라가는 길이 여기서 나온다.
+   */
+  stompHold: 1.4,
+  /** 착지·점프 찌그러짐이 풀리는 속도 (1초에 이만큼) */
+  squashDecay: 6,
+  /** 피격 후 무적 시간(초) */
+  invulnTime: 1.2,
+  /**
+   * 대시 — **무적은 없다.** 순수한 속도다.
+   * 무적을 주면 앨범도 탄막도 보스 몸도 다 통과해서 게임 전체가 무너진다.
+   * 속도뿐이라야 3페이즈 레이저가 끝까지 진짜 위협으로 남는다.
+   */
+  dashSpeed: 260,
+  /**
+   * 0.13초 * 260 ≈ 34px — **두 칸 남짓**이다. 짧게 잡은 이유가 둘 있다.
+   *
+   * 하나, 이걸로 **레이저 기둥을 통과하지는 못한다** — 무적이 없으니 들어가면 그냥 죽는다.
+   * 대시는 기둥이 설 자리에서 **비켜서는** 수단이다: 예고 0.9초 안에 발자국(14px) 밖으로
+   * 빠지고, 훑고 지나가면 곧바로 보스 밑으로 돌아와 약점을 밟는다. 그러려면 이만큼이면 된다.
+   *
+   * 둘, 더 멀리 가면 순간이동처럼 보여서 어디에 설지를 못 겨눈다. 짧게 끊어야
+   * "한 발 옆으로" 가 되고, 그게 겨눌 수 있는 움직임이다.
+   */
+  dashTime: 0.13,
+  dashCool: 0.7,
+  /** 역주행 바닥이 밀어내는 속도 */
+  conveyor: 46,
+  /** 미끄러운 바닥에서의 마찰. 평소의 1/8 이라 놓아도 한참 밀린다 */
+  iceFriction: 130,
+  /** 튕기는 발판이 올려주는 높이 (평소 점프 320 보다 훨씬 높다) */
+  springV: 430,
+};
+
+export function createPlayer(spawn) {
+  return {
+    x: spawn.x,
+    y: spawn.y,
+    w: PLAYER.w,
+    h: PLAYER.h,
+    vx: 0,
+    vy: 0,
+    dir: 1,
+    onGround: false,
+    dead: false,
+    cleared: false,
+    invuln: 0,
+    animTime: 0,
+    /**
+     * 실제로 달린 거리(픽셀). 발 프레임을 **시간이 아니라 거리**로 돌린다 —
+     * 시간으로 돌리면 느리게 걸을 때 발이 땅을 미끄러진다.
+     */
+    stride: 0,
+    /** 착지에서 납작해진 정도 0~1, 점프에서 길쭉해진 정도 0~1 (그리는 쪽만 쓴다) */
+    squash: 0,
+    stretch: 0,
+    jumpHeld: false,
+    /**
+     * 게임이 밀어 올렸나 (튕기는 발판 · 밟기 반동).
+     * 켜져 있는 동안은 점프컷이 안 걸린다 — 내가 안 누른 점프를 키를 뗐다고
+     * 깎으면 안 된다. 올라가는 힘이 다하면(vy 가 컷 위로 오면) 저절로 꺼진다.
+     */
+    launched: false,
+    assist: newJumpAssist(),
+    /** 파워업: 'none' | 'mic' (한 대 버팀) */
+    power: 'none',
+    /** 보스전에서 주운 던질 마이크 (0 또는 1). 쓰면 없어진다 */
+    ammo: 0,
+    /** 대시가 남은 시간, 다시 쓸 수 있게 되기까지 남은 시간 */
+    dashTime: 0,
+    dashCool: 0,
+  };
+}
+
+export function respawnPlayer(player, spawn) {
+  player.x = spawn.x;
+  player.y = spawn.y;
+  player.vx = 0;
+  player.vy = 0;
+  player.dir = 1;
+  player.dead = false;
+  player.cleared = false;
+  player.invuln = 0.8;
+  player.onGround = false;
+  player.launched = false;
+  player.assist = newJumpAssist();
+  player.power = 'none';
+  player.ammo = 0;
+  player.squash = 0;
+  player.stretch = 0;
+  // 여기서 안 풀어주면 죽은 자리의 쿨을 그대로 안고 되살아난다
+  player.dashTime = 0;
+  player.dashCool = 0;
+  player.stride = 0;
+}
+
+/** 발밑 한 줄에 그 글자가 깔려 있나 (역주행 바닥이 보는 것과 같은 자리) */
+function standingOn(player, world, ch) {
+  if (!player.onGround) return false;
+  const feetTy = Math.floor((player.y + player.h + 1) / TILE);
+  const tx0 = Math.floor(player.x / TILE);
+  const tx1 = Math.floor((player.x + player.w - 0.001) / TILE);
+  for (let tx = tx0; tx <= tx1; tx++) if (world.charAt(tx, feetTy) === ch) return true;
+  return false;
+}
+
+const onIce = (player, world) => standingOn(player, world, T.ICE);
+
+/**
+ * 한 프레임 갱신. 반환값으로 이번 프레임에 벌어진 일을 알려준다.
+ * input: { left, right, jump, jumpPressed }
+ */
+export function updatePlayer(player, input, world, dt) {
+  const events = {
+    jumped: false,
+    landed: null,
+    bonked: null,
+    hazard: false,
+    fell: false,
+    dashed: false,
+    sprung: false,
+  };
+  if (player.dead) return events;
+
+  player.animTime += dt;
+  player.invuln = Math.max(0, player.invuln - dt);
+  player.squash = Math.max(0, player.squash - dt * PLAYER.squashDecay);
+  player.stretch = Math.max(0, player.stretch - dt * PLAYER.squashDecay);
+
+  // 어느 쪽을 누르고 있나. **대시보다 먼저** 봐야 한다 —
+  // 폰에서는 ◀ 와 💨 가 한 프레임에 같이 들어오는 게 보통이라, 이걸 나중에 보면
+  // 피하려던 반대쪽으로 대시해서 레이저 안으로 들어간다.
+  const want = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+
+  // 대시 — 바라보는 쪽으로 짧고 굵게. 중력은 그대로 둔다.
+  // 공중 대시가 낙하를 멈추면 부양기가 되고, 레벨 디자인이 통째로 무너진다.
+  player.dashCool = Math.max(0, player.dashCool - dt);
+  if (player.dashTime > 0) {
+    player.dashTime = Math.max(0, player.dashTime - dt);
+    // 끝나는 순간 속도를 평소 최고속도로 깎는다. 안 그러면 대시 속도를 그대로 안고
+    // 한참을 미끄러져서, 34px 만 가라고 잡아둔 것이 실제로는 두 배 가까이 간다.
+    if (player.dashTime === 0) player.vx = clamp(player.vx, -PLAYER.maxSpeed, PLAYER.maxSpeed);
+  } else if (input.dashPressed && player.dashCool <= 0) {
+    if (want !== 0) player.dir = want; // 누른 쪽으로 나간다
+    player.dashTime = PLAYER.dashTime;
+    // 대시가 끝난 뒤부터 쿨이 도는 셈이 되게 길이를 더해둔다
+    player.dashCool = PLAYER.dashCool + PLAYER.dashTime;
+    player.stretch = 1; // 이미 있는 찌그러짐을 그대로 쓴다 — 길쭉해진다
+    events.dashed = true;
+  }
+
+  // 좌우 이동 — 공중에서는 살짝 둔하게, 반대로 꺾을 때는 더 빠르게
+  const turning = want !== 0 && player.vx * want < 0;
+  const accel = (player.onGround ? PLAYER.accel : PLAYER.airAccel) * (turning ? PLAYER.turnBoost : 1);
+  if (player.dashTime > 0) {
+    // 대시 중에는 가속을 건너뛰고 못 박는다 — 눌러도 안 꺾이는 게 대시다
+    player.vx = player.dir * PLAYER.dashSpeed;
+  } else if (want !== 0) {
+    player.vx = approach(player.vx, want * PLAYER.maxSpeed, accel * dt);
+    player.dir = want;
+  } else if (player.onGround) {
+    // 얼음 위에서는 놓아도 한참 밀린다 — 멈추는 것도 실력이 된다
+    const friction = onIce(player, world) ? PLAYER.iceFriction : PLAYER.friction;
+    player.vx = approach(player.vx, 0, friction * dt);
+  }
+
+  // 점프 — 코요테 타임 + 점프 버퍼로 마리오처럼 관대하게
+  if (updateJumpAssist(player.assist, { onGround: player.onGround, jumpPressed: input.jumpPressed })) {
+    player.vy = -PLAYER.jumpV;
+    player.onGround = false;
+    player.stretch = 1;
+    events.jumped = true;
+  }
+  // 키를 일찍 떼면 낮게 뜬다 (누른 시간만큼 높이 뛴다).
+  //
+  // **내가 누른 점프에만 건다.** 발판이나 밟기 반동처럼 게임이 밀어 올린 속도까지
+  // 깎으면, 플레이어는 이유를 알 수 없는 방식으로 낮게 뜬다 — 튕기는 발판이
+  // 그냥 밟았을 때 0.4칸밖에 안 올라가서 있으나 마나였던 게 이것 때문이다.
+  const cut = -PLAYER.jumpV * PLAYER.jumpCut;
+  if (player.launched && player.vy >= cut) player.launched = false;
+  if (!input.jump && !player.launched && player.vy < cut) player.vy = cut;
+
+  // 중력은 구간마다 다르다. 올라갈 때는 그대로, 정점에서는 가볍게, 내려올 때는 무겁게.
+  // 같은 높이를 뛰면서도 체공이 짧아져서 "붕 뜬다"는 느낌이 사라진다.
+  let gravity = PLAYER.gravity;
+  if (player.vy > 0) gravity *= PLAYER.fallGravity;
+  if (!player.onGround && Math.abs(player.vy) < PLAYER.apexBand) gravity *= PLAYER.apexGravity;
+  player.vy = Math.min(player.vy + gravity * dt, PLAYER.maxFall);
+
+  // 착지를 잡으려면 부딪히기 **전** 속도를 들고 있어야 한다 — moveBody 가 vy 를 0 으로 만든다
+  const wasAir = !player.onGround;
+  const falling = player.vy;
+  const fromX = player.x;
+  const res = moveBody(player, player.vx * dt, player.vy * dt, world.tileAt, PLAYER.cornerNudge);
+  player.onGround = res.hitGround || groundedAt(player, world.tileAt);
+
+  // 발 프레임은 **실제로 움직인 거리**로 돈다. 속도로 미리 계산하면 벽에 막혔을 때도
+  // 발이 계속 돌아서 제자리걸음이 되고, 가속 중에는 한 프레임씩 어긋난다.
+  if (player.onGround) player.stride += Math.abs(player.x - fromX);
+
+  if (wasAir && player.onGround && falling > 0) {
+    // 세게 떨어질수록 납작해진다. 게임 쪽은 이걸 보고 먼지를 피운다.
+    const impact = clamp(falling / PLAYER.maxFall, 0, 1);
+    player.squash = Math.max(player.squash, impact);
+    events.landed = { impact, vy: falling };
+  }
+
+  // 머리로 블록 치기
+  if (res.hitCeil && res.ceilTile) {
+    const ch = world.charAt(res.ceilTile.tx, res.ceilTile.ty);
+    if (ch === T.ITEM || ch === T.BAIT || ch === T.INVISIBLE) {
+      events.bonked = { ...res.ceilTile, ch };
+    }
+  }
+
+  // 역주행 바닥
+  if (player.onGround) {
+    const feetTy = Math.floor((player.y + player.h + 1) / TILE);
+    const tx0 = Math.floor(player.x / TILE);
+    const tx1 = Math.floor((player.x + player.w - 0.001) / TILE);
+    for (let tx = tx0; tx <= tx1; tx++) {
+      if (world.charAt(tx, feetTy) === T.REVERSE) {
+        player.x -= PLAYER.conveyor * dt;
+        break;
+      }
+    }
+  }
+
+  // 튕기는 발판 — **딛고 있으면** 튄다. 달려서 들어가든 떨어져서 밟든 똑같다.
+  //
+  // 예전에는 `wasAir && falling > 0` 이라 **공중에서 내려앉을 때만** 튀었다.
+  // 평지를 달리다 밟는 게 제일 흔한 경우인데 그때 아무 일도 안 일어나서,
+  // 플레이어는 발판이 고장난 줄 알고 다시는 안 썼다.
+  // 아래에서 onGround 를 끄므로 올라가는 동안 다시 밟히지 않는다.
+  if (player.onGround && standingOn(player, world, T.SPRING)) {
+    player.vy = -PLAYER.springV;
+    player.onGround = false;
+    player.stretch = 1;
+    player.launched = true;
+    events.sprung = true;
+  }
+
+  // 가시에 닿았나
+  for (const { ch } of charsUnder(world, player)) {
+    if (ch === T.SPIKE) {
+      events.hazard = true;
+      break;
+    }
+  }
+
+  // 화면 아래로 떨어졌나
+  if (player.y > world.pixelHeight + 24) events.fell = true;
+
+  player.x = clamp(player.x, 0, world.pixelWidth - player.w);
+  return events;
+}
+
+/**
+ * 적을 밟았을 때의 통통 튀기.
+ *
+ * held 는 그 순간 점프를 누르고 있었는가. 누르고 있으면 더 높이 튄다 —
+ * 밟기가 그냥 일어나는 일이 아니라 **노려서 쓰는 이동 수단**이 된다.
+ */
+export function bounce(player, strong = false, held = false) {
+  player.vy = -PLAYER.stompBounce * (strong ? 1.25 : 1) * (held ? PLAYER.stompHold : 1);
+  player.assist.coyote = 0;
+  player.stretch = 1;
+  // 점프컷이 이 속도를 깎으면 strong 도 held 도 다 같은 높이가 되어 버린다.
+  // 높이 튈지 말지는 위 곱셈이 이미 정했다.
+  player.launched = true;
+}
+
+/** 맞았다. 파워업이 있으면 그걸 잃고 버틴다. 죽었으면 true */
+export function damagePlayer(player) {
+  if (player.invuln > 0 || player.dead) return false;
+  if (player.power !== 'none') {
+    player.power = 'none';
+    player.invuln = PLAYER.invulnTime;
+    return false;
+  }
+  player.dead = true;
+  player.vy = -180;
+  return true;
+}

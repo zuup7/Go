@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>차트런</title>
+  <meta name="description" content="100위에서 1위까지 달리는 픽셀 플랫포머." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%A4%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Gowun+Dodum&display=swap" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <div class="shell" id="shell">
+    <div class="screen-wrap">
+      <canvas id="game" width="384" height="224"></canvas>
+
+      <div class="ui" id="ui">
+        <!-- 보스 체력은 화면 맨 위 가장자리에 얇게만. 진짜 체력계는 캔버스 안 보스 아래에 그린다 -->
+        <div class="boss-bar" id="boss-bar" hidden><i id="boss-fill"></i></div>
+
+        <div class="hud" id="hud">
+          <div class="hud-rank">
+            <b id="rank">#100</b>
+          </div>
+          <div class="hud-right">
+            <span id="boss-phase" hidden></span>
+            <span id="ammo" hidden>🎤 ×1</span>
+            <span id="plays">♪ 0</span>
+            <span id="chartouts">차트아웃 0</span>
+            <span id="time">0:00</span>
+          </div>
+        </div>
+
+        <div class="center" id="center" hidden></div>
+      </div>
+    </div>
+
+    <!-- 손으로 잡는 화면에서는 조작 버튼이 화면 양쪽 아래에 겹쳐 뜬다.
+         아래에 따로 자리를 내주면 정작 게임이 손톱만 해진다. -->
+    <div class="touch" id="touch">
+      <div class="touch-left">
+        <button type="button" data-action="left" aria-label="왼쪽">◀</button>
+        <button type="button" data-action="right" aria-label="오른쪽">▶</button>
+      </div>
+      <div class="touch-right">
+        <button type="button" data-action="throw" id="throw-btn" hidden aria-label="마이크 던지기">🎤</button>
+        <button type="button" data-action="dash" id="dash-btn" hidden aria-label="대시">💨</button>
+        <button type="button" data-action="jump" aria-label="점프">점프</button>
+      </div>
+
+      <!-- 멈춤. data-action 이라 입력 배선(bindTouchButtons)과 자리 옮기기(touchLayout)를
+           그대로 타고, 폰에서도 판을 세울 수 있게 된다. -->
+      <button type="button" class="pause-btn" data-action="pause" aria-label="일시정지">⏸</button>
+
+      <!-- 버튼을 원하는 자리로 끌어다 놓기 -->
+      <button type="button" class="pad-edit" id="pad-edit" aria-label="버튼 위치 바꾸기">✥</button>
+      <div class="pad-bar" id="pad-bar" hidden>
+        <span class="pad-hint">끌어서 옮기고, 눌러서 고른다</span>
+        <!-- 크기는 슬라이더가 아니라 버튼이다. 눕힌 화면은 90도 돌아가 있어
+             끌기 좌표가 틀어진다 (버튼 옮기기에서 한 번 물렸던 함정) -->
+        <span class="pad-size">
+          <button type="button" id="pad-smaller" aria-label="버튼 작게">−</button>
+          <b id="pad-scale-text">전체 100%</b>
+          <button type="button" id="pad-bigger" aria-label="버튼 크게">+</button>
+        </span>
+        <button type="button" id="pad-all">전체</button>
+        <button type="button" id="pad-alpha">투명도 100%</button>
+        <button type="button" id="pad-mirror">좌우 바꾸기</button>
+        <button type="button" id="pad-reset">처음대로</button>
+        <button type="button" id="pad-done">완료</button>
+      </div>
+    </div>
+
+    <p class="rotate-note" id="rotate-note" hidden>📱 가로로 돌려서 잡으세요</p>
+
+    <p class="help">
+      <kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>Space</kbd> 점프(길게 누르면 높이) ·
+      <kbd>C</kbd>/<kbd>Shift</kbd> 대시(보스전) · <kbd>X</kbd> 마이크 던지기 · <kbd>R</kbd> 다시 · <kbd>Esc</kbd> 일시정지 · <kbd>M</kbd> 음소거
+    </p>
+    <noscript>이 게임을 즐기려면 자바스크립트가 필요합니다.</noscript>
+  </div>
+  <script type="module" src="src/ui/app.js"></script>
+</body>
+</html>
