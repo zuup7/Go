@@ -160,6 +160,12 @@ mark{background:var(--yel);color:var(--ink);padding:1px 4px;font-weight:700}
   border:2px solid var(--ink)}
 .rl .t{font-family:var(--f-h);font-size:16px;padding-left:13px;line-height:1.5}
 .rl .s{font-size:13.5px;color:var(--ink-2);padding-left:13px;line-height:1.65}
+/* 헷갈리는 짝 */
+.pline{margin:13px 0 4px;padding:13px 14px;background:var(--surf-2);
+  border:var(--bd) solid var(--line);box-shadow:inset 2px 2px 0 var(--bg-2);
+  font-size:16px;line-height:1.75}
+.pline b{background:var(--yel);color:var(--ink);padding:1px 4px;
+  box-decoration-break:clone;-webkit-box-decoration-break:clone}
 /* 연표: 전체 순서 보기 */
 .tlsw{display:flex;gap:8px;margin:4px 0 2px}
 .tlsw .btn{flex:1;font-size:14.5px;min-height:44px;padding:10px 8px}
@@ -189,9 +195,9 @@ mark{background:var(--yel);color:var(--ink);padding:1px 4px;font-weight:700}
 .opt{text-align:left;padding:12px 13px;font-size:15px;line-height:1.55;
   display:flex;gap:10px;align-items:flex-start}
 .opt .k{font-family:var(--f-px);font-size:9px;color:var(--ink-2);padding-top:3px;flex-shrink:0}
-.opt.ok{background:#2F8C7E;color:#fff;box-shadow:inset -3px -3px 0 #1D5C52,inset 3px 3px 0 #6FBCAF,var(--shadow)}
+.opt.ok{background:#257366;color:#fff;box-shadow:inset -3px -3px 0 #14443C,inset 3px 3px 0 #5FA99C,var(--shadow)}
 .opt.ok .k{color:#D6EDE7}
-.opt.no{background:var(--red);color:#fff;box-shadow:inset -3px -3px 0 #96271F,inset 3px 3px 0 #E9857D,var(--shadow)}
+.opt.no{background:#B0342C;color:#fff;box-shadow:inset -3px -3px 0 #7D2119,inset 3px 3px 0 #DC776D,var(--shadow)}
 .opt.no .k{color:#F6DAD6}
 .opt.dim{opacity:.45}
 .opt:disabled{cursor:default}
@@ -1195,7 +1201,14 @@ function startQuiz(){
 function viewCheat(){
   var mn=MNEMO.filter(function(m){return inScope(m.u);});
   var cp=COMPARE.filter(function(c){return inScope(c.u);});
+  var np=pairPool().length;
   st().innerHTML=
+    (np?'<div class="card"><div class="card-b">'+
+      '<div class="q sm">헷갈리는 짝 가려내기</div>'+
+      '<p class="d" style="margin-top:6px">비슷해서 섞이는 둘 중 어느 쪽인지 고르세요. '+
+      '시험이 제일 자주 노리는 자리예요. 틀리면 비교표를 통째로 펴 줍니다.</p>'+
+      '<button class="btn wide" id="bPair" style="margin-top:14px">한 판 시작 ('+np+'문항)</button>'+
+      '</div></div>':'')+
     '<div class="sect">두문자 · 흐름 암기법</div>'+
     mn.map(function(m){
       return '<div class="mn"><div class="ttl">'+uName(m.u)+' · '+esc(m.t)+'</div>'+
@@ -1209,6 +1222,89 @@ function viewCheat(){
         '<div class="b"><h4>'+c.b.n+'</h4><ul>'+c.b.p.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ul></div>'+
         '</div></div></div>';
     }).join("")||'<div class="card"><div class="card-b"><div class="empty"><p>선택한 단원에 해당하는 치트키가 없어요.</p></div></div></div>';
+  var bp=document.getElementById("bPair");
+  if(bp)bp.onclick=startPairs;
+}
+
+/* ---------- 헷갈리는 짝 가려내기 ----------
+   시험이 노리는 건 「비슷해서 섞이는 둘」이다. 비교표에 이미 그 짝과
+   구분 근거가 줄 단위로 들어 있으니, 새 문제를 적는 대신 그 줄을 그대로 낸다.
+   한 줄을 보여 주고 「둘 중 어느 쪽이냐」만 묻는다 */
+function pname(n){ return String(n).replace(/\s*\(.*?\)\s*/g,"").replace(/^=\s*/,"").trim(); }
+/* 이름이 그대로 박힌 줄은 답이 보이니 내지 않는다 */
+function pgive(line,names){
+  var t=String(line).replace(/<[^>]+>/g,"");
+  return names.some(function(n){
+    return pname(n).split(/[·\s]+/).filter(function(w){return w.length>=2;})
+      .some(function(w){return t.indexOf(w)>=0;});
+  });
+}
+function pairPool(){
+  var out=[];
+  COMPARE.forEach(function(c,ci){
+    if(!inScope(c.u))return;
+    var names=[c.a.n,c.b.n];
+    ["a","b"].forEach(function(side){
+      c[side].p.forEach(function(line,li){
+        if(pgive(line,names))return;
+        out.push({id:"cp"+ci+side+li,u:c.u,t:c.t,line:line,side:side,
+                  an:c.a.n,bn:c.b.n,c:c});
+      });
+    });
+  });
+  return out;
+}
+function startPairs(){
+  var pool=shuffle(pairPool());
+  if(pool.length<4){
+    st().innerHTML='<div class="card"><div class="card-b"><div class="empty">'+
+      '<p>단원을 더 켜면 가려낼 짝이 생겨요.</p></div></div></div>';
+    return;
+  }
+  var i=0,ok=0,n=0;
+  (function nx(){
+    if(i>=pool.length){ pool=shuffle(pool); i=0; }
+    renderPair(pool[i++],function(good){ n++; if(good)ok++; nx(); },function(){ viewCheat(); },
+      function(){ return {ok:ok,n:n}; });
+  })();
+}
+function renderPair(q,done,quit,score){
+  var sc=score(),answered=false;
+  st().innerHTML='<div class="card">'+head(q.u,"헷갈리는 짝")+'<div class="card-b">'+
+    '<div class="q sm">'+esc(q.t)+'</div>'+
+    '<p class="hint" style="margin-top:6px">아래 설명은 둘 중 어느 쪽일까요?</p>'+
+    '<div class="pline">'+q.line+'</div>'+
+    '<div class="opts" id="op">'+
+      '<button class="opt" data-s="a"><span class="k">1</span><span>'+q.an+'</span></button>'+
+      '<button class="opt" data-s="b"><span class="k">2</span><span>'+q.bn+'</span></button>'+
+    '</div><div id="fb"></div>'+
+    (sc.n?'<p class="hint" style="margin-top:12px">이번 판 '+sc.ok+' / '+sc.n+'</p>':'')+
+    '</div></div>';
+  Array.prototype.forEach.call(document.querySelectorAll("#op .opt"),function(b){
+    b.onclick=function(){
+      if(answered)return; answered=true;
+      var good=b.dataset.s===q.side;
+      Array.prototype.forEach.call(document.querySelectorAll("#op .opt"),function(x){
+        x.disabled=true;
+        if(x.dataset.s===q.side)x.classList.add("ok");
+        else if(x===b)x.classList.add("no");
+      });
+      /* 틀린 쪽은 비교표를 통째로 펴 준다 — 어디서 갈리는지 한 번에 보이게 */
+      var c=q.c;
+      document.getElementById("fb").innerHTML=
+        '<div class="fb '+(good?"ok":"no")+'" style="margin-top:14px"><span class="ic">'+(good?"○":"×")+
+        '</span><span>'+(good?"맞아요. "+esc(pname(q.side==="a"?q.an:q.bn))+" 쪽입니다."
+                             :"아니에요. "+esc(pname(q.side==="a"?q.an:q.bn))+" 쪽입니다.")+'</span></div>'+
+        (good?'':'<div class="cmp" style="margin-top:12px">'+
+          '<div class="a"><h4>'+c.a.n+'</h4><ul>'+c.a.p.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ul></div>'+
+          '<div class="b"><h4>'+c.b.n+'</h4><ul>'+c.b.p.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ul></div></div>')+
+        '<div class="btn-row" style="margin-top:14px">'+
+          '<button class="btn ghost" id="bStop">그만</button>'+
+          '<button class="btn" id="bNext">다음 →</button></div>';
+      document.getElementById("bNext").onclick=function(){done(good);};
+      document.getElementById("bStop").onclick=quit;
+    };
+  });
 }
 
 /* ---------- 모드: 나 ---------- */
