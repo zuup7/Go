@@ -232,11 +232,12 @@ export const ALBUMS = [
   }),
   album({
     id: 'a17',
+    art: 'assets/albums/a17.png',
     name: '레전드 명반',
     stage: 4,
     behavior: 'shielder',
-    // 열일곱 중 유일하게 사진이 없다. 은색 얼굴 무늬로는 다른 앨범과 구분이 안 돼서
-    // 금박 명반 무늬를 따로 그린다 (render/albumArt.js 의 'legend').
+    // 사진을 못 찾으면 조용히 이 무늬로 돌아간다 (render/albumArt.js 의 'legend').
+    // 은색 얼굴 무늬로는 다른 앨범과 구분이 안 돼서 금박 명반 무늬를 따로 뒀다.
     palette: ['#141210', '#d4af37', '#fff3c4'],
     cover: 'legend',
     speed: 40,
