@@ -228,16 +228,22 @@ export const DISC = sprite(
 );
 
 // ── 엔딩의 공주 ──────────────────────────────────────────────
-// 왼쪽을 보는 옆모습 + **검은 테두리**. 테두리가 이 그림체의 전부다시피 해서,
+// **정면**을 보는 모습 + 검은 테두리. 테두리가 이 그림체의 전부다시피 해서,
 // 실루엣 바깥을 전부 K 로 두른다.
 //
-// **왼쪽을 본다는 게 중요하다.** 오프닝에서 주인공이 그녀 쪽(왼쪽)으로 손을 뻗는
-// 연출이 이 방향에 기대고 있다 (render/sceneCuts.js 의 reach 단계).
+// **9칸을 축으로 좌우대칭**이다. 드레스가 원래 9칸 중심이라 머리도 거기 맞춘다 —
+// 옆모습일 땐 안 보이던 반 칸 어긋남이 정면에서는 바로 티가 난다.
 //
-// 얼굴은 왼쪽 절반, 머리카락은 위와 뒤(오른쪽)를 덮고 어깨까지 내려온다.
+// 머리카락이 얼굴 양옆을 감싸고 어깨까지 내려온다. 바깥 칸은 d(어두운 쪽),
+// 안쪽은 m — 두 겹이라야 부피가 보인다.
 // 눈도 검정이라 테두리에 닿으면 먹혀버려서, 사방을 살색으로 한 칸씩 감쌌다.
+// 눈동자 반짝임(h)은 정면에서 안 쓴다 — 양쪽에 다 넣으면 20px 에서 눈이 번진다.
 // 살색은 주인공과 **같은 값**이다 — 둘이 같은 그림 속 사람으로 보여야 한다.
 // 20×20 이고 이 크기는 바꾸면 안 된다. 새장과 2회차 엔딩이 이 폭에 맞춰 자리를 잡는다.
+//
+// (예전에 "왼쪽을 보는 게 중요하다, 주인공이 그쪽으로 손을 뻗으니까" 라고 적어뒀는데
+//  **틀린 말이었다.** 손 뻗을 때 뒤집히는 건 주인공이고 이 스프라이트는 어디서도
+//  뒤집어 그리지 않는다. 방향은 연출과 무관하다.)
 const BRIDE_PAL = {
   K: '#1a1410', // 테두리·눈
   g: '#ffd166', // 티아라
@@ -254,20 +260,20 @@ const BRIDE_PAL = {
 
 export const BRIDE = sprite(
   [
-    '.....gg.gg..........',
-    '....gGgGgGg.........',
-    '...KKKKKKKKK........',
-    '..KKmmmmmmmKKw......',
-    '..KmmmmmmmmmKdKw....',
-    '..KsssmmmmmmKdKKw...',
-    '..KssssmmmmmKddKw...',
-    '..KshessmmmmKddKw...',
-    '..KsssssssmmKddK....',
-    '..KKssssssmmKddK....',
-    '...KKsssssmmKddK....',
-    '....KKsssmmmKdKK....',
-    '.....KKssmmmKKKK....',
-    '....KppppppppK......',
+    '.......gg.gg........',
+    '......gGgGgGg.......',
+    '....KKKKKKKKKKK.....',
+    '...KdmmmmmmmmmdK....',
+    '...KdmmmmmmmmmdK....',
+    '...KdmsssssssmdK....',
+    '...KdmsssssssmdK....',
+    '...KdmsesssesmdK....',
+    '...KdmsssssssmdK....',
+    '...KdmsssKsssmdK....',
+    '...KdmsssssssmdK....',
+    '...KdmmsssssmmdK....',
+    '....KdmmsssmmdK.....',
+    '....KpppppppppK.....',
     '...KpppppppppppK....',
     '...KpPpppppppPpK....',
     '..KpppppppppppppK...',
