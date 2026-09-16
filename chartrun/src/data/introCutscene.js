@@ -8,7 +8,7 @@
 // 마지막에 처음 보는 사람과 갑자기 결혼하는 그림이 안 된다.
 //
 // data/bossCutscenes.js 와 똑같은 타임라인 모양이라 헬퍼를 그대로 쓴다.
-// at: 컷신 시작으로부터의 초. kind 는 render/scene.js 가 해석한다.
+// at: 컷신 시작으로부터의 초. kind 는 render/sceneCuts.js 가 해석한다.
 import { lengthOf } from './cutscene.js';
 
 export const INTRO_CUT = [
@@ -27,7 +27,7 @@ export const INTRO_CUT = [
 ];
 
 /**
- * 단계 이름 → 시작 시각. 그리는 쪽(render/scene.js)이 이걸 읽어서 쓴다.
+ * 단계 이름 → 시작 시각. 그리는 쪽(render/sceneCuts.js)이 이걸 읽어서 쓴다.
  * 시각을 그림 코드에 또 적으면 타임라인만 고쳤을 때 조용히 어긋난다.
  */
 export const INTRO_AT = Object.fromEntries(INTRO_CUT.map((s) => [s.kind, s.at]));

@@ -10,7 +10,7 @@
 //   reveal  보스가 드러난다
 //   end     컷신 종료
 
-/** 각 단계가 시작하는 시각. render/scene.js 가 같은 값을 써서 그린다. */
+/** 각 단계가 시작하는 시각. render/sceneCuts.js 가 같은 값을 써서 그린다. */
 export const CUT_AT = {
   gather: 0.0,
   swirl: 2.4,

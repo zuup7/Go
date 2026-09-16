@@ -2,7 +2,7 @@
 // data/cutscene.js 의 합체 컷신과 똑같은 타임라인 모양이라 헬퍼를 그대로 쓴다.
 //
 // 대사는 없다. 무슨 일이 벌어지는지는 화면이 말한다.
-// at: 컷신 시작으로부터의 초.  kind 는 컷신마다 다르고 render/scene.js 가 해석한다.
+// at: 컷신 시작으로부터의 초.  kind 는 컷신마다 다르고 render/sceneCuts.js 가 해석한다.
 import { lengthOf } from './cutscene.js';
 
 /** 2페이즈 — 하나였던 보스가 네 조각으로 갈라진다 */
@@ -139,7 +139,7 @@ export const BOSS_CUTS = {
 export const bossCutLength = (id) => lengthOf(BOSS_CUTS[id].timeline);
 
 /**
- * 단계 이름 → 시작 시각. 그리는 쪽(render/scene.js)이 이걸 읽어서 쓴다.
+ * 단계 이름 → 시작 시각. 그리는 쪽(render/sceneCuts.js)이 이걸 읽어서 쓴다.
  * 시각을 그림 코드에 또 적어두면, 타임라인만 고쳤을 때 둘이 어긋나서
  * 연출이 엉뚱한 때에 나온다 — 한 곳에서만 정한다.
  */

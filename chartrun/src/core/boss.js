@@ -126,7 +126,7 @@ export function shockWaves(boss) {
 /**
  * 지금 훑고 있는 레이저 칸. 아무것도 안 쏘고 있으면 null.
  *
- * **판정(core/game.js)과 그림(render/scene.js)이 둘 다 이 하나를 본다.**
+ * **판정(core/game.js)과 그림(render/sceneBoss.js)이 둘 다 이 하나를 본다.**
  * 사각형을 양쪽에 따로 적으면 언젠가 어긋나서, 보이는 자리와 죽는 자리가 달라진다.
  */
 export function laserBeam(boss) {
