@@ -95,7 +95,7 @@ export const ENDING_CUT = [
   { at: 5.8, kind: 'climb' },
   { at: 6.8, kind: 'crown' },
   { at: 8.6, kind: 'aisle' }, // 차트 줄이 버진로드로 바뀐다
-  { at: 10.0, kind: 'bride' }, // 연갈색 말티푸 공주가 걸어 들어온다
+  { at: 10.0, kind: 'bride' }, // 공주가 걸어 들어온다
   { at: 12.0, kind: 'vow' }, // 꽃 아치 아래 마주 선다
   { at: 13.6, kind: 'ring' },
   { at: 15.0, kind: 'kiss' },

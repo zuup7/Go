@@ -2245,7 +2245,7 @@ function drawRobotBody(ctx, r, time, color, grow = 1, hurt = false) {
 }
 
 /**
- * 강아지 공주가 갇힌 새장. 오프닝에서 채간 뒤로 합체 컷신·보스전 내내 여기 있다가,
+ * 공주가 갇힌 새장. 오프닝에서 채간 뒤로 합체 컷신·보스전 내내 여기 있다가,
  * 보스가 터질 때 부서진다. cx, cy 는 새장 한가운데.
  *
  * broken 이 0보다 크면 창살이 튀어나가고 그녀가 떨어진다 (0~1).
@@ -2267,7 +2267,7 @@ function drawCage(ctx, cx, cy, time, broken = 0) {
     ctx.fillRect(Math.round(cx), y - 14, 1, 14);
   }
 
-  drawSprite(ctx, BRIDE, Math.round(cx - 10), Math.round(y + 4 + sway + fall));
+  drawSprite(ctx, BRIDE, Math.round(cx - BRIDE.w / 2), Math.round(y + 4 + sway + fall));
 
   // 창살 — 부서지면 사방으로 튄다
   ctx.globalAlpha = Math.max(0, 1 - broken * 1.4);
@@ -2977,7 +2977,7 @@ function drawVenue(ctx, t, time, grow) {
   return floor;
 }
 
-/** 왕관 쓴 주인공과 연갈색 말티푸 공주 */
+/** 왕관 쓴 주인공과 공주 */
 function drawCouple(ctx, t, phase, time, floor) {
   const cx = VIEW.w / 2;
   const standY = floor - 12;
@@ -3200,7 +3200,7 @@ const ROOM_DESK_X = 34;
 /** 방 안에서 내가 서 있는 자리 (바닥 176 에 발이 닿는다) */
 const ROOM_ME_X = 214;
 const ROOM_ME_Y = 160;
-/** 그 옆의 강아지 공주 (20×20 이라 바닥에서 20 을 뺀다) */
+/** 그 옆의 공주 (20×20 이라 바닥에서 20 을 뺀다) */
 const ROOM_HER_X = 180;
 const ROOM_HER_Y = 156;
 
@@ -3305,7 +3305,7 @@ export function drawIntroCut(ctx, t) {
     const px = ROOM_ME_X;
     const py = ROOM_ME_Y;
 
-    // 강아지 공주 — 원래 옆에 같이 있다. 앨범이 채가면 위로 끌려 올라간다.
+    // 공주 — 원래 옆에 같이 있다. 앨범이 채가면 위로 끌려 올라간다.
     if (!grabbing) {
       // 앨범이 내려와 붙잡기까지 0.5초, 그 뒤로 같이 올라간다.
       // 너무 빨리 올리면 데려가는 앨범이 화면 밖으로 나가서 "누가 데려갔는지" 가 사라진다.
