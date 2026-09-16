@@ -22,7 +22,7 @@ import {
 } from '../data/bossCutscenes.js';
 import { INTRO_CUT, INTRO_AT, HARD_OPEN_CUT, HARD_OPEN_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
-import { VINYL, clamp01, ease, mixHex, noise } from './sceneParts.js';
+import { VINYL, clamp01, ease, mixHex, noise , drawChartLabel } from './sceneParts.js';
 import { drawBossCore, drawBossDisc, drawCage, drawDinoBody, drawEvolvedDisc, drawMicShape, drawRobotBody } from './sceneBoss.js';
 
 // ── 합체 컷신 ───────────────────────────────────────────────
@@ -619,6 +619,8 @@ function drawFakeChart(ctx, t, phase, time) {
   ctx.strokeStyle = '#7c5cff';
   ctx.lineWidth = 1;
   ctx.strokeRect(x - 7.5, top - 9.5, w + 15, rowH * 6 + 15);
+  // 무슨 차트를 조작하는 건지 보여야 「조작」이 왜 나쁜 짓인지가 산다
+  drawChartLabel(ctx, VIEW.w / 2, top - 24, slide);
 
   const rig = phase === 'chart' ? 0 : Math.min(1, (t - PHASE3_AT.rig) / 1.0);
   // 원래 1~5위였던 줄들이 한 칸씩 밀려 내려간다
@@ -908,6 +910,7 @@ function drawChartFrame(ctx, ease) {
     ctx.fillStyle = '#4a2a66';
     ctx.fillRect(CHART_X + 34, y + 1, CHART_W - 44, 6);
   }
+  drawChartLabel(ctx, VIEW.w / 2, CHART_TOP - 34, 1);
   ctx.restore();
 }
 
@@ -1185,6 +1188,11 @@ export function drawIntroCut(ctx, t) {
 
   if (phase !== 'chart') drawMineRow(ctx, IN_MINE_Y, time, phase === 'bottom');
   ctx.restore();
+
+  // **차트를 처음 보는 곳이다.** 여기서 한 번 알려주면 뒤로는 설명이 필요 없다.
+  // 줄들은 위로 훑고 지나가지만 딱지는 화면에 고정한다 — 같이 밀리면
+  // 사이트 머리글이 아니라 떠다니는 글자가 된다. (ctx.restore() 뒤에 그리는 이유)
+  drawChartLabel(ctx, VIEW.w / 2, 6, drop * (1 - closing), { bar: true });
 
   // 벽처럼 닫힐 때 화면이 눌리는 느낌
   if (closing > 0) {
@@ -1567,6 +1575,11 @@ function drawHardEndCut(ctx, t, phase, time) {
     ctx.fillStyle = '#ffd166';
     ctx.fillRect(0, top + 3, VIEW.w, 1);
   }
+
+  // 막대가 **아직 차트인 동안만** 딱지를 띄운다. 다 솟아 무대가 된 뒤에도
+  // 「음원차트」가 붙어 있으면 뜻이 어긋난다 — 그래서 가운데서 제일 진하고
+  // 양 끝(안 솟았을 때 · 무대가 됐을 때)에서 사라진다.
+  if (stage > 0) drawChartLabel(ctx, cx, 6, Math.sin(stage * Math.PI), { bar: true });
 
   // ── 적이 관객이 된다 ────────────────────────────────────
   drawAudience(ctx, gather, cool, time);

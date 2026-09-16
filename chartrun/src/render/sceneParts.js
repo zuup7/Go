@@ -5,6 +5,7 @@
 // 쓰는 것인가" 를 먼저 보라. 아니면 쓰는 쪽에 두는 게 맞다.
 import { drawCoverAt } from './albumArt.js';
 import { VIEW } from '../core/game.js';
+import { drawHangulCentered, hangulWidth } from './bigtext.js';
 
 // 같은 무대를 낮/밤으로 바꾸는 것도 색만 갈아끼우면 된다.
 
@@ -167,3 +168,44 @@ export const ease = (p) => {
   return q * q * (3 - 2 * q);
 };
 
+
+
+/**
+ * 차트 판 위에 붙는 「음원차트」 딱지.
+ *
+ * 이 게임의 척추는 #100 → #1 순위인데, 화면에 뜨는 판이 **무슨 차트인지**는
+ * 글자로 적힌 적이 없었다. 앨범이 줄줄이 박혀 있으니 짐작은 되지만,
+ * 오프닝에서 처음 보는 사람은 그냥 순위표로 읽는다.
+ *
+ * 차트가 나오는 네 곳(오프닝·3페이즈·엔딩·2회차 엔딩)이 **이 함수 하나**를 부른다.
+ * 네 곳에 따로 그리면 언젠가 하나만 어긋난다.
+ *
+ * (cx, y) 는 딱지의 **가운데 위**. 판 안쪽 위 여백이 10px 밖에 없어서
+ * 판 **위에** 얹는 자리로 쓴다.
+ */
+export function drawChartLabel(ctx, cx, y, alpha = 1, { bar = false, scale = 1 } = {}) {
+  if (alpha <= 0.01) return;
+  const w = hangulWidth('음원차트', scale);
+  const h = 11 * scale;
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+
+  // 글자 뒤를 깔아준다 — 차트 줄 위에 그냥 얹으면 획이 배경에 묻힌다.
+  //
+  // **판 테두리가 있으면 작은 상자, 없으면 화면을 가로지르는 띠.** 오프닝과
+  // 2회차 엔딩은 차트가 화면을 꽉 채워서 얹을 여백이 없다 — 거기서 상자로 두면
+  // 줄 위에 얹힌 쪽지처럼 보인다. 띠로 두면 사이트 머리글로 읽힌다.
+  ctx.fillStyle = 'rgba(6,2,14,0.85)';
+  if (bar) {
+    ctx.fillRect(0, Math.round(y) - 4, VIEW.w, h + 8);
+    ctx.fillStyle = '#7c5cff';
+    ctx.fillRect(0, Math.round(y) + h + 3, VIEW.w, 1);
+  } else {
+    ctx.fillRect(Math.round(cx - w / 2) - 4, Math.round(y) - 3, w + 8, h + 6);
+    ctx.strokeStyle = '#7c5cff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(Math.round(cx - w / 2) - 3.5, Math.round(y) - 2.5, w + 7, h + 5);
+  }
+  drawHangulCentered(ctx, '음원차트', cx, y, scale, '#ffd166', null);
+  ctx.restore();
+}
