@@ -183,7 +183,10 @@ test('마지막 스테이지를 깨면 합체 컷신이 나오고 보스전으�
   assert.equal(game.scene, 'stageClear');
   step(game, idle, 60 * 3);
   assert.equal(game.scene, 'cutscene');
-  step(game, idle, 60 * 17);
+  // 합체 컷신(8.6초)이 끝나는 데까지만 굴린다. 더 굴리면 **가만히 선 채로
+  // 보스전을 버티는 것**까지 같이 검사하게 되는데, 그건 이 테스트가 볼 일이 아니고
+  // 보스 수치를 조금만 손봐도 깨진다 (실제로 openFor 를 고쳤을 때 깨졌다).
+  step(game, idle, 60 * 9);
   assert.equal(game.scene, 'boss');
   assert.ok(game.boss);
   assert.equal(game.rank, 2, '보스 앞에서는 2위');

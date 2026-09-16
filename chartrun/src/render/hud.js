@@ -101,7 +101,7 @@ export function createHud(root) {
           : '<p class="press">아무 키나 / 점프 버튼으로 시작</p>';
         return `
           <div class="panel title-panel">
-            <h1>차트런</h1>
+            <h1>차트런${game.save.clearedHard ? ' <span class="crown">♛</span>' : ''}</h1>
             ${menu}
             <p class="record">BEST #${game.save.bestRank} · ${
               game.save.bestTimeMs == null ? '--:--' : timeText(game.save.bestTimeMs)
@@ -167,6 +167,12 @@ export function createHud(root) {
               <li><span>찾은 함정</span><b>${game.save.revealedTraps?.length ?? 0}</b></li>
               <li><span>재생수</span><b>${e.plays ?? 0}</b></li>
               <li><span>SCORE</span><b>${(e.score ?? 0).toLocaleString('ko-KR')}</b></li>
+              ${
+                // 2회차까지 끝낸 사람에게만. 가장 어려운 걸 깬 것이니 어디선가는 알아줘야 한다.
+                game.save.clearedHard || e.hard
+                  ? '<li><span>2회차</span><b>클리어 ♛</b></li>'
+                  : ''
+              }
             </ul>
             <p class="press">아무 키나 누르면 처음으로</p>
           </div>`;

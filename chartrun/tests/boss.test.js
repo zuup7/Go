@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { phasesFor } from '../src/data/bossData.js';
 import {
   bossBody,
+  bossPose,
   laserBeams,
   createBoss,
   updateBoss,
@@ -594,5 +596,69 @@ test('두 모드의 몸이 어느 페이즈에서도 겹치지 않는다', () =>
       bossBody(atPhase(true, phaseId)),
       `${phaseId}페이즈에서 두 모드가 같은 몸이다`,
     );
+  }
+});
+
+// ── 몸이 지금 뭘 하는지 보여주는가 ──────────────────────────
+//
+// 그리는 쪽이 보스 상태를 거의 안 보고 있었다 — 겨누든 맞든 비틀거리든 몸이 똑같고,
+// 약점이 열린 것도 가운데 재생버튼 하나로만 알렸다. 규칙을 bossPose 한 곳에 모았으니
+// 여기서 못을 박는다. 판정에는 안 쓰는 값이라 어긋나도 테스트 말고는 아무도 안 잡는다.
+
+/** 그 상태로 n 초 굴린다 (timer 를 크게 줘서 도중에 안 넘어가게) */
+const hold = (boss, state, seconds) => {
+  boss.state = state;
+  boss.timer = 99;
+  const ctx = { arenaWidth: 640, player: { x: 300 }, spawnShot() {}, addAlbum() {}, dropMic() {} };
+  for (let i = 0; i < Math.round(seconds * 60); i++) updateBoss(boss, ctx, 1 / 60);
+  return bossPose(boss);
+};
+
+test('겨누는 동안 몸이 움츠러들고 빨라진다', () => {
+  const boss = createBoss(640, 192, false);
+  const calm = bossPose(boss);
+  const aiming = hold(boss, 'aim', 0.7);
+  assert.ok(aiming.squash < calm.squash, '겨누는데 안 움츠러든다');
+  assert.ok(aiming.spin > calm.spin, '겨누는데 회전이 안 빨라진다');
+});
+
+test('약점이 열리면 몸이 벌어지고 회전이 멎는다 — 이게 칠 때라는 신호다', () => {
+  const boss = createBoss(640, 192, false);
+  const open = hold(boss, 'open', 0.6);
+  assert.ok(open.spread > 0.8, `열렸는데 안 벌어진다 (${open.spread})`);
+  assert.ok(open.spin < 0.3, `열렸는데 계속 돈다 (${open.spin})`);
+  // 닫힐 때는 천천히 — 툭 닫히면 칠 틈이 없어 보인다
+  const shut = hold(boss, 'attack', 0.15);
+  assert.ok(shut.spread > 0.3, '닫히는 게 너무 빠르다');
+});
+
+test('맞으면 뒤로 밀렸다가 돌아온다 — 흰 섬광만으로는 때린 느낌이 없다', () => {
+  const boss = createBoss(640, 192, false);
+  hold(boss, 'open', 0.5);
+  assert.equal(bossPose(boss).recoil, 0, '맞기도 전에 밀려 있다');
+  hitBoss(boss);
+  assert.ok(bossPose(boss).recoil > 0.9, '맞았는데 안 밀린다');
+  hold(boss, 'recover', 0.6);
+  assert.equal(bossPose(boss).recoil, 0, '밀린 채로 안 돌아온다');
+});
+
+test('자세 값은 어느 상태에서도 범위 밖으로 안 나간다', () => {
+  const boss = createBoss(640, 192, true);
+  for (const state of ['attack', 'aim', 'open', 'recover', 'whirlAim', 'tail', 'stomp']) {
+    const p = hold(boss, state, 0.4);
+    assert.ok(p.spread >= 0 && p.spread <= 1, `${state}: spread ${p.spread}`);
+    assert.ok(p.recoil >= 0 && p.recoil <= 1, `${state}: recoil ${p.recoil}`);
+    assert.ok(p.glow >= 0 && p.glow <= 1, `${state}: glow ${p.glow}`);
+    assert.ok(p.squash > 0.5 && p.squash <= 1, `${state}: squash ${p.squash}`);
+    assert.ok(p.spin >= 0, `${state}: spin ${p.spin}`);
+  }
+});
+
+test('약점이 열려 있는 시간은 칠 수 있을 만큼은 된다', () => {
+  // 연출을 넣으면서 창을 깎았다. 너무 깎으면 보이기만 하고 못 치는 보스가 된다.
+  for (const hard of [false, true]) {
+    for (const phase of phasesFor(hard)) {
+      assert.ok(phase.openFor >= 1.1, `${hard ? '하드' : '보통'} ${phase.id}페이즈: ${phase.openFor}초는 너무 짧다`);
+    }
   }
 });

@@ -52,11 +52,18 @@ export function createBoss(arenaWidth, floorY = 192, hard = false) {
     bob: 0,
     hurtFlash: 0,
     vulnerable: false,
+    /**
+     * 겉모습 값 셋. **판정에는 안 쓴다** — 그리는 쪽이 "지금 뭘 하는 중인지"를
+     * 몸으로 보여주려고 읽는다. 상태는 툭툭 끊기므로 여기서 부드럽게 굴려둔다.
+     * 규칙은 bossPose() 한 곳에서만 읽는다.
+     */
+    charge: 0,
+    openness: 0,
+    recoil: 0,
     drift: 1,
     quarters: [],
     minionTimer: 0,
     micTimer: 0,
-    announce: null,
     defeatedAt: 0,
     floorY,
     /** 레이저 기둥의 가운데 x. 'aim' / 'laser' 동안에만 뜻이 있다 */
@@ -199,7 +206,6 @@ export function syncPhase(boss) {
       boss.h = DINO_H;
       boss.x = cx - DINO_W / 2;
     }
-    boss.announce = next.id;
     boss.quarters = [];
     boss.state = 'recover';
     boss.timer = 1.2;
@@ -207,6 +213,52 @@ export function syncPhase(boss) {
   }
   return null;
 }
+
+/** 큰 걸 쓰려고 겨누는 중인 상태들 — 몸이 움츠러든다 */
+const AIMING = new Set(['aim', 'whirlAim', 'tailAim', 'stompAim']);
+
+/** 0→1 로 다가간다 (per, 초당 비율). dt 가 튀어도 1 을 안 넘는다 */
+const toward = (v, target, per, dt) => v + (target - v) * Math.min(1, per * dt);
+
+/**
+ * 겉모습 값을 한 프레임 굴린다.
+ *
+ * 상태(boss.state)는 한 프레임에 툭 바뀌는데 몸이 따라 툭 바뀌면 싸구려로 보인다.
+ * 여기서 이징을 걸어두면 그리는 쪽은 숫자만 읽으면 된다.
+ */
+function stepLooks(boss, dt) {
+  boss.charge = toward(boss.charge, AIMING.has(boss.state) ? 1 : 0, 6, dt);
+  // 열릴 때는 빨리 벌어지고 닫힐 때는 천천히 — 빨리 닫히면 칠 틈이 없어 보인다
+  const open = boss.state === 'open' ? 1 : 0;
+  boss.openness = toward(boss.openness, open, open ? 9 : 3.5, dt);
+  boss.recoil = Math.max(0, boss.recoil - dt * 3);
+}
+
+/**
+ * 지금 이 보스를 **어떤 자세로 그릴까**.
+ *
+ * 싸움 화면이 보스 상태를 거의 안 보고 있었다 — 겨누든 맞든 비틀거리든 몸이 똑같고,
+ * 약점이 열린 것도 가운데 재생버튼 하나로만 알렸다. 규칙을 여기 한 곳에 두고
+ * 그리는 쪽은 물어보기만 한다 (bossBody 와 같은 방식).
+ *
+ * squash  1 보다 작으면 움츠러든 것 (겨누는 중)
+ * spread  껍질이 벌어진 정도 0~1 (약점이 열린 중)
+ * recoil  맞고 밀려난 정도 0~1
+ * glow    틈에서 새는 빛의 세기 0~1
+ * spin    회전 배속 (열리면 멎고 겨누면 빨라진다)
+ */
+export const bossPose = (boss) => {
+  if (!boss) return { squash: 1, spread: 0, recoil: 0, glow: 0, spin: 1 };
+  const c = boss.charge;
+  const o = boss.openness;
+  return {
+    squash: 1 - c * 0.12,
+    spread: o,
+    recoil: boss.recoil,
+    glow: Math.max(c * 0.7, o),
+    spin: 1 + c * 1.8 - o * 0.9,
+  };
+};
 
 function makeQuarters(boss, phase, arenaWidth) {
   boss.quarters = Array.from({ length: phase.quarters }, (_, i) => ({
@@ -242,10 +294,11 @@ export function updateBoss(boss, ctx, dt) {
     ctx.dropMic?.(createMic(boss.x + boss.w / 2 - MIC_SIZE / 2, boss.y + boss.h));
   }
 
-  boss.spin += dt * (1.2 + boss.phaseId * 0.5);
+  boss.spin += dt * (1.2 + boss.phaseId * 0.5) * (1 - boss.openness * 0.9);
   boss.bob += dt;
   boss.hurtFlash = Math.max(0, boss.hurtFlash - dt);
   boss.timer -= dt;
+  stepLooks(boss, dt);
 
   // 좌우로 천천히 배회. 다만 레이저를 겨누거나 쏘는 동안에는 제자리에 선다 —
   // 큰 걸 쓰기로 마음먹은 놈이 멈추는 것 자체가 예고다.
@@ -452,7 +505,6 @@ export function updateBoss(boss, ctx, dt) {
       if (boss.timer <= 0) {
         boss.state = 'attack';
         boss.timer = phase.openEvery;
-        boss.announce = null;
       }
       break;
     }
@@ -640,6 +692,8 @@ export function hitBoss(boss, { ranged = false } = {}) {
   if (!ranged && !boss.vulnerable) return false;
   boss.hp = Math.max(0, boss.hp - 1);
   boss.hurtFlash = 0.35;
+  // 흰 섬광만으로는 때린 느낌이 없다. 몸이 뒤로 밀려야 맞은 게 보인다.
+  boss.recoil = 1;
   boss.vulnerable = false;
   boss.state = 'recover';
   boss.timer = 0.9;

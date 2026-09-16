@@ -16,8 +16,8 @@ export const PHASES = [
     fireEvery: 1.6,
     shots: 5,
     shotSpeed: 78,
-    openEvery: 4.2,
-    openFor: 2.2,
+    openEvery: 4.45,
+    openFor: 1.95,
     descendTo: 118,
     minionEvery: 0,
     quarters: 0,
@@ -31,8 +31,8 @@ export const PHASES = [
     fireEvery: 1.15,
     shots: 7,
     shotSpeed: 95,
-    openEvery: 3.4,
-    openFor: 1.8,
+    openEvery: 3.65,
+    openFor: 1.55,
     descendTo: 126,
     minionEvery: 0,
     quarters: 4,
@@ -47,8 +47,8 @@ export const PHASES = [
     fireEvery: 0.85,
     shots: 9,
     shotSpeed: 112,
-    openEvery: 2.8,
-    openFor: 1.6,
+    openEvery: 3.05,
+    openFor: 1.35,
     descendTo: 132,
     minionEvery: 3.2,
     minions: ['a01', 'a06', 'a02'],
@@ -93,8 +93,8 @@ export const HARD_PHASES = [
     fireEvery: 1.2,
     shots: 7,
     shotSpeed: 95,
-    openEvery: 3.6,
-    openFor: 1.9,
+    openEvery: 3.85,
+    openFor: 1.65,
     descendTo: 118,
     minionEvery: 0,
     quarters: 0,
@@ -121,8 +121,8 @@ export const HARD_PHASES = [
     fireEvery: 1.0,
     shots: 9,
     shotSpeed: 110,
-    openEvery: 3.0,
-    openFor: 1.7,
+    openEvery: 3.25,
+    openFor: 1.45,
     descendTo: 126,
     minionEvery: 4.0,
     minions: ['a01', 'a06'],
@@ -154,8 +154,8 @@ export const HARD_PHASES = [
     fireEvery: 0.8,
     shots: 11,
     shotSpeed: 124,
-    openEvery: 2.6,
-    openFor: 1.5,
+    openEvery: 2.8,
+    openFor: 1.3,
     descendTo: 132,
     minionEvery: 3.0,
     minions: ['a01', 'a06', 'a02'],
@@ -189,8 +189,8 @@ export const HARD_PHASES = [
     fireEvery: 0.7,
     shots: 12,
     shotSpeed: 132,
-    openEvery: 2.4,
-    openFor: 1.4,
+    openEvery: 2.6,
+    openFor: 1.2,
     descendTo: 134,
     minionEvery: 2.6,
     minions: ['a01', 'a06', 'a02', 'a15'],
@@ -222,6 +222,16 @@ export const HARD_MAX_HP = 12;
 
 /** 이 판이 볼 페이즈 표와 체력 */
 export const phasesFor = (hard) => (hard ? HARD_PHASES : PHASES);
+/**
+ * **openFor 는 한 번 깎인 값이다.** 약점이 열릴 때 몸이 통째로 벌어지고
+ * 달아오르게 바꾸면서(core/boss.js 의 bossPose), 열린 걸 알아채는 데 걸리던
+ * 시간이 사라졌다. 그만큼(≈0.25초) 창을 줄여야 난이도가 그대로다 —
+ * 연출만 넣고 값을 안 건드리면 보스가 눈에 띄게 쉬워진다.
+ *
+ * **깎은 만큼 openEvery 에 도로 얹었다.** 창만 줄이면 한 바퀴가 통째로 짧아져서
+ * 같은 시간에 탄이 더 나간다 — 창을 읽기 쉽게 만들려던 것이 몰래 어려워지는 것이
+ * 된다. 한 바퀴 길이(openEvery + openFor + 회복 0.9)는 그대로 둔다.
+ */
 export const maxHpFor = (hard) => (hard ? HARD_MAX_HP : BOSS_MAX_HP);
 
 /** 남은 체력 비율로 페이즈를 고른다 */

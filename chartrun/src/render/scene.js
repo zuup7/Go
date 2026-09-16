@@ -28,6 +28,7 @@ import {
   princessCaged,
   bossCombined,
   bossBody,
+  bossPose,
   laserBeams,
   tailBand,
   shockWaves,
@@ -1513,9 +1514,12 @@ function drawSparks(ctx, cx, cy, r, since, color) {
  * grade 0 = 1페이즈, 1 = 2페이즈. 같은 몸이 한 단계 더 자란 것으로 보여야
  * 3페이즈의 공룡 변신이 갑자기 튀어나온 게 아니게 된다.
  */
-function drawEvolvedDisc(ctx, r, time, color, hurt, grade = 0, spin = 0) {
+function drawEvolvedDisc(ctx, r, time, color, hurt, grade = 0, spin = 0, pose = null) {
   const breathe = 1 + Math.sin(time * 2.2) * 0.03;
-  const heat = 0.5 + Math.sin(time * 4) * 0.5; // 틈에서 새는 열의 맥박
+  // 약점이 열리면 **껍질이 벌어지고 속이 달아오른다.** 가운데 재생버튼 하나로만
+  // 알리면 지금 쳐도 되는지가 안 보인다 — 몸이 말해줘야 한다.
+  const spread = pose ? pose.spread : 0;
+  const heat = Math.min(1, (0.5 + Math.sin(time * 4) * 0.5) * (1 - spread) + spread);
   ctx.save();
   ctx.scale(breathe, breathe);
 
@@ -1583,8 +1587,9 @@ function drawEvolvedDisc(ctx, r, time, color, hurt, grade = 0, spin = 0) {
   for (const ring of rings) {
     for (let k = 0; k < ring.n; k++) {
       const a = (k / ring.n) * Math.PI * 2 + spin * ring.dir + (ring.dir < 0 ? Math.PI / ring.n : 0);
-      const px = Math.cos(a) * r * ring.d;
-      const py = Math.sin(a) * r * ring.d;
+      const d = ring.d + spread * 0.13;
+      const px = Math.cos(a) * r * d;
+      const py = Math.sin(a) * r * d;
       const size = Math.max(5, Math.round(r * ring.s));
       // 소켓 — 어두운 쇠테. 커버는 이 안에 물린다
       plate(ctx, px - size / 2 - 1, py - size / 2 - 1, size + 2, size + 2, {
@@ -1606,6 +1611,21 @@ function drawEvolvedDisc(ctx, r, time, color, hurt, grade = 0, spin = 0) {
       }
       idx++;
     }
+  }
+
+  // ── 벌어진 틈에서 속이 달아오른다. 앨범이 밀려난 자리를 이 빛이 메운다.
+  if (!hurt && spread > 0.02) {
+    ctx.save();
+    ctx.globalAlpha = spread * 0.85;
+    const inner = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
+    inner.addColorStop(0, '#fff0f3');
+    inner.addColorStop(0.45, '#ff2e63');
+    inner.addColorStop(1, 'rgba(255,46,99,0)');
+    ctx.fillStyle = inner;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   // ── 갈라진 금. **앨범을 그린 뒤**에 긋는다 — 밑에 깔면 소켓이 덮어서
@@ -1661,22 +1681,36 @@ export function drawBoss(ctx, boss, ox, oy, time) {
   const phaseColor = bossPhase(boss).color;
   const r = boss.w / 2;
 
-  // 어떤 몸인지는 core/boss.js 의 bossBody 한 곳에서만 정한다
+  // 어떤 몸인지도, 어떤 자세인지도 core/boss.js 한 곳에서만 정한다
   const body = bossBody(boss);
+  const pose = bossPose(boss);
+
+  /**
+   * 지금 뭘 하는 중인지 몸으로 보여준다 — 겨눌 때 움츠러들고, 맞으면 밀리고,
+   * 약점이 열리면 부푼다. 몸 셋(원반·로봇·공룡)이 **같은 변형을 쓴다**:
+   * 부위마다 따로 적으면 셋이 제각각 움직여서 같은 놈으로 안 보인다.
+   */
+  const poseWrap = (draw) => {
+    ctx.save();
+    ctx.translate(cx + pose.recoil * pose.recoil * 7, cy - pose.recoil * 3);
+    // 겨눌 때 세로로 눌리고, 열릴 때 부푼다
+    ctx.scale(1 / pose.squash, pose.squash * (1 + pose.spread * 0.06));
+    draw();
+    ctx.restore();
+  };
 
   // 3페이즈는 합체한 로봇이다 — 원반이 어깨가 되고 마디 나뉜 팔다리가 붙는다.
   // 격파해도 로봇으로 남긴다. 이긴 순간에 몸이 도로 원반으로 바뀌면 이긴 것 같지가 않다.
   if (body === 'robot' || body === 'dino') {
     const down = boss.state === 'defeated';
-    ctx.save();
-    ctx.translate(cx, cy);
-    // 쓰러질 때는 옆으로 기운다 (다 돌지는 않는다 — 로봇은 구르지 않는다)
-    if (down) ctx.rotate(Math.min(0.7, boss.defeatedAt * 0.6));
-    // 하드 3페이즈부터는 **공룡로봇**이다. 껍질을 찢고 나온 모습이라
-    // 서 있는 로봇과 실루엣이 아예 다르다 (가로로 길고 목과 꼬리가 뻗는다).
-    if (body === 'dino') drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0);
-    else drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
-    ctx.restore();
+    poseWrap(() => {
+      // 쓰러질 때는 옆으로 기운다 (다 돌지는 않는다 — 로봇은 구르지 않는다)
+      if (down) ctx.rotate(Math.min(0.7, boss.defeatedAt * 0.6));
+      // 하드 3페이즈부터는 **공룡로봇**이다. 껍질을 찢고 나온 모습이라
+      // 서 있는 로봇과 실루엣이 아예 다르다 (가로로 길고 목과 꼬리가 뻗는다).
+      if (body === 'dino') drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0);
+      else drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
+    });
     drawBossCore(ctx, cx, cy, boss.vulnerable, time);
     if (down) drawSparks(ctx, cx, cy, r, boss.defeatedAt, phaseColor);
     else drawFists(ctx, boss, ox, oy, phaseColor);
@@ -1686,14 +1720,12 @@ export function drawBoss(ctx, boss, ox, oy, time) {
     return;
   }
 
-  ctx.save();
-  ctx.translate(cx, cy);
-
   // 하드 1·2페이즈는 **진화한 원반**이다. 매끈한 LP 를 그대로 쓰면 2회차인데도
   // 1회차와 똑같은 놈이 나온 것이 되고, 3페이즈의 공룡 변신도 뜬금없어진다.
   if (body === 'evolved') {
-    drawEvolvedDisc(ctx, r, time, phaseColor, boss.hurtFlash > 0, boss.phaseId >= 2 ? 1 : 0, boss.spin);
-    ctx.restore();
+    poseWrap(() =>
+      drawEvolvedDisc(ctx, r, time, phaseColor, boss.hurtFlash > 0, boss.phaseId >= 2 ? 1 : 0, boss.spin, pose),
+    );
     drawBossCore(ctx, cx, cy, boss.vulnerable, time);
     drawQuarterShards(ctx, boss, ox, oy, phaseColor);
     if (boss.state !== 'defeated') drawBossHealth(ctx, boss, ox, oy, phaseColor);
@@ -1701,6 +1733,9 @@ export function drawBoss(ctx, boss, ox, oy, time) {
     return;
   }
 
+  ctx.save();
+  ctx.translate(cx + pose.recoil * pose.recoil * 7, cy - pose.recoil * 3);
+  ctx.scale(1 / pose.squash, pose.squash * (1 + pose.spread * 0.06));
   ctx.rotate(boss.spin);
 
   // 거대 LP
@@ -3999,9 +4034,23 @@ export function drawScene(ctx, game, time) {
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   }
 
+  // 싸움이 시작될 때 PHASE 1 카드. 2·3·4페이즈는 전환 컷신이 이름을 박아주는데
+  // 1페이즈만 아무것도 없이 불쑥 시작했다. **컷신은 안 만든다** — 시작은 전환이 아니라
+  // 시작이고, 보스전에 들어갈 때마다 4초씩 붙잡히면 성가시다. 카드만 얹고 안 멈춘다.
+  if (game.scene === 'boss' && !game.bossCut && game.sceneTime < PHASE1_CARD) {
+    ctx.save();
+    // 끝에서 스르륵 걷힌다 — 툭 사라지면 깜빡인 것처럼 보인다
+    ctx.globalAlpha = Math.min(1, (PHASE1_CARD - game.sceneTime) / 0.35);
+    drawCutTitle(ctx, 'PHASE 1', game.sceneTime, 4, 92);
+    ctx.restore();
+  }
+
   // 컷신은 맨 위에 — 싸움 화면이 그 아래로 비친다
   if (game.bossCut) drawBossCut(ctx, game, time);
 }
+
+/** PHASE 1 카드가 떠 있는 시간 */
+const PHASE1_CARD = 1.4;
 
 /** 구간 효과 연출 — 정전은 내 주변만 남기고, 역재생은 화면을 물들인다 */
 function drawEffects(ctx, game, ox, oy, time) {

@@ -192,6 +192,14 @@ canvas#game {
   text-shadow: 0 3px 0 #8a2350;
 }
 
+/* 2회차까지 끝낸 표시. 제목 옆에 작게 — 크게 두면 제목을 잡아먹는다 */
+.panel h1 .crown {
+  font-size: 0.5em;
+  vertical-align: super;
+  color: var(--good);
+  text-shadow: none;
+}
+
 .panel h2 {
   margin: 4px 0;
   font-size: 1.5em;
