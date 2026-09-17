@@ -2,7 +2,20 @@
 export const SAVE_KEY = 'chartrun/save-v1';
 export const SAVE_VERSION = 1;
 
-const storage = () => (typeof localStorage === 'undefined' ? null : localStorage);
+/**
+ * 저장소. 없으면 null 이고, 그러면 게임은 기록 없이 그냥 돌아간다.
+ *
+ * 쿠키·사이트 데이터가 막힌 기기(file:// WebView 에서 DomStorage 를 꺼둔 경우)에서는
+ * localStorage 를 **읽기만 해도** SecurityError 를 던진다. typeof 로는 못 막는다 —
+ * 프로퍼티를 실제로 읽으므로 그 자리에서 터지고, 그러면 진입점이 통째로 죽는다.
+ */
+const storage = () => {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage;
+  } catch {
+    return null;
+  }
+};
 
 export const emptySave = () => ({
   bestRank: 100,
@@ -19,6 +32,12 @@ export const emptySave = () => ({
    *  기존 플레이어가 오프닝을 영영 못 보게 된다 — 그래서 칸을 새로 뒀다)
    */
   seenOpening: false,
+  /**
+   * 조작 안내를 한 번 봤는지. 폰에서는 index.html 의 조작 설명이 숨겨져 있어서
+   * (style.css 의 `body.handheld .help`) 처음 하는 사람은 💨·🎤 가 뭔지 모른다.
+   * 첫 판에만 타이틀에 띄우고 그 뒤로는 안 띄운다. (seenOpening 과 같은 방식이다)
+   */
+  seenHelp: false,
   /** 개발자 모드 (비번 1234). 켜면 스테이지를 골라 들어갈 수 있다 */
   dev: false,
   /**

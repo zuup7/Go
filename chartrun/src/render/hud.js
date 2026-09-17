@@ -87,6 +87,19 @@ export function createHud(root) {
       </div>`;
   }
 
+  /**
+   * 처음 하는 사람에게 버튼이 뭔지 알려준다. 폰에서는 index.html 의 조작 설명이
+   * 숨겨져 있어서(`body.handheld .help`) 보스전에 튀어나오는 💨·🎤 가 뭔지 알 길이 없다.
+   * 첫 판을 시작하면(save.seenHelp) 다시 안 뜬다.
+   */
+  const firstHelp = () => `
+    <ul class="first-help">
+      <li><b>◀ ▶</b> 이동</li>
+      <li><b>⬆</b> 점프 (길게 누르면 높이)</li>
+      <li><b>💨</b> 대시 · <b>🎤</b> 마이크 던지기 (보스전)</li>
+      <li><b>⏸</b> 일시정지</li>
+    </ul>`;
+
   function centerFor(game, ui) {
     if (ui?.keypad) return keypadPanel(ui.keypad);
     switch (game.scene) {
@@ -110,6 +123,8 @@ export function createHud(root) {
                 ? ''
                 : ` · ★ ${timeText(game.save.bestHardTimeMs)}`
             }</p>
+            ${game.save.seenHelp ? '' : firstHelp()}
+            ${game.saveBroken ? '<p class="warn">이 기기에서는 기록이 안 남습니다</p>' : ''}
             <button type="button" class="dev-open" data-key="open" aria-label="개발자 모드">⚙</button>
           </div>`;
       }

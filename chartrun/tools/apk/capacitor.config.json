@@ -1,0 +1,12 @@
+{
+  "appId": "kr.chartrun.game",
+  "appName": "차트런",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0a0616",
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -15,10 +15,16 @@
 npm start              # http://localhost:5173/chartrun/ 에서 플레이
 npm test               # 게임 규칙 테스트
 npm run build:chart    # 서버 없이 열리는 chartrun/dist/play.html 한 파일 생성
+npm run build:apk      # 남에게 줄 판 (개발자 버튼 없음) — tools/apk/ 참고
 ```
 
 > `index.html` 을 파일로 직접 열면 ES 모듈 때문에 동작하지 않습니다.
 > 서버 없이 즐기려면 `npm run build:chart` 로 만든 한 파일을 여세요.
+
+빌드한 한 파일은 **네트워크를 전혀 안 탑니다** — 폰트도 앨범 사진도 안에 박혀 있어
+비행기 모드에서도 똑같이 돌아갑니다. 폰트 서브셋은 `tools/make-fonts.mjs` 가 굽고
+결과(`assets/fonts.css`)는 저장소에 들어 있습니다. APK 로 싸는 절차는
+[`tools/apk/README.md`](tools/apk/README.md) 에 있습니다.
 
 ## 조작
 

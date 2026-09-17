@@ -1,5 +1,5 @@
 // 차트런 진입점. 캔버스를 켜고, 입력·소리·게임 상태를 이어 붙인다.
-import { createGame, updateGame, runSummary, setDevMode, PAUSE_ROWS, VIEW } from '../core/game.js';
+import { createGame, updateGame, runSummary, setDevMode, pausable, PAUSE_ROWS, VIEW } from '../core/game.js';
 import { DEV_CODE, pushDigit, codeMatches } from '../core/devmode.js';
 import { createLoop } from '../core/loop.js';
 import { createInput, bindTouchButtons } from '../core/input.js';
@@ -44,8 +44,84 @@ function persist(extra = {}) {
   persisted.volume = audio.volume;
   persisted.dev = game.dev;
   game.save = persisted;
-  writeSave(persisted);
+  // 저장이 막히면 writeSave 가 false 를 준다. 안 받아두면 친구가 한 바퀴를 다 돌고
+  // 나서야 기록이 하나도 안 남은 걸 알게 된다 — 타이틀에 한 줄 알려준다.
+  if (!writeSave(persisted)) game.saveBroken = true;
 }
+
+// 저장이 되는 기기인지 시작할 때 한 번 확인한다. 읽기만 해서는 알 수 없고(빈 저장과
+// 구별이 안 된다) 첫 체크포인트까지 기다리면, 한 바퀴를 다 돌고 나서야 기록이 하나도
+// 안 남은 걸 알게 된다. 쓰는 값은 방금 읽은 그대로라 아무것도 안 바뀐다.
+if (!writeSave(persisted)) game.saveBroken = true;
+
+// ── 멈추기 · 뒤로가기 · 화면 잠금 ───────────────────────────
+// (handleEvent 가 armBackTrap 을 부르므로 그보다 위에 둔다)
+
+// 멈춤을 직접 game.paused 로 켜지 않는다 — pausable() 판단과 'pause' 이벤트가 있는
+// updateGame 경로를 그대로 태워야 규칙이 한 군데에만 남는다. (pressKey 가 쓰는 수법과 같다)
+const pressPause = () => {
+  updateGame(
+    game,
+    { ...input, pausePressed: true, leftPressed: false, rightPressed: false, confirmPressed: false },
+    0,
+  );
+};
+
+/**
+ * 안드로이드 뒤로가기.
+ *
+ * WebView 는 기본으로 뒤로가기 = 앱 종료다. 보스전 중에 잘못 누르면 그대로 끝난다.
+ * 히스토리에 한 칸 심어두고, 그 칸이 빠질 때 **일시정지**로 돌린다.
+ * 칸을 다시 안 심으므로 멈춘 채로 한 번 더 누르면 정상적으로 나간다 —
+ * 칸은 판이 다시 굴러갈 때(이어하기·새 판) 다시 심는다.
+ */
+let backTrap = false;
+function armBackTrap() {
+  if (backTrap) return;
+  // 샌드박스 iframe(아티팩트)에서는 pushState 가 SecurityError 를 던진다.
+  // 뒤로가기 버튼도 없는 곳이니 조용히 기능만 끈다.
+  try {
+    history.pushState({ chartrun: 'back' }, '');
+    backTrap = true;
+  } catch {
+    backTrap = false;
+  }
+}
+armBackTrap();
+window.addEventListener('popstate', () => {
+  if (!backTrap) return;
+  backTrap = false;
+  if (pausable(game) && !game.paused) pressPause();
+});
+
+/**
+ * 화면이 잠들지 않게.
+ *
+ * 손을 안 대고 보고만 있는 구간이 길다 (엔딩 컷신이 18초다). 잠금은 화면이 꺼지거나
+ * 탭이 가려지면 저절로 풀리므로, 돌아올 때 다시 잡는다.
+ * 없는 기기·거절하는 기기에서는 조용히 넘어간다.
+ */
+let wakeLock = null;
+async function keepAwake() {
+  if (wakeLock || document.hidden) return;
+  try {
+    wakeLock = (await navigator.wakeLock?.request('screen')) ?? null;
+    wakeLock?.addEventListener?.('release', () => {
+      wakeLock = null;
+    });
+  } catch {
+    wakeLock = null;
+  }
+}
+keepAwake();
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (pausable(game) && !game.paused) pressPause();
+  } else {
+    keepAwake();
+  }
+});
 
 function handleEvent(name, data) {
   switch (name) {
@@ -106,8 +182,19 @@ function handleEvent(name, data) {
     case 'boss':
       audio.bgm('boss');
       break;
+    case 'pause':
+      // 멈춤이 풀렸다 — 뒤로가기 칸을 다시 심는다 (멈출 때 하나 빠졌다)
+      if (!data.paused) armBackTrap();
+      break;
     case 'stage':
       audio.bgm('stage');
+      // 새 판이 시작됐다. 타이틀에서 나가느라 칸이 빠져 있을 수 있다
+      armBackTrap();
+      // 판이 시작됐으면 조작 안내는 할 일을 다 했다 — 타이틀에 다시 안 띄운다
+      if (!persisted.seenHelp) {
+        persisted = { ...persisted, seenHelp: true };
+        persist();
+      }
       break;
     case 'cutscene':
       // 컷신은 정적으로 시작한다. 음악은 아래 cutbeat 가 알맞은 때에 다시 켠다.
@@ -330,8 +417,3 @@ const pads = createTouchLayout({
 pads.apply();
 padsRef = pads;
 
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    game.paused = game.scene === 'play' || game.scene === 'boss' ? true : game.paused;
-  }
-});

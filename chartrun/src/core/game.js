@@ -110,6 +110,12 @@ export function createGame(options = {}) {
     elapsedMs: 0,
     boss: null,
     paused: false,
+    /**
+     * 저장이 막혔는가 (WebView 에서 DomStorage 가 꺼져 있는 경우).
+     * writeSave 가 false 를 돌려주면 ui/app.js 가 켠다. 저장에 남기는 값이 아니라
+     * **지금 이 기기의 상태**라, 타이틀에 한 줄 알려주는 데만 쓴다.
+     */
+    saveBroken: false,
     muted: save.muted,
     flash: 0,
     cutsceneTime: 0,
@@ -1379,7 +1385,9 @@ function updateBossScene(game, input, dt) {
 export const PAUSE_ROWS = ['resume', 'retry', 'volume', 'title'];
 
 /** 멈춤을 풀 수 있는 장면. 여기 아니면 Esc 를 눌러도 안 멈춘다. */
-const pausable = (game) => game.scene === 'play' || game.scene === 'boss';
+/** 지금 멈출 수 있는 장면인가. 컷신·타이틀에서는 멈춤이 없다.
+ *  (ui/app.js 의 뒤로가기·화면 가림 처리도 이걸 쓴다 — 두 군데 적으면 어긋난다) */
+export const pausable = (game) => game.scene === 'play' || game.scene === 'boss';
 
 function choosePause(game) {
   const row = PAUSE_ROWS[game.pauseIndex] ?? 'resume';

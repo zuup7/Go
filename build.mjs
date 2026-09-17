@@ -12,11 +12,13 @@ import { join, posix } from 'node:path';
 const ROOT = process.cwd();
 const args = process.argv.slice(2);
 const ARTIFACT = args.includes('--artifact');
+// APK 로 싸서 남에게 줄 판. 개발자 모드 버튼을 빼는 것 말고는 똑같다.
+const KIOSK = args.includes('--kiosk');
 const BASE = (args.find((a) => !a.startsWith('--')) ?? '.').replace(/\/+$/, '');
 const at = (path) => (BASE === '.' ? path : posix.join(BASE, path));
 
 const ENTRY = at('src/ui/app.js');
-const OUT = at(ARTIFACT ? 'dist/artifact.html' : 'dist/play.html');
+const OUT = at(ARTIFACT ? 'dist/artifact.html' : KIOSK ? 'dist/app.html' : 'dist/play.html');
 
 /** src 아래 모든 .js 수집 */
 async function collect(dir, found = []) {
@@ -154,16 +156,29 @@ async function inlineAlbumArt(code) {
   return out;
 }
 
-const css = await readFile(join(ROOT, at('assets/style.css')), 'utf8');
 const html = await readFile(join(ROOT, at('index.html')), 'utf8');
 
 const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? '게임';
 const description = html.match(/<meta\s+name="description"[\s\S]*?\/>/)?.[0] ?? '';
-// index.html 의 <link> 중 로컬 스타일시트만 빼고 그대로 옮긴다 (아이콘, 웹폰트)
-const links = [...html.matchAll(/<link\b[\s\S]*?\/>/g)]
-  .map((m) => m[0].trim())
-  .filter((tag) => !tag.includes('assets/style.css'))
-  .join('\n');
+
+const linkTags = [...html.matchAll(/<link\b[\s\S]*?\/>/g)].map((m) => m[0].trim());
+const hrefOf = (tag) => tag.match(/href="([^"]*)"/)?.[1] ?? '';
+const isLocalSheet = (tag) => tag.includes('rel="stylesheet"') && !/^https?:/.test(hrefOf(tag));
+// 로컬 스타일시트는 <link> 대신 <style> 로 태워 넣는다. 한 파일로 열었을 때
+// 옆에 파일이 없으니, 남겨두면 죽은 <link> 가 된다. 순서는 index.html 그대로다
+// (차트런은 fonts.css → style.css 인데, 뒤집히면 --font 가 먼저 읽힌다).
+const css = (
+  await Promise.all(
+    linkTags.filter(isLocalSheet).map((tag) => readFile(join(ROOT, at(hrefOf(tag))), 'utf8')),
+  )
+).join('\n');
+// 나머지(아이콘, 바깥 웹폰트)는 그대로 옮긴다
+const links = linkTags.filter((tag) => !isLocalSheet(tag)).join('\n');
+
+// 남에게 줄 판에서는 개발자 모드 버튼(⚙)을 뺀다. 눌러서 비번을 맞출 일은 없지만
+// 비번 화면이 뜨면 당황한다. CSS 한 줄로만 막는다 — JS 를 건드리면 개발·테스트 경로가
+// 여기서부터 갈라진다.
+const extraCss = KIOSK ? '\n/* --kiosk */\n.dev-open { display: none; }\n' : '';
 // <body> 안쪽을 그대로 쓰되, 모듈 진입 <script src> 만 걷어낸다 (아래에서 번들로 대체)
 const body = (html.match(/<body[^>]*>([\s\S]*)<\/body>/)?.[1] ?? '')
   .replace(/<script\b[^>]*\bsrc=[^>]*>\s*<\/script>/g, '')
@@ -175,7 +190,7 @@ const out = ARTIFACT
   ? `<title>${title}</title>
 ${links}
 <style>
-${css}
+${css}${extraCss}
 </style>
 ${body}
 <script type="module">
@@ -191,7 +206,7 @@ ${script}
 ${description}
 ${links}
 <style>
-${css}
+${css}${extraCss}
 </style>
 </head>
 <body>
@@ -205,4 +220,4 @@ ${script}
 
 await mkdir(join(ROOT, at('dist')), { recursive: true });
 await writeFile(join(ROOT, OUT), out, 'utf8');
-console.log(`${OUT} (${(out.length / 1024).toFixed(1)} KB, 모듈 ${order.length}개)`);
+console.log(`${OUT} (${(Buffer.byteLength(out) / 1024).toFixed(1)} KB, 모듈 ${order.length}개)`);
