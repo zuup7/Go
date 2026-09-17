@@ -6,6 +6,7 @@
 // 자리는 픽셀이 아니라 **비율**로 저장한다 (버튼 한가운데 기준, 0~1).
 // 그래야 화면 크기가 달라지거나 폰을 돌려도 대충 같은 자리에 남는다.
 // 가로로 든 것과 세로로 눕힌 것은 좌표계가 아예 달라서 따로 저장한다.
+import { ACTIONS } from '../core/input.js';
 
 export const LAYOUT_KEY = 'chartrun/touch-v1';
 
@@ -158,9 +159,6 @@ export function writeLayout(layout) {
  * onEdit    편집 모드가 켜지고 꺼질 때 (게임을 멈추라고 알려준다)
  * isRotated 지금 화면을 눕혀 놨는지
  */
-/** 편집 바에 보여줄 버튼 이름 */
-const LABELS = { left: '◀', right: '▶', jump: '점프', throw: '마이크', dash: '대시', pause: '일시정지' };
-
 export function createTouchLayout({ root, onEdit, isRotated }) {
   const buttons = [...root.querySelectorAll('[data-action]')];
   const handle = root.querySelector('#pad-edit');
@@ -173,6 +171,13 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
   const mirrorBtn = root.querySelector('#pad-mirror');
   const biggerBtn = root.querySelector('#pad-bigger');
   const scaleText = root.querySelector('#pad-scale-text');
+
+  // 버튼에 적히는 글자의 원본은 ACTIONS 다. index.html 에도 같은 글자가 적혀 있지만
+  // 그건 자바스크립트 없이 열었을 때를 위한 것이고, 둘이 어긋나도 화면은 이쪽을 따른다.
+  for (const el of buttons) {
+    const face = ACTIONS[el.dataset.action]?.face;
+    if (face) el.textContent = face;
+  }
 
   // 여백 값의 원본은 JS 다. CSS 의 기본 자리(body.rotated .touch-left 등)도 같은
   // 값을 써야 해서 여기서 얹는다 — 두 군데 적어두면 언젠가 어긋난다.
@@ -237,7 +242,7 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
    * 숨어 있는 버튼도 **잠깐 꺼내서** 자리를 잰다.
    *
    * 숨은 버튼은 크기가 0 이라 그대로 재면 화면 구석으로 눌려버리고, 그 자리가
-   * 저장까지 되면 다시는 제자리로 안 돌아온다. 던지기(🎤)와 대시(💨)는 보스전에서만
+   * 저장까지 되면 다시는 제자리로 안 돌아온다. 「마이크」와 「대시」 버튼은 보스전에서만
    * 뜨므로, 판에서 열면 정확히 이 상황이 된다.
    */
   function measureHidden(list) {
@@ -279,7 +284,8 @@ export function createTouchLayout({ root, onEdit, isRotated }) {
   function refreshBar() {
     if (scaleText) {
       const pct = Math.round((selected ? scaleOf() * sizeOf(selected) : scaleOf()) * 100);
-      scaleText.textContent = `${selected ? LABELS[selected] ?? selected : '전체'} ${pct}%`;
+      // 편집 바에는 버튼이 안 보이니 이름으로 부른다 (◀ 가 아니라 「왼쪽」)
+      scaleText.textContent = `${selected ? ACTIONS[selected]?.name ?? selected : '전체'} ${pct}%`;
     }
     if (alphaBtn) alphaBtn.textContent = `투명도 ${Math.round(alphaOf() * 100)}%`;
     for (const el of buttons) el.classList.toggle('is-picked', editing && el.dataset.action === selected);

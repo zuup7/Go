@@ -4,6 +4,7 @@ import { timeText } from '../core/util.js';
 import { beatRecord } from '../core/save.js';
 import { STAGES } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
+import { ACTIONS } from '../core/input.js';
 import { PAUSE_ROWS, stageTable, SELECT_ITEMS } from '../core/game.js';
 
 const esc = (s) =>
@@ -89,15 +90,19 @@ export function createHud(root) {
 
   /**
    * 처음 하는 사람에게 버튼이 뭔지 알려준다. 폰에서는 index.html 의 조작 설명이
-   * 숨겨져 있어서(`body.handheld .help`) 보스전에 튀어나오는 💨·🎤 가 뭔지 알 길이 없다.
+   * 숨겨져 있어서(`body.handheld .help`) 보스전에 튀어나오는 두 버튼이 뭔지 알 길이 없다.
    * 첫 판을 시작하면(save.seenHelp) 다시 안 뜬다.
+   *
+   * **버튼에 적힌 글자 그대로**(ACTIONS 의 face) 적는다 — 안내를 보고 화면에서
+   * 그 글자를 찾아야 하니, 여기 따로 적으면 언젠가 둘이 어긋난다.
    */
+  const face = (action) => esc(ACTIONS[action].face);
   const firstHelp = () => `
     <ul class="first-help">
-      <li><b>◀ ▶</b> 이동</li>
-      <li><b>⬆</b> 점프 (길게 누르면 높이)</li>
-      <li><b>💨</b> 대시 · <b>🎤</b> 마이크 던지기 (보스전)</li>
-      <li><b>⏸</b> 일시정지</li>
+      <li><b>${face('left')} ${face('right')}</b> 이동</li>
+      <li><b>${face('jump')}</b> 길게 누르면 높이 뛴다</li>
+      <li><b>${face('dash')}</b> · <b>${face('throw')}</b> 던지기 — 보스전에서만 나온다</li>
+      <li><b>${face('pause')}</b> 화면 오른쪽 위</li>
     </ul>`;
 
   function centerFor(game, ui) {
@@ -139,7 +144,6 @@ export function createHud(root) {
               ${slots
                 .map(
                   (s, i) => `<li class="${i === game.selectIndex ? 'on' : ''}">
-                    <span class="slot-icon">${esc(s.icon)}</span>
                     <span class="slot-label">${esc(s.label)}</span>
                   </li>`,
                 )
@@ -151,9 +155,9 @@ export function createHud(root) {
       case 'stageIntro': {
         // **하드모드에서는 하드 표를 봐야 한다** — STAGES 를 직접 보면 이름이 어긋난다
         const stage = stageTable(game)[game.stageIndex];
+        // 판 번호만 적는다 — 어느 판인지는 뒤에 깔린 화면(초원·숲·건물 안)이 이미 말한다
         return `
           <div class="panel">
-            <p class="stage-icon">${esc(stage.icon)}</p>
             <h2>STAGE ${stage.number}</h2>
           </div>`;
       }

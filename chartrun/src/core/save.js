@@ -34,7 +34,8 @@ export const emptySave = () => ({
   seenOpening: false,
   /**
    * 조작 안내를 한 번 봤는지. 폰에서는 index.html 의 조작 설명이 숨겨져 있어서
-   * (style.css 의 `body.handheld .help`) 처음 하는 사람은 💨·🎤 가 뭔지 모른다.
+   * (style.css 의 `body.handheld .help`) 처음 하는 사람은 보스전에 튀어나오는
+   * 「대시」·「마이크」 버튼이 뭔지 모른다.
    * 첫 판에만 타이틀에 띄우고 그 뒤로는 안 띄운다. (seenOpening 과 같은 방식이다)
    */
   seenHelp: false,

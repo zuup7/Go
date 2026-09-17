@@ -457,7 +457,6 @@ export const STAGES = [
   {
     id: 'stage1',
     number: 1,
-    icon: '🌿',
     // theme 은 render/scene.js 가 배경을 어떻게 그릴지 고르는 이름이다
     theme: 'meadow',
     sky: ['#2f6fa4', '#cfe6a6'],
@@ -468,7 +467,6 @@ export const STAGES = [
   {
     id: 'stage2',
     number: 2,
-    icon: '🌳',
     theme: 'forest',
     // 아래로 갈수록 밝다 — 그래야 나무 줄기가 실루엣으로 뜬다
     sky: ['#16321f', '#6ba05a'],
@@ -480,7 +478,6 @@ export const STAGES = [
   {
     id: 'stage3',
     number: 3,
-    icon: '🏢',
     theme: 'building',
     sky: ['#1b1e28', '#4a5162'],
     far: '#333947',
@@ -490,7 +487,6 @@ export const STAGES = [
   {
     id: 'stage4',
     number: 4,
-    icon: '🪜',
     theme: 'chart',
     sky: ['#25060f', '#6e1533'],
     far: '#450c20',
@@ -510,7 +506,7 @@ export const STAGES = [
 //   ':' 깜빡이는 발판  ';' 가짜 체크포인트  '_' 미끄러운 바닥
 //   '!' 튕기는 발판    'T' 천장 가시        '>' 쫓기는 구간
 
-// ❄️ 얼음 — 함정을 셋씩 겹치고, **리듬을 일부러 깨뜨린다**
+// 하드 1판 · 얼음 — 함정을 셋씩 겹치고, **리듬을 일부러 깨뜨린다**
 const h1 = {
   /** 얼음 위 첫 구멍 */
   start: chunk('h1.start', [
@@ -607,7 +603,7 @@ const h1 = {
   ]),
 };
 
-// 🕳️ 낮은 천장 — 떨어지는 땅과 폭탄. 긴 평지 뒤에 몰아친다
+// 하드 2판 · 낮은 천장 — 떨어지는 땅과 폭탄. 긴 평지 뒤에 몰아친다
 const h2 = {
   start: chunk('h2.start', [
     ...EMPTY8,
@@ -719,7 +715,7 @@ const h2 = {
 //   ';' 가짜 체크포인트 — 추격 판에서 체크포인트를 놓치면 너무 가혹하다
 // 대신 '|' 솟는 벽이 주인공이다. 달리는 앞을 막아 세운다.
 
-// 🏃 추격 — 오르내리는 지형 + 연쇄. 체크포인트는 판 한가운데 **하나뿐**
+// 하드 3판 · 추격 — 오르내리는 지형 + 연쇄. 체크포인트는 판 한가운데 **하나뿐**
 const h3 = {
   /** 추격 판인데 시작부터 구멍이다 */
   start: chunk('h3.start', [
@@ -809,7 +805,7 @@ const h3 = {
   ]),
 };
 
-// 🔥 마지막 질주 — 벽·폭탄·정전·반전을 전부 짝지어 던진다
+// 하드 4판 · 마지막 질주 — 벽·폭탄·정전·반전을 전부 짝지어 던진다
 const h4 = {
   start: chunk('h4.start', [
     ...EMPTY8,
@@ -909,7 +905,6 @@ export const HARD_STAGES = [
   {
     id: 'hard1',
     number: 1,
-    icon: '❄️',
     theme: 'ice',
     sky: ['#0d2038', '#3a6a8f'],
     far: '#20415e',
@@ -919,7 +914,6 @@ export const HARD_STAGES = [
   {
     id: 'hard2',
     number: 2,
-    icon: '🕳️',
     theme: 'building',
     sky: ['#140f1c', '#3a2f4a'],
     far: '#241c33',
@@ -929,7 +923,6 @@ export const HARD_STAGES = [
   {
     id: 'hard3',
     number: 3,
-    icon: '🏃',
     theme: 'forest',
     sky: ['#0b1a12', '#2d4a35'],
     far: '#173626',
@@ -942,7 +935,6 @@ export const HARD_STAGES = [
   {
     id: 'hard4',
     number: 4,
-    icon: '🔥',
     theme: 'chart',
     sky: ['#2a0505', '#7a1420'],
     far: '#4a0b12',
@@ -955,7 +947,6 @@ export const HARD_STAGES = [
 export const BOSS_STAGE = {
   id: 'boss',
   number: 5,
-  icon: '👑',
   theme: 'chart',
   sky: ['#12000f', '#4a0040'],
   far: '#2b0724',

@@ -157,7 +157,7 @@ export function updatePlayer(player, input, world, dt) {
   player.stretch = Math.max(0, player.stretch - dt * PLAYER.squashDecay);
 
   // 어느 쪽을 누르고 있나. **대시보다 먼저** 봐야 한다 —
-  // 폰에서는 ◀ 와 💨 가 한 프레임에 같이 들어오는 게 보통이라, 이걸 나중에 보면
+  // 폰에서는 ◀ 와 대시 버튼이 한 프레임에 같이 들어오는 게 보통이라, 이걸 나중에 보면
   // 피하려던 반대쪽으로 대시해서 레이저 안으로 들어간다.
   const want = (input.right ? 1 : 0) - (input.left ? 1 : 0);
 

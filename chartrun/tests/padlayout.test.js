@@ -16,6 +16,7 @@ import {
   nextAlpha,
 } from '../src/ui/touchLayout.js';
 import { VIEW, SELECT_ITEMS } from '../src/core/game.js';
+import { ACTIONS } from '../src/core/input.js';
 
 const box = { w: 800, h: 400 };
 const size = { w: 60, h: 50 };
@@ -227,4 +228,24 @@ test('고르는 목록이 두 칸 안에 들어간다', () => {
     SELECT_ITEMS.length <= rows * 2,
     `고를 게 ${SELECT_ITEMS.length}개면 칸이 셋으로 늘어 패널이 화면보다 넓어진다`,
   );
+});
+
+// ── 버튼에 적히는 이름 ──────────────────────────────────────
+
+test('버튼 이름은 HTML 과 JS 에 따로 적혀 있지 않다', () => {
+  // index.html 의 버튼 글자는 자바스크립트 없이 열었을 때를 위한 것이고,
+  // 실제 화면은 createTouchLayout 이 ACTIONS 의 face 로 덮어쓴다. 둘이 어긋나면
+  // 화면과 소스가 다른 말을 하게 되니 여기서 같은지 본다.
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const buttons = [...html.matchAll(/<button[^>]*data-action="([a-z]+)"[^>]*>([^<]*)<\/button>/g)];
+  assert.ok(buttons.length >= 6, `버튼을 ${buttons.length}개밖에 못 찾았다 — 정규식이 낡았다`);
+  for (const [, action, text] of buttons) {
+    assert.equal(text.trim(), ACTIONS[action]?.face, `"${action}" 버튼의 글자가 다르다`);
+  }
+  // 반대쪽도 본다 — 표에만 있고 버튼이 없으면 편집 바에서만 보이는 유령이 된다
+  const actions = new Set(buttons.map(([, a]) => a));
+  for (const [action, { face, name }] of Object.entries(ACTIONS)) {
+    assert.ok(actions.has(action), `ACTIONS 의 "${action}" 에 맞는 버튼이 없다`);
+    assert.ok(face && name, `"${action}" 에 face 나 name 이 없다`);
+  }
 });

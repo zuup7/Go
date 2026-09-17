@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>차트런</title>
   <meta name="description" content="100위에서 1위까지 달리는 픽셀 플랫포머." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%A4%3C/text%3E%3C/svg%3E" />
+  <!-- 탭 아이콘. 올라가는 차트 막대 세 개 — 1위 칸만 노랗다.
+       이모지로 찍으면 브라우저마다 다른 그림이 나오고 게임 화면과도 겉돈다 -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230a0616'/%3E%3Crect x='2' y='10' width='3' height='5' fill='%235a2b7d'/%3E%3Crect x='6' y='7' width='3' height='8' fill='%237a34ad'/%3E%3Crect x='10' y='3' width='3' height='12' fill='%23ffd166'/%3E%3C/svg%3E" />
   <!-- 폰트는 네트워크에서 받지 않는다. 오프라인(APK)에서 글자가 시스템 고딕으로
        떨어지면 픽셀 게임인데 글자만 평범해진다. 쓰는 글자만 담은 서브셋을
        tools/make-fonts.mjs 가 base64 로 구워둔다 -->
@@ -27,7 +29,7 @@
           </div>
           <div class="hud-right">
             <span id="boss-phase" hidden></span>
-            <span id="ammo" hidden>🎤 ×1</span>
+            <span id="ammo" hidden>마이크 ×1</span>
             <span id="plays">♪ 0</span>
             <span id="chartouts">차트아웃 0</span>
             <span id="time">0:00</span>
@@ -46,8 +48,8 @@
         <button type="button" data-action="right" aria-label="오른쪽">▶</button>
       </div>
       <div class="touch-right">
-        <button type="button" data-action="throw" id="throw-btn" hidden aria-label="마이크 던지기">🎤</button>
-        <button type="button" data-action="dash" id="dash-btn" hidden aria-label="대시">💨</button>
+        <button type="button" data-action="throw" id="throw-btn" hidden aria-label="마이크 던지기">마이크</button>
+        <button type="button" data-action="dash" id="dash-btn" hidden aria-label="대시">대시</button>
         <button type="button" data-action="jump" aria-label="점프">점프</button>
       </div>
 
@@ -74,7 +76,7 @@
       </div>
     </div>
 
-    <p class="rotate-note" id="rotate-note" hidden>📱 가로로 돌려서 잡으세요</p>
+    <p class="rotate-note" id="rotate-note" hidden>가로로 돌려서 잡으세요</p>
 
     <p class="help">
       <kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>Space</kbd> 점프(길게 누르면 높이) ·

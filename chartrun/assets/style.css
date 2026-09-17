@@ -206,12 +206,6 @@ canvas#game {
   letter-spacing: 0.06em;
 }
 
-.stage-icon {
-  margin: 0;
-  font-size: 2.4em;
-  line-height: 1;
-}
-
 .big-rank {
   margin: 6px 0 0;
   font-size: 2em;
@@ -353,10 +347,6 @@ canvas#game {
   gap: 10px;
   text-align: left;
   white-space: nowrap;
-}
-
-.slot-icon {
-  font-size: 1.2em;
 }
 
 .panel.select-panel {
@@ -521,9 +511,24 @@ canvas#game {
 .touch button[data-action='jump'] {
   width: calc((var(--pad-w) + 14px) * var(--pad-scale, 1));
   height: calc((var(--pad-h) + 12px) * var(--pad-scale, 1));
-  font-size: 15px;
   background: rgba(90, 24, 60, 0.6);
   border-color: rgba(255, 120, 170, 0.75);
+}
+
+/* 이름이 적히는 버튼(점프·대시·마이크)은 기본 폭(50px)에 「마이크」가 안 들어간다.
+   ◀▶ 처럼 한 글자인 버튼은 그대로 둔다. */
+.touch button[data-action='jump'],
+.touch button[data-action='dash'],
+.touch button[data-action='throw'] {
+  width: calc((var(--pad-w) + 14px) * var(--pad-scale, 1));
+  font-size: 15px;
+}
+
+/* 「마이크」는 이 버튼들 중 제일 긴 이름이라, 고정 크기로 두면 버튼을 제일 작게(70%)
+   줄였을 때 칸(41px)에 글자(40px)가 꽉 찬다. 칸과 같은 비율로 같이 줄인다. */
+.touch button[data-action='dash'],
+.touch button[data-action='throw'] {
+  font-size: calc(15px * var(--pad-scale, 1));
 }
 
 .touch button.is-down {

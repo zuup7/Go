@@ -391,7 +391,7 @@ test('선택 칸의 이름과 실제로 열리는 판이 어긋나지 않는다'
   // 칸 목록을 core 와 화면이 따로 들고 있으면 한쪽만 고쳤을 때
   // **화면은 맞는데 엉뚱한 판이 시작된다.** 목록이 하나뿐인지 본다.
   for (const item of SELECT_ITEMS) {
-    assert.ok(item.icon && item.label, '이름 없는 칸이 있다');
+    assert.ok(item.label, '이름 없는 칸이 있다');
     assert.ok(item.run || item.action, `"${item.label}" 칸이 아무 일도 안 한다`);
   }
   const hardStages = SELECT_ITEMS.filter((s) => s.run?.hard && s.run.index < HARD_STAGES.length);

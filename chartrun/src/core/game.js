@@ -1144,22 +1144,18 @@ const TITLE_ROWS = 2;
  * run 이 있으면 startRun 에 그대로 넘긴다. index 가 판 수와 같으면 보스전이다.
  */
 export const SELECT_ITEMS = [
-  ...STAGES.map((s, i) => ({ icon: s.icon, label: `STAGE ${s.number}`, run: { index: i } })),
-  { icon: '👑', label: '보스전', run: { index: STAGES.length } },
-  ...HARD_STAGES.map((s, i) => ({
-    icon: s.icon,
-    label: `하드 ${s.number}판`,
-    run: { index: i, hard: true },
-  })),
-  { icon: '💀', label: '하드 보스전', run: { index: HARD_STAGES.length, hard: true } },
+  ...STAGES.map((s, i) => ({ label: `STAGE ${s.number}`, run: { index: i } })),
+  { label: '보스전', run: { index: STAGES.length } },
+  ...HARD_STAGES.map((s, i) => ({ label: `하드 ${s.number}판`, run: { index: i, hard: true } })),
+  { label: '하드 보스전', run: { index: HARD_STAGES.length, hard: true } },
   /**
    * 포탈이 열려 있는 스테이지 1. NPC 에게 말을 걸고 문으로 들어가면 2회차가 시작된다 —
    * 하드 판으로 바로 뛰어드는 위 칸들과 달리 **입구 전체**를 볼 수 있다.
    */
-  { icon: '🌀', label: '포탈 스테이지 1', action: 'hub' },
-  { icon: '🎬', label: '오프닝 다시 보기', action: 'opening' },
-  { icon: '🌌', label: '2회차 시작 컷신', action: 'hardopen' },
-  { icon: '🚪', label: '개발자 모드 끄기', action: 'devOff' },
+  { label: '포탈 스테이지 1', action: 'hub' },
+  { label: '오프닝 다시 보기', action: 'opening' },
+  { label: '2회차 시작 컷신', action: 'hardopen' },
+  { label: '개발자 모드 끄기', action: 'devOff' },
 ];
 
 const slotOf = (test) => SELECT_ITEMS.findIndex(test);
