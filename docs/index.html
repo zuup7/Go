@@ -752,6 +752,44 @@ body.pad-editing .rotate-note {
   display: none;
 }
 
+/* ── 컷신 건너뛰기 ────────────────────────────────────── */
+/* 컷신이 도는 동안만 오른쪽 아래에 뜬다. 예전에는 「아무 키나 누르면 넘어간다」를
+   아무도 몰라서 18초짜리 엔딩을 끝까지 봐야 하는 줄 알았다. */
+.skip-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 7px 14px;
+  font-family: var(--font);
+  font-size: 0.78em;
+  color: var(--ink);
+  background: rgba(20, 10, 36, 0.72);
+  border: 2px solid #6b3f96;
+  border-radius: 6px;
+  cursor: pointer;
+  /* .ui 전체가 pointer-events: none 이라 눌리는 것만 되살린다 */
+  pointer-events: auto;
+  backdrop-filter: blur(2px);
+}
+
+.skip-btn:hover {
+  border-color: var(--warn);
+}
+
+/* 눕힌 화면에서는 오른쪽 여백이 조작 버튼 자리다 — 안쪽으로 들인다 */
+body.rotated .skip-btn {
+  right: calc(var(--rotated-side) + 10px);
+}
+
+/* 컷신 동안에는 조작 버튼이 아무 일도 안 한다. 띄워두면 화면만 가리고, 무엇보다
+   .touch 가 .ui 위에 얹혀 있어서 **대시 버튼이 「건너뛰기」를 덮어 누를 수가 없다**
+   (보스 전환 컷신에서 실제로 걸렸다). 자리를 옮기는 중이면(pad-editing) 건드리지
+   않는다 — 그때는 touchLayout 이 숨은 버튼까지 꺼내서 자리를 재고 있다. */
+body.in-cut:not(.pad-editing) .touch-left,
+body.in-cut:not(.pad-editing) .touch-right {
+  display: none;
+}
+
 /* 타이틀 메뉴와 스테이지 선택도 탭으로.
    .ui 위에 캔버스가 얹혀 있어서 여기서 되살리지 않으면 줄을 눌러도 캔버스가 먹는다.
    특히 「뒤로」는 이게 없으면 폰에서 누를 방법이 아예 없다 (R 키가 없다). */
@@ -924,6 +962,11 @@ body.rotated .touch-right {
         </div>
 
         <div class="center" id="center" hidden></div>
+
+        <!-- 컷신 건너뛰기. 컷신이 도는 동안에만 뜬다.
+             조작 버튼(.touch)이 아니라 화면 위(.ui)에 둔다 — 컷신 동안만 있는
+             버튼이라 끌어 옮기거나 크기를 바꿀 것이 아니다. -->
+        <button type="button" class="skip-btn" id="skip-btn" hidden>건너뛰기 ▶</button>
       </div>
     </div>
 
@@ -6045,6 +6088,8 @@ function updatePlay(game, input, dt) {
     const was = game.caught.t;
     game.caught.t += dt;
     beat(game, 'caught', CAUGHT_CUT, was, game.caught.t);
+    // 추격 판에서 계속 보게 되는 컷신이다 — 다른 컷신처럼 건너뛸 수 있어야 한다
+    if (skipping(input, game.caught.t)) game.caught.t = game.caught.length;
     if (game.caught.t >= game.caught.length) {
       game.caught = null;
       killPlayer(game);
@@ -6057,7 +6102,7 @@ function updatePlay(game, input, dt) {
     const was = game.npcTalk.t;
     game.npcTalk.t += dt;
     beat(game, 'talk', NPC_TALK, was, game.npcTalk.t);
-    if (input.confirmPressed && game.npcTalk.t > 0.4) game.npcTalk.t = game.npcTalk.length;
+    if (skipping(input, game.npcTalk.t)) game.npcTalk.t = game.npcTalk.length;
     if (game.npcTalk.t >= game.npcTalk.length) game.npcTalk = null;
     return;
   }
@@ -6197,6 +6242,31 @@ const SELECT_HARD_OPEN = slotOf((s) => s.action === 'hardopen');
 const SELECT_DEV_OFF = slotOf((s) => s.action === 'devOff');
 const SELECT_SLOTS = SELECT_ITEMS.length;
 
+/**
+ * 화면을 덮는 컷신이 도는 중인가.
+ *
+ * HUD 를 숨기는 판단과 「건너뛰기」 버튼을 띄우는 판단이 **같은 상태**다. 두 군데
+ * 적어두면 한쪽만 고치는 날이 온다 — 실제로 hud 쪽은 잡히는 컷신(caught)을
+ * 빼먹고 있어서 그 컷신에서만 HUD 가 화면 위에 남아 있었다.
+ *
+ * NPC 대화(npcTalk)는 여기 안 넣는다. 판 위에 작은 말풍선이 뜬 것뿐이고 화면을
+ * 안 덮으므로, HUD 도 그대로 있어야 하고 「건너뛰기」 버튼을 띄울 자리도 아니다.
+ */
+const inCutscene = (game) =>
+  game.scene === 'intro' || game.scene === 'cutscene' || !!game.bossCut || !!game.caught;
+
+/**
+ * 컷신을 튼 뒤 이만큼은 못 건너뛴다.
+ *
+ * 들어가는 순간 눌려 있던 점프가 그대로 먹으면 컷신이 시작도 안 하고 날아간다.
+ * 예전에는 컷신마다 0.6·0.6·0.5·0.4 로 따로 적혀 있었고 잡히는 컷신에는 아예
+ * 건너뛰기가 없었다 — 다섯 군데 중 한 군데를 빠뜨린 셈이다.
+ */
+const SKIP_AFTER = 0.5;
+
+/** 지금 이 컷신(시작한 지 t 초)을 건너뛰라는 입력인가 */
+const skipping = (input, t) => input.confirmPressed && t > SKIP_AFTER;
+
 /** 개발자 모드를 켜고 끈다. 비번 판정은 ui 가 하고 결과만 여기로 온다. */
 function setDevMode(game, on) {
   game.dev = on;
@@ -6306,7 +6376,7 @@ function updateBossScene(game, input, dt) {
     // 실제로 흐른 만큼만 소리를 낸다. 건너뛰기로 시각을 끝까지 밀기 **전에** 판정해야
     // 남은 단계 열 개가 한 프레임에 쏟아지지 않는다.
     beat(game, game.bossCut.id, BOSS_CUTS[game.bossCut.id].timeline, was, game.bossCut.t);
-    if (input.confirmPressed && game.bossCut.t > 0.5) game.bossCut.t = game.bossCut.length;
+    if (skipping(input, game.bossCut.t)) game.bossCut.t = game.bossCut.length;
     if (game.bossCut.t >= game.bossCut.length) {
       const finished = game.bossCut.id;
       game.bossCut = null;
@@ -6503,7 +6573,7 @@ function updateGame(game, input, dt) {
       const wasIntro = game.cutsceneTime;
       game.cutsceneTime += dt;
       beat(game, id, introTimeline(id), wasIntro, game.cutsceneTime);
-      if (input.confirmPressed && game.cutsceneTime > 0.6) game.cutsceneTime = length;
+      if (skipping(input, game.cutsceneTime)) game.cutsceneTime = length;
       if (game.cutsceneTime >= length) {
         if (id === 'hardopen') {
           // 2회차가 여기서 시작된다. startRun 이 시간·차트아웃을 지우므로 기록이 안 섞인다.
@@ -6553,7 +6623,7 @@ function updateGame(game, input, dt) {
       const wasCut = game.cutsceneTime;
       game.cutsceneTime += dt;
       beat(game, 'merge', CUTSCENE, wasCut, game.cutsceneTime);
-      if (input.confirmPressed && game.cutsceneTime > 0.6) game.cutsceneTime = CUTSCENE_LENGTH;
+      if (skipping(input, game.cutsceneTime)) game.cutsceneTime = CUTSCENE_LENGTH;
       if (game.cutsceneTime >= CUTSCENE_LENGTH) loadBoss(game);
       break;
     }
@@ -6593,7 +6663,7 @@ const runSummary = (game) => ({
   hard: game.hard,
 });
 
-return { VIEW, stageTable, stageCount, createGame, markKey, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary };
+return { VIEW, stageTable, stageCount, createGame, markKey, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary };
 })();
 __m["chartrun/src/core/devmode.js"] = (() => {
 // 개발자 모드. 비밀번호를 넣으면 스테이지를 골라 들어갈 수 있다.
@@ -12307,7 +12377,7 @@ const { beatRecord } = __m["chartrun/src/core/save.js"];
 const { STAGES } = __m["chartrun/src/data/stages.js"];
 const { KEYPAD } = __m["chartrun/src/core/devmode.js"];
 const { ACTIONS } = __m["chartrun/src/core/input.js"];
-const { PAUSE_ROWS, stageTable, selectItems, canSelect } = __m["chartrun/src/core/game.js"];
+const { PAUSE_ROWS, stageTable, selectItems, canSelect, inCutscene } = __m["chartrun/src/core/game.js"];
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -12518,7 +12588,9 @@ function createHud(root) {
       el.time.textContent = timeText(game.elapsedMs);
 
       // 컷신 중에는 HUD 를 걷는다 — 좁은 화면에서 큰 제목과 겹친다
-      const inCut = game.scene === 'cutscene' || game.scene === 'intro' || !!game.bossCut;
+      // 컷신 판단은 core 의 inCutscene 하나뿐이다 — 여기 또 적었더니 잡히는
+      // 컷신(caught)을 빼먹어서 그 컷신에서만 HUD 가 화면 위에 남아 있었다
+      const inCut = inCutscene(game);
       el.hud.hidden = game.scene === 'title' || game.scene === 'select' || inCut;
 
       const showBoss = game.scene === 'boss' && game.boss && !inCut;
@@ -13208,7 +13280,7 @@ return { LAYOUT_KEY, ROTATED_SIDE, MIN_SCALE, MAX_SCALE, SCALE_STEP, ALPHA_STEPS
 })();
 __m["chartrun/src/ui/app.js"] = (() => {
 // 차트런 진입점. 캔버스를 켜고, 입력·소리·게임 상태를 이어 붙인다.
-const { createGame, updateGame, runSummary, setDevMode, pausable, PAUSE_ROWS, VIEW } = __m["chartrun/src/core/game.js"];
+const { createGame, updateGame, runSummary, setDevMode, pausable, inCutscene, PAUSE_ROWS, VIEW } = __m["chartrun/src/core/game.js"];
 const { DEV_CODE, pushDigit, codeMatches } = __m["chartrun/src/core/devmode.js"];
 const { createLoop } = __m["chartrun/src/core/loop.js"];
 const { createInput, bindTouchButtons } = __m["chartrun/src/core/input.js"];
@@ -13573,6 +13645,23 @@ function update(dt) {
 const throwBtn = document.getElementById('throw-btn');
 const pauseBtn = document.querySelector('.pause-btn');
 const dashBtn = document.getElementById('dash-btn');
+const skipBtn = document.getElementById('skip-btn');
+
+/**
+ * 컷신 건너뛰기.
+ *
+ * 규칙(언제부터 건너뛸 수 있나, 어떤 컷신이 어떻게 끝나나)은 전부 core 에 있다.
+ * 이 버튼은 **키보드로 누르는 것과 똑같은 한 프레임**을 흘려보낼 뿐이다 —
+ * 여기서 game.cutsceneTime 을 직접 만지면 컷신마다 끝나는 방식이 달라서 어긋난다.
+ */
+skipBtn.addEventListener('click', () => {
+  if (!inCutscene(game)) return;
+  updateGame(
+    game,
+    { ...input, leftPressed: false, rightPressed: false, confirmPressed: true },
+    0,
+  );
+});
 
 function render() {
   drawScene(ctx, game, time);
@@ -13586,6 +13675,12 @@ function render() {
   dashBtn.disabled = !(game.player && game.player.dashCool <= 0);
   // 멈출 수 있을 때만 보인다 (편집 중에는 touchLayout 이 알아서 다 보여준다)
   pauseBtn.hidden = !(game.scene === 'play' || game.scene === 'boss');
+  // 컷신이 도는 동안만. 「아무 키나 누르면 넘어간다」를 아무도 모른다.
+  const cut = inCutscene(game);
+  skipBtn.hidden = !cut;
+  // 컷신 동안에는 조작 버튼을 치운다 (CSS 가 .touch-left/.touch-right 를 숨긴다).
+  // 안 치우면 대시 버튼이 「건너뛰기」 위에 얹혀서 눌리지 않는다.
+  document.body.classList.toggle('in-cut', cut);
 }
 
 // 화면 맞추기.

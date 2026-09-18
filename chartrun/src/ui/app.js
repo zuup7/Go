@@ -1,5 +1,14 @@
 // 차트런 진입점. 캔버스를 켜고, 입력·소리·게임 상태를 이어 붙인다.
-import { createGame, updateGame, runSummary, setDevMode, pausable, PAUSE_ROWS, VIEW } from '../core/game.js';
+import {
+  createGame,
+  updateGame,
+  runSummary,
+  setDevMode,
+  pausable,
+  inCutscene,
+  PAUSE_ROWS,
+  VIEW,
+} from '../core/game.js';
 import { DEV_CODE, pushDigit, codeMatches } from '../core/devmode.js';
 import { createLoop } from '../core/loop.js';
 import { createInput, bindTouchButtons } from '../core/input.js';
@@ -364,6 +373,23 @@ function update(dt) {
 const throwBtn = document.getElementById('throw-btn');
 const pauseBtn = document.querySelector('.pause-btn');
 const dashBtn = document.getElementById('dash-btn');
+const skipBtn = document.getElementById('skip-btn');
+
+/**
+ * 컷신 건너뛰기.
+ *
+ * 규칙(언제부터 건너뛸 수 있나, 어떤 컷신이 어떻게 끝나나)은 전부 core 에 있다.
+ * 이 버튼은 **키보드로 누르는 것과 똑같은 한 프레임**을 흘려보낼 뿐이다 —
+ * 여기서 game.cutsceneTime 을 직접 만지면 컷신마다 끝나는 방식이 달라서 어긋난다.
+ */
+skipBtn.addEventListener('click', () => {
+  if (!inCutscene(game)) return;
+  updateGame(
+    game,
+    { ...input, leftPressed: false, rightPressed: false, confirmPressed: true },
+    0,
+  );
+});
 
 function render() {
   drawScene(ctx, game, time);
@@ -377,6 +403,12 @@ function render() {
   dashBtn.disabled = !(game.player && game.player.dashCool <= 0);
   // 멈출 수 있을 때만 보인다 (편집 중에는 touchLayout 이 알아서 다 보여준다)
   pauseBtn.hidden = !(game.scene === 'play' || game.scene === 'boss');
+  // 컷신이 도는 동안만. 「아무 키나 누르면 넘어간다」를 아무도 모른다.
+  const cut = inCutscene(game);
+  skipBtn.hidden = !cut;
+  // 컷신 동안에는 조작 버튼을 치운다 (CSS 가 .touch-left/.touch-right 를 숨긴다).
+  // 안 치우면 대시 버튼이 「건너뛰기」 위에 얹혀서 눌리지 않는다.
+  document.body.classList.toggle('in-cut', cut);
 }
 
 // 화면 맞추기.

@@ -1048,6 +1048,8 @@ function updatePlay(game, input, dt) {
     const was = game.caught.t;
     game.caught.t += dt;
     beat(game, 'caught', CAUGHT_CUT, was, game.caught.t);
+    // 추격 판에서 계속 보게 되는 컷신이다 — 다른 컷신처럼 건너뛸 수 있어야 한다
+    if (skipping(input, game.caught.t)) game.caught.t = game.caught.length;
     if (game.caught.t >= game.caught.length) {
       game.caught = null;
       killPlayer(game);
@@ -1060,7 +1062,7 @@ function updatePlay(game, input, dt) {
     const was = game.npcTalk.t;
     game.npcTalk.t += dt;
     beat(game, 'talk', NPC_TALK, was, game.npcTalk.t);
-    if (input.confirmPressed && game.npcTalk.t > 0.4) game.npcTalk.t = game.npcTalk.length;
+    if (skipping(input, game.npcTalk.t)) game.npcTalk.t = game.npcTalk.length;
     if (game.npcTalk.t >= game.npcTalk.length) game.npcTalk = null;
     return;
   }
@@ -1200,6 +1202,31 @@ export const SELECT_HARD_OPEN = slotOf((s) => s.action === 'hardopen');
 export const SELECT_DEV_OFF = slotOf((s) => s.action === 'devOff');
 export const SELECT_SLOTS = SELECT_ITEMS.length;
 
+/**
+ * 화면을 덮는 컷신이 도는 중인가.
+ *
+ * HUD 를 숨기는 판단과 「건너뛰기」 버튼을 띄우는 판단이 **같은 상태**다. 두 군데
+ * 적어두면 한쪽만 고치는 날이 온다 — 실제로 hud 쪽은 잡히는 컷신(caught)을
+ * 빼먹고 있어서 그 컷신에서만 HUD 가 화면 위에 남아 있었다.
+ *
+ * NPC 대화(npcTalk)는 여기 안 넣는다. 판 위에 작은 말풍선이 뜬 것뿐이고 화면을
+ * 안 덮으므로, HUD 도 그대로 있어야 하고 「건너뛰기」 버튼을 띄울 자리도 아니다.
+ */
+export const inCutscene = (game) =>
+  game.scene === 'intro' || game.scene === 'cutscene' || !!game.bossCut || !!game.caught;
+
+/**
+ * 컷신을 튼 뒤 이만큼은 못 건너뛴다.
+ *
+ * 들어가는 순간 눌려 있던 점프가 그대로 먹으면 컷신이 시작도 안 하고 날아간다.
+ * 예전에는 컷신마다 0.6·0.6·0.5·0.4 로 따로 적혀 있었고 잡히는 컷신에는 아예
+ * 건너뛰기가 없었다 — 다섯 군데 중 한 군데를 빠뜨린 셈이다.
+ */
+export const SKIP_AFTER = 0.5;
+
+/** 지금 이 컷신(시작한 지 t 초)을 건너뛰라는 입력인가 */
+const skipping = (input, t) => input.confirmPressed && t > SKIP_AFTER;
+
 /** 개발자 모드를 켜고 끈다. 비번 판정은 ui 가 하고 결과만 여기로 온다. */
 export function setDevMode(game, on) {
   game.dev = on;
@@ -1309,7 +1336,7 @@ function updateBossScene(game, input, dt) {
     // 실제로 흐른 만큼만 소리를 낸다. 건너뛰기로 시각을 끝까지 밀기 **전에** 판정해야
     // 남은 단계 열 개가 한 프레임에 쏟아지지 않는다.
     beat(game, game.bossCut.id, BOSS_CUTS[game.bossCut.id].timeline, was, game.bossCut.t);
-    if (input.confirmPressed && game.bossCut.t > 0.5) game.bossCut.t = game.bossCut.length;
+    if (skipping(input, game.bossCut.t)) game.bossCut.t = game.bossCut.length;
     if (game.bossCut.t >= game.bossCut.length) {
       const finished = game.bossCut.id;
       game.bossCut = null;
@@ -1506,7 +1533,7 @@ export function updateGame(game, input, dt) {
       const wasIntro = game.cutsceneTime;
       game.cutsceneTime += dt;
       beat(game, id, introTimeline(id), wasIntro, game.cutsceneTime);
-      if (input.confirmPressed && game.cutsceneTime > 0.6) game.cutsceneTime = length;
+      if (skipping(input, game.cutsceneTime)) game.cutsceneTime = length;
       if (game.cutsceneTime >= length) {
         if (id === 'hardopen') {
           // 2회차가 여기서 시작된다. startRun 이 시간·차트아웃을 지우므로 기록이 안 섞인다.
@@ -1556,7 +1583,7 @@ export function updateGame(game, input, dt) {
       const wasCut = game.cutsceneTime;
       game.cutsceneTime += dt;
       beat(game, 'merge', CUTSCENE, wasCut, game.cutsceneTime);
-      if (input.confirmPressed && game.cutsceneTime > 0.6) game.cutsceneTime = CUTSCENE_LENGTH;
+      if (skipping(input, game.cutsceneTime)) game.cutsceneTime = CUTSCENE_LENGTH;
       if (game.cutsceneTime >= CUTSCENE_LENGTH) loadBoss(game);
       break;
     }

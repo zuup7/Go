@@ -717,6 +717,44 @@ body.pad-editing .rotate-note {
   display: none;
 }
 
+/* ── 컷신 건너뛰기 ────────────────────────────────────── */
+/* 컷신이 도는 동안만 오른쪽 아래에 뜬다. 예전에는 「아무 키나 누르면 넘어간다」를
+   아무도 몰라서 18초짜리 엔딩을 끝까지 봐야 하는 줄 알았다. */
+.skip-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 7px 14px;
+  font-family: var(--font);
+  font-size: 0.78em;
+  color: var(--ink);
+  background: rgba(20, 10, 36, 0.72);
+  border: 2px solid #6b3f96;
+  border-radius: 6px;
+  cursor: pointer;
+  /* .ui 전체가 pointer-events: none 이라 눌리는 것만 되살린다 */
+  pointer-events: auto;
+  backdrop-filter: blur(2px);
+}
+
+.skip-btn:hover {
+  border-color: var(--warn);
+}
+
+/* 눕힌 화면에서는 오른쪽 여백이 조작 버튼 자리다 — 안쪽으로 들인다 */
+body.rotated .skip-btn {
+  right: calc(var(--rotated-side) + 10px);
+}
+
+/* 컷신 동안에는 조작 버튼이 아무 일도 안 한다. 띄워두면 화면만 가리고, 무엇보다
+   .touch 가 .ui 위에 얹혀 있어서 **대시 버튼이 「건너뛰기」를 덮어 누를 수가 없다**
+   (보스 전환 컷신에서 실제로 걸렸다). 자리를 옮기는 중이면(pad-editing) 건드리지
+   않는다 — 그때는 touchLayout 이 숨은 버튼까지 꺼내서 자리를 재고 있다. */
+body.in-cut:not(.pad-editing) .touch-left,
+body.in-cut:not(.pad-editing) .touch-right {
+  display: none;
+}
+
 /* 타이틀 메뉴와 스테이지 선택도 탭으로.
    .ui 위에 캔버스가 얹혀 있어서 여기서 되살리지 않으면 줄을 눌러도 캔버스가 먹는다.
    특히 「뒤로」는 이게 없으면 폰에서 누를 방법이 아예 없다 (R 키가 없다). */

@@ -5,7 +5,7 @@ import { beatRecord } from '../core/save.js';
 import { STAGES } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
 import { ACTIONS } from '../core/input.js';
-import { PAUSE_ROWS, stageTable, selectItems, canSelect } from '../core/game.js';
+import { PAUSE_ROWS, stageTable, selectItems, canSelect, inCutscene } from '../core/game.js';
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -216,7 +216,9 @@ export function createHud(root) {
       el.time.textContent = timeText(game.elapsedMs);
 
       // 컷신 중에는 HUD 를 걷는다 — 좁은 화면에서 큰 제목과 겹친다
-      const inCut = game.scene === 'cutscene' || game.scene === 'intro' || !!game.bossCut;
+      // 컷신 판단은 core 의 inCutscene 하나뿐이다 — 여기 또 적었더니 잡히는
+      // 컷신(caught)을 빼먹어서 그 컷신에서만 HUD 가 화면 위에 남아 있었다
+      const inCut = inCutscene(game);
       el.hud.hidden = game.scene === 'title' || game.scene === 'select' || inCut;
 
       const showBoss = game.scene === 'boss' && game.boss && !inCut;
