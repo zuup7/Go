@@ -15,7 +15,8 @@
 npm start              # http://localhost:5173/chartrun/ 에서 플레이
 npm test               # 게임 규칙 테스트
 npm run build:chart    # 서버 없이 열리는 chartrun/dist/play.html 한 파일 생성
-npm run build:apk      # 남에게 줄 판 (개발자 버튼 없음) — tools/apk/ 참고
+npm run build:web      # 웹에 올릴 판 → 저장소 맨 위 docs/ (아래 「남에게 주기」)
+npm run build:apk      # APK 로 쌀 판 — tools/apk/ 참고
 ```
 
 > `index.html` 을 파일로 직접 열면 ES 모듈 때문에 동작하지 않습니다.
@@ -23,8 +24,30 @@ npm run build:apk      # 남에게 줄 판 (개발자 버튼 없음) — tools/a
 
 빌드한 한 파일은 **네트워크를 전혀 안 탑니다** — 폰트도 앨범 사진도 안에 박혀 있어
 비행기 모드에서도 똑같이 돌아갑니다. 폰트 서브셋은 `tools/make-fonts.mjs` 가 굽고
-결과(`assets/fonts.css`)는 저장소에 들어 있습니다. APK 로 싸는 절차는
-[`tools/apk/README.md`](tools/apk/README.md) 에 있습니다.
+결과(`assets/fonts.css`)는 저장소에 들어 있습니다.
+
+## 남에게 주기 — 링크 하나
+
+`npm run build:web` 이 저장소 맨 위 `docs/` 를 굽고, GitHub Pages 가 그걸 뿌립니다.
+
+```
+docs/index.html            게임 (파일 하나, 640KB)
+docs/manifest.webmanifest  앱 이름·아이콘·전체화면·가로 고정
+docs/sw.js                 서비스 워커 — 한 번 받으면 그 뒤론 네트워크를 안 탑니다
+docs/icon-*.png            홈 화면 아이콘 (make-icon.mjs 가 게임 스프라이트로 굽습니다)
+```
+
+받는 사람은 링크를 열고 **「홈 화면에 추가」**만 누르면 됩니다. 아이콘이 생기고,
+그 아이콘으로 열면 주소창 없이 전체화면으로 뜨고, 그 뒤로는 인터넷이 없어도 돌아갑니다.
+설치 경고도 없고 아이폰에서도 됩니다.
+
+> **Pages 는 커밋된 `docs/` 를 뿌립니다.** 게임을 고쳤으면 `npm run build` 하고
+> 커밋해야 반영됩니다 (`build` 에 묶여 있습니다). 고친 판은 상대가 **다음에 열 때**
+> 보입니다 — 이번 열기는 이미 옛 판으로 그려진 뒤고, 새 판은 그 사이 뒤에서 받아둡니다.
+> 캐시 이름에 빌드 해시가 박혀 있어 옛 판이 남지 않습니다.
+
+APK 로 싸는 길도 남아 있습니다 — [`tools/apk/README.md`](tools/apk/README.md).
+다만 받는 쪽에서 「출처를 알 수 없는 앱」을 한 번 허용해야 하고 아이폰은 못 깝니다.
 
 ## 조작
 

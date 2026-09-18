@@ -4,21 +4,33 @@
 //   node build.mjs                       → 루트(Family Go!) 를 dist/play.html 로
 //   node build.mjs chartrun              → chartrun/ 을 chartrun/dist/play.html 로
 //   node build.mjs chartrun --artifact   → 아티팩트용 조각 chartrun/dist/artifact.html 로
+//   node build.mjs chartrun --kiosk      → 남에게 줄 판 (개발자 버튼 없음) chartrun/dist/app.html 로
+//   node build.mjs chartrun --pwa        → 웹에 올릴 판 docs/ 로 (홈 화면에 깔린다)
 //
 // 프로젝트는 index.html / assets/style.css / src/ui/app.js 구조만 지키면 된다.
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { join, posix } from 'node:path';
+import { createHash } from 'node:crypto';
 
 const ROOT = process.cwd();
 const args = process.argv.slice(2);
 const ARTIFACT = args.includes('--artifact');
-// APK 로 싸서 남에게 줄 판. 개발자 모드 버튼을 빼는 것 말고는 똑같다.
-const KIOSK = args.includes('--kiosk');
+/**
+ * 웹(GitHub Pages)에 올려 **홈 화면에 깔리게** 하는 판.
+ * 게임은 그대로고 포장만 더 붙는다 — manifest, 서비스 워커, 아이콘.
+ */
+const PWA = args.includes('--pwa');
+// 남에게 줄 판. 개발자 모드 버튼을 빼는 것 말고는 똑같다 (웹에 올리는 판도 마찬가지다).
+const KIOSK = args.includes('--kiosk') || PWA;
 const BASE = (args.find((a) => !a.startsWith('--')) ?? '.').replace(/\/+$/, '');
 const at = (path) => (BASE === '.' ? path : posix.join(BASE, path));
 
 const ENTRY = at('src/ui/app.js');
-const OUT = at(ARTIFACT ? 'dist/artifact.html' : KIOSK ? 'dist/app.html' : 'dist/play.html');
+// PWA 만 저장소 맨 위 docs/ 로 나간다 — GitHub Pages 가 뿌릴 수 있는 폴더가
+// 루트 아니면 /docs 둘뿐이다.
+const OUT = PWA
+  ? 'docs/index.html'
+  : at(ARTIFACT ? 'dist/artifact.html' : KIOSK ? 'dist/app.html' : 'dist/play.html');
 
 /** src 아래 모든 .js 수집 */
 async function collect(dir, found = []) {
@@ -179,6 +191,38 @@ const links = linkTags.filter((tag) => !isLocalSheet(tag)).join('\n');
 // 비번 화면이 뜨면 당황한다. CSS 한 줄로만 막는다 — JS 를 건드리면 개발·테스트 경로가
 // 여기서부터 갈라진다.
 const extraCss = KIOSK ? '\n/* --kiosk */\n.dev-open { display: none; }\n' : '';
+
+/**
+ * 홈 화면에 깔리기 위한 포장.
+ *
+ * 색과 이름은 **게임에서 읽어온다** — 여기 손으로 적으면 게임 색을 바꿨을 때
+ * manifest 만 옛날 색으로 남는다.
+ */
+const themeColor = css.match(/--bg:\s*(#[0-9a-f]{3,8})/i)?.[1] ?? '#000000';
+const pwaHead = PWA
+  ? `
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="${themeColor}" />
+<!-- 아이폰은 manifest 를 거의 안 본다. 홈 화면에서 주소창 없이 열리려면 이 셋이 필요하다 -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="${title}" />
+<link rel="apple-touch-icon" href="icon-192.png" />`
+  : '';
+/**
+ * 서비스 워커. 없는 브라우저에서는 ?. 로 조용히 넘어가고, 게임은 그대로 돌아간다.
+ *
+ * `update()` 는 보험이다. 크롬은 페이지를 열 때 알아서 새 sw.js 를 확인하므로
+ * 이 줄이 없어도 돌아가는 걸 확인했다. 다만 그 확인을 언제 할지는 브라우저 마음이라
+ * (하루에 한 번만 보는 경우도 있다) 우리가 열 때마다 직접 시킨다 — sw.js 는 1KB 라 공짜다.
+ *
+ * 새 판은 **다음에 열 때** 보인다. 지금 열기는 이미 옛 판으로 그려진 뒤이고,
+ * 새 판은 그 사이에 뒤에서 받아져 캐시에 들어간다.
+ */
+const pwaTail = PWA
+  ? `
+<script>navigator.serviceWorker?.register('sw.js').then((r) => r.update()).catch(() => {});</script>`
+  : '';
 // <body> 안쪽을 그대로 쓰되, 모듈 진입 <script src> 만 걷어낸다 (아래에서 번들로 대체)
 const body = (html.match(/<body[^>]*>([\s\S]*)<\/body>/)?.[1] ?? '')
   .replace(/<script\b[^>]*\bsrc=[^>]*>\s*<\/script>/g, '')
@@ -204,7 +248,7 @@ ${script}
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>${title}</title>
 ${description}
-${links}
+${links}${pwaHead}
 <style>
 ${css}${extraCss}
 </style>
@@ -213,11 +257,85 @@ ${css}${extraCss}
 ${body}
 <script type="module">
 ${script}
-</script>
+</script>${pwaTail}
 </body>
 </html>
 `;
 
-await mkdir(join(ROOT, at('dist')), { recursive: true });
+await mkdir(join(ROOT, PWA ? 'docs' : at('dist')), { recursive: true });
 await writeFile(join(ROOT, OUT), out, 'utf8');
 console.log(`${OUT} (${(Buffer.byteLength(out) / 1024).toFixed(1)} KB, 모듈 ${order.length}개)`);
+
+if (PWA) await writePwaFiles(out);
+
+/**
+ * manifest 와 서비스 워커를 찍는다.
+ *
+ * 캐시 이름에 **빌드 내용의 해시**를 박는 게 핵심이다. 게임을 고쳐 다시 올렸는데
+ * 이름이 그대로면 친구 폰에는 영영 옛 판이 남는다 — 서비스 워커의 제일 흔한 사고다.
+ * 이름이 달라지면 새 워커가 깔리면서 옛 캐시를 지운다.
+ */
+async function writePwaFiles(html) {
+  const files = [
+    './',
+    './index.html',
+    './manifest.webmanifest',
+    './icon-192.png',
+    './icon-512.png',
+    './icon-maskable.png',
+  ];
+  const icon = (src, sizes, purpose) => ({ src, sizes, type: 'image/png', purpose });
+  const manifest = {
+    name: title,
+    short_name: title,
+    description: description.match(/content="([^"]*)"/)?.[1] ?? '',
+    id: './',
+    start_url: './',
+    scope: './',
+    // 주소창 없이 꽉 차게. 가로로 들고 하는 게임이라 방향도 고정한다
+    // (아이폰은 이 줄을 무시하지만, 세로로 들면 게임이 알아서 화면을 눕힌다)
+    display: 'fullscreen',
+    orientation: 'landscape',
+    background_color: themeColor,
+    theme_color: themeColor,
+    lang: 'ko',
+    icons: [
+      icon('icon-192.png', '192x192', 'any'),
+      icon('icon-512.png', '512x512', 'any'),
+      // 안드로이드는 아이콘을 제 마음대로 잘라낸다. 여백을 더 준 판을 따로 준다
+      icon('icon-maskable.png', '512x512', 'maskable'),
+    ],
+  };
+  await writeFile(join(ROOT, 'docs/manifest.webmanifest'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+
+  const hash = createHash('sha256').update(html).digest('hex').slice(0, 12);
+  const sw = `// 자동 생성 — build.mjs --pwa 가 굽는다. 고치지 말 것.
+//
+// 한 번 받아두면 그 뒤로는 네트워크를 안 탄다 (비행기 모드에서도 열린다).
+// 캐시 이름의 해시는 빌드 내용에서 나온다 — 게임이 바뀌면 이름이 달라지고,
+// 새 워커가 깔리면서 옛 캐시를 통째로 지운다.
+const CACHE = 'chartrun-${hash}';
+const FILES = ${JSON.stringify(files)};
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
+  // 캐시부터. 없으면 네트워크로 — 어차피 게임은 파일 하나라 캐시에 다 있다.
+  e.respondWith(caches.match(e.request).then((hit) => hit ?? fetch(e.request)));
+});
+`;
+  await writeFile(join(ROOT, 'docs/sw.js'), sw, 'utf8');
+  console.log(`  docs/manifest.webmanifest · docs/sw.js (캐시 ${hash})`);
+}
