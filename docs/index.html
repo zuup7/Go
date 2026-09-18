@@ -3703,6 +3703,23 @@ function createBoss(arenaWidth, floorY = 192, hard = false) {
     charge: 0,
     openness: 0,
     recoil: 0,
+    /**
+     * 공룡 형태의 몸짓. 원반·로봇은 안 읽는다 (읽을 부위가 없다).
+     *
+     * swing  꼬리가 감긴(−) / 휘둘린(+) 정도 −1~1
+     * paw    앞발 −1~1. +1 이 치켜든 것(예고), **−1 이 내리꽂은 것**, 0 이 평소.
+     *        드는 건 천천히지만 찍는 건 한 프레임이라, stompAim→stomp 자리에서
+     *        −1 로 직접 꺾고 그 뒤에만 0 으로 되돌린다
+     * jaw    턱이 벌어진 정도 0~1
+     * stride 걸음 위상. **시간이 아니라 움직인 거리**로 돈다 — 시간으로 돌리면
+     *        느리게 배회할 때 발이 미끄러진다 (주인공 스프라이트와 같은 규칙)
+     */
+    swing: 0,
+    paw: 0,
+    jaw: 0,
+    stride: 0,
+    /** stride 를 재는 기준점. 지난 프레임의 x */
+    strideFrom: arenaWidth / 2 - BOSS_W / 2,
     drift: 1,
     quarters: [],
     minionTimer: 0,
@@ -3875,6 +3892,46 @@ function stepLooks(boss, dt) {
   const open = boss.state === 'open' ? 1 : 0;
   boss.openness = toward(boss.openness, open, open ? 9 : 3.5, dt);
   boss.recoil = Math.max(0, boss.recoil - dt * 3);
+  stepDinoLooks(boss, dt);
+}
+
+/**
+ * 공룡 몸짓 한 프레임.
+ *
+ * 공룡이 아닌 페이즈에서도 그냥 0 으로 잦아든다 — 몸이 바뀔 때 값이 남아 있으면
+ * 변신하는 순간 꼬리가 휘둘린 자세로 굳는다.
+ */
+function stepDinoLooks(boss, dt) {
+  const phase = bossPhase(boss);
+
+  // ── 꼬리: 감았다가(−) 훑으며 지나간다(+) ──
+  let swing = 0;
+  if (boss.state === 'tailAim') {
+    // 훑을 방향의 **반대쪽으로** 감는다. 감기는 게 곧 예고다.
+    swing = -boss.tailDir;
+  } else if (boss.state === 'tail') {
+    // 남은 시간으로 진행도를 잰다 (tailBand 의 tailX 와 같은 시계다)
+    const span = phase.tailSweep ?? 1;
+    const done = clamp(1 - boss.timer / span, 0, 1);
+    swing = boss.tailDir * (done * 2 - 1);
+  }
+  // 감을 때는 천천히, 휘두를 때는 이징 없이 그대로 따라간다 (채찍은 느리면 안 읽힌다)
+  boss.swing =
+    boss.state === 'tail' ? swing : clamp(toward(boss.swing, swing, 7, dt), -1, 1);
+
+  // ── 앞발: 들었다 내리꽂는다 ──
+  // 드는 것(0→1)과 되돌아오는 것(−1→0)만 여기서 굴린다. 꽂는 순간은
+  // stompAim→stomp 자리에서 −1 로 꺾는다 — 이징으로 내리면 충격파가 생긴 뒤에
+  // 발이 닿아서 순서가 거꾸로 보인다.
+  boss.paw = clamp(toward(boss.paw, boss.state === 'stompAim' ? 1 : 0, 5, dt), -1, 1);
+
+  // ── 턱: 쏘는 중과 휘두르는 중에 벌어진다 ──
+  const roaring = boss.state === 'laser' || boss.state === 'tail' || boss.state === 'whirl';
+  boss.jaw = clamp(toward(boss.jaw, roaring ? 1 : 0, 8, dt), 0, 1);
+
+  // ── 걸음: 움직인 거리만큼 돈다 ──
+  boss.stride += Math.abs(boss.x - boss.strideFrom);
+  boss.strideFrom = boss.x;
 }
 
 /**
@@ -3889,9 +3946,24 @@ function stepLooks(boss, dt) {
  * recoil  맞고 밀려난 정도 0~1
  * glow    틈에서 새는 빛의 세기 0~1
  * spin    회전 배속 (열리면 멎고 겨누면 빨라진다)
+ *
+ * 아래 넷은 **공룡 몸만** 읽는다 (stepDinoLooks 설명 참고).
+ * swing / paw / jaw / stride
  */
+const NEUTRAL_POSE = {
+  squash: 1,
+  spread: 0,
+  recoil: 0,
+  glow: 0,
+  spin: 1,
+  swing: 0,
+  paw: 0,
+  jaw: 0,
+  stride: 0,
+};
+
 const bossPose = (boss) => {
-  if (!boss) return { squash: 1, spread: 0, recoil: 0, glow: 0, spin: 1 };
+  if (!boss) return NEUTRAL_POSE;
   const c = boss.charge;
   const o = boss.openness;
   return {
@@ -3900,6 +3972,10 @@ const bossPose = (boss) => {
     recoil: boss.recoil,
     glow: Math.max(c * 0.7, o),
     spin: 1 + c * 1.8 - o * 0.9,
+    swing: boss.swing,
+    paw: boss.paw,
+    jaw: boss.jaw,
+    stride: boss.stride,
   };
 };
 
@@ -4111,6 +4187,9 @@ function updateBoss(boss, ctx, dt) {
       if (boss.timer <= 0) {
         boss.state = 'stomp';
         boss.timer = 0.28;
+        // 든 발을 여기서 꽂는다. 충격파가 생기는 것과 **같은 자리**여야
+        // 발이 닿는 것과 바닥이 흔들리는 것이 한 박자로 보인다.
+        boss.paw = -1;
       }
       break;
     }
@@ -4385,7 +4464,7 @@ const princessCaged = (boss) => !!boss && boss.state !== 'defeated';
 /** 남은 체력 비율 0~1 */
 const bossHealthRatio = (boss) => clamp(boss.hp / boss.maxHp, 0, 1);
 
-return { BOSS_W, DINO_W, DINO_H, BOSS_H, LASER_W, TAIL_W, WAVE_W, createBoss, tailBand, shockWaves, laserBeam, laserBeams, MIC_SIZE, createMic, throwMic, updateThrown, bossPhase, syncPhase, bossPose, updateBoss, whirlGapX, ceilingSlabs, hitBoss, bossCombined, bossBody, princessCaged, bossHealthRatio };
+return { BOSS_W, DINO_W, DINO_H, BOSS_H, LASER_W, TAIL_W, WAVE_W, createBoss, tailBand, shockWaves, laserBeam, laserBeams, MIC_SIZE, createMic, throwMic, updateThrown, bossPhase, syncPhase, NEUTRAL_POSE, bossPose, updateBoss, whirlGapX, ceilingSlabs, hitBoss, bossCombined, bossBody, princessCaged, bossHealthRatio };
 })();
 __m["chartrun/src/data/traps.js"] = (() => {
 // 고양이마리오풍 트롤 함정.
@@ -8393,7 +8472,7 @@ const { drawSprite, makeCanvas } = __m["chartrun/src/render/pixel.js"];
 const { DISC, BRIDE } = __m["chartrun/src/render/sprites.js"];
 const { ALBUMS } = __m["chartrun/src/data/albums.js"];
 const { VIEW } = __m["chartrun/src/core/game.js"];
-const { bossPhase, princessCaged, bossBody, bossPose, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
+const { bossPhase, princessCaged, bossBody, bossPose, NEUTRAL_POSE, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
 const { DARK, HORN, LIT, METAL, VINYL, RB, ROBOT_TOP, ROBOT_BOTTOM, armorCover, clamp01, coreRadius, ease, housingHalf, plate, slam, wedge } = __m["chartrun/src/render/sceneParts.js"];
 
 // ── 보스 ────────────────────────────────────────────────────
@@ -8770,7 +8849,7 @@ function drawBoss(ctx, boss, ox, oy, time) {
       if (down) ctx.rotate(Math.min(0.7, boss.defeatedAt * 0.6));
       // 하드 3페이즈부터는 **공룡로봇**이다. 껍질을 찢고 나온 모습이라
       // 서 있는 로봇과 실루엣이 아예 다르다 (가로로 길고 목과 꼬리가 뻗는다).
-      if (body === 'dino') drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0);
+      if (body === 'dino') drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0, pose);
       else drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
     });
     drawBossCore(ctx, cx, cy, boss.vulnerable, time);
@@ -8925,33 +9004,64 @@ function pauldron(ctx, x, y, rad, side, color, hurt, cover) {
  * 서 있는 로봇과 **실루엣이 확실히 달라야** 변신이 읽힌다. 로봇은 세로로 길고
  * 좌우 대칭인데, 이쪽은 가로로 길고 목과 꼬리가 양쪽으로 뻗는다.
  */
-function drawDinoBody(ctx, r, time, color, hurt = false) {
+/**
+ * 공룡로봇의 몸.
+ *
+ * 움직임 값은 **전부 core 의 bossPose 에서 온다** (swing·paw·jaw·stride).
+ * 여기서 boss.state 를 보고 계산하면 판정과 그림이 서로 다른 시계를 보게 된다.
+ *
+ * pose 에 기본값을 두는 게 중요하다 — giantCanvas() 가 추격 판의 거대 로봇을
+ * 구울 때 보스 없이 이 함수를 부른다. 기본 자세가 없으면 구워둔 거인이 공격
+ * 자세로 굳는다.
+ */
+function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_POSE) {
   const opt = { hurt };
   const hot = { hurt, face: color, lit: '#ffffff' };
   const px = (v) => v * r;
-  const breathe = Math.sin(time * 2.4) * 1.5;
+  const swing = pose.swing ?? 0;
+  const paw = pose.paw ?? 0;
+  const jaw = pose.jaw ?? 0;
+  // 걸음은 **움직인 거리**로 돈다. 한 걸음에 이만큼(px) 가면 한 바퀴.
+  const step = Math.sin(((pose.stride ?? 0) / 13) * Math.PI * 2);
+  // 숨쉬기. 꼬리를 휘두르거나 발을 꽂는 동안에는 숨보다 그 동작이 커서 묻는다
+  const breathe = Math.sin(time * 2.4) * 1.5 * (1 - Math.min(1, Math.abs(swing) + Math.abs(paw)));
 
   ctx.save();
   ctx.translate(0, Math.round(breathe));
 
-  // ── 꼬리 — 뒤(왼쪽)로 뻗어 점점 가늘어진다
+  // ── 꼬리 — 마디를 이어 붙인 사슬. swing 으로 감기고 휘둘린다.
+  // 마디마다 조금씩 더 꺾어 호를 만든다. 뒤 마디는 덜, 끝은 더 — 통째로 같은
+  // 각도로 돌리면 휘두르는 게 아니라 막대기가 회전하는 것으로 보인다.
+  ctx.save();
+  ctx.translate(-px(0.55), -px(0.02));
   for (let i = 0; i < 5; i++) {
     const t = i / 5;
+    // 마디 회전이 쌓이므로 한 마디 몫은 작아야 한다. 0.30 으로 했더니 다섯 마디가
+    // 합쳐 2라디안이 넘어서 꼬리가 몸 위로 말려 올라갔다 (소용돌이가 됐다).
+    ctx.rotate(-(0.05 + swing * 0.16) * (0.6 + t * 0.8));
     const w = px(0.3 - t * 0.2);
-    plate(ctx, -px(0.55) - i * px(0.26), -px(0.02) + i * px(0.05), w, px(0.24 - t * 0.13), opt);
+    plate(ctx, -px(0.28), -w / 2, px(0.3), w, opt);
+    ctx.translate(-px(0.26), 0);
   }
   // 꼬리 끝의 날 — 이게 바닥을 훑는 그 꼬리다
-  plate(ctx, -px(1.75), px(0.2), px(0.34), px(0.1), hot);
+  ctx.rotate(-swing * 0.3);
+  plate(ctx, -px(0.34), -px(0.05), px(0.34), px(0.1), hot);
+  ctx.restore();
 
-  // ── 뒷다리 (몸통 뒤) — 굵은 허벅지 + 꺾인 정강이
+  // ── 뒷다리 (몸통 뒤) — 굵은 허벅지 + 꺾인 정강이.
+  // 좌우가 반대 위상으로 굽어 걷는 것처럼 보인다. 발을 꽂는 동안에는 둘 다
+  // 버틴다 (한쪽 발만 들고 내리찍으면 넘어질 자세다).
   for (const side of [-1, 1]) {
     const x = side * px(0.26);
+    const lift = paw < 0 ? 0 : step * side * px(0.07);
     plate(ctx, x - px(0.24), px(0.16), px(0.48), px(0.42), opt);
     armorCover(ctx, ALBUMS[side < 0 ? 3 : 12], x, px(0.36), px(0.26), hurt);
-    plate(ctx, x - px(0.15), px(0.56), px(0.3), px(0.34), opt);
+    plate(ctx, x - px(0.15), px(0.56) - lift, px(0.3), px(0.34), opt);
     // 발 — 앞으로 튀어나온 세 발톱
-    plate(ctx, x - px(0.22), px(0.88), px(0.52), px(0.14), opt);
-    for (let i = 0; i < 3; i++) plate(ctx, x + px(0.16) + i * px(0.06), px(0.9), px(0.05), px(0.08), hot);
+    plate(ctx, x - px(0.22), px(0.88) - lift, px(0.52), px(0.14), opt);
+    for (let i = 0; i < 3; i++) {
+      plate(ctx, x + px(0.16) + i * px(0.06), px(0.9) - lift, px(0.05), px(0.08), hot);
+    }
   }
 
   // ── 몸통 — 가로로 긴 통. 등에 앨범이 줄줄이 박혀 있다
@@ -8975,32 +9085,45 @@ function drawDinoBody(ctx, r, time, color, hurt = false) {
     wedge(ctx, [[bx, -px(0.1)], [bx + px(0.1), -px(0.1) - h], [bx + px(0.2), -px(0.1)]], hot);
   }
 
-  // ── 앞발 — 짧고 접혀 있다 (내리찍는 그 발)
+  // ── 앞발 — 짧고 접혀 있다. paw 가 +면 치켜들고(예고), −면 내리꽂는다.
   for (const side of [-1, 1]) {
     const x = px(0.42) + side * px(0.06);
-    plate(ctx, x - px(0.09), px(0.06), px(0.18), px(0.24), opt);
-    plate(ctx, x - px(0.07), px(0.28), px(0.14), px(0.12), hot);
+    ctx.save();
+    // 발이 8px 짜리라 **각도만 돌리면 안 보인다.** 어깨째 들어 올려야 읽힌다.
+    ctx.translate(x, px(0.06) - Math.max(0, paw) * px(0.26));
+    ctx.rotate(-paw * 0.85);
+    // 꽂을 때는 팔이 앞으로 뻗는다 (내던지는 길이가 곧 힘이다)
+    const reach = Math.max(0, -paw);
+    plate(ctx, -px(0.09), 0, px(0.18), px(0.24 + reach * 0.2), opt);
+    plate(ctx, -px(0.08), px(0.28 + reach * 0.2), px(0.16), px(0.13 + reach * 0.06), hot);
+    ctx.restore();
   }
 
-  // ── 목 — 앞(오른쪽) 위로 뻗는다
+  // ── 목 — 앞(오른쪽) 위로 뻗는다. 울 때 젖혀진다.
+  ctx.save();
+  ctx.translate(px(0.5), -px(0.24));
+  ctx.rotate(-jaw * 0.12);
   for (let i = 0; i < 4; i++) {
     const t = i / 4;
-    plate(ctx, px(0.5) + i * px(0.16), -px(0.24) - i * px(0.14), px(0.26 - t * 0.06), px(0.26), opt);
+    plate(ctx, i * px(0.16), -i * px(0.14), px(0.26 - t * 0.06), px(0.26), opt);
   }
-  armorCover(ctx, ALBUMS[8], px(0.72), -px(0.3), px(0.2), hurt);
+  armorCover(ctx, ALBUMS[8], px(0.22), -px(0.06), px(0.2), hurt);
 
-  // ── 머리 — 긴 턱과 붉은 바이저
-  const hx = px(1.06);
-  const hy = -px(0.72);
+  // ── 머리 — 긴 턱과 붉은 바이저. 아래턱이 jaw 만큼 벌어진다.
+  const hx = px(0.56);
+  const hy = -px(0.48);
   plate(ctx, hx, hy, px(0.5), px(0.26), opt);
-  plate(ctx, hx + px(0.1), hy + px(0.24), px(0.44), px(0.12), opt); // 아래턱
   plate(ctx, hx + px(0.06), hy + px(0.07), px(0.34), px(0.08), { hurt, face: '#ff3b3b', lit: '#fff' });
-  // 이빨
-  for (let i = 0; i < 4; i++) {
-    plate(ctx, hx + px(0.14) + i * px(0.09), hy + px(0.2), px(0.05), px(0.06), hot);
-  }
   // 뿔
   wedge(ctx, [[hx + px(0.06), hy], [hx + px(0.16), hy - px(0.2)], [hx + px(0.22), hy]], hot);
+  // 아래턱 — 턱 경첩(머리 뒤쪽)을 축으로 내려간다
+  ctx.save();
+  ctx.translate(hx + px(0.1), hy + px(0.24));
+  ctx.rotate(jaw * 0.5);
+  plate(ctx, 0, 0, px(0.44), px(0.12), opt);
+  for (let i = 0; i < 4; i++) plate(ctx, px(0.04) + i * px(0.09), -px(0.06), px(0.05), px(0.06), hot);
+  ctx.restore();
+  ctx.restore();
 
   ctx.restore();
 }

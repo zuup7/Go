@@ -60,6 +60,23 @@ export function createBoss(arenaWidth, floorY = 192, hard = false) {
     charge: 0,
     openness: 0,
     recoil: 0,
+    /**
+     * 공룡 형태의 몸짓. 원반·로봇은 안 읽는다 (읽을 부위가 없다).
+     *
+     * swing  꼬리가 감긴(−) / 휘둘린(+) 정도 −1~1
+     * paw    앞발 −1~1. +1 이 치켜든 것(예고), **−1 이 내리꽂은 것**, 0 이 평소.
+     *        드는 건 천천히지만 찍는 건 한 프레임이라, stompAim→stomp 자리에서
+     *        −1 로 직접 꺾고 그 뒤에만 0 으로 되돌린다
+     * jaw    턱이 벌어진 정도 0~1
+     * stride 걸음 위상. **시간이 아니라 움직인 거리**로 돈다 — 시간으로 돌리면
+     *        느리게 배회할 때 발이 미끄러진다 (주인공 스프라이트와 같은 규칙)
+     */
+    swing: 0,
+    paw: 0,
+    jaw: 0,
+    stride: 0,
+    /** stride 를 재는 기준점. 지난 프레임의 x */
+    strideFrom: arenaWidth / 2 - BOSS_W / 2,
     drift: 1,
     quarters: [],
     minionTimer: 0,
@@ -232,6 +249,46 @@ function stepLooks(boss, dt) {
   const open = boss.state === 'open' ? 1 : 0;
   boss.openness = toward(boss.openness, open, open ? 9 : 3.5, dt);
   boss.recoil = Math.max(0, boss.recoil - dt * 3);
+  stepDinoLooks(boss, dt);
+}
+
+/**
+ * 공룡 몸짓 한 프레임.
+ *
+ * 공룡이 아닌 페이즈에서도 그냥 0 으로 잦아든다 — 몸이 바뀔 때 값이 남아 있으면
+ * 변신하는 순간 꼬리가 휘둘린 자세로 굳는다.
+ */
+function stepDinoLooks(boss, dt) {
+  const phase = bossPhase(boss);
+
+  // ── 꼬리: 감았다가(−) 훑으며 지나간다(+) ──
+  let swing = 0;
+  if (boss.state === 'tailAim') {
+    // 훑을 방향의 **반대쪽으로** 감는다. 감기는 게 곧 예고다.
+    swing = -boss.tailDir;
+  } else if (boss.state === 'tail') {
+    // 남은 시간으로 진행도를 잰다 (tailBand 의 tailX 와 같은 시계다)
+    const span = phase.tailSweep ?? 1;
+    const done = clamp(1 - boss.timer / span, 0, 1);
+    swing = boss.tailDir * (done * 2 - 1);
+  }
+  // 감을 때는 천천히, 휘두를 때는 이징 없이 그대로 따라간다 (채찍은 느리면 안 읽힌다)
+  boss.swing =
+    boss.state === 'tail' ? swing : clamp(toward(boss.swing, swing, 7, dt), -1, 1);
+
+  // ── 앞발: 들었다 내리꽂는다 ──
+  // 드는 것(0→1)과 되돌아오는 것(−1→0)만 여기서 굴린다. 꽂는 순간은
+  // stompAim→stomp 자리에서 −1 로 꺾는다 — 이징으로 내리면 충격파가 생긴 뒤에
+  // 발이 닿아서 순서가 거꾸로 보인다.
+  boss.paw = clamp(toward(boss.paw, boss.state === 'stompAim' ? 1 : 0, 5, dt), -1, 1);
+
+  // ── 턱: 쏘는 중과 휘두르는 중에 벌어진다 ──
+  const roaring = boss.state === 'laser' || boss.state === 'tail' || boss.state === 'whirl';
+  boss.jaw = clamp(toward(boss.jaw, roaring ? 1 : 0, 8, dt), 0, 1);
+
+  // ── 걸음: 움직인 거리만큼 돈다 ──
+  boss.stride += Math.abs(boss.x - boss.strideFrom);
+  boss.strideFrom = boss.x;
 }
 
 /**
@@ -246,9 +303,24 @@ function stepLooks(boss, dt) {
  * recoil  맞고 밀려난 정도 0~1
  * glow    틈에서 새는 빛의 세기 0~1
  * spin    회전 배속 (열리면 멎고 겨누면 빨라진다)
+ *
+ * 아래 넷은 **공룡 몸만** 읽는다 (stepDinoLooks 설명 참고).
+ * swing / paw / jaw / stride
  */
+export const NEUTRAL_POSE = {
+  squash: 1,
+  spread: 0,
+  recoil: 0,
+  glow: 0,
+  spin: 1,
+  swing: 0,
+  paw: 0,
+  jaw: 0,
+  stride: 0,
+};
+
 export const bossPose = (boss) => {
-  if (!boss) return { squash: 1, spread: 0, recoil: 0, glow: 0, spin: 1 };
+  if (!boss) return NEUTRAL_POSE;
   const c = boss.charge;
   const o = boss.openness;
   return {
@@ -257,6 +329,10 @@ export const bossPose = (boss) => {
     recoil: boss.recoil,
     glow: Math.max(c * 0.7, o),
     spin: 1 + c * 1.8 - o * 0.9,
+    swing: boss.swing,
+    paw: boss.paw,
+    jaw: boss.jaw,
+    stride: boss.stride,
   };
 };
 
@@ -468,6 +544,9 @@ export function updateBoss(boss, ctx, dt) {
       if (boss.timer <= 0) {
         boss.state = 'stomp';
         boss.timer = 0.28;
+        // 든 발을 여기서 꽂는다. 충격파가 생기는 것과 **같은 자리**여야
+        // 발이 닿는 것과 바닥이 흔들리는 것이 한 박자로 보인다.
+        boss.paw = -1;
       }
       break;
     }

@@ -15,6 +15,7 @@ import {
   princessCaged,
   bossBody,
   bossPose,
+  NEUTRAL_POSE,
   laserBeams,
   tailBand,
   shockWaves,
@@ -413,7 +414,7 @@ export function drawBoss(ctx, boss, ox, oy, time) {
       if (down) ctx.rotate(Math.min(0.7, boss.defeatedAt * 0.6));
       // 하드 3페이즈부터는 **공룡로봇**이다. 껍질을 찢고 나온 모습이라
       // 서 있는 로봇과 실루엣이 아예 다르다 (가로로 길고 목과 꼬리가 뻗는다).
-      if (body === 'dino') drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0);
+      if (body === 'dino') drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0, pose);
       else drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
     });
     drawBossCore(ctx, cx, cy, boss.vulnerable, time);
@@ -568,33 +569,64 @@ export function pauldron(ctx, x, y, rad, side, color, hurt, cover) {
  * 서 있는 로봇과 **실루엣이 확실히 달라야** 변신이 읽힌다. 로봇은 세로로 길고
  * 좌우 대칭인데, 이쪽은 가로로 길고 목과 꼬리가 양쪽으로 뻗는다.
  */
-export function drawDinoBody(ctx, r, time, color, hurt = false) {
+/**
+ * 공룡로봇의 몸.
+ *
+ * 움직임 값은 **전부 core 의 bossPose 에서 온다** (swing·paw·jaw·stride).
+ * 여기서 boss.state 를 보고 계산하면 판정과 그림이 서로 다른 시계를 보게 된다.
+ *
+ * pose 에 기본값을 두는 게 중요하다 — giantCanvas() 가 추격 판의 거대 로봇을
+ * 구울 때 보스 없이 이 함수를 부른다. 기본 자세가 없으면 구워둔 거인이 공격
+ * 자세로 굳는다.
+ */
+export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_POSE) {
   const opt = { hurt };
   const hot = { hurt, face: color, lit: '#ffffff' };
   const px = (v) => v * r;
-  const breathe = Math.sin(time * 2.4) * 1.5;
+  const swing = pose.swing ?? 0;
+  const paw = pose.paw ?? 0;
+  const jaw = pose.jaw ?? 0;
+  // 걸음은 **움직인 거리**로 돈다. 한 걸음에 이만큼(px) 가면 한 바퀴.
+  const step = Math.sin(((pose.stride ?? 0) / 13) * Math.PI * 2);
+  // 숨쉬기. 꼬리를 휘두르거나 발을 꽂는 동안에는 숨보다 그 동작이 커서 묻는다
+  const breathe = Math.sin(time * 2.4) * 1.5 * (1 - Math.min(1, Math.abs(swing) + Math.abs(paw)));
 
   ctx.save();
   ctx.translate(0, Math.round(breathe));
 
-  // ── 꼬리 — 뒤(왼쪽)로 뻗어 점점 가늘어진다
+  // ── 꼬리 — 마디를 이어 붙인 사슬. swing 으로 감기고 휘둘린다.
+  // 마디마다 조금씩 더 꺾어 호를 만든다. 뒤 마디는 덜, 끝은 더 — 통째로 같은
+  // 각도로 돌리면 휘두르는 게 아니라 막대기가 회전하는 것으로 보인다.
+  ctx.save();
+  ctx.translate(-px(0.55), -px(0.02));
   for (let i = 0; i < 5; i++) {
     const t = i / 5;
+    // 마디 회전이 쌓이므로 한 마디 몫은 작아야 한다. 0.30 으로 했더니 다섯 마디가
+    // 합쳐 2라디안이 넘어서 꼬리가 몸 위로 말려 올라갔다 (소용돌이가 됐다).
+    ctx.rotate(-(0.05 + swing * 0.16) * (0.6 + t * 0.8));
     const w = px(0.3 - t * 0.2);
-    plate(ctx, -px(0.55) - i * px(0.26), -px(0.02) + i * px(0.05), w, px(0.24 - t * 0.13), opt);
+    plate(ctx, -px(0.28), -w / 2, px(0.3), w, opt);
+    ctx.translate(-px(0.26), 0);
   }
   // 꼬리 끝의 날 — 이게 바닥을 훑는 그 꼬리다
-  plate(ctx, -px(1.75), px(0.2), px(0.34), px(0.1), hot);
+  ctx.rotate(-swing * 0.3);
+  plate(ctx, -px(0.34), -px(0.05), px(0.34), px(0.1), hot);
+  ctx.restore();
 
-  // ── 뒷다리 (몸통 뒤) — 굵은 허벅지 + 꺾인 정강이
+  // ── 뒷다리 (몸통 뒤) — 굵은 허벅지 + 꺾인 정강이.
+  // 좌우가 반대 위상으로 굽어 걷는 것처럼 보인다. 발을 꽂는 동안에는 둘 다
+  // 버틴다 (한쪽 발만 들고 내리찍으면 넘어질 자세다).
   for (const side of [-1, 1]) {
     const x = side * px(0.26);
+    const lift = paw < 0 ? 0 : step * side * px(0.07);
     plate(ctx, x - px(0.24), px(0.16), px(0.48), px(0.42), opt);
     armorCover(ctx, ALBUMS[side < 0 ? 3 : 12], x, px(0.36), px(0.26), hurt);
-    plate(ctx, x - px(0.15), px(0.56), px(0.3), px(0.34), opt);
+    plate(ctx, x - px(0.15), px(0.56) - lift, px(0.3), px(0.34), opt);
     // 발 — 앞으로 튀어나온 세 발톱
-    plate(ctx, x - px(0.22), px(0.88), px(0.52), px(0.14), opt);
-    for (let i = 0; i < 3; i++) plate(ctx, x + px(0.16) + i * px(0.06), px(0.9), px(0.05), px(0.08), hot);
+    plate(ctx, x - px(0.22), px(0.88) - lift, px(0.52), px(0.14), opt);
+    for (let i = 0; i < 3; i++) {
+      plate(ctx, x + px(0.16) + i * px(0.06), px(0.9) - lift, px(0.05), px(0.08), hot);
+    }
   }
 
   // ── 몸통 — 가로로 긴 통. 등에 앨범이 줄줄이 박혀 있다
@@ -618,32 +650,45 @@ export function drawDinoBody(ctx, r, time, color, hurt = false) {
     wedge(ctx, [[bx, -px(0.1)], [bx + px(0.1), -px(0.1) - h], [bx + px(0.2), -px(0.1)]], hot);
   }
 
-  // ── 앞발 — 짧고 접혀 있다 (내리찍는 그 발)
+  // ── 앞발 — 짧고 접혀 있다. paw 가 +면 치켜들고(예고), −면 내리꽂는다.
   for (const side of [-1, 1]) {
     const x = px(0.42) + side * px(0.06);
-    plate(ctx, x - px(0.09), px(0.06), px(0.18), px(0.24), opt);
-    plate(ctx, x - px(0.07), px(0.28), px(0.14), px(0.12), hot);
+    ctx.save();
+    // 발이 8px 짜리라 **각도만 돌리면 안 보인다.** 어깨째 들어 올려야 읽힌다.
+    ctx.translate(x, px(0.06) - Math.max(0, paw) * px(0.26));
+    ctx.rotate(-paw * 0.85);
+    // 꽂을 때는 팔이 앞으로 뻗는다 (내던지는 길이가 곧 힘이다)
+    const reach = Math.max(0, -paw);
+    plate(ctx, -px(0.09), 0, px(0.18), px(0.24 + reach * 0.2), opt);
+    plate(ctx, -px(0.08), px(0.28 + reach * 0.2), px(0.16), px(0.13 + reach * 0.06), hot);
+    ctx.restore();
   }
 
-  // ── 목 — 앞(오른쪽) 위로 뻗는다
+  // ── 목 — 앞(오른쪽) 위로 뻗는다. 울 때 젖혀진다.
+  ctx.save();
+  ctx.translate(px(0.5), -px(0.24));
+  ctx.rotate(-jaw * 0.12);
   for (let i = 0; i < 4; i++) {
     const t = i / 4;
-    plate(ctx, px(0.5) + i * px(0.16), -px(0.24) - i * px(0.14), px(0.26 - t * 0.06), px(0.26), opt);
+    plate(ctx, i * px(0.16), -i * px(0.14), px(0.26 - t * 0.06), px(0.26), opt);
   }
-  armorCover(ctx, ALBUMS[8], px(0.72), -px(0.3), px(0.2), hurt);
+  armorCover(ctx, ALBUMS[8], px(0.22), -px(0.06), px(0.2), hurt);
 
-  // ── 머리 — 긴 턱과 붉은 바이저
-  const hx = px(1.06);
-  const hy = -px(0.72);
+  // ── 머리 — 긴 턱과 붉은 바이저. 아래턱이 jaw 만큼 벌어진다.
+  const hx = px(0.56);
+  const hy = -px(0.48);
   plate(ctx, hx, hy, px(0.5), px(0.26), opt);
-  plate(ctx, hx + px(0.1), hy + px(0.24), px(0.44), px(0.12), opt); // 아래턱
   plate(ctx, hx + px(0.06), hy + px(0.07), px(0.34), px(0.08), { hurt, face: '#ff3b3b', lit: '#fff' });
-  // 이빨
-  for (let i = 0; i < 4; i++) {
-    plate(ctx, hx + px(0.14) + i * px(0.09), hy + px(0.2), px(0.05), px(0.06), hot);
-  }
   // 뿔
   wedge(ctx, [[hx + px(0.06), hy], [hx + px(0.16), hy - px(0.2)], [hx + px(0.22), hy]], hot);
+  // 아래턱 — 턱 경첩(머리 뒤쪽)을 축으로 내려간다
+  ctx.save();
+  ctx.translate(hx + px(0.1), hy + px(0.24));
+  ctx.rotate(jaw * 0.5);
+  plate(ctx, 0, 0, px(0.44), px(0.12), opt);
+  for (let i = 0; i < 4; i++) plate(ctx, px(0.04) + i * px(0.09), -px(0.06), px(0.05), px(0.06), hot);
+  ctx.restore();
+  ctx.restore();
 
   ctx.restore();
 }
