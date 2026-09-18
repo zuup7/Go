@@ -1142,21 +1142,48 @@ const TITLE_ROWS = 2;
  * 그래서 여기 한 곳에만 적고 양쪽이 이걸 읽는다.
  *
  * run 이 있으면 startRun 에 그대로 넘긴다. index 가 판 수와 같으면 보스전이다.
+ *
+ * `needs` 가 이 칸을 누가 볼 수 있는지 정한다:
+ *   'clearedOnce'  한 바퀴 깬 사람 (그냥 플레이어도 본다)
+ *   'clearedHard'  2회차까지 깬 사람
+ *   'dev'          개발자 모드에서만 — 이야기 순서를 건너뛰거나 모드를 끄는 칸들
  */
 export const SELECT_ITEMS = [
-  ...STAGES.map((s, i) => ({ label: `STAGE ${s.number}`, run: { index: i } })),
-  { label: '보스전', run: { index: STAGES.length } },
-  ...HARD_STAGES.map((s, i) => ({ label: `하드 ${s.number}판`, run: { index: i, hard: true } })),
-  { label: '하드 보스전', run: { index: HARD_STAGES.length, hard: true } },
+  ...STAGES.map((s, i) => ({ label: `STAGE ${s.number}`, run: { index: i }, needs: 'clearedOnce' })),
+  { label: '보스전', run: { index: STAGES.length }, needs: 'clearedOnce' },
+  ...HARD_STAGES.map((s, i) => ({
+    label: `하드 ${s.number}판`,
+    run: { index: i, hard: true },
+    needs: 'clearedHard',
+  })),
+  { label: '하드 보스전', run: { index: HARD_STAGES.length, hard: true }, needs: 'clearedHard' },
   /**
    * 포탈이 열려 있는 스테이지 1. NPC 에게 말을 걸고 문으로 들어가면 2회차가 시작된다 —
    * 하드 판으로 바로 뛰어드는 위 칸들과 달리 **입구 전체**를 볼 수 있다.
    */
-  { label: '포탈 스테이지 1', action: 'hub' },
-  { label: '오프닝 다시 보기', action: 'opening' },
-  { label: '2회차 시작 컷신', action: 'hardopen' },
-  { label: '개발자 모드 끄기', action: 'devOff' },
+  { label: '포탈 스테이지 1', action: 'hub', needs: 'dev' },
+  { label: '오프닝 다시 보기', action: 'opening', needs: 'dev' },
+  { label: '2회차 시작 컷신', action: 'hardopen', needs: 'dev' },
+  { label: '개발자 모드 끄기', action: 'devOff', needs: 'dev' },
 ];
+
+/**
+ * 지금 이 사람에게 보이는 칸들.
+ *
+ * **고르는 쪽(updateGame)과 그리는 쪽(render/hud)이 반드시 이 함수를 같이 써야 한다.**
+ * selectIndex 는 여기서 나온 목록의 자리 번호다 — 목록이 서로 다르면 화면은 맞는데
+ * 엉뚱한 판이 시작된다 (위 주석의 그 사고다).
+ *
+ * 개발자 모드는 전부 본다. 그러면 SELECT_HARD 같은 자리 번호가 그대로 맞는다.
+ */
+export function selectItems(game) {
+  if (game.dev) return SELECT_ITEMS;
+  const save = game.save ?? {};
+  return SELECT_ITEMS.filter((item) => item.needs !== 'dev' && save[item.needs]);
+}
+
+/** 고를 게 하나라도 있나. 없으면 타이틀에 메뉴를 띄우지 않는다 (예전 그대로 바로 시작) */
+export const canSelect = (game) => selectItems(game).length > 0;
 
 const slotOf = (test) => SELECT_ITEMS.findIndex(test);
 /** 하드모드 1판부터 (NPC 를 안 거치고 바로 — 개발자 모드에서만) */
@@ -1177,6 +1204,8 @@ export const SELECT_SLOTS = SELECT_ITEMS.length;
 export function setDevMode(game, on) {
   game.dev = on;
   game.titleIndex = 0;
+  // 목록이 짧아지므로 고른 자리가 범위 밖일 수 있다
+  game.selectIndex = 0;
   emit(game, 'dev', { on });
 }
 
@@ -1430,8 +1459,8 @@ export function updateGame(game, input, dt) {
 
   switch (game.scene) {
     case 'title': {
-      // 개발자 모드가 꺼져 있으면 고를 것도 없다 — 예전과 똑같이 바로 시작한다
-      if (!game.dev) {
+      // 고를 게 없으면(아직 한 바퀴를 못 깼고 개발자 모드도 아니면) 예전과 똑같이 바로 시작한다
+      if (!canSelect(game)) {
         game.titleIndex = 0;
         if (input.confirmPressed) startRun(game);
         break;
@@ -1450,13 +1479,14 @@ export function updateGame(game, input, dt) {
     }
 
     case 'select': {
+      const slots = selectItems(game);
       const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
-      if (moved) game.selectIndex = (game.selectIndex + moved + SELECT_SLOTS) % SELECT_SLOTS;
+      if (moved) game.selectIndex = (game.selectIndex + moved + slots.length) % slots.length;
       if (input.restartPressed) {
         game.scene = 'title';
         game.sceneTime = 0;
       } else if (input.confirmPressed) {
-        const pick = SELECT_ITEMS[game.selectIndex];
+        const pick = slots[game.selectIndex];
         if (pick?.run) startRun(game, pick.run.index, { hard: !!pick.run.hard });
         else if (pick?.action === 'opening') startIntro(game, 'intro');
         else if (pick?.action === 'hardopen') startIntro(game, 'hardopen');

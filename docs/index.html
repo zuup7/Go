@@ -752,6 +752,39 @@ body.pad-editing .rotate-note {
   display: none;
 }
 
+/* 타이틀 메뉴와 스테이지 선택도 탭으로.
+   .ui 위에 캔버스가 얹혀 있어서 여기서 되살리지 않으면 줄을 눌러도 캔버스가 먹는다.
+   특히 「뒤로」는 이게 없으면 폰에서 누를 방법이 아예 없다 (R 키가 없다). */
+.title-panel .menu,
+.select-panel .slots,
+.select-panel .back-btn {
+  pointer-events: auto;
+}
+
+.title-panel .menu li,
+.select-panel .slots li {
+  cursor: pointer;
+}
+
+.back-btn {
+  align-self: center;
+  margin: 10px 0 0;
+  padding: 6px 18px;
+  font-family: var(--font);
+  font-size: 0.78em;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid #43265f;
+  border-radius: 6px;
+  cursor: pointer;
+  /* 목록이 굴러가도 이 버튼은 안 줄어든다 */
+  flex: 0 0 auto;
+}
+
+.back-btn:hover {
+  color: var(--ink);
+}
+
 /* 일시정지 메뉴 — .ui 전체가 pointer-events: none 이라 여기서 되살린다 (숫자판과 같은 이유) */
 .pause-panel .menu {
   pointer-events: auto;
@@ -6106,21 +6139,48 @@ const TITLE_ROWS = 2;
  * 그래서 여기 한 곳에만 적고 양쪽이 이걸 읽는다.
  *
  * run 이 있으면 startRun 에 그대로 넘긴다. index 가 판 수와 같으면 보스전이다.
+ *
+ * `needs` 가 이 칸을 누가 볼 수 있는지 정한다:
+ *   'clearedOnce'  한 바퀴 깬 사람 (그냥 플레이어도 본다)
+ *   'clearedHard'  2회차까지 깬 사람
+ *   'dev'          개발자 모드에서만 — 이야기 순서를 건너뛰거나 모드를 끄는 칸들
  */
 const SELECT_ITEMS = [
-  ...STAGES.map((s, i) => ({ label: `STAGE ${s.number}`, run: { index: i } })),
-  { label: '보스전', run: { index: STAGES.length } },
-  ...HARD_STAGES.map((s, i) => ({ label: `하드 ${s.number}판`, run: { index: i, hard: true } })),
-  { label: '하드 보스전', run: { index: HARD_STAGES.length, hard: true } },
+  ...STAGES.map((s, i) => ({ label: `STAGE ${s.number}`, run: { index: i }, needs: 'clearedOnce' })),
+  { label: '보스전', run: { index: STAGES.length }, needs: 'clearedOnce' },
+  ...HARD_STAGES.map((s, i) => ({
+    label: `하드 ${s.number}판`,
+    run: { index: i, hard: true },
+    needs: 'clearedHard',
+  })),
+  { label: '하드 보스전', run: { index: HARD_STAGES.length, hard: true }, needs: 'clearedHard' },
   /**
    * 포탈이 열려 있는 스테이지 1. NPC 에게 말을 걸고 문으로 들어가면 2회차가 시작된다 —
    * 하드 판으로 바로 뛰어드는 위 칸들과 달리 **입구 전체**를 볼 수 있다.
    */
-  { label: '포탈 스테이지 1', action: 'hub' },
-  { label: '오프닝 다시 보기', action: 'opening' },
-  { label: '2회차 시작 컷신', action: 'hardopen' },
-  { label: '개발자 모드 끄기', action: 'devOff' },
+  { label: '포탈 스테이지 1', action: 'hub', needs: 'dev' },
+  { label: '오프닝 다시 보기', action: 'opening', needs: 'dev' },
+  { label: '2회차 시작 컷신', action: 'hardopen', needs: 'dev' },
+  { label: '개발자 모드 끄기', action: 'devOff', needs: 'dev' },
 ];
+
+/**
+ * 지금 이 사람에게 보이는 칸들.
+ *
+ * **고르는 쪽(updateGame)과 그리는 쪽(render/hud)이 반드시 이 함수를 같이 써야 한다.**
+ * selectIndex 는 여기서 나온 목록의 자리 번호다 — 목록이 서로 다르면 화면은 맞는데
+ * 엉뚱한 판이 시작된다 (위 주석의 그 사고다).
+ *
+ * 개발자 모드는 전부 본다. 그러면 SELECT_HARD 같은 자리 번호가 그대로 맞는다.
+ */
+function selectItems(game) {
+  if (game.dev) return SELECT_ITEMS;
+  const save = game.save ?? {};
+  return SELECT_ITEMS.filter((item) => item.needs !== 'dev' && save[item.needs]);
+}
+
+/** 고를 게 하나라도 있나. 없으면 타이틀에 메뉴를 띄우지 않는다 (예전 그대로 바로 시작) */
+const canSelect = (game) => selectItems(game).length > 0;
 
 const slotOf = (test) => SELECT_ITEMS.findIndex(test);
 /** 하드모드 1판부터 (NPC 를 안 거치고 바로 — 개발자 모드에서만) */
@@ -6141,6 +6201,8 @@ const SELECT_SLOTS = SELECT_ITEMS.length;
 function setDevMode(game, on) {
   game.dev = on;
   game.titleIndex = 0;
+  // 목록이 짧아지므로 고른 자리가 범위 밖일 수 있다
+  game.selectIndex = 0;
   emit(game, 'dev', { on });
 }
 
@@ -6394,8 +6456,8 @@ function updateGame(game, input, dt) {
 
   switch (game.scene) {
     case 'title': {
-      // 개발자 모드가 꺼져 있으면 고를 것도 없다 — 예전과 똑같이 바로 시작한다
-      if (!game.dev) {
+      // 고를 게 없으면(아직 한 바퀴를 못 깼고 개발자 모드도 아니면) 예전과 똑같이 바로 시작한다
+      if (!canSelect(game)) {
         game.titleIndex = 0;
         if (input.confirmPressed) startRun(game);
         break;
@@ -6414,13 +6476,14 @@ function updateGame(game, input, dt) {
     }
 
     case 'select': {
+      const slots = selectItems(game);
       const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
-      if (moved) game.selectIndex = (game.selectIndex + moved + SELECT_SLOTS) % SELECT_SLOTS;
+      if (moved) game.selectIndex = (game.selectIndex + moved + slots.length) % slots.length;
       if (input.restartPressed) {
         game.scene = 'title';
         game.sceneTime = 0;
       } else if (input.confirmPressed) {
-        const pick = SELECT_ITEMS[game.selectIndex];
+        const pick = slots[game.selectIndex];
         if (pick?.run) startRun(game, pick.run.index, { hard: !!pick.run.hard });
         else if (pick?.action === 'opening') startIntro(game, 'intro');
         else if (pick?.action === 'hardopen') startIntro(game, 'hardopen');
@@ -6530,7 +6593,7 @@ const runSummary = (game) => ({
   hard: game.hard,
 });
 
-return { VIEW, stageTable, stageCount, createGame, markKey, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, SELECT_ITEMS, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary };
+return { VIEW, stageTable, stageCount, createGame, markKey, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary };
 })();
 __m["chartrun/src/core/devmode.js"] = (() => {
 // 개발자 모드. 비밀번호를 넣으면 스테이지를 골라 들어갈 수 있다.
@@ -12244,7 +12307,7 @@ const { beatRecord } = __m["chartrun/src/core/save.js"];
 const { STAGES } = __m["chartrun/src/data/stages.js"];
 const { KEYPAD } = __m["chartrun/src/core/devmode.js"];
 const { ACTIONS } = __m["chartrun/src/core/input.js"];
-const { PAUSE_ROWS, stageTable, SELECT_ITEMS } = __m["chartrun/src/core/game.js"];
+const { PAUSE_ROWS, stageTable, selectItems, canSelect } = __m["chartrun/src/core/game.js"];
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -12348,13 +12411,14 @@ function createHud(root) {
     if (ui?.keypad) return keypadPanel(ui.keypad);
     switch (game.scene) {
       case 'title': {
-        // 개발자 모드가 꺼져 있으면 예전 그대로 — 고를 것 없이 바로 시작한다
-        const menu = game.dev
+        // 고를 게 없으면 예전 그대로 — 메뉴 없이 바로 시작한다.
+        // 줄에 data-key 를 달아 탭으로도 되게 한다 (아래 선택 목록·일시정지 메뉴와 같은 이유)
+        const menu = canSelect(game)
           ? `<ul class="menu">
-              <li class="${game.titleIndex === 0 ? 'on' : ''}">처음부터</li>
-              <li class="${game.titleIndex === 1 ? 'on' : ''}">스테이지 선택</li>
+              <li class="${game.titleIndex === 0 ? 'on' : ''}" data-key="title:0">처음부터</li>
+              <li class="${game.titleIndex === 1 ? 'on' : ''}" data-key="title:1">스테이지 선택</li>
             </ul>
-            <p class="press">◀▶ 로 고르고 점프로 확인</p>`
+            <p class="press">◀▶ 로 고르고 점프로 확인 · 눌러도 된다</p>`
           : '<p class="press">아무 키나 / 점프 버튼으로 시작</p>';
         return `
           <div class="panel title-panel">
@@ -12374,21 +12438,26 @@ function createHud(root) {
       }
       case 'select': {
         // 칸 목록은 core 가 갖고 있다 — 여기 또 적으면 둘이 어긋나서
-        // "화면은 맞는데 엉뚱한 판이 시작되는" 상태가 된다
-        const slots = SELECT_ITEMS;
+        // "화면은 맞는데 엉뚱한 판이 시작되는" 상태가 된다.
+        // 고르는 쪽(updateGame)과 **같은 함수**를 써야 한다
+        const slots = selectItems(game);
+        // 줄과 「뒤로」에 data-key 를 달아 **탭으로도** 되게 한다 — 폰에는 R 키가 없어서
+        // 이게 없으면 이 화면에 들어온 뒤 타이틀로 돌아갈 방법이 아예 없다.
+        // (일시정지 메뉴와 같은 방식이고, 핸들러는 ui/app.js 가 #center 에 위임한다)
         return `
           <div class="panel select-panel">
             <h2>스테이지 선택</h2>
             <ul class="slots">
               ${slots
                 .map(
-                  (s, i) => `<li class="${i === game.selectIndex ? 'on' : ''}">
+                  (s, i) => `<li class="${i === game.selectIndex ? 'on' : ''}" data-key="slot:${i}">
                     <span class="slot-label">${esc(s.label)}</span>
                   </li>`,
                 )
                 .join('')}
             </ul>
-            <p class="press">◀▶ 로 고르고 점프로 시작 · R 로 뒤로</p>
+            <p class="press">◀▶ 로 고르고 점프로 시작 · 눌러도 된다</p>
+            <button type="button" class="back-btn" data-key="slot:back">뒤로</button>
           </div>`;
       }
       case 'stageIntro': {
@@ -13411,6 +13480,32 @@ function pressKey(key) {
         { ...input, pausePressed: false, leftPressed: false, rightPressed: false, confirmPressed: true },
         0,
       );
+    }
+    return;
+  }
+  // 타이틀 메뉴도 탭으로. 안 그러면 「스테이지 선택」이라고 적힌 줄을 눌러도
+  // 아무 일도 안 일어난다 (.ui 위에 캔버스가 있어서 줄은 클릭을 안 받는다).
+  if (key.startsWith('title:')) {
+    if (game.scene !== 'title') return;
+    game.titleIndex = Number(key.slice('title:'.length));
+    updateGame(
+      game,
+      { ...input, leftPressed: false, rightPressed: false, confirmPressed: true },
+      0,
+    );
+    return;
+  }
+  // 스테이지 선택도 탭으로 — 폰에는 R 키가 없어서 「뒤로」를 누를 방법이 없다.
+  // 일시정지 메뉴와 같은 수법이다: 줄만 옮겨두고 합성 입력 한 프레임을 흘린다.
+  if (key.startsWith('slot:')) {
+    if (game.scene !== 'select') return;
+    const what = key.slice('slot:'.length);
+    const frame = { ...input, leftPressed: false, rightPressed: false };
+    if (what === 'back') {
+      updateGame(game, { ...frame, restartPressed: true, confirmPressed: false }, 0);
+    } else {
+      game.selectIndex = Number(what);
+      updateGame(game, { ...frame, restartPressed: false, confirmPressed: true }, 0);
     }
     return;
   }

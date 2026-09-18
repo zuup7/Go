@@ -274,6 +274,32 @@ function pressKey(key) {
     }
     return;
   }
+  // 타이틀 메뉴도 탭으로. 안 그러면 「스테이지 선택」이라고 적힌 줄을 눌러도
+  // 아무 일도 안 일어난다 (.ui 위에 캔버스가 있어서 줄은 클릭을 안 받는다).
+  if (key.startsWith('title:')) {
+    if (game.scene !== 'title') return;
+    game.titleIndex = Number(key.slice('title:'.length));
+    updateGame(
+      game,
+      { ...input, leftPressed: false, rightPressed: false, confirmPressed: true },
+      0,
+    );
+    return;
+  }
+  // 스테이지 선택도 탭으로 — 폰에는 R 키가 없어서 「뒤로」를 누를 방법이 없다.
+  // 일시정지 메뉴와 같은 수법이다: 줄만 옮겨두고 합성 입력 한 프레임을 흘린다.
+  if (key.startsWith('slot:')) {
+    if (game.scene !== 'select') return;
+    const what = key.slice('slot:'.length);
+    const frame = { ...input, leftPressed: false, rightPressed: false };
+    if (what === 'back') {
+      updateGame(game, { ...frame, restartPressed: true, confirmPressed: false }, 0);
+    } else {
+      game.selectIndex = Number(what);
+      updateGame(game, { ...frame, restartPressed: false, confirmPressed: true }, 0);
+    }
+    return;
+  }
   if (key === 'open') {
     openKeypad();
     return;

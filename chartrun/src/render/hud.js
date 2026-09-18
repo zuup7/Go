@@ -5,7 +5,7 @@ import { beatRecord } from '../core/save.js';
 import { STAGES } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
 import { ACTIONS } from '../core/input.js';
-import { PAUSE_ROWS, stageTable, SELECT_ITEMS } from '../core/game.js';
+import { PAUSE_ROWS, stageTable, selectItems, canSelect } from '../core/game.js';
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -109,13 +109,14 @@ export function createHud(root) {
     if (ui?.keypad) return keypadPanel(ui.keypad);
     switch (game.scene) {
       case 'title': {
-        // 개발자 모드가 꺼져 있으면 예전 그대로 — 고를 것 없이 바로 시작한다
-        const menu = game.dev
+        // 고를 게 없으면 예전 그대로 — 메뉴 없이 바로 시작한다.
+        // 줄에 data-key 를 달아 탭으로도 되게 한다 (아래 선택 목록·일시정지 메뉴와 같은 이유)
+        const menu = canSelect(game)
           ? `<ul class="menu">
-              <li class="${game.titleIndex === 0 ? 'on' : ''}">처음부터</li>
-              <li class="${game.titleIndex === 1 ? 'on' : ''}">스테이지 선택</li>
+              <li class="${game.titleIndex === 0 ? 'on' : ''}" data-key="title:0">처음부터</li>
+              <li class="${game.titleIndex === 1 ? 'on' : ''}" data-key="title:1">스테이지 선택</li>
             </ul>
-            <p class="press">◀▶ 로 고르고 점프로 확인</p>`
+            <p class="press">◀▶ 로 고르고 점프로 확인 · 눌러도 된다</p>`
           : '<p class="press">아무 키나 / 점프 버튼으로 시작</p>';
         return `
           <div class="panel title-panel">
@@ -135,21 +136,26 @@ export function createHud(root) {
       }
       case 'select': {
         // 칸 목록은 core 가 갖고 있다 — 여기 또 적으면 둘이 어긋나서
-        // "화면은 맞는데 엉뚱한 판이 시작되는" 상태가 된다
-        const slots = SELECT_ITEMS;
+        // "화면은 맞는데 엉뚱한 판이 시작되는" 상태가 된다.
+        // 고르는 쪽(updateGame)과 **같은 함수**를 써야 한다
+        const slots = selectItems(game);
+        // 줄과 「뒤로」에 data-key 를 달아 **탭으로도** 되게 한다 — 폰에는 R 키가 없어서
+        // 이게 없으면 이 화면에 들어온 뒤 타이틀로 돌아갈 방법이 아예 없다.
+        // (일시정지 메뉴와 같은 방식이고, 핸들러는 ui/app.js 가 #center 에 위임한다)
         return `
           <div class="panel select-panel">
             <h2>스테이지 선택</h2>
             <ul class="slots">
               ${slots
                 .map(
-                  (s, i) => `<li class="${i === game.selectIndex ? 'on' : ''}">
+                  (s, i) => `<li class="${i === game.selectIndex ? 'on' : ''}" data-key="slot:${i}">
                     <span class="slot-label">${esc(s.label)}</span>
                   </li>`,
                 )
                 .join('')}
             </ul>
-            <p class="press">◀▶ 로 고르고 점프로 시작 · R 로 뒤로</p>
+            <p class="press">◀▶ 로 고르고 점프로 시작 · 눌러도 된다</p>
+            <button type="button" class="back-btn" data-key="slot:back">뒤로</button>
           </div>`;
       }
       case 'stageIntro': {
