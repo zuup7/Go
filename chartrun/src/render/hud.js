@@ -2,10 +2,17 @@
 // 순위, 재생수, 차트아웃 횟수, 시간, 스테이지 번호. 대사나 농담은 두지 않는다.
 import { timeText } from '../core/util.js';
 import { beatRecord } from '../core/save.js';
-import { STAGES } from '../data/stages.js';
+import { STAGES, NOTE_TOTAL } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
 import { ACTIONS } from '../core/input.js';
-import { PAUSE_ROWS, stageTable, selectItems, canSelect, inCutscene } from '../core/game.js';
+import {
+  PAUSE_ROWS,
+  stageTable,
+  selectItems,
+  titleRows,
+  inCutscene,
+  notesFound,
+} from '../core/game.js';
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -109,15 +116,22 @@ export function createHud(root) {
     if (ui?.keypad) return keypadPanel(ui.keypad);
     switch (game.scene) {
       case 'title': {
-        // 고를 게 없으면 예전 그대로 — 메뉴 없이 바로 시작한다.
-        // 줄에 data-key 를 달아 탭으로도 되게 한다 (아래 선택 목록·일시정지 메뉴와 같은 이유)
-        const menu = canSelect(game)
-          ? `<ul class="menu">
-              <li class="${game.titleIndex === 0 ? 'on' : ''}" data-key="title:0">처음부터</li>
-              <li class="${game.titleIndex === 1 ? 'on' : ''}" data-key="title:1">스테이지 선택</li>
+        // 줄 목록은 core 가 갖고 있다 — 여기 또 적으면 화면은 셋인데 고르기는
+        // 둘에서 도는 꼴이 된다. 줄이 하나뿐이면 메뉴 없이 예전 그대로.
+        // (줄에 data-key 를 달아 탭으로도 되게 한다 — 선택 목록·일시정지 메뉴와 같은 이유)
+        const rows = titleRows(game);
+        const menu =
+          rows.length > 1
+            ? `<ul class="menu">
+              ${rows
+                .map(
+                  (r, i) =>
+                    `<li class="${i === game.titleIndex ? 'on' : ''}" data-key="title:${i}">${esc(r.label)}</li>`,
+                )
+                .join('')}
             </ul>
             <p class="press">◀▶ 로 고르고 점프로 확인 · 눌러도 된다</p>`
-          : '<p class="press">아무 키나 / 점프 버튼으로 시작</p>';
+            : '<p class="press">아무 키나 / 점프 버튼으로 시작</p>';
         return `
           <div class="panel title-panel">
             <h1>차트런${game.save.clearedHard ? ' <span class="crown">♛</span>' : ''}</h1>
@@ -158,6 +172,13 @@ export function createHud(root) {
             <button type="button" class="back-btn" data-key="slot:back">뒤로</button>
           </div>`;
       }
+      case 'gallery':
+        // 그림은 전부 캔버스가 그린다 (앨범 열일곱 장). 여기서 패널을 띄우면
+        // 가운데가 통째로 가려지므로 **나가는 버튼 하나만** 화면 아래에 둔다.
+        return `
+          <div class="gallery-bar">
+            <button type="button" class="back-btn" data-key="gallery:back">뒤로</button>
+          </div>`;
       case 'stageIntro': {
         // **하드모드에서는 하드 표를 봐야 한다** — STAGES 를 직접 보면 이름이 어긋난다
         const stage = stageTable(game)[game.stageIndex];
@@ -193,13 +214,20 @@ export function createHud(root) {
               <li><span>재생수</span><b>${e.plays ?? 0}</b></li>
               <li><span>SCORE</span><b>${(e.score ?? 0).toLocaleString('ko-KR')}</b></li>
               ${
-                // 2회차까지 끝낸 사람에게만. 가장 어려운 걸 깬 것이니 어디선가는 알아줘야 한다.
+                // 2회차 칸. 깬 사람은 ♛, **이번에 막 열린 사람에게는 열렸다고 알린다** —
+                // 예전에는 여기서 아무 말도 안 해서 2회차가 있는 줄도 몰랐다.
                 game.save.clearedHard || e.hard
                   ? '<li><span>2회차</span><b>클리어 ♛</b></li>'
-                  : ''
+                  : '<li><span>2회차</span><b class="opened">열림</b></li>'
               }
             </ul>
-            <p class="press">아무 키나 누르면 처음으로</p>
+            <p class="press">${
+              // 한 바퀴 돈 사람은 타이틀이 아니라 **2회차 입구**로 간다 (core 의 returnToHub).
+              // 예전 글은 「처음으로」였는데, 그건 사실이 아니라 영문 모르고 초원에 서게 된다.
+              game.save.clearedOnce || e.hard
+                ? '아무 키나 누르면 2회차 입구로'
+                : '아무 키나 누르면 처음으로'
+            }</p>
           </div>`;
       }
       default:
@@ -211,7 +239,11 @@ export function createHud(root) {
     update(game, ui) {
       const rank = game.scene === 'title' ? game.save.bestRank : game.rank;
       el.rank.textContent = `#${rank}`;
-      el.plays.textContent = `♪ ${game.plays}`;
+      // 음표는 **몇 개 중 몇 개**로 보여준다. 그냥 올라가는 숫자였을 때는 모으는 게
+      // 목표라는 걸 알 길이 없었다. 하드 판에는 음표가 하나도 없어서(NOTE_TOTAL 은
+      // 1회차 것이다) 거기서는 이 칸을 아예 걷는다 — 영영 안 오르는 숫자는 고장으로 보인다.
+      el.plays.hidden = game.hard;
+      el.plays.textContent = `♪ ${notesFound(game)}/${NOTE_TOTAL}`;
       el.chartOuts.textContent = `✕ ${game.chartOuts}`;
       el.time.textContent = timeText(game.elapsedMs);
 
@@ -219,7 +251,8 @@ export function createHud(root) {
       // 컷신 판단은 core 의 inCutscene 하나뿐이다 — 여기 또 적었더니 잡히는
       // 컷신(caught)을 빼먹어서 그 컷신에서만 HUD 가 화면 위에 남아 있었다
       const inCut = inCutscene(game);
-      el.hud.hidden = game.scene === 'title' || game.scene === 'select' || inCut;
+      el.hud.hidden =
+        game.scene === 'title' || game.scene === 'select' || game.scene === 'gallery' || inCut;
 
       const showBoss = game.scene === 'boss' && game.boss && !inCut;
       el.bossBar.hidden = !showBoss;

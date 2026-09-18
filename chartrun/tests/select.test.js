@@ -62,10 +62,19 @@ test('아직 한 바퀴도 못 깼으면 고를 게 없다 — 예전처럼 바�
   assert.equal(game.titleIndex, 0, '고를 줄이 없으니 줄 번호도 안 움직인다');
 });
 
-test('한 바퀴 깨면 스테이지 넷과 보스전이 열린다 — 하드·개발자 칸은 안 보인다', () => {
+test('한 바퀴 깨면 스테이지 넷·보스전·2회차 입구가 열린다 — 개발자 칸은 안 보인다', () => {
   const game = gameWith({ clearedOnce: true });
   assert.equal(canSelect(game), true);
-  assert.deepEqual(labels(game), ['STAGE 1', 'STAGE 2', 'STAGE 3', 'STAGE 4', '보스전']);
+  assert.deepEqual(labels(game), [
+    'STAGE 1',
+    'STAGE 2',
+    'STAGE 3',
+    'STAGE 4',
+    '보스전',
+    // 하드 개별 판은 아직 안 보인다. 이 칸이 없으면 **하드를 깨야 하드가 보이는**
+    // 닭-달걀이라, 2회차가 있다는 걸 알 방법이 목록에 없다.
+    '2회차 입구',
+  ]);
 });
 
 test('2회차까지 깨면 하드 판까지 열린다 — 개발자 칸은 그래도 안 보인다', () => {
@@ -81,6 +90,7 @@ test('2회차까지 깨면 하드 판까지 열린다 — 개발자 칸은 그�
     '하드 3판',
     '하드 4판',
     '하드 보스전',
+    '2회차 입구',
   ]);
   assert.ok(
     !labels(game).some((l) => l.includes('개발자') || l.includes('컷신') || l.includes('포탈')),
@@ -110,6 +120,11 @@ test('보이는 칸을 고르면 그 판이 열린다 (한 바퀴 깬 사람)', 
     step(game, idle({ confirmPressed: true }));
 
     assert.equal(game.hard, false, `"${label}" 은 1회차 판이어야 한다`);
+    if (label === '2회차 입구') {
+      // 판 번호가 아니라 **입구**다 — 포탈이 열린 스테이지 1 로 간다
+      assert.equal(game.world.stage.id, STAGES[0].id, '2회차 입구가 스테이지 1 이 아니다');
+      return;
+    }
     if (label === '보스전') {
       assert.ok(game.boss, `"${label}" 을 골랐는데 보스가 없다`);
     } else {

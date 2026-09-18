@@ -51,6 +51,12 @@ export const emptySave = () => ({
   clearedHard: false,
   /** 하드모드 최고 기록. 보통 기록과 **따로** 둔다 — 둘은 같은 판이 아니다 */
   bestHardTimeMs: null,
+  /**
+   * 주운 음표의 **자리**들 (`스테이지:칸` 열쇠). 개수가 아니라 자리를 남기는 게 핵심이다 —
+   * 죽으면 음표가 되살아나므로(spawnEntities) 개수만 세면 같은 걸 두 번 센다.
+   * revealedTraps 와 같은 모양이라 여러 판에 걸쳐 모을 수 있다.
+   */
+  foundNotes: [],
 });
 
 export function serialize(data) {
@@ -112,6 +118,10 @@ export function mergeRun(save, run) {
   }
   if (run.revealedTraps) {
     next.revealedTraps = [...new Set([...(save.revealedTraps ?? []), ...run.revealedTraps])];
+  }
+  // 음표도 같은 방식으로 합친다 — 한 판에서 놓친 걸 다음 판에서 주워도 쌓인다
+  if (run.foundNotes) {
+    next.foundNotes = [...new Set([...(save.foundNotes ?? []), ...run.foundNotes])];
   }
   if (run.clearedOnce) next.clearedOnce = true;
   if (run.clearedHard) next.clearedHard = true;

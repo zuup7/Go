@@ -955,3 +955,19 @@ export const BOSS_STAGE = {
 };
 
 export const stageByIndex = (index) => STAGES[Math.min(Math.max(index, 0), STAGES.length - 1)];
+
+/** 판들에 흩어진 음표('*') 칸이 몇 개인지 */
+const countNotes = (stages) =>
+  stages.reduce(
+    (total, stage) => total + stage.rows.reduce((n, row) => n + (row.match(/\*/g)?.length ?? 0), 0),
+    0,
+  );
+
+/**
+ * 1회차 네 판에 있는 음표 전부. 하드 판에는 음표가 **하나도 없다** — 그래서
+ * 다 모으는 건 1회차 이야기다.
+ *
+ * 개수를 손으로 적지 않고 **표에서 센다.** 적어두면 판을 고친 날 둘이 어긋나서,
+ * 화면은 `♪ 24/24` 인데 아직 한 칸이 남아 있거나 다 주워도 안 열리게 된다.
+ */
+export const NOTE_TOTAL = countNotes(STAGES);

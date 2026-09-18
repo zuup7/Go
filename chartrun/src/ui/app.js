@@ -309,6 +309,17 @@ function pressKey(key) {
     }
     return;
   }
+  // 숨은 화면에서 나가기. 선택 화면의 「뒤로」와 같은 이유로 꼭 있어야 한다 —
+  // 폰에는 R 키가 없고, 이 화면은 캔버스만 있어서 안 그러면 갇힌다.
+  if (key === 'gallery:back') {
+    if (game.scene !== 'gallery') return;
+    updateGame(
+      game,
+      { ...input, leftPressed: false, rightPressed: false, confirmPressed: false, restartPressed: true },
+      0,
+    );
+    return;
+  }
   if (key === 'open') {
     openKeypad();
     return;

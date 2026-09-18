@@ -269,6 +269,11 @@ canvas#game {
   font-weight: 400;
 }
 
+/* 엔딩에서 「2회차 열림」. 클리어 표시(♛)와 달리 **지금 막 생긴 것**이라 눈에 띄어야 한다 */
+.stats .opened {
+  color: var(--good);
+}
+
 /* 저장이 막힌 기기에 뜨는 한 줄. 못 하게 막는 게 아니라 알려주는 것이다 */
 .warn {
   margin: 8px 0 0;
@@ -327,12 +332,14 @@ canvas#game {
   background: rgba(255, 209, 102, 0.12);
 }
 
-/* 고를 게 늘면 224px 짜리 화면에 한 줄로는 안 들어간다 (하드모드가 붙으면서 13줄이
-   됐다). **세로로 채우고 넘치면 옆 칸으로** 넘어간다 — 고르기는 selectIndex 하나짜리
-   1차원이라 ◀▶ 가 "목록을 따라 내려간다"로 그대로 읽힌다.
-   줄 수를 따로 안 적는 게 중요하다. 목록이 더 늘어도 칸이 저절로 하나 더 생긴다. */
+/* 고를 게 늘면 224px 짜리 화면에 한 줄로는 안 들어간다 (하드모드가 붙으면서 13줄,
+   2회차 입구가 붙으면서 15줄이 됐다). **세로로 채우고 넘치면 옆 칸으로** 넘어간다 —
+   고르기는 selectIndex 하나짜리 1차원이라 ◀▶ 가 "목록을 따라 내려간다"로 읽힌다.
+   줄 수를 따로 안 적는 게 중요하다. 목록이 더 늘어도 칸이 저절로 하나 더 생긴다.
+   (8줄 × 2칸 = 16. padlayout 테스트가 이 곱을 목록 길이와 견준다 — 세 칸이 되면
+   패널이 화면보다 넓어진다) */
 .slots {
-  --slot-rows: 7;
+  --slot-rows: 8;
   grid-auto-flow: column;
   grid-template-rows: repeat(var(--slot-rows), auto);
   column-gap: 14px;
@@ -785,6 +792,20 @@ body.in-cut:not(.pad-editing) .touch-right {
 }
 
 .back-btn:hover {
+  color: var(--ink);
+}
+
+/* 숨은 화면. 앨범 열일곱 장은 캔버스가 그리므로 **패널을 띄우지 않는다** —
+   가운데에 패널이 뜨면 정작 보여줄 격자를 통째로 가린다. 나가는 버튼만 아래에 둔다
+   (.center 가 grid 라 align-self 로 바닥에 붙는다) */
+.gallery-bar {
+  align-self: end;
+  pointer-events: auto;
+}
+
+.gallery-bar .back-btn {
+  background: rgba(10, 4, 16, 0.82);
+  border-color: #5a3382;
   color: var(--ink);
 }
 

@@ -1365,12 +1365,59 @@ export function drawTitle(ctx, time) {
   }
 }
 
+// ── 숨은 화면 ───────────────────────────────────────────────
+/**
+ * 음표를 다 모으면 열리는 방. 지나온 앨범 열일곱 장이 한자리에 놓인다.
+ *
+ * **새로 그리는 그림이 없다** — drawCoverAt 이 어떤 크기로든 커버를 그려주므로
+ * 격자에 얹기만 하면 된다. 글자도 안 쓴다 (앨범 이름은 원래 화면에 안 나온다).
+ */
+// top 은 격자 위 여백. 아래에는 「뒤로」 버튼이 얹히므로 위보다 조금 더 남긴다.
+const GAL = { cols: 6, size: 44, gap: 8, top: 26 };
+
+export function drawGallery(ctx, time) {
+  const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
+  grad.addColorStop(0, '#09040f');
+  grad.addColorStop(1, '#1d0a2b');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  // 별. 타이틀보다 성기게 — 여기는 조용한 방이다
+  ctx.fillStyle = 'rgba(255,255,255,0.26)';
+  for (let i = 0; i < 26; i++) {
+    const x = (i * 131) % VIEW.w;
+    const y = (i * 79) % VIEW.h;
+    if (Math.sin(time * 1.3 + i * 1.7) > 0.2) ctx.fillRect(x, y, 1, 1);
+  }
+
+  const { cols, size, gap, top } = GAL;
+  const rowW = cols * size + (cols - 1) * gap;
+  const left = Math.round((VIEW.w - rowW) / 2);
+
+  for (let i = 0; i < ALBUMS.length; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = left + col * (size + gap);
+    // 줄마다 조금씩 엇갈려 뜬다 — 열일곱 장이 한꺼번에 오르내리면 격자가 출렁인다
+    const y = top + row * (size + gap) + Math.sin(time * 1.1 + i * 0.7) * 1.5;
+
+    // 커버 뒤에 옅은 빛 — 어두운 배경에서 격자 모양이 먼저 읽힌다
+    ctx.fillStyle = 'rgba(255,209,102,0.10)';
+    ctx.fillRect(x - 2, Math.round(y) - 2, size + 4, size + 4);
+    drawCoverAt(ctx, ALBUMS[i], x, Math.round(y), size);
+  }
+}
+
 // ── 전체 ────────────────────────────────────────────────────
 export function drawScene(ctx, game, time) {
   crisp(ctx);
   // 스테이지 선택도 타이틀 배경 위에 뜬다 (판이 아직 없어서 그릴 월드가 없다)
   if (game.scene === 'title' || game.scene === 'select') {
     drawTitle(ctx, time);
+    return;
+  }
+  if (game.scene === 'gallery') {
+    drawGallery(ctx, time);
     return;
   }
   if (game.scene === 'intro') {

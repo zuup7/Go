@@ -304,6 +304,11 @@ canvas#game {
   font-weight: 400;
 }
 
+/* 엔딩에서 「2회차 열림」. 클리어 표시(♛)와 달리 **지금 막 생긴 것**이라 눈에 띄어야 한다 */
+.stats .opened {
+  color: var(--good);
+}
+
 /* 저장이 막힌 기기에 뜨는 한 줄. 못 하게 막는 게 아니라 알려주는 것이다 */
 .warn {
   margin: 8px 0 0;
@@ -362,12 +367,14 @@ canvas#game {
   background: rgba(255, 209, 102, 0.12);
 }
 
-/* 고를 게 늘면 224px 짜리 화면에 한 줄로는 안 들어간다 (하드모드가 붙으면서 13줄이
-   됐다). **세로로 채우고 넘치면 옆 칸으로** 넘어간다 — 고르기는 selectIndex 하나짜리
-   1차원이라 ◀▶ 가 "목록을 따라 내려간다"로 그대로 읽힌다.
-   줄 수를 따로 안 적는 게 중요하다. 목록이 더 늘어도 칸이 저절로 하나 더 생긴다. */
+/* 고를 게 늘면 224px 짜리 화면에 한 줄로는 안 들어간다 (하드모드가 붙으면서 13줄,
+   2회차 입구가 붙으면서 15줄이 됐다). **세로로 채우고 넘치면 옆 칸으로** 넘어간다 —
+   고르기는 selectIndex 하나짜리 1차원이라 ◀▶ 가 "목록을 따라 내려간다"로 읽힌다.
+   줄 수를 따로 안 적는 게 중요하다. 목록이 더 늘어도 칸이 저절로 하나 더 생긴다.
+   (8줄 × 2칸 = 16. padlayout 테스트가 이 곱을 목록 길이와 견준다 — 세 칸이 되면
+   패널이 화면보다 넓어진다) */
 .slots {
-  --slot-rows: 7;
+  --slot-rows: 8;
   grid-auto-flow: column;
   grid-template-rows: repeat(var(--slot-rows), auto);
   column-gap: 14px;
@@ -820,6 +827,20 @@ body.in-cut:not(.pad-editing) .touch-right {
 }
 
 .back-btn:hover {
+  color: var(--ink);
+}
+
+/* 숨은 화면. 앨범 열일곱 장은 캔버스가 그리므로 **패널을 띄우지 않는다** —
+   가운데에 패널이 뜨면 정작 보여줄 격자를 통째로 가린다. 나가는 버튼만 아래에 둔다
+   (.center 가 grid 라 align-self 로 바닥에 붙는다) */
+.gallery-bar {
+  align-self: end;
+  pointer-events: auto;
+}
+
+.gallery-bar .back-btn {
+  background: rgba(10, 4, 16, 0.82);
+  border-color: #5a3382;
   color: var(--ink);
 }
 
@@ -2678,7 +2699,23 @@ const BOSS_STAGE = {
 
 const stageByIndex = (index) => STAGES[Math.min(Math.max(index, 0), STAGES.length - 1)];
 
-return { CHUNK_W, ROWS, STAGES, HARD_STAGES, BOSS_STAGE, stageByIndex };
+/** 판들에 흩어진 음표('*') 칸이 몇 개인지 */
+const countNotes = (stages) =>
+  stages.reduce(
+    (total, stage) => total + stage.rows.reduce((n, row) => n + (row.match(/\*/g)?.length ?? 0), 0),
+    0,
+  );
+
+/**
+ * 1회차 네 판에 있는 음표 전부. 하드 판에는 음표가 **하나도 없다** — 그래서
+ * 다 모으는 건 1회차 이야기다.
+ *
+ * 개수를 손으로 적지 않고 **표에서 센다.** 적어두면 판을 고친 날 둘이 어긋나서,
+ * 화면은 `♪ 24/24` 인데 아직 한 칸이 남아 있거나 다 주워도 안 열리게 된다.
+ */
+const NOTE_TOTAL = countNotes(STAGES);
+
+return { CHUNK_W, ROWS, STAGES, HARD_STAGES, BOSS_STAGE, stageByIndex, NOTE_TOTAL };
 })();
 __m["chartrun/src/core/util.js"] = (() => {
 // 여기저기서 쓰는 작은 도우미들. (DOM 을 쓰지 않는다 — 테스트에서 그대로 import 한다)
@@ -5002,6 +5039,12 @@ const emptySave = () => ({
   clearedHard: false,
   /** 하드모드 최고 기록. 보통 기록과 **따로** 둔다 — 둘은 같은 판이 아니다 */
   bestHardTimeMs: null,
+  /**
+   * 주운 음표의 **자리**들 (`스테이지:칸` 열쇠). 개수가 아니라 자리를 남기는 게 핵심이다 —
+   * 죽으면 음표가 되살아나므로(spawnEntities) 개수만 세면 같은 걸 두 번 센다.
+   * revealedTraps 와 같은 모양이라 여러 판에 걸쳐 모을 수 있다.
+   */
+  foundNotes: [],
 });
 
 function serialize(data) {
@@ -5063,6 +5106,10 @@ function mergeRun(save, run) {
   }
   if (run.revealedTraps) {
     next.revealedTraps = [...new Set([...(save.revealedTraps ?? []), ...run.revealedTraps])];
+  }
+  // 음표도 같은 방식으로 합친다 — 한 판에서 놓친 걸 다음 판에서 주워도 쌓인다
+  if (run.foundNotes) {
+    next.foundNotes = [...new Set([...(save.foundNotes ?? []), ...run.foundNotes])];
   }
   if (run.clearedOnce) next.clearedOnce = true;
   if (run.clearedHard) next.clearedHard = true;
@@ -5133,7 +5180,7 @@ return { createRng };
 __m["chartrun/src/core/game.js"] = (() => {
 // 게임 전체의 상태 기계. 그리기는 하지 않는다 — render/ 가 이 상태를 보고 그린다.
 const { createWorld, T } = __m["chartrun/src/core/world.js"];
-const { STAGES, HARD_STAGES, BOSS_STAGE } = __m["chartrun/src/data/stages.js"];
+const { STAGES, HARD_STAGES, BOSS_STAGE, NOTE_TOTAL } = __m["chartrun/src/data/stages.js"];
 const { createPlayer, respawnPlayer, updatePlayer, bounce, damagePlayer } = __m["chartrun/src/core/player.js"];
 const { spawnAlbum, updateAlbum, stompAlbum, updateShot } = __m["chartrun/src/core/enemy.js"];
 const { createCamera, updateCamera, shakeCamera } = __m["chartrun/src/core/camera.js"];
@@ -5221,6 +5268,12 @@ function createGame(options = {}) {
     checkpoint: null,
     crumbling: new Map(),
     trapMemory: createTrapMemory(save.revealedTraps),
+    /**
+     * 주운 음표의 **자리**들. 개수를 세지 않는 이유가 있다 — 죽으면 되살아나므로
+     * (reviveAtCheckpoint → spawnEntities) 개수만 세면 같은 음표를 두 번 센다.
+     * 함정 표시와 같은 그릇을 쓴다.
+     */
+    noteMemory: createTrapMemory(save.foundNotes),
     chartOuts: 0,
     plays: 0,
     score: 0,
@@ -5245,6 +5298,8 @@ function createGame(options = {}) {
     titleIndex: 0,
     selectIndex: 0,
     pauseIndex: 0,
+    /** 숨은 화면에서 나가면 어디로 돌아갈지 ('title' | 'select') */
+    galleryBack: 'title',
     /**
      * 1스테이지부터 달린 판이 아니다 (골라 들어갔다).
      * 이런 판은 기록을 갱신하지 않는다 — 안 그러면 보스만 골라 이기고 최고 기록이 된다.
@@ -5280,6 +5335,19 @@ const emit = (game, name, data) => game.onEvent(name, data ?? {});
  * 한쪽만 이름을 붙이면 표시가 켜져도 안 그려지므로, 두 곳이 이 함수 하나를 같이 쓴다.
  */
 const markKey = (game, tx, ty) => trapKey(tx, ty, game.hard ? game.world.stage.id : '');
+
+/**
+ * 주운 음표를 기억하는 열쇠. **판 이름을 언제나 붙인다** — markKey 를 그대로 쓰면 안 된다.
+ * 저 위는 1회차에서 이름을 떼는데, 음표는 네 판을 통틀어 한 자루에 모으므로
+ * 스테이지 1 의 (12,9) 와 스테이지 2 의 (12,9) 가 같은 음표가 돼버린다.
+ */
+const noteKey = (game, tx, ty) => trapKey(tx, ty, game.world.stage.id);
+
+/** 지금까지 주운 음표 수. 이번 판에 주운 것까지 센다 (저장은 판이 끝나야 합쳐진다) */
+const notesFound = (game) => game.noteMemory?.size ?? game.save?.foundNotes?.length ?? 0;
+
+/** 음표를 다 모았는가. 숨은 화면이 이 조건으로 열린다 */
+const allNotes = (game) => notesFound(game) >= NOTE_TOTAL;
 
 function addParticles(game, x, y, count, colors, opts = {}) {
   for (let i = 0; i < count; i++) {
@@ -5564,6 +5632,8 @@ function handlePickups(game) {
     if (pickup.taken || !overlaps(player, pickup)) continue;
     pickup.taken = true;
     game.plays += 1;
+    // 어느 칸이었는지 남긴다 — 죽어서 되살아난 같은 음표를 다시 주워도 안 늘어난다
+    game.noteMemory.reveal(noteKey(game, pickup.tx, pickup.ty));
     game.score += 50;
     addText(game, pickup.x, pickup.y, '♪', '#ffd166');
     addParticles(game, pickup.x + 4, pickup.y + 4, 5, ['#ffd166', '#fff'], { speed: 40, life: 0.4 });
@@ -6252,8 +6322,38 @@ function returnToHub(game) {
   loadStage(game, 0);
 }
 
-/** 타이틀에서 고를 수 있는 줄 수 (개발자 모드일 때: 처음부터 / 스테이지 선택) */
-const TITLE_ROWS = 2;
+/**
+ * 음표를 다 모으면 열리는 숨은 화면. 앨범 열일곱 장이 한자리에 놓인다.
+ *
+ * **어디서 들어왔는지 기억해 둔다**(galleryBack). 타이틀에서 들어왔는데 나갈 때
+ * 선택 화면으로 떨어지면, 한 바퀴를 안 깬 사람은 거기 갈 자격이 없는 자리에 서게 된다.
+ */
+function openGallery(game, from) {
+  game.scene = 'gallery';
+  game.sceneTime = 0;
+  game.galleryBack = from;
+}
+
+/**
+ * 타이틀에서 고를 수 있는 줄.
+ *
+ * **고르는 쪽(updateGame)과 그리는 쪽(render/hud)이 같이 본다** — 줄 수를 따로
+ * 적어두면 줄이 늘었을 때 화면은 셋인데 고르기는 둘에서 도는 꼴이 된다.
+ *
+ * 줄이 하나뿐이면 메뉴를 아예 안 띄운다 — 예전처럼 아무 키나 누르면 시작이다.
+ */
+function titleRows(game) {
+  const rows = [{ label: '처음부터', action: 'start' }];
+  if (canSelect(game)) rows.push({ label: '스테이지 선택', action: 'select' });
+  // 2회차가 있다는 걸 **여기서 말해준다.** 예전에는 깨고 나면 말없이 스테이지 1 로
+  // 되돌려놓는 게 전부라, NPC 를 지나치면 2회차가 있는 줄도 몰랐다.
+  if (game.save?.clearedOnce) rows.push({ label: '2회차', action: 'hub' });
+  // 음표를 다 모은 사람에게만. 선택 목록에도 같은 칸이 있지만 여기 두는 게 중요하다 —
+  // 한 바퀴를 안 깨도 음표는 다 모을 수 있어서, 목록 쪽만 두면 「스테이지 선택」 안에
+  // 이것 하나만 덩그러니 들어 있는 꼴이 된다.
+  if (allNotes(game)) rows.push({ label: '숨은 화면', action: 'gallery' });
+  return rows;
+}
 
 /**
  * 스테이지 선택 화면의 칸 **한 벌**.
@@ -6282,6 +6382,13 @@ const SELECT_ITEMS = [
    * 포탈이 열려 있는 스테이지 1. NPC 에게 말을 걸고 문으로 들어가면 2회차가 시작된다 —
    * 하드 판으로 바로 뛰어드는 위 칸들과 달리 **입구 전체**를 볼 수 있다.
    */
+  /**
+   * 깬 사람에게 보이는 2회차 입구. 하드 개별 판(위)은 `clearedHard` 라, 이게 없으면
+   * **하드를 깨야 하드가 목록에 보이는** 닭-달걀이 된다.
+   */
+  { label: '2회차 입구', action: 'hub', needs: 'clearedOnce' },
+  /** 음표를 다 모으면 열리는 숨은 화면. 'allNotes' 는 저장 칸이 아니라 아래 GATES 가 센다 */
+  { label: '숨은 화면', action: 'gallery', needs: 'allNotes' },
   { label: '포탈 스테이지 1', action: 'hub', needs: 'dev' },
   { label: '오프닝 다시 보기', action: 'opening', needs: 'dev' },
   { label: '2회차 시작 컷신', action: 'hardopen', needs: 'dev' },
@@ -6297,10 +6404,17 @@ const SELECT_ITEMS = [
  *
  * 개발자 모드는 전부 본다. 그러면 SELECT_HARD 같은 자리 번호가 그대로 맞는다.
  */
+/**
+ * `needs` 가 저장의 칸 이름이 아닌 것들. 음표는 저장에 **개수가 아니라 자리 목록**이
+ * 들어 있어서 세어봐야 하고, 이번 판에 주운 것도 쳐줘야 한다.
+ */
+const GATES = { allNotes };
+
 function selectItems(game) {
   if (game.dev) return SELECT_ITEMS;
   const save = game.save ?? {};
-  return SELECT_ITEMS.filter((item) => item.needs !== 'dev' && save[item.needs]);
+  const open = (needs) => (GATES[needs] ? GATES[needs](game) : !!save[needs]);
+  return SELECT_ITEMS.filter((item) => item.needs !== 'dev' && open(item.needs));
 }
 
 /** 고를 게 하나라도 있나. 없으면 타이틀에 메뉴를 띄우지 않는다 (예전 그대로 바로 시작) */
@@ -6605,21 +6719,24 @@ function updateGame(game, input, dt) {
 
   switch (game.scene) {
     case 'title': {
+      const rows = titleRows(game);
       // 고를 게 없으면(아직 한 바퀴를 못 깼고 개발자 모드도 아니면) 예전과 똑같이 바로 시작한다
-      if (!canSelect(game)) {
+      if (rows.length < 2) {
         game.titleIndex = 0;
         if (input.confirmPressed) startRun(game);
         break;
       }
       const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
-      if (moved) game.titleIndex = (game.titleIndex + moved + TITLE_ROWS) % TITLE_ROWS;
+      if (moved) game.titleIndex = (game.titleIndex + moved + rows.length) % rows.length;
       if (input.confirmPressed) {
-        if (game.titleIndex === 0) startRun(game);
-        else {
+        const pick = rows[game.titleIndex];
+        if (pick?.action === 'select') {
           game.scene = 'select';
           game.sceneTime = 0;
           game.selectIndex = 0;
-        }
+        } else if (pick?.action === 'hub') openHub(game);
+        else if (pick?.action === 'gallery') openGallery(game, 'title');
+        else startRun(game);
       }
       break;
     }
@@ -6637,11 +6754,22 @@ function updateGame(game, input, dt) {
         else if (pick?.action === 'opening') startIntro(game, 'intro');
         else if (pick?.action === 'hardopen') startIntro(game, 'hardopen');
         else if (pick?.action === 'hub') openHub(game);
+        else if (pick?.action === 'gallery') openGallery(game, 'select');
         else if (pick?.action === 'devOff') {
           setDevMode(game, false);
           game.scene = 'title';
           game.sceneTime = 0;
         }
+      }
+      break;
+    }
+
+    case 'gallery': {
+      // 나가는 길. 컷신과 같은 이유로 들어온 직후 잠깐은 안 받는다 — 고른 그 입력이
+      // 그대로 남아 있으면 화면이 뜨자마자 도로 닫힌다.
+      if (input.restartPressed || skipping(input, game.sceneTime)) {
+        game.scene = game.galleryBack === 'title' ? 'title' : 'select';
+        game.sceneTime = 0;
       }
       break;
     }
@@ -6735,6 +6863,8 @@ const runSummary = (game) => ({
   chartOuts: game.chartOuts,
   clearedStage: game.scene === 'stageClear' ? game.stageIndex : null,
   revealedTraps: game.trapMemory.toJSON(),
+  /** 주운 음표 자리. 여러 판에 걸쳐 모아도 되도록 저장 쪽(mergeRun)이 합집합으로 합친다 */
+  foundNotes: game.noteMemory.toJSON(),
   timeMs: game.ending ? game.ending.timeMs : null,
   // 골라 들어간 판인지. 저장 쪽(mergeRun)이 이걸 보고 기록 갱신을 건너뛴다.
   partial: game.partial,
@@ -6742,7 +6872,7 @@ const runSummary = (game) => ({
   hard: game.hard,
 });
 
-return { VIEW, stageTable, stageCount, createGame, markKey, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary };
+return { VIEW, stageTable, stageCount, createGame, markKey, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary };
 })();
 __m["chartrun/src/core/devmode.js"] = (() => {
 // 개발자 모드. 비밀번호를 넣으면 스테이지를 골라 들어갈 수 있다.
@@ -12330,12 +12460,59 @@ function drawTitle(ctx, time) {
   }
 }
 
+// ── 숨은 화면 ───────────────────────────────────────────────
+/**
+ * 음표를 다 모으면 열리는 방. 지나온 앨범 열일곱 장이 한자리에 놓인다.
+ *
+ * **새로 그리는 그림이 없다** — drawCoverAt 이 어떤 크기로든 커버를 그려주므로
+ * 격자에 얹기만 하면 된다. 글자도 안 쓴다 (앨범 이름은 원래 화면에 안 나온다).
+ */
+// top 은 격자 위 여백. 아래에는 「뒤로」 버튼이 얹히므로 위보다 조금 더 남긴다.
+const GAL = { cols: 6, size: 44, gap: 8, top: 26 };
+
+function drawGallery(ctx, time) {
+  const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
+  grad.addColorStop(0, '#09040f');
+  grad.addColorStop(1, '#1d0a2b');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  // 별. 타이틀보다 성기게 — 여기는 조용한 방이다
+  ctx.fillStyle = 'rgba(255,255,255,0.26)';
+  for (let i = 0; i < 26; i++) {
+    const x = (i * 131) % VIEW.w;
+    const y = (i * 79) % VIEW.h;
+    if (Math.sin(time * 1.3 + i * 1.7) > 0.2) ctx.fillRect(x, y, 1, 1);
+  }
+
+  const { cols, size, gap, top } = GAL;
+  const rowW = cols * size + (cols - 1) * gap;
+  const left = Math.round((VIEW.w - rowW) / 2);
+
+  for (let i = 0; i < ALBUMS.length; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = left + col * (size + gap);
+    // 줄마다 조금씩 엇갈려 뜬다 — 열일곱 장이 한꺼번에 오르내리면 격자가 출렁인다
+    const y = top + row * (size + gap) + Math.sin(time * 1.1 + i * 0.7) * 1.5;
+
+    // 커버 뒤에 옅은 빛 — 어두운 배경에서 격자 모양이 먼저 읽힌다
+    ctx.fillStyle = 'rgba(255,209,102,0.10)';
+    ctx.fillRect(x - 2, Math.round(y) - 2, size + 4, size + 4);
+    drawCoverAt(ctx, ALBUMS[i], x, Math.round(y), size);
+  }
+}
+
 // ── 전체 ────────────────────────────────────────────────────
 function drawScene(ctx, game, time) {
   crisp(ctx);
   // 스테이지 선택도 타이틀 배경 위에 뜬다 (판이 아직 없어서 그릴 월드가 없다)
   if (game.scene === 'title' || game.scene === 'select') {
     drawTitle(ctx, time);
+    return;
+  }
+  if (game.scene === 'gallery') {
+    drawGallery(ctx, time);
     return;
   }
   if (game.scene === 'intro') {
@@ -12490,17 +12667,17 @@ function drawEffects(ctx, game, ox, oy, time) {
 }
 
 
-return { drawTitle, drawScene };
+return { drawTitle, drawGallery, drawScene };
 })();
 __m["chartrun/src/render/hud.js"] = (() => {
 // 화면에 나오는 글자는 여기가 전부고, 전부 "정보"다 —
 // 순위, 재생수, 차트아웃 횟수, 시간, 스테이지 번호. 대사나 농담은 두지 않는다.
 const { timeText } = __m["chartrun/src/core/util.js"];
 const { beatRecord } = __m["chartrun/src/core/save.js"];
-const { STAGES } = __m["chartrun/src/data/stages.js"];
+const { STAGES, NOTE_TOTAL } = __m["chartrun/src/data/stages.js"];
 const { KEYPAD } = __m["chartrun/src/core/devmode.js"];
 const { ACTIONS } = __m["chartrun/src/core/input.js"];
-const { PAUSE_ROWS, stageTable, selectItems, canSelect, inCutscene } = __m["chartrun/src/core/game.js"];
+const { PAUSE_ROWS, stageTable, selectItems, titleRows, inCutscene, notesFound } = __m["chartrun/src/core/game.js"];
 
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -12604,15 +12781,22 @@ function createHud(root) {
     if (ui?.keypad) return keypadPanel(ui.keypad);
     switch (game.scene) {
       case 'title': {
-        // 고를 게 없으면 예전 그대로 — 메뉴 없이 바로 시작한다.
-        // 줄에 data-key 를 달아 탭으로도 되게 한다 (아래 선택 목록·일시정지 메뉴와 같은 이유)
-        const menu = canSelect(game)
-          ? `<ul class="menu">
-              <li class="${game.titleIndex === 0 ? 'on' : ''}" data-key="title:0">처음부터</li>
-              <li class="${game.titleIndex === 1 ? 'on' : ''}" data-key="title:1">스테이지 선택</li>
+        // 줄 목록은 core 가 갖고 있다 — 여기 또 적으면 화면은 셋인데 고르기는
+        // 둘에서 도는 꼴이 된다. 줄이 하나뿐이면 메뉴 없이 예전 그대로.
+        // (줄에 data-key 를 달아 탭으로도 되게 한다 — 선택 목록·일시정지 메뉴와 같은 이유)
+        const rows = titleRows(game);
+        const menu =
+          rows.length > 1
+            ? `<ul class="menu">
+              ${rows
+                .map(
+                  (r, i) =>
+                    `<li class="${i === game.titleIndex ? 'on' : ''}" data-key="title:${i}">${esc(r.label)}</li>`,
+                )
+                .join('')}
             </ul>
             <p class="press">◀▶ 로 고르고 점프로 확인 · 눌러도 된다</p>`
-          : '<p class="press">아무 키나 / 점프 버튼으로 시작</p>';
+            : '<p class="press">아무 키나 / 점프 버튼으로 시작</p>';
         return `
           <div class="panel title-panel">
             <h1>차트런${game.save.clearedHard ? ' <span class="crown">♛</span>' : ''}</h1>
@@ -12653,6 +12837,13 @@ function createHud(root) {
             <button type="button" class="back-btn" data-key="slot:back">뒤로</button>
           </div>`;
       }
+      case 'gallery':
+        // 그림은 전부 캔버스가 그린다 (앨범 열일곱 장). 여기서 패널을 띄우면
+        // 가운데가 통째로 가려지므로 **나가는 버튼 하나만** 화면 아래에 둔다.
+        return `
+          <div class="gallery-bar">
+            <button type="button" class="back-btn" data-key="gallery:back">뒤로</button>
+          </div>`;
       case 'stageIntro': {
         // **하드모드에서는 하드 표를 봐야 한다** — STAGES 를 직접 보면 이름이 어긋난다
         const stage = stageTable(game)[game.stageIndex];
@@ -12688,13 +12879,20 @@ function createHud(root) {
               <li><span>재생수</span><b>${e.plays ?? 0}</b></li>
               <li><span>SCORE</span><b>${(e.score ?? 0).toLocaleString('ko-KR')}</b></li>
               ${
-                // 2회차까지 끝낸 사람에게만. 가장 어려운 걸 깬 것이니 어디선가는 알아줘야 한다.
+                // 2회차 칸. 깬 사람은 ♛, **이번에 막 열린 사람에게는 열렸다고 알린다** —
+                // 예전에는 여기서 아무 말도 안 해서 2회차가 있는 줄도 몰랐다.
                 game.save.clearedHard || e.hard
                   ? '<li><span>2회차</span><b>클리어 ♛</b></li>'
-                  : ''
+                  : '<li><span>2회차</span><b class="opened">열림</b></li>'
               }
             </ul>
-            <p class="press">아무 키나 누르면 처음으로</p>
+            <p class="press">${
+              // 한 바퀴 돈 사람은 타이틀이 아니라 **2회차 입구**로 간다 (core 의 returnToHub).
+              // 예전 글은 「처음으로」였는데, 그건 사실이 아니라 영문 모르고 초원에 서게 된다.
+              game.save.clearedOnce || e.hard
+                ? '아무 키나 누르면 2회차 입구로'
+                : '아무 키나 누르면 처음으로'
+            }</p>
           </div>`;
       }
       default:
@@ -12706,7 +12904,11 @@ function createHud(root) {
     update(game, ui) {
       const rank = game.scene === 'title' ? game.save.bestRank : game.rank;
       el.rank.textContent = `#${rank}`;
-      el.plays.textContent = `♪ ${game.plays}`;
+      // 음표는 **몇 개 중 몇 개**로 보여준다. 그냥 올라가는 숫자였을 때는 모으는 게
+      // 목표라는 걸 알 길이 없었다. 하드 판에는 음표가 하나도 없어서(NOTE_TOTAL 은
+      // 1회차 것이다) 거기서는 이 칸을 아예 걷는다 — 영영 안 오르는 숫자는 고장으로 보인다.
+      el.plays.hidden = game.hard;
+      el.plays.textContent = `♪ ${notesFound(game)}/${NOTE_TOTAL}`;
       el.chartOuts.textContent = `✕ ${game.chartOuts}`;
       el.time.textContent = timeText(game.elapsedMs);
 
@@ -12714,7 +12916,8 @@ function createHud(root) {
       // 컷신 판단은 core 의 inCutscene 하나뿐이다 — 여기 또 적었더니 잡히는
       // 컷신(caught)을 빼먹어서 그 컷신에서만 HUD 가 화면 위에 남아 있었다
       const inCut = inCutscene(game);
-      el.hud.hidden = game.scene === 'title' || game.scene === 'select' || inCut;
+      el.hud.hidden =
+        game.scene === 'title' || game.scene === 'select' || game.scene === 'gallery' || inCut;
 
       const showBoss = game.scene === 'boss' && game.boss && !inCut;
       el.bossBar.hidden = !showBoss;
@@ -13702,6 +13905,17 @@ function pressKey(key) {
       game.selectIndex = Number(what);
       updateGame(game, { ...frame, restartPressed: false, confirmPressed: true }, 0);
     }
+    return;
+  }
+  // 숨은 화면에서 나가기. 선택 화면의 「뒤로」와 같은 이유로 꼭 있어야 한다 —
+  // 폰에는 R 키가 없고, 이 화면은 캔버스만 있어서 안 그러면 갇힌다.
+  if (key === 'gallery:back') {
+    if (game.scene !== 'gallery') return;
+    updateGame(
+      game,
+      { ...input, leftPressed: false, rightPressed: false, confirmPressed: false, restartPressed: true },
+      0,
+    );
     return;
   }
   if (key === 'open') {

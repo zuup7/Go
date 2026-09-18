@@ -1,6 +1,6 @@
 // 게임 전체의 상태 기계. 그리기는 하지 않는다 — render/ 가 이 상태를 보고 그린다.
 import { createWorld, T } from './world.js';
-import { STAGES, HARD_STAGES, BOSS_STAGE } from '../data/stages.js';
+import { STAGES, HARD_STAGES, BOSS_STAGE, NOTE_TOTAL } from '../data/stages.js';
 import { createPlayer, respawnPlayer, updatePlayer, bounce, damagePlayer } from './player.js';
 import { spawnAlbum, updateAlbum, stompAlbum, updateShot } from './enemy.js';
 import { createCamera, updateCamera, shakeCamera } from './camera.js';
@@ -102,6 +102,12 @@ export function createGame(options = {}) {
     checkpoint: null,
     crumbling: new Map(),
     trapMemory: createTrapMemory(save.revealedTraps),
+    /**
+     * 주운 음표의 **자리**들. 개수를 세지 않는 이유가 있다 — 죽으면 되살아나므로
+     * (reviveAtCheckpoint → spawnEntities) 개수만 세면 같은 음표를 두 번 센다.
+     * 함정 표시와 같은 그릇을 쓴다.
+     */
+    noteMemory: createTrapMemory(save.foundNotes),
     chartOuts: 0,
     plays: 0,
     score: 0,
@@ -126,6 +132,8 @@ export function createGame(options = {}) {
     titleIndex: 0,
     selectIndex: 0,
     pauseIndex: 0,
+    /** 숨은 화면에서 나가면 어디로 돌아갈지 ('title' | 'select') */
+    galleryBack: 'title',
     /**
      * 1스테이지부터 달린 판이 아니다 (골라 들어갔다).
      * 이런 판은 기록을 갱신하지 않는다 — 안 그러면 보스만 골라 이기고 최고 기록이 된다.
@@ -161,6 +169,19 @@ const emit = (game, name, data) => game.onEvent(name, data ?? {});
  * 한쪽만 이름을 붙이면 표시가 켜져도 안 그려지므로, 두 곳이 이 함수 하나를 같이 쓴다.
  */
 export const markKey = (game, tx, ty) => trapKey(tx, ty, game.hard ? game.world.stage.id : '');
+
+/**
+ * 주운 음표를 기억하는 열쇠. **판 이름을 언제나 붙인다** — markKey 를 그대로 쓰면 안 된다.
+ * 저 위는 1회차에서 이름을 떼는데, 음표는 네 판을 통틀어 한 자루에 모으므로
+ * 스테이지 1 의 (12,9) 와 스테이지 2 의 (12,9) 가 같은 음표가 돼버린다.
+ */
+export const noteKey = (game, tx, ty) => trapKey(tx, ty, game.world.stage.id);
+
+/** 지금까지 주운 음표 수. 이번 판에 주운 것까지 센다 (저장은 판이 끝나야 합쳐진다) */
+export const notesFound = (game) => game.noteMemory?.size ?? game.save?.foundNotes?.length ?? 0;
+
+/** 음표를 다 모았는가. 숨은 화면이 이 조건으로 열린다 */
+export const allNotes = (game) => notesFound(game) >= NOTE_TOTAL;
 
 function addParticles(game, x, y, count, colors, opts = {}) {
   for (let i = 0; i < count; i++) {
@@ -445,6 +466,8 @@ function handlePickups(game) {
     if (pickup.taken || !overlaps(player, pickup)) continue;
     pickup.taken = true;
     game.plays += 1;
+    // 어느 칸이었는지 남긴다 — 죽어서 되살아난 같은 음표를 다시 주워도 안 늘어난다
+    game.noteMemory.reveal(noteKey(game, pickup.tx, pickup.ty));
     game.score += 50;
     addText(game, pickup.x, pickup.y, '♪', '#ffd166');
     addParticles(game, pickup.x + 4, pickup.y + 4, 5, ['#ffd166', '#fff'], { speed: 40, life: 0.4 });
@@ -1133,8 +1156,38 @@ function returnToHub(game) {
   loadStage(game, 0);
 }
 
-/** 타이틀에서 고를 수 있는 줄 수 (개발자 모드일 때: 처음부터 / 스테이지 선택) */
-const TITLE_ROWS = 2;
+/**
+ * 음표를 다 모으면 열리는 숨은 화면. 앨범 열일곱 장이 한자리에 놓인다.
+ *
+ * **어디서 들어왔는지 기억해 둔다**(galleryBack). 타이틀에서 들어왔는데 나갈 때
+ * 선택 화면으로 떨어지면, 한 바퀴를 안 깬 사람은 거기 갈 자격이 없는 자리에 서게 된다.
+ */
+function openGallery(game, from) {
+  game.scene = 'gallery';
+  game.sceneTime = 0;
+  game.galleryBack = from;
+}
+
+/**
+ * 타이틀에서 고를 수 있는 줄.
+ *
+ * **고르는 쪽(updateGame)과 그리는 쪽(render/hud)이 같이 본다** — 줄 수를 따로
+ * 적어두면 줄이 늘었을 때 화면은 셋인데 고르기는 둘에서 도는 꼴이 된다.
+ *
+ * 줄이 하나뿐이면 메뉴를 아예 안 띄운다 — 예전처럼 아무 키나 누르면 시작이다.
+ */
+export function titleRows(game) {
+  const rows = [{ label: '처음부터', action: 'start' }];
+  if (canSelect(game)) rows.push({ label: '스테이지 선택', action: 'select' });
+  // 2회차가 있다는 걸 **여기서 말해준다.** 예전에는 깨고 나면 말없이 스테이지 1 로
+  // 되돌려놓는 게 전부라, NPC 를 지나치면 2회차가 있는 줄도 몰랐다.
+  if (game.save?.clearedOnce) rows.push({ label: '2회차', action: 'hub' });
+  // 음표를 다 모은 사람에게만. 선택 목록에도 같은 칸이 있지만 여기 두는 게 중요하다 —
+  // 한 바퀴를 안 깨도 음표는 다 모을 수 있어서, 목록 쪽만 두면 「스테이지 선택」 안에
+  // 이것 하나만 덩그러니 들어 있는 꼴이 된다.
+  if (allNotes(game)) rows.push({ label: '숨은 화면', action: 'gallery' });
+  return rows;
+}
 
 /**
  * 스테이지 선택 화면의 칸 **한 벌**.
@@ -1163,6 +1216,13 @@ export const SELECT_ITEMS = [
    * 포탈이 열려 있는 스테이지 1. NPC 에게 말을 걸고 문으로 들어가면 2회차가 시작된다 —
    * 하드 판으로 바로 뛰어드는 위 칸들과 달리 **입구 전체**를 볼 수 있다.
    */
+  /**
+   * 깬 사람에게 보이는 2회차 입구. 하드 개별 판(위)은 `clearedHard` 라, 이게 없으면
+   * **하드를 깨야 하드가 목록에 보이는** 닭-달걀이 된다.
+   */
+  { label: '2회차 입구', action: 'hub', needs: 'clearedOnce' },
+  /** 음표를 다 모으면 열리는 숨은 화면. 'allNotes' 는 저장 칸이 아니라 아래 GATES 가 센다 */
+  { label: '숨은 화면', action: 'gallery', needs: 'allNotes' },
   { label: '포탈 스테이지 1', action: 'hub', needs: 'dev' },
   { label: '오프닝 다시 보기', action: 'opening', needs: 'dev' },
   { label: '2회차 시작 컷신', action: 'hardopen', needs: 'dev' },
@@ -1178,10 +1238,17 @@ export const SELECT_ITEMS = [
  *
  * 개발자 모드는 전부 본다. 그러면 SELECT_HARD 같은 자리 번호가 그대로 맞는다.
  */
+/**
+ * `needs` 가 저장의 칸 이름이 아닌 것들. 음표는 저장에 **개수가 아니라 자리 목록**이
+ * 들어 있어서 세어봐야 하고, 이번 판에 주운 것도 쳐줘야 한다.
+ */
+const GATES = { allNotes };
+
 export function selectItems(game) {
   if (game.dev) return SELECT_ITEMS;
   const save = game.save ?? {};
-  return SELECT_ITEMS.filter((item) => item.needs !== 'dev' && save[item.needs]);
+  const open = (needs) => (GATES[needs] ? GATES[needs](game) : !!save[needs]);
+  return SELECT_ITEMS.filter((item) => item.needs !== 'dev' && open(item.needs));
 }
 
 /** 고를 게 하나라도 있나. 없으면 타이틀에 메뉴를 띄우지 않는다 (예전 그대로 바로 시작) */
@@ -1486,21 +1553,24 @@ export function updateGame(game, input, dt) {
 
   switch (game.scene) {
     case 'title': {
+      const rows = titleRows(game);
       // 고를 게 없으면(아직 한 바퀴를 못 깼고 개발자 모드도 아니면) 예전과 똑같이 바로 시작한다
-      if (!canSelect(game)) {
+      if (rows.length < 2) {
         game.titleIndex = 0;
         if (input.confirmPressed) startRun(game);
         break;
       }
       const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
-      if (moved) game.titleIndex = (game.titleIndex + moved + TITLE_ROWS) % TITLE_ROWS;
+      if (moved) game.titleIndex = (game.titleIndex + moved + rows.length) % rows.length;
       if (input.confirmPressed) {
-        if (game.titleIndex === 0) startRun(game);
-        else {
+        const pick = rows[game.titleIndex];
+        if (pick?.action === 'select') {
           game.scene = 'select';
           game.sceneTime = 0;
           game.selectIndex = 0;
-        }
+        } else if (pick?.action === 'hub') openHub(game);
+        else if (pick?.action === 'gallery') openGallery(game, 'title');
+        else startRun(game);
       }
       break;
     }
@@ -1518,11 +1588,22 @@ export function updateGame(game, input, dt) {
         else if (pick?.action === 'opening') startIntro(game, 'intro');
         else if (pick?.action === 'hardopen') startIntro(game, 'hardopen');
         else if (pick?.action === 'hub') openHub(game);
+        else if (pick?.action === 'gallery') openGallery(game, 'select');
         else if (pick?.action === 'devOff') {
           setDevMode(game, false);
           game.scene = 'title';
           game.sceneTime = 0;
         }
+      }
+      break;
+    }
+
+    case 'gallery': {
+      // 나가는 길. 컷신과 같은 이유로 들어온 직후 잠깐은 안 받는다 — 고른 그 입력이
+      // 그대로 남아 있으면 화면이 뜨자마자 도로 닫힌다.
+      if (input.restartPressed || skipping(input, game.sceneTime)) {
+        game.scene = game.galleryBack === 'title' ? 'title' : 'select';
+        game.sceneTime = 0;
       }
       break;
     }
@@ -1616,6 +1697,8 @@ export const runSummary = (game) => ({
   chartOuts: game.chartOuts,
   clearedStage: game.scene === 'stageClear' ? game.stageIndex : null,
   revealedTraps: game.trapMemory.toJSON(),
+  /** 주운 음표 자리. 여러 판에 걸쳐 모아도 되도록 저장 쪽(mergeRun)이 합집합으로 합친다 */
+  foundNotes: game.noteMemory.toJSON(),
   timeMs: game.ending ? game.ending.timeMs : null,
   // 골라 들어간 판인지. 저장 쪽(mergeRun)이 이걸 보고 기록 갱신을 건너뛴다.
   partial: game.partial,
