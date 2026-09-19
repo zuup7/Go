@@ -324,7 +324,15 @@ export const NEUTRAL_POSE = {
   paw: 0,
   jaw: 0,
   stride: 0,
+  lift: 0,
+  lean: 0,
 };
+
+/**
+ * 발이 땅에 닿는 높이. 내리꽂기가 멈추는 자리와 **같은 값**이라 여기 한 번만 적는다 —
+ * 두 군데 적으면 발이 땅에 닿았는데 추진기가 계속 타는 그림이 된다.
+ */
+export const bossFloor = (boss) => boss.floorY - BOSS_H - 6;
 
 export const bossPose = (boss) => {
   if (!boss) return NEUTRAL_POSE;
@@ -340,6 +348,17 @@ export const bossPose = (boss) => {
     paw: boss.paw,
     jaw: boss.jaw,
     stride: boss.stride,
+    /**
+     * 땅에서 얼마나 떠 있나 0~1.
+     *
+     * 이 보스는 **떠 있는 기계**다 — 공격할 때는 높이 뜨고 약점이 열릴 때 내려와
+     * 발을 딛는다(phase.descendTo). 그런데 그리는 쪽이 그걸 몰라서 84픽셀 공중에
+     * 있든 땅을 딛고 있든 똑같은 그림이었다. "떠 있다"가 아니라 "붙여넣은 그림"으로
+     * 보이던 이유다. 추진기 세기와 다리 자세가 여기서 나온다.
+     */
+    lift: clamp((bossFloor(boss) - boss.y) / 90, 0, 1),
+    /** 어느 쪽으로 밀고 있나 −1~1. 그쪽으로 몸이 기운다 */
+    lean: boss.drift ?? 0,
   };
 };
 
@@ -563,8 +582,8 @@ export function updateBoss(boss, ctx, dt) {
       boss.vulnerable = false;
       // 내리꽂는다
       boss.y += 620 * dt;
-      if (boss.y >= boss.floorY - BOSS_H - 6 || boss.timer <= 0) {
-        boss.y = boss.floorY - BOSS_H - 6;
+      if (boss.y >= bossFloor(boss) || boss.timer <= 0) {
+        boss.y = bossFloor(boss);
         // 발밑에서 양쪽으로 충격파
         const cx = boss.x + BOSS_W / 2;
         boss.waves = [

@@ -4129,7 +4129,15 @@ const NEUTRAL_POSE = {
   paw: 0,
   jaw: 0,
   stride: 0,
+  lift: 0,
+  lean: 0,
 };
+
+/**
+ * 발이 땅에 닿는 높이. 내리꽂기가 멈추는 자리와 **같은 값**이라 여기 한 번만 적는다 —
+ * 두 군데 적으면 발이 땅에 닿았는데 추진기가 계속 타는 그림이 된다.
+ */
+const bossFloor = (boss) => boss.floorY - BOSS_H - 6;
 
 const bossPose = (boss) => {
   if (!boss) return NEUTRAL_POSE;
@@ -4145,6 +4153,17 @@ const bossPose = (boss) => {
     paw: boss.paw,
     jaw: boss.jaw,
     stride: boss.stride,
+    /**
+     * 땅에서 얼마나 떠 있나 0~1.
+     *
+     * 이 보스는 **떠 있는 기계**다 — 공격할 때는 높이 뜨고 약점이 열릴 때 내려와
+     * 발을 딛는다(phase.descendTo). 그런데 그리는 쪽이 그걸 몰라서 84픽셀 공중에
+     * 있든 땅을 딛고 있든 똑같은 그림이었다. "떠 있다"가 아니라 "붙여넣은 그림"으로
+     * 보이던 이유다. 추진기 세기와 다리 자세가 여기서 나온다.
+     */
+    lift: clamp((bossFloor(boss) - boss.y) / 90, 0, 1),
+    /** 어느 쪽으로 밀고 있나 −1~1. 그쪽으로 몸이 기운다 */
+    lean: boss.drift ?? 0,
   };
 };
 
@@ -4368,8 +4387,8 @@ function updateBoss(boss, ctx, dt) {
       boss.vulnerable = false;
       // 내리꽂는다
       boss.y += 620 * dt;
-      if (boss.y >= boss.floorY - BOSS_H - 6 || boss.timer <= 0) {
-        boss.y = boss.floorY - BOSS_H - 6;
+      if (boss.y >= bossFloor(boss) || boss.timer <= 0) {
+        boss.y = bossFloor(boss);
         // 발밑에서 양쪽으로 충격파
         const cx = boss.x + BOSS_W / 2;
         boss.waves = [
@@ -4644,7 +4663,7 @@ const bossGhostRatio = (boss) => clamp((boss.ghostHp ?? boss.hp) / boss.maxHp, 0
 /** 잔상이 체력을 따라잡는 속도 (초당 체력 칸 수). 한 대 맞은 자국이 0.25초에 메워진다 */
 const GHOST_CATCHUP = 4;
 
-return { BOSS_W, DINO_W, DINO_H, BOSS_H, LASER_W, TAIL_W, WAVE_W, createBoss, tailBand, shockWaves, laserBeam, laserBeams, MIC_SIZE, createMic, throwMic, updateThrown, bossPhase, syncPhase, NEUTRAL_POSE, bossPose, updateBoss, whirlGapX, ceilingSlabs, hitBoss, bossCombined, bossBody, princessCaged, bossHealthRatio, bossGhostRatio };
+return { BOSS_W, DINO_W, DINO_H, BOSS_H, LASER_W, TAIL_W, WAVE_W, createBoss, tailBand, shockWaves, laserBeam, laserBeams, MIC_SIZE, createMic, throwMic, updateThrown, bossPhase, syncPhase, NEUTRAL_POSE, bossFloor, bossPose, updateBoss, whirlGapX, ceilingSlabs, hitBoss, bossCombined, bossBody, princessCaged, bossHealthRatio, bossGhostRatio };
 })();
 __m["chartrun/src/data/traps.js"] = (() => {
 // 고양이마리오풍 트롤 함정 — **당한 자리를 기억하는 일**과 **구간 효과**만 여기 있다.
@@ -9413,7 +9432,9 @@ function drawBoss(ctx, boss, ox, oy, time) {
       // 하드 3페이즈부터는 **공룡로봇**이다. 껍질을 찢고 나온 모습이라
       // 서 있는 로봇과 실루엣이 아예 다르다 (가로로 길고 목과 꼬리가 뻗는다).
       if (body === 'dino') drawDinoBody(ctx, r, time, phaseColor, boss.hurtFlash > 0, pose);
-      else drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0);
+      // 로봇도 **같은 포즈를 받는다.** 예전에는 안 넘겨줘서 84픽셀 공중에 떠 있든
+      // 땅을 딛고 있든 똑같이 굳어 있었다 — 그게 「허공에 떠 있는 것 같다」의 정체다.
+      else drawRobotBody(ctx, r, time, phaseColor, 1, boss.hurtFlash > 0, pose);
     });
     drawBossCore(ctx, cx, cy, boss.vulnerable, time);
     if (down) drawSparks(ctx, cx, cy, r, boss.defeatedAt, phaseColor);
@@ -9691,28 +9712,62 @@ function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_POSE) {
   ctx.restore();
 }
 
-function drawRobotBody(ctx, r, time, color, grow = 1, hurt = false) {
+function drawRobotBody(ctx, r, time, color, grow = 1, hurt = false, pose = NEUTRAL_POSE) {
   const opt = { hurt };
   const hot = { hurt, face: color, lit: '#ffffff' };
   const P = (i) => clamp01((grow - i * 0.2) / 0.2);
   const px = (v) => v * r;
   const done = grow >= 1;
 
+  /**
+   * 이 놈은 **떠 있는 기계**다. 예전에는 그걸 말해주는 게 1픽셀 위아래 흔들림
+   * 하나뿐이라, 84픽셀 공중에 있든 땅을 딛고 있든 똑같이 굳어 있었다 —
+   * "떠 있다" 가 아니라 "붙여넣은 그림" 으로 보이던 이유다.
+   *
+   * lift(얼마나 떴나)와 lean(어느 쪽으로 미나)을 받아 몸으로 보여준다.
+   *
+   * 셋 다 **다 붙고 나서만**(done) 산다. 조립 중에 들썩이고 기울면 부품이
+   * 제자리에 잠긴 걸로 안 보인다 — 합체 컷신이 그래서 밋밋해진다.
+   */
+  const lift = done ? (pose.lift ?? 0) : 0;
+  const lean = done ? (pose.lean ?? 0) : 0;
+  // 뜰수록 크게 출렁인다. 땅을 딛으면 거의 멎는다 — 그 차이가 곧 "닿았다" 다.
+  const hover = done ? Math.sin(time * 2.6) * (0.8 + lift * 3.4) : 0;
+  // 미는 쪽으로 기운다. 가만히 있는 기계는 옆으로 미끄러지지 않는다.
+  const tilt = lean * lift * 0.06;
+
   ctx.save();
-  // 다 붙고 나서만 숨을 쉰다. 조립 중에 들썩이면 잠긴 걸로 안 보인다.
-  if (done) ctx.translate(0, Math.round(Math.sin(time * 2) * 1));
+  ctx.translate(0, Math.round(hover));
+  if (tilt) ctx.rotate(tilt);
 
   // ── 다리 ──
   slam(ctx, P(0), 0, 70, () => {
     for (const [i, side] of [-1, 1].entries()) {
       const x = side * px(RB.hipX);
+      ctx.save();
+      // 떠 있으면 다리가 아래로 늘어지고 무릎이 살짝 굽는다. 내려앉으면 쭉 펴고 버틴다.
+      // 좌우가 엇갈리게 굽어야 매달린 인형이 아니라 자세를 잡는 기계로 읽힌다.
+      const slack = lift * (1 + Math.sin(time * 2.6 + i * 2.1) * 0.35);
+      ctx.translate(0, px(0.05) * slack);
+      // **접히는 자리에서 접는다.** 몸 한가운데를 축으로 돌리면 1.4r 아래에 있는
+      // 발이 크게 휘둘려서 두 다리가 서로 엇갈린다 — 실제로 그렇게 보였다.
+      ctx.translate(x, px(RB.thighTop));
+      ctx.rotate(side * slack * 0.07 - lean * lift * 0.05);
+      ctx.translate(-x, -px(RB.thighTop));
       plate(ctx, x - px(0.17), px(RB.thighTop) - 2, px(0.34), px(RB.kneeTop - RB.thighTop) + 3, opt);
       armorCover(ctx, ALBUMS[i === 0 ? 1 : 16], x, px((RB.thighTop + RB.kneeTop) / 2), px(0.17), hurt);
+      // 무릎에서 한 번 더 굽힌다 — 정강이가 접혀야 "발을 뗀" 것으로 보인다
+      ctx.save();
+      ctx.translate(x, px(RB.kneeTop));
+      ctx.rotate(-slack * 0.13);
+      ctx.translate(-x, -px(RB.kneeTop));
       plate(ctx, x - px(0.21), px(RB.kneeTop), px(0.42), px(RB.shinTop - RB.kneeTop) + 1, hot);
       plate(ctx, x - px(0.2), px(RB.shinTop), px(0.4), px(RB.footTop - RB.shinTop), opt);
       // 발은 앞으로 튀어나온다 — 세로 막대 두 개로는 서 있는 걸로 안 읽힌다
       plate(ctx, x - px(0.27), px(RB.footTop), px(0.54), px(RB.footBot - RB.footTop), opt);
       armorCover(ctx, ALBUMS[i === 0 ? 6 : 14], x, px((RB.shinTop + RB.footTop) / 2), px(0.2), hurt);
+      ctx.restore();
+      ctx.restore();
     }
   });
 
@@ -9723,6 +9778,11 @@ function drawRobotBody(ctx, r, time, color, grow = 1, hurt = false) {
       const off = side * (1 - P(3)) * px(2.2);
       ctx.save();
       ctx.translate(Math.round(off), 0);
+      // 균형을 잡느라 팔이 살짝 벌어진다. 여기도 **어깨에서** 돌려야 주먹만
+      // 멀리 날아가지 않는다.
+      ctx.translate(x, px(RB.armTop));
+      ctx.rotate(-side * lift * 0.1);
+      ctx.translate(-x, -px(RB.armTop));
       plate(ctx, x - px(0.11), px(RB.armTop), px(0.22), px(RB.elbow - RB.armTop), opt); // 윗팔
       plate(ctx, x - px(0.2), px(RB.elbow), px(0.4), px(RB.wrist - RB.elbow), opt); // 아래팔
       armorCover(ctx, ALBUMS[i === 0 ? 0 : 9], x, px((RB.elbow + RB.wrist) / 2), px(0.22), hurt); // 아래팔 장갑
@@ -9827,6 +9887,62 @@ function drawRobotBody(ctx, r, time, color, grow = 1, hurt = false) {
     }
   });
 
+  ctx.restore();
+
+  // ── 추진기 ──
+  // **이게 "떠 있다" 를 말해주는 단 하나의 그림이다.** 발밑에서 불꽃이 나와야
+  // 공중에 떠 있는 게 붙여넣은 그림이 아니라 스스로 버티는 기계로 보인다.
+  // 회전(tilt) 밖에서 그린다 — 불길은 늘 아래로 떨어져야 한다.
+  if (done && lift > 0.02) drawThrust(ctx, r, time, color, lift, hover, hurt);
+}
+
+/**
+ * 발밑에서 체력계까지 비어 있는 높이(px).
+ *
+ * drawBoss 가 체력계를 `r * ROBOT_BOTTOM - r + 4` 만큼 내리고 drawBossHealth 가
+ * 거기서 또 4 를 더하는데, 발밑은 `r + r * ROBOT_BOTTOM` 이라 **r 이 얼마든
+ * 차이는 늘 8px 이다.** 판의 테가 1px 먼저 시작하니 쓸 수 있는 건 7px.
+ */
+const THRUST_H = 7;
+
+/**
+ * 발밑 추진기. 세기는 lift 가 정한다 — 땅에 닿으면 저절로 꺼진다.
+ * 길이를 매 프레임 흔들어야 불꽃으로 읽힌다 (일정하면 막대기다).
+ */
+function drawThrust(ctx, r, time, color, lift, hover, hurt) {
+  const px = (v) => v * r;
+  ctx.save();
+  // 몸이 출렁인 만큼 같이 내려온다 — 안 따라가면 불길만 제자리에 뜬다
+  ctx.translate(0, Math.round(hover));
+  for (const [i, side] of [-1, 1].entries()) {
+    const x = Math.round(side * px(RB.hipX));
+    const top = Math.round(px(RB.footBot)) - 1;
+    // 좌우가 따로 흔들린다. 같이 흔들리면 하나짜리 불로 보인다.
+    const flick = 0.62 + Math.sin(time * 27 + i * 3.1) * 0.38;
+    /**
+     * **체력계가 발밑 8px 아래에 붙는다**(drawBossHealth 의 drop). 그보다 길게
+     * 뽑으면 불길이 체력계 뒤로 들어가 버리고 끝만 아래로 삐져나와, 불꽃이 아니라
+     * 흘린 픽셀로 보인다 — 실제로 그렇게 나왔다. 그 틈 안에서 논다.
+     */
+    const len = Math.max(2, Math.round(THRUST_H * lift * flick));
+    const w0 = Math.max(2, Math.round(px(0.3)));
+    ctx.globalAlpha = Math.min(1, 0.55 + lift * 0.45);
+
+    /**
+     * **한 줄씩 좁혀 가며 찍는다.** 삼각형을 ctx.fill 로 그리면 가장자리가
+     * 부드럽게 번지는데, 이 게임의 다른 그림은 전부 정수 좌표 fillRect 라
+     * 혼자만 흐릿해서 "불꽃"이 아니라 "얼룩"으로 보였다.
+     */
+    const taper = (h, width, fill) => {
+      ctx.fillStyle = fill;
+      for (let y = 0; y < h; y++) {
+        const w = Math.max(1, Math.round(width * (1 - y / h)));
+        ctx.fillRect(x - (w >> 1), top + y, w, 1);
+      }
+    };
+    taper(len, w0, hurt ? '#ffffff' : color); // 바깥 불길
+    taper(Math.max(1, Math.round(len * 0.55)), w0 / 2, '#fff0c4'); // 속불 — 하얗고 짧다
+  }
   ctx.restore();
 }
 

@@ -5,7 +5,7 @@
 // 거꾸로면 예고가 사라져서 피할 수 없는 공격이 된다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBoss, updateBoss, bossPose, bossBody, NEUTRAL_POSE } from '../src/core/boss.js';
+import { createBoss, updateBoss, bossPose, bossBody, bossFloor, NEUTRAL_POSE, BOSS_H } from '../src/core/boss.js';
 import { HARD_PHASES, PHASES } from '../src/data/bossData.js';
 
 const DT = 1 / 60;
@@ -173,4 +173,62 @@ test('걸음은 시간이 아니라 **움직인 거리**로 돈다', () => {
   const before = bossPose(still).stride;
   step(still, 0.5);
   assert.equal(bossPose(still).stride, before, '제자리에 섰는데 발이 움직였다');
+});
+
+// ── 로봇도 자세를 받는다 ────────────────────────────────────
+// 「허공에 떠 있는 것 같다」던 이유: 그리는 쪽이 boss.y 를 몰라서, 84픽셀 공중에
+// 있든 땅을 딛고 있든 똑같은 그림이었다. lift 가 그 차이를 알려준다.
+
+test('lift 는 땅에 닿으면 0, 높이 뜨면 1 이다', () => {
+  const boss = createBoss(ARENA, 192, false);
+  boss.y = bossFloor(boss);
+  assert.equal(bossPose(boss).lift, 0, '발이 땅에 닿으면 추진기가 꺼져야 한다');
+
+  boss.y = bossFloor(boss) - 200;
+  assert.equal(bossPose(boss).lift, 1, '한참 뜨면 최대');
+
+  boss.y = bossFloor(boss) - 45;
+  const mid = bossPose(boss).lift;
+  assert.ok(mid > 0.2 && mid < 0.8, `중간 높이면 중간값이어야 한다 (${mid})`);
+});
+
+test('약점이 열릴 때는 내려와 발을 딛는다 — 그때 lift 가 뚝 떨어진다', () => {
+  const boss = createBoss(ARENA, 192, false);
+  // 공격 중(높이 뜸)
+  boss.state = 'attack';
+  step(boss, 3);
+  const flying = bossPose(boss).lift;
+
+  // 약점이 열릴 때까지 굴린다
+  for (let i = 0; i < 2000 && boss.state !== 'open'; i++) updateBoss(boss, ctx(), DT);
+  assert.equal(boss.state, 'open', '약점이 열리는 걸 봐야 한다');
+  step(boss, 2);
+  const landed = bossPose(boss).lift;
+
+  assert.ok(flying > 0.5, `공격 중에는 떠 있어야 한다 (${flying})`);
+  assert.ok(landed < flying, `내려앉으면 덜 떠야 한다 (${flying} → ${landed})`);
+});
+
+test('lean 은 미는 쪽을 가리킨다', () => {
+  const boss = createBoss(ARENA, 192, false);
+  boss.drift = 1;
+  assert.equal(bossPose(boss).lean, 1);
+  boss.drift = -1;
+  assert.equal(bossPose(boss).lean, -1);
+});
+
+test('내리꽂기가 멈추는 자리가 곧 발이 닿는 높이다 — 값이 한 곳에서 나온다', () => {
+  // 그리는 쪽은 bossFloor 로 「땅을 딛었나」를 판단하고, 내리꽂기는 제 높이에서
+  // 멈춘다. 이 둘을 따로 적어두면 발은 바닥에 박혔는데 추진기는 계속 타는
+  // 그림이 된다 — 그래서 실제로 꽂아보고 두 값이 만나는지 본다.
+  const boss = createBoss(ARENA, 192, false);
+  boss.state = 'stomp';
+  boss.timer = 5;
+  boss.y = 40;
+  for (let i = 0; i < 300 && boss.state === 'stomp'; i++) updateBoss(boss, ctx(), DT);
+
+  assert.equal(boss.state, 'recover', '내리꽂기가 안 끝났다');
+  assert.equal(boss.y, bossFloor(boss), '멈춘 자리와 bossFloor 가 어긋났다');
+  assert.equal(bossPose(boss).lift, 0, '발은 땅에 닿았는데 추진기가 타고 있다');
+  assert.equal(bossFloor(boss), boss.floorY - BOSS_H - 6);
 });
