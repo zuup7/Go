@@ -18,6 +18,8 @@ import {
   SKIP_AFTER,
 } from '../src/core/game.js';
 import { emptySave } from '../src/core/save.js';
+import { DEATH_FLY } from '../src/core/enemy.js';
+import { bossHealthRatio, bossGhostRatio } from '../src/core/boss.js';
 import { BOSS_MAX_HP } from '../src/data/bossData.js';
 
 const DT = 1 / 60;
@@ -302,4 +304,118 @@ test('스테이지 클리어 연출도 건너뛸 수 있다', () => {
   step(game, idle(), 30);
   step(game, idle({ confirmPressed: true }));
   assert.notEqual(game.scene, 'stageClear', '최소 시간이 지나면 다음 판으로');
+});
+
+// ── 적이 죽는 과정 ─────────────────────────────────────────
+
+test('밟힌 앨범은 **튕겨 날아간다** — 그 자리에서 사라지지 않는다', () => {
+  const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true } });
+  startRun(game);
+  loadStage(game, 0);
+  game.scene = 'play';
+  step(game, idle(), 5);
+
+  const album = game.albums.find((a) => a.alive && a.stompable && a.hp === 1);
+  assert.ok(album, '밟아서 한 방에 죽는 앨범이 있어야 한다');
+
+  // 왼쪽에서 밟는다 → 오른쪽으로 날아가야 한다
+  game.player.x = album.x + album.w / 2 - game.player.w - 1;
+  game.player.y = album.y - game.player.h + 1;
+  game.player.vy = 140;
+  game.player.onGround = false;
+  const x0 = album.x;
+  step(game);
+  assert.equal(album.alive, false, '한 방에 죽는 앨범이어야 이 다음이 성립한다');
+
+  game.freeze = 0; // 히트스톱을 건너뛴다 — 여기서 볼 건 날아가는 쪽이다
+  step(game, idle(), 6);
+  assert.ok(game.albums.includes(album), '죽자마자 목록에서 빠지면 날아갈 틈이 없다');
+  assert.ok(album.x > x0, `밟은 반대쪽으로 날아가야 한다 (${x0} → ${album.x})`);
+  assert.ok(album.dying > 0, '죽는 시간이 흘러야 한다');
+});
+
+test('날아가던 앨범은 때가 되면 사라진다 — 영원히 남지 않는다', () => {
+  const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true } });
+  startRun(game);
+  loadStage(game, 0);
+  game.scene = 'play';
+  step(game, idle(), 5);
+  const album = game.albums.find((a) => a.alive && a.stompable && a.hp === 1);
+
+  game.player.x = album.x;
+  game.player.y = album.y - game.player.h + 1;
+  game.player.vy = 140;
+  game.player.onGround = false;
+  step(game);
+  game.freeze = 0;
+
+  step(game, idle(), Math.ceil(DEATH_FLY * 60) + 10);
+  assert.ok(!game.albums.includes(album), '다 날아간 시체는 목록에서 빠져야 한다');
+});
+
+test('구멍에 빠져 사라진 앨범은 날아가지 않는다', () => {
+  const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true } });
+  startRun(game);
+  loadStage(game, 0);
+  const album = game.albums.find((a) => a.alive);
+  album.alive = false; // 밟힌 게 아니라 그냥 사라진 경우
+  assert.equal(album.dying, undefined, '밟혀 죽은 게 아니면 날아갈 이유가 없다');
+});
+
+// ── 보스 체력계 잔상 ────────────────────────────────────────
+
+test('체력계 잔상이 실제 체력을 **뒤늦게** 따라온다', () => {
+  const { game, heard } = bossGame();
+  const full = bossHealthRatio(game.boss);
+  assert.equal(bossGhostRatio(game.boss), full, '처음에는 둘이 같다');
+
+  hitOnce(game, heard);
+  const after = bossHealthRatio(game.boss);
+  assert.ok(after < full, '체력이 줄어야 한다');
+  assert.ok(
+    bossGhostRatio(game.boss) > after,
+    '잔상은 아직 위에 남아 있어야 한다 — 그래야 방금 얼마나 깎였는지 보인다',
+  );
+
+  // 시간이 지나면 따라잡는다
+  game.freeze = 0;
+  step(game, idle(), 40);
+  assert.equal(bossGhostRatio(game.boss), bossHealthRatio(game.boss), '결국은 따라잡아야 한다');
+});
+
+test('잔상은 체력 아래로 내려가지 않는다', () => {
+  const { game } = bossGame();
+  step(game, idle(), 120);
+  assert.ok(bossGhostRatio(game.boss) >= bossHealthRatio(game.boss));
+});
+
+// ── 소리 등급 ──────────────────────────────────────────────
+
+test('보스 발구르기는 앨범 밟기와 **다른 이벤트**를 쏜다', () => {
+  // 거대 로봇이 땅을 내려찍는데 CD 한 장 밟는 소리가 나면 중요도가 뒤집힌다
+  const heard = [];
+  const game = createGame({
+    seed: 11,
+    save: { ...emptySave(), seenOpening: true },
+    onEvent: (name) => heard.push(name),
+  });
+  startRun(game, 0, { hard: true });
+  loadBoss(game);
+
+  // 발구르기는 **공룡 페이즈부터** 나온다. hp 를 직접 깎아선 못 간다 —
+  // phaseId 는 syncPhase 가 올리는데 그건 damageBoss 안에서만 돈다.
+  // 그래서 진짜로 때려서 내려간다.
+  while (game.boss.phaseId < 3 && game.boss.hp > 1) hitOnce(game, heard);
+  assert.ok(game.boss.phaseId >= 3, '공룡 페이즈까지 내려가야 한다');
+
+  let sawStomp = false;
+  for (let i = 0; i < 4000 && !sawStomp; i++) {
+    game.player.invuln = 99;
+    if (game.bossCut) game.bossCut.t = game.bossCut.length;
+    heard.length = 0;
+    step(game);
+    if (heard.includes('bossstomp')) sawStomp = true;
+    assert.ok(!heard.includes('stomp'), '보스가 앨범 밟기 이벤트를 쏘면 안 된다');
+  }
+  assert.ok(sawStomp, '공룡 페이즈에서 발구르기를 봐야 한다');
 });

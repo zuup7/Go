@@ -20,8 +20,10 @@
       <canvas id="game" width="384" height="224"></canvas>
 
       <div class="ui" id="ui">
-        <!-- 보스 체력은 화면 맨 위 가장자리에 얇게만. 진짜 체력계는 캔버스 안 보스 아래에 그린다 -->
-        <div class="boss-bar" id="boss-bar" hidden><i id="boss-fill"></i></div>
+        <!-- 보스 체력은 캔버스 안, 보스 바로 아래에만 그린다 (render/sceneBoss.js).
+             예전에는 여기 4px 띠도 같이 있었는데, 같은 값을 두 군데서 보여주면서
+             한쪽만 0.25초 transition 이 걸려 있어 **맞은 직후 두 막대가 서로 다른
+             값을 가리켰다.** 눈금(남은 대수)이 있는 캔버스 쪽만 남긴다. -->
 
         <div class="hud" id="hud">
           <div class="hud-rank">

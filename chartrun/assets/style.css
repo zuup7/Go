@@ -146,23 +146,6 @@ canvas#game {
   white-space: nowrap;
 }
 
-/* ── 보스 체력 ────────────────────────────────────────── */
-/* 화면 맨 위 가장자리의 얇은 띠. 판을 깔면 게임 화면을 가려서 이만큼만 둔다.
-   읽기 쉬운 체력계는 캔버스 안에서 보스를 따라다닌다. */
-.boss-bar {
-  height: 4px;
-  background: rgba(20, 8, 34, 0.75);
-  flex: none;
-}
-
-.boss-bar i {
-  display: block;
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, var(--hot), var(--warn));
-  transition: width 0.25s ease-out;
-}
-
 /* ── 가운데 패널 ──────────────────────────────────────── */
 .center {
   flex: 1;

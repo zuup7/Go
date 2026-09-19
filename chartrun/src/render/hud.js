@@ -23,8 +23,6 @@ export function createHud(root) {
     plays: root.querySelector('#plays'),
     chartOuts: root.querySelector('#chartouts'),
     time: root.querySelector('#time'),
-    bossBar: root.querySelector('#boss-bar'),
-    bossFill: root.querySelector('#boss-fill'),
     bossPhase: root.querySelector('#boss-phase'),
     ammo: root.querySelector('#ammo'),
     center: root.querySelector('#center'),
@@ -257,14 +255,10 @@ export function createHud(root) {
       el.hud.hidden =
         game.scene === 'title' || game.scene === 'select' || game.scene === 'gallery' || inCut;
 
+      // 체력계는 캔버스가 그린다 (보스 바로 아래, 눈금까지). 여기서는 페이즈만.
       const showBoss = game.scene === 'boss' && game.boss && !inCut;
-      el.bossBar.hidden = !showBoss;
       el.bossPhase.hidden = !showBoss;
-      if (showBoss) {
-        const ratio = game.boss.hp / game.boss.maxHp;
-        el.bossFill.style.width = `${Math.max(0, ratio * 100)}%`;
-        el.bossPhase.textContent = `PHASE ${game.boss.phaseId}`;
-      }
+      if (showBoss) el.bossPhase.textContent = `PHASE ${game.boss.phaseId}`;
       el.ammo.hidden = inCut || !(game.player?.ammo > 0);
 
       if (game.paused) setCenter(pausePanel(game, ui?.volume ?? 1, !!ui?.muted));

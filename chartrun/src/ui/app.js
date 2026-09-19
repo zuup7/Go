@@ -132,6 +132,22 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+/**
+ * 손에 전하는 알림.
+ *
+ * **세 군데에만 쓴다** — 맞았을 때·죽었을 때·보스에게 한 대 먹였을 때.
+ * 밟기마다 울리면 한 판에 마흔 번이라 그건 알림이 아니라 소음이다.
+ * 폰에서 소리를 꺼둔 사람에게는 이게 유일한 "방금 뭔가 일어났다"다.
+ * (진동을 막아둔 기기·데스크톱에서는 그냥 아무 일도 안 일어난다)
+ */
+const buzz = (pattern) => {
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {
+    /* 막아둔 기기도 있다 */
+  }
+};
+
 function handleEvent(name, data) {
   switch (name) {
     case 'jump':
@@ -161,7 +177,25 @@ function handleEvent(name, data) {
     case 'shot':
       audio.play('shot');
       break;
+    // 공룡의 간판 공격 둘은 **예비동작도 타격도 소리가 없었다.** 레이저는
+    // laseraim/laser 로 예고와 발사가 다 들리는데 꼬리와 발구르기만 조용했다.
+    case 'tailaim':
+      audio.play('gather');
+      break;
+    case 'tail':
+      audio.play('crumble');
+      break;
+    case 'stompaim':
+      audio.play('rumble');
+      break;
+    case 'bossstomp':
+      audio.play('thud');
+      break;
+    case 'revive':
+      audio.play('blip');
+      break;
     case 'hurt':
+      buzz(25);
       audio.play('hurt');
       break;
     case 'trap':
@@ -176,6 +210,7 @@ function handleEvent(name, data) {
       persist();
       break;
     case 'death':
+      buzz(60);
       audio.play('death');
       break;
     case 'clear':
@@ -183,6 +218,7 @@ function handleEvent(name, data) {
       persist({ clearedStage: data.stage });
       break;
     case 'bosshit':
+      buzz([0, 25, 35, 25]);
       audio.play('bosshit');
       break;
     case 'phase':

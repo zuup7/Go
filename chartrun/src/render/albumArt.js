@@ -3,6 +3,7 @@
 // album.art 에 사진 경로가 있고 로딩에 성공했으면 그 사진을 커버 자리에 그대로 쓰고,
 // 없으면 album.cover 패턴을 코드로 그린다. 게임 로직은 여기에 전혀 의존하지 않는다.
 import { makeCanvas } from './pixel.js';
+import { DEATH_FLY } from '../core/enemy.js';
 
 const BASE = 16;
 const covers = new Map();
@@ -184,9 +185,15 @@ export function drawAlbum(ctx, e, ox, oy, time) {
   const squash = e.squash > 0 ? 1 - Math.min(0.5, e.squash) : 1;
 
   ctx.save();
+  // 밟혀 날아가는 동안은 돌면서 옅어진다
+  if (e.dying != null) {
+    ctx.globalAlpha = Math.max(0, 1 - e.dying / DEATH_FLY);
+  }
   ctx.translate(x + size / 2, y + size);
-  if (e.behavior === 'spinner') ctx.rotate(e.spin);
-  ctx.scale(1, squash);
+  if (e.behavior === 'spinner' || e.dying != null) ctx.rotate(e.spin ?? 0);
+  // 눌리면 **옆으로 퍼진다.** 세로만 줄이면 부피가 사라져서 납작해지는 게 아니라
+  // 그냥 작아 보인다. 플레이어도 같은 규칙을 쓴다 (render/scene.js 의 sx = 1/sy).
+  ctx.scale(1 / squash, squash);
   ctx.translate(-size / 2, -size);
 
   // 다리 (걷는 느낌)

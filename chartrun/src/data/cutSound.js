@@ -150,6 +150,19 @@ export const CUT_SOUND = {
     kiss: { sfx: 'kiss' },
     end: {},
   },
+
+  /**
+   * 스테이지 1 의 NPC 대화. 여기가 **통째로 비어 있었다** — 표에 항목이 없으면
+   * soundFor 가 undefined 를 돌려주고 조용히 넘어가서, 4초짜리 말풍선 세 장이
+   * 아무 소리 없이 지나갔다. 2회차로 가는 문이 열리는 자리인데 말이다.
+   * (아래 테스트의 TIMELINES 에도 같이 넣어 다시는 안 빠지게 했다)
+   */
+  talk: {
+    trophy: { sfx: 'blip' },
+    crack: { sfx: 'crack' }, // 트로피에 금이 간다
+    portal: { sfx: 'swirl' }, // 문이 열린다 — 실제로 문을 지날 때와 같은 소리다
+    end: {},
+  },
 };
 
 /** 이 단계에서 낼 소리 (없으면 undefined) */

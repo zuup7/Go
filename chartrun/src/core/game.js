@@ -2,7 +2,7 @@
 import { createWorld, T } from './world.js';
 import { STAGES, HARD_STAGES, BOSS_STAGE, NOTE_TOTAL } from '../data/stages.js';
 import { createPlayer, respawnPlayer, updatePlayer, bounce, damagePlayer } from './player.js';
-import { spawnAlbum, updateAlbum, stompAlbum, updateShot } from './enemy.js';
+import { spawnAlbum, updateAlbum, stompAlbum, updateShot, albumGone } from './enemy.js';
 import { createCamera, updateCamera, updateCameraShake, shakeCamera } from './camera.js';
 import { rankAt, TOP_RANK } from './chart.js';
 import {
@@ -412,7 +412,7 @@ function handleAlbums(game, dt, held = false) {
       emit(game, 'hurt', {});
     }
   }
-  game.albums = game.albums.filter((a) => a.alive || a.squash > 0);
+  game.albums = game.albums.filter((a) => !albumGone(a));
 }
 
 /**
@@ -1495,7 +1495,9 @@ function updateBossScene(game, input, dt) {
     },
     onStomp: () => {
       shakeCamera(game.camera, 1.2);
-      emit(game, 'stomp', {});
+      // **앨범 밟기와 다른 이벤트다.** 같은 'stomp' 를 쓰고 있었더니 거대 로봇이
+      // 땅을 내려찍는데 CD 한 장 밟는 소리가 났다 — 중요도가 뒤집힌다.
+      emit(game, 'bossstomp', {});
     },
   };
   updateBoss(boss, ctx, dt);

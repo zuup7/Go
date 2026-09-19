@@ -231,10 +231,33 @@ function keepNearHome(e) {
   }
 }
 
+/**
+ * 밟혀 날아가는 시간. 이만큼 지나면 목록에서 지운다.
+ *
+ * 예전에는 찌그러짐(0.3초)이 풀리는 순간 **뿅 하고 사라졌다.** 밟히기는 하는데
+ * 죽는 *과정*이 없어서, 맞은 건지 그냥 없어진 건지 읽히지 않았다.
+ */
+export const DEATH_FLY = 0.55;
+
+/** 이제 화면에서 지워도 되는가 */
+export const albumGone = (e) =>
+  !e.alive && e.squash <= 0 && (e.dying == null || e.dying >= DEATH_FLY);
+
 export function updateAlbum(e, ctx, dt) {
   // 찌그러짐은 죽은 뒤에도 마저 풀려야 한다 — 안 그러면 시체가 화면에 남는다
   e.squash = Math.max(0, e.squash - dt);
-  if (!e.alive) return;
+  if (!e.alive) {
+    // 밟혀 죽은 놈은 튕겨 날아간다. 구멍에 빠져 사라진 놈(dying 이 없다)은 그냥 둔다.
+    // 지형은 안 본다 — 죽은 뒤에 벽에 걸려 멈추면 그게 더 어색하다.
+    if (e.dying != null) {
+      e.dying += dt;
+      e.vy += 520 * dt;
+      e.x += e.vx * dt;
+      e.y += e.vy * dt;
+      e.spin = (e.spin ?? 0) + dt * 13 * (e.vx < 0 ? -1 : 1);
+    }
+    return;
+  }
   const fn = BEHAVIORS[e.behavior] ?? BEHAVIORS.walker;
   fn(e, ctx, dt);
   keepNearHome(e);
@@ -252,6 +275,13 @@ export function stompAlbum(e, ctx) {
   e.squash = 0.3;
   if (e.hp > 0) return 'hurt';
   e.alive = false;
+  // 밟은 쪽 **바깥으로** 튕겨 나간다 — 밟은 자리에서 그냥 꺼지면 접점이 안 읽힌다.
+  // 플레이어 중심을 기준으로 방향을 정한다 (달려오던 방향이 아니라: 위에서 내려찍은
+  // 거라 진행 방향보다 어느 쪽을 밟았는지가 더 자연스럽다)
+  const px = ctx.player ? ctx.player.x + ctx.player.w / 2 : e.x;
+  e.dying = 0;
+  e.vx = (px <= e.x + e.w / 2 ? 1 : -1) * 64;
+  e.vy = -150;
   if (e.splitsLeft > 0) {
     const size = Math.max(14, Math.round(e.w * 0.6));
     for (let i = 0; i < 2; i++) {

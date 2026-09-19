@@ -39,6 +39,13 @@ export function createBoss(arenaWidth, floorY = 192, hard = false) {
     hp: maxHp,
     maxHp,
     /**
+     * 체력계가 뒤따라오는 잔상. 실제 체력을 **늦게** 쫓아온다.
+     * 한 대가 3분의 1이라 막대가 순식간에 줄어드는데, 잔상이 없으면 언제 얼마나
+     * 들어갔는지 눈이 못 따라간다. 그리는 쪽에서 만들면 판마다 상태가 달라지므로
+     * 여기 둔다.
+     */
+    ghostHp: maxHp,
+    /**
      * 이 보스가 볼 페이즈 표. 보스에 담아두고 **여기서만** 읽는다 —
      * PHASES 를 직접 보는 곳이 흩어져 있으면 하나만 빠져도 하드에서 3페이즈에 멈춘다.
      */
@@ -373,6 +380,8 @@ export function updateBoss(boss, ctx, dt) {
   boss.spin += dt * (1.2 + boss.phaseId * 0.5) * (1 - boss.openness * 0.9);
   boss.bob += dt;
   boss.hurtFlash = Math.max(0, boss.hurtFlash - dt);
+  // 체력계 잔상이 실제 체력을 뒤늦게 따라잡는다 (bossGhostRatio 가 그걸 읽는다)
+  boss.ghostHp = Math.max(boss.hp, (boss.ghostHp ?? boss.hp) - GHOST_CATCHUP * dt);
   boss.timer -= dt;
   stepLooks(boss, dt);
 
@@ -823,3 +832,9 @@ export const princessCaged = (boss) => !!boss && boss.state !== 'defeated';
 
 /** 남은 체력 비율 0~1 */
 export const bossHealthRatio = (boss) => clamp(boss.hp / boss.maxHp, 0, 1);
+
+/** 뒤따라오는 잔상의 비율. 늘 실제 체력 이상이다 */
+export const bossGhostRatio = (boss) => clamp((boss.ghostHp ?? boss.hp) / boss.maxHp, 0, 1);
+
+/** 잔상이 체력을 따라잡는 속도 (초당 체력 칸 수). 한 대 맞은 자국이 0.25초에 메워진다 */
+const GHOST_CATCHUP = 4;

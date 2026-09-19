@@ -12,6 +12,8 @@ import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import {
   bossPhase,
+  bossHealthRatio,
+  bossGhostRatio,
   princessCaged,
   bossBody,
   bossPose,
@@ -51,7 +53,15 @@ export function drawBossHealth(ctx, boss, ox, oy, color, drop = 0) {
   ctx.fillRect(x - 1, y - 1, w + 2, 7);
   ctx.fillStyle = '#2a1740';
   ctx.fillRect(x, y, w, 5);
-  const ratio = Math.max(0, boss.hp / boss.maxHp);
+  const ratio = bossHealthRatio(boss);
+  // **방금 깎인 만큼**을 붉게 남긴다. 한 대가 3분의 1이라 순식간에 줄어드는데,
+  // 잔상이 없으면 언제 얼마나 들어갔는지 눈이 못 따라간다. (boss.ghostHp 를
+  // core 가 체력 쪽으로 천천히 끌어당긴다 — 그려지는 쪽에서 상태를 만들지 않는다)
+  const ghost = Math.max(ratio, bossGhostRatio(boss));
+  if (ghost > ratio) {
+    ctx.fillStyle = '#ff2e63';
+    ctx.fillRect(x, y, Math.round(w * ghost), 5);
+  }
   ctx.fillStyle = color;
   ctx.fillRect(x, y, Math.round(w * ratio), 5);
   // 남은 대수를 눈금으로 — 몇 대 남았는지 바로 읽힌다

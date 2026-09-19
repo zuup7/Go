@@ -181,23 +181,6 @@ canvas#game {
   white-space: nowrap;
 }
 
-/* ── 보스 체력 ────────────────────────────────────────── */
-/* 화면 맨 위 가장자리의 얇은 띠. 판을 깔면 게임 화면을 가려서 이만큼만 둔다.
-   읽기 쉬운 체력계는 캔버스 안에서 보스를 따라다닌다. */
-.boss-bar {
-  height: 4px;
-  background: rgba(20, 8, 34, 0.75);
-  flex: none;
-}
-
-.boss-bar i {
-  display: block;
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, var(--hot), var(--warn));
-  transition: width 0.25s ease-out;
-}
-
 /* ── 가운데 패널 ──────────────────────────────────────── */
 .center {
   flex: 1;
@@ -999,8 +982,10 @@ body.rotated .touch-right {
       <canvas id="game" width="384" height="224"></canvas>
 
       <div class="ui" id="ui">
-        <!-- 보스 체력은 화면 맨 위 가장자리에 얇게만. 진짜 체력계는 캔버스 안 보스 아래에 그린다 -->
-        <div class="boss-bar" id="boss-bar" hidden><i id="boss-fill"></i></div>
+        <!-- 보스 체력은 캔버스 안, 보스 바로 아래에만 그린다 (render/sceneBoss.js).
+             예전에는 여기 4px 띠도 같이 있었는데, 같은 값을 두 군데서 보여주면서
+             한쪽만 0.25초 transition 이 걸려 있어 **맞은 직후 두 막대가 서로 다른
+             값을 가리켰다.** 눈금(남은 대수)이 있는 캔버스 쪽만 남긴다. -->
 
         <div class="hud" id="hud">
           <div class="hud-rank">
@@ -3331,10 +3316,33 @@ function keepNearHome(e) {
   }
 }
 
+/**
+ * 밟혀 날아가는 시간. 이만큼 지나면 목록에서 지운다.
+ *
+ * 예전에는 찌그러짐(0.3초)이 풀리는 순간 **뿅 하고 사라졌다.** 밟히기는 하는데
+ * 죽는 *과정*이 없어서, 맞은 건지 그냥 없어진 건지 읽히지 않았다.
+ */
+const DEATH_FLY = 0.55;
+
+/** 이제 화면에서 지워도 되는가 */
+const albumGone = (e) =>
+  !e.alive && e.squash <= 0 && (e.dying == null || e.dying >= DEATH_FLY);
+
 function updateAlbum(e, ctx, dt) {
   // 찌그러짐은 죽은 뒤에도 마저 풀려야 한다 — 안 그러면 시체가 화면에 남는다
   e.squash = Math.max(0, e.squash - dt);
-  if (!e.alive) return;
+  if (!e.alive) {
+    // 밟혀 죽은 놈은 튕겨 날아간다. 구멍에 빠져 사라진 놈(dying 이 없다)은 그냥 둔다.
+    // 지형은 안 본다 — 죽은 뒤에 벽에 걸려 멈추면 그게 더 어색하다.
+    if (e.dying != null) {
+      e.dying += dt;
+      e.vy += 520 * dt;
+      e.x += e.vx * dt;
+      e.y += e.vy * dt;
+      e.spin = (e.spin ?? 0) + dt * 13 * (e.vx < 0 ? -1 : 1);
+    }
+    return;
+  }
   const fn = BEHAVIORS[e.behavior] ?? BEHAVIORS.walker;
   fn(e, ctx, dt);
   keepNearHome(e);
@@ -3352,6 +3360,13 @@ function stompAlbum(e, ctx) {
   e.squash = 0.3;
   if (e.hp > 0) return 'hurt';
   e.alive = false;
+  // 밟은 쪽 **바깥으로** 튕겨 나간다 — 밟은 자리에서 그냥 꺼지면 접점이 안 읽힌다.
+  // 플레이어 중심을 기준으로 방향을 정한다 (달려오던 방향이 아니라: 위에서 내려찍은
+  // 거라 진행 방향보다 어느 쪽을 밟았는지가 더 자연스럽다)
+  const px = ctx.player ? ctx.player.x + ctx.player.w / 2 : e.x;
+  e.dying = 0;
+  e.vx = (px <= e.x + e.w / 2 ? 1 : -1) * 64;
+  e.vy = -150;
   if (e.splitsLeft > 0) {
     const size = Math.max(14, Math.round(e.w * 0.6));
     for (let i = 0; i < 2; i++) {
@@ -3384,7 +3399,7 @@ function updateShot(shot, world, dt) {
   return shot.x > -20 && shot.x < world.pixelWidth + 20;
 }
 
-return { spawnAlbum, updateAlbum, stompAlbum, updateShot };
+return { spawnAlbum, DEATH_FLY, albumGone, updateAlbum, stompAlbum, updateShot };
 })();
 __m["chartrun/src/core/camera.js"] = (() => {
 // 플레이어를 따라가는 카메라. 화면 흔들림도 여기서.
@@ -3761,6 +3776,13 @@ function createBoss(arenaWidth, floorY = 192, hard = false) {
     hp: maxHp,
     maxHp,
     /**
+     * 체력계가 뒤따라오는 잔상. 실제 체력을 **늦게** 쫓아온다.
+     * 한 대가 3분의 1이라 막대가 순식간에 줄어드는데, 잔상이 없으면 언제 얼마나
+     * 들어갔는지 눈이 못 따라간다. 그리는 쪽에서 만들면 판마다 상태가 달라지므로
+     * 여기 둔다.
+     */
+    ghostHp: maxHp,
+    /**
      * 이 보스가 볼 페이즈 표. 보스에 담아두고 **여기서만** 읽는다 —
      * PHASES 를 직접 보는 곳이 흩어져 있으면 하나만 빠져도 하드에서 3페이즈에 멈춘다.
      */
@@ -4095,6 +4117,8 @@ function updateBoss(boss, ctx, dt) {
   boss.spin += dt * (1.2 + boss.phaseId * 0.5) * (1 - boss.openness * 0.9);
   boss.bob += dt;
   boss.hurtFlash = Math.max(0, boss.hurtFlash - dt);
+  // 체력계 잔상이 실제 체력을 뒤늦게 따라잡는다 (bossGhostRatio 가 그걸 읽는다)
+  boss.ghostHp = Math.max(boss.hp, (boss.ghostHp ?? boss.hp) - GHOST_CATCHUP * dt);
   boss.timer -= dt;
   stepLooks(boss, dt);
 
@@ -4546,7 +4570,13 @@ const princessCaged = (boss) => !!boss && boss.state !== 'defeated';
 /** 남은 체력 비율 0~1 */
 const bossHealthRatio = (boss) => clamp(boss.hp / boss.maxHp, 0, 1);
 
-return { BOSS_W, DINO_W, DINO_H, BOSS_H, LASER_W, TAIL_W, WAVE_W, createBoss, tailBand, shockWaves, laserBeam, laserBeams, MIC_SIZE, createMic, throwMic, updateThrown, bossPhase, syncPhase, NEUTRAL_POSE, bossPose, updateBoss, whirlGapX, ceilingSlabs, hitBoss, bossCombined, bossBody, princessCaged, bossHealthRatio };
+/** 뒤따라오는 잔상의 비율. 늘 실제 체력 이상이다 */
+const bossGhostRatio = (boss) => clamp((boss.ghostHp ?? boss.hp) / boss.maxHp, 0, 1);
+
+/** 잔상이 체력을 따라잡는 속도 (초당 체력 칸 수). 한 대 맞은 자국이 0.25초에 메워진다 */
+const GHOST_CATCHUP = 4;
+
+return { BOSS_W, DINO_W, DINO_H, BOSS_H, LASER_W, TAIL_W, WAVE_W, createBoss, tailBand, shockWaves, laserBeam, laserBeams, MIC_SIZE, createMic, throwMic, updateThrown, bossPhase, syncPhase, NEUTRAL_POSE, bossPose, updateBoss, whirlGapX, ceilingSlabs, hitBoss, bossCombined, bossBody, princessCaged, bossHealthRatio, bossGhostRatio };
 })();
 __m["chartrun/src/data/traps.js"] = (() => {
 // 고양이마리오풍 트롤 함정.
@@ -5227,7 +5257,7 @@ __m["chartrun/src/core/game.js"] = (() => {
 const { createWorld, T } = __m["chartrun/src/core/world.js"];
 const { STAGES, HARD_STAGES, BOSS_STAGE, NOTE_TOTAL } = __m["chartrun/src/data/stages.js"];
 const { createPlayer, respawnPlayer, updatePlayer, bounce, damagePlayer } = __m["chartrun/src/core/player.js"];
-const { spawnAlbum, updateAlbum, stompAlbum, updateShot } = __m["chartrun/src/core/enemy.js"];
+const { spawnAlbum, updateAlbum, stompAlbum, updateShot, albumGone } = __m["chartrun/src/core/enemy.js"];
 const { createCamera, updateCamera, updateCameraShake, shakeCamera } = __m["chartrun/src/core/camera.js"];
 const { rankAt, TOP_RANK } = __m["chartrun/src/core/chart.js"];
 const { createBoss, updateBoss, hitBoss, syncPhase, bossPhase, throwMic, updateThrown, laserBeam, laserBeams, tailBand, shockWaves, ceilingSlabs, whirlGapX } = __m["chartrun/src/core/boss.js"];
@@ -5623,7 +5653,7 @@ function handleAlbums(game, dt, held = false) {
       emit(game, 'hurt', {});
     }
   }
-  game.albums = game.albums.filter((a) => a.alive || a.squash > 0);
+  game.albums = game.albums.filter((a) => !albumGone(a));
 }
 
 /**
@@ -6706,7 +6736,9 @@ function updateBossScene(game, input, dt) {
     },
     onStomp: () => {
       shakeCamera(game.camera, 1.2);
-      emit(game, 'stomp', {});
+      // **앨범 밟기와 다른 이벤트다.** 같은 'stomp' 를 쓰고 있었더니 거대 로봇이
+      // 땅을 내려찍는데 CD 한 장 밟는 소리가 났다 — 중요도가 뒤집힌다.
+      emit(game, 'bossstomp', {});
     },
   };
   updateBoss(boss, ctx, dt);
@@ -7828,6 +7860,7 @@ __m["chartrun/src/render/albumArt.js"] = (() => {
 // album.art 에 사진 경로가 있고 로딩에 성공했으면 그 사진을 커버 자리에 그대로 쓰고,
 // 없으면 album.cover 패턴을 코드로 그린다. 게임 로직은 여기에 전혀 의존하지 않는다.
 const { makeCanvas } = __m["chartrun/src/render/pixel.js"];
+const { DEATH_FLY } = __m["chartrun/src/core/enemy.js"];
 
 const BASE = 16;
 const covers = new Map();
@@ -8009,9 +8042,15 @@ function drawAlbum(ctx, e, ox, oy, time) {
   const squash = e.squash > 0 ? 1 - Math.min(0.5, e.squash) : 1;
 
   ctx.save();
+  // 밟혀 날아가는 동안은 돌면서 옅어진다
+  if (e.dying != null) {
+    ctx.globalAlpha = Math.max(0, 1 - e.dying / DEATH_FLY);
+  }
   ctx.translate(x + size / 2, y + size);
-  if (e.behavior === 'spinner') ctx.rotate(e.spin);
-  ctx.scale(1, squash);
+  if (e.behavior === 'spinner' || e.dying != null) ctx.rotate(e.spin ?? 0);
+  // 눌리면 **옆으로 퍼진다.** 세로만 줄이면 부피가 사라져서 납작해지는 게 아니라
+  // 그냥 작아 보인다. 플레이어도 같은 규칙을 쓴다 (render/scene.js 의 sx = 1/sy).
+  ctx.scale(1 / squash, squash);
   ctx.translate(-size / 2, -size);
 
   // 다리 (걷는 느낌)
@@ -8796,7 +8835,7 @@ const { drawSprite, makeCanvas } = __m["chartrun/src/render/pixel.js"];
 const { DISC, BRIDE } = __m["chartrun/src/render/sprites.js"];
 const { ALBUMS } = __m["chartrun/src/data/albums.js"];
 const { VIEW } = __m["chartrun/src/core/game.js"];
-const { bossPhase, princessCaged, bossBody, bossPose, NEUTRAL_POSE, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
+const { bossPhase, bossHealthRatio, bossGhostRatio, princessCaged, bossBody, bossPose, NEUTRAL_POSE, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
 const { DARK, HORN, LIT, METAL, VINYL, RB, ROBOT_TOP, ROBOT_BOTTOM, armorCover, clamp01, coreRadius, ease, housingHalf, plate, slam, wedge } = __m["chartrun/src/render/sceneParts.js"];
 
 // ── 보스 ────────────────────────────────────────────────────
@@ -8810,7 +8849,15 @@ function drawBossHealth(ctx, boss, ox, oy, color, drop = 0) {
   ctx.fillRect(x - 1, y - 1, w + 2, 7);
   ctx.fillStyle = '#2a1740';
   ctx.fillRect(x, y, w, 5);
-  const ratio = Math.max(0, boss.hp / boss.maxHp);
+  const ratio = bossHealthRatio(boss);
+  // **방금 깎인 만큼**을 붉게 남긴다. 한 대가 3분의 1이라 순식간에 줄어드는데,
+  // 잔상이 없으면 언제 얼마나 들어갔는지 눈이 못 따라간다. (boss.ghostHp 를
+  // core 가 체력 쪽으로 천천히 끌어당긴다 — 그려지는 쪽에서 상태를 만들지 않는다)
+  const ghost = Math.max(ratio, bossGhostRatio(boss));
+  if (ghost > ratio) {
+    ctx.fillStyle = '#ff2e63';
+    ctx.fillRect(x, y, Math.round(w * ghost), 5);
+  }
   ctx.fillStyle = color;
   ctx.fillRect(x, y, Math.round(w * ratio), 5);
   // 남은 대수를 눈금으로 — 몇 대 남았는지 바로 읽힌다
@@ -12882,8 +12929,6 @@ function createHud(root) {
     plays: root.querySelector('#plays'),
     chartOuts: root.querySelector('#chartouts'),
     time: root.querySelector('#time'),
-    bossBar: root.querySelector('#boss-bar'),
-    bossFill: root.querySelector('#boss-fill'),
     bossPhase: root.querySelector('#boss-phase'),
     ammo: root.querySelector('#ammo'),
     center: root.querySelector('#center'),
@@ -13116,14 +13161,10 @@ function createHud(root) {
       el.hud.hidden =
         game.scene === 'title' || game.scene === 'select' || game.scene === 'gallery' || inCut;
 
+      // 체력계는 캔버스가 그린다 (보스 바로 아래, 눈금까지). 여기서는 페이즈만.
       const showBoss = game.scene === 'boss' && game.boss && !inCut;
-      el.bossBar.hidden = !showBoss;
       el.bossPhase.hidden = !showBoss;
-      if (showBoss) {
-        const ratio = game.boss.hp / game.boss.maxHp;
-        el.bossFill.style.width = `${Math.max(0, ratio * 100)}%`;
-        el.bossPhase.textContent = `PHASE ${game.boss.phaseId}`;
-      }
+      if (showBoss) el.bossPhase.textContent = `PHASE ${game.boss.phaseId}`;
       el.ammo.hidden = inCut || !(game.player?.ammo > 0);
 
       if (game.paused) setCenter(pausePanel(game, ui?.volume ?? 1, !!ui?.muted));
@@ -13285,6 +13326,19 @@ const CUT_SOUND = {
     vow: { sfx: 'chime' },
     ring: { sfx: 'ring' },
     kiss: { sfx: 'kiss' },
+    end: {},
+  },
+
+  /**
+   * 스테이지 1 의 NPC 대화. 여기가 **통째로 비어 있었다** — 표에 항목이 없으면
+   * soundFor 가 undefined 를 돌려주고 조용히 넘어가서, 4초짜리 말풍선 세 장이
+   * 아무 소리 없이 지나갔다. 2회차로 가는 문이 열리는 자리인데 말이다.
+   * (아래 테스트의 TIMELINES 에도 같이 넣어 다시는 안 빠지게 했다)
+   */
+  talk: {
+    trophy: { sfx: 'blip' },
+    crack: { sfx: 'crack' }, // 트로피에 금이 간다
+    portal: { sfx: 'swirl' }, // 문이 열린다 — 실제로 문을 지날 때와 같은 소리다
     end: {},
   },
 };
@@ -13927,6 +13981,22 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+/**
+ * 손에 전하는 알림.
+ *
+ * **세 군데에만 쓴다** — 맞았을 때·죽었을 때·보스에게 한 대 먹였을 때.
+ * 밟기마다 울리면 한 판에 마흔 번이라 그건 알림이 아니라 소음이다.
+ * 폰에서 소리를 꺼둔 사람에게는 이게 유일한 "방금 뭔가 일어났다"다.
+ * (진동을 막아둔 기기·데스크톱에서는 그냥 아무 일도 안 일어난다)
+ */
+const buzz = (pattern) => {
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {
+    /* 막아둔 기기도 있다 */
+  }
+};
+
 function handleEvent(name, data) {
   switch (name) {
     case 'jump':
@@ -13956,7 +14026,25 @@ function handleEvent(name, data) {
     case 'shot':
       audio.play('shot');
       break;
+    // 공룡의 간판 공격 둘은 **예비동작도 타격도 소리가 없었다.** 레이저는
+    // laseraim/laser 로 예고와 발사가 다 들리는데 꼬리와 발구르기만 조용했다.
+    case 'tailaim':
+      audio.play('gather');
+      break;
+    case 'tail':
+      audio.play('crumble');
+      break;
+    case 'stompaim':
+      audio.play('rumble');
+      break;
+    case 'bossstomp':
+      audio.play('thud');
+      break;
+    case 'revive':
+      audio.play('blip');
+      break;
     case 'hurt':
+      buzz(25);
       audio.play('hurt');
       break;
     case 'trap':
@@ -13971,6 +14059,7 @@ function handleEvent(name, data) {
       persist();
       break;
     case 'death':
+      buzz(60);
       audio.play('death');
       break;
     case 'clear':
@@ -13978,6 +14067,7 @@ function handleEvent(name, data) {
       persist({ clearedStage: data.stage });
       break;
     case 'bosshit':
+      buzz([0, 25, 35, 25]);
       audio.play('bosshit');
       break;
     case 'phase':
