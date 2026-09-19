@@ -1338,16 +1338,30 @@ function damageBoss(game, opts = {}) {
   });
   emit(game, 'bosshit', {});
 
+  /**
+   * 세 갈래다. **평타 / 페이즈 전환 / 마지막 일격**.
+   *
+   * 예전에는 두 갈래였고 (`changed` 아니면 `hp > 0`), 그래서 hp 가 0 이 되는
+   * 순간에는 **어느 쪽도 실행되지 않았다** — 아홉 번 중 가장 중요한 아홉 번째에
+   * 플래시도 전용 소리도 없었다. 게다가 'bossdown'(쓰러지는 팡파르, 1초짜리)이
+   * 평타에 붙어 있어서 매 타격마다 다음 타격 위로 겹쳐 울렸다. 이름도 사실과 반대였다.
+   */
   const changed = syncPhase(boss);
-  if (changed) {
+  if (boss.hp <= 0) {
+    // 마지막 일격. 평타 플래시(1)보다 **위로 벌린다** — 렌더가 0.85 까지 받는다
+    game.flash = 1.4;
+    shakeCamera(game.camera, 1.8);
+    // 이제야 이름이 사실이 된다. 소리가 끝나갈 즈음 보스가 다 가라앉는다
+    emit(game, 'bossdown', {});
+  } else if (changed) {
     // 페이즈가 바뀌면 싸움을 멈추고 전환 컷신을 튼다
     startBossCut(game, cutForPhase(changed, game.hard));
     game.flash = 1;
     shakeCamera(game.camera, 1.6);
     emit(game, 'phase', { phase: changed });
-  } else if (boss.hp > 0) {
+  } else {
+    // 평타. 보스 몸이 하얘지는 hurtFlash 와 별개로 화면도 한 번 번쩍인다
     game.flash = 1;
-    emit(game, 'bossdown', {});
   }
   return true;
 }
@@ -1430,6 +1444,7 @@ function updateBossScene(game, input, dt) {
     dropMic: (mic) => game.mics.push(mic),
     onAim: () => emit(game, 'laseraim', {}),
     onLaser: () => emit(game, 'laser', {}),
+    onFire: () => emit(game, 'shot', {}),
     // 꼬리는 플레이어 반대쪽에서 시작한다 — 발밑에서 생기면 예고가 있어도 못 피한다
     playerX: game.player.x + game.player.w / 2,
     onTailAim: () => emit(game, 'tailaim', {}),
@@ -1501,7 +1516,13 @@ function updateBossScene(game, input, dt) {
  * volume 은 여기서 아무것도 안 한다 — core 는 소리를 모른다. 'volume' 이벤트만 내고
  * 실제로 크기를 바꾸는 건 ui/app.js 다 (오디오는 브라우저 것이라 여기 들어오면 테스트가 죽는다).
  */
-export const PAUSE_ROWS = ['resume', 'retry', 'volume', 'title'];
+/**
+ * 일시정지 메뉴의 줄.
+ *
+ * 'mute' 가 여기 있는 이유: 음소거는 **M 키뿐**이었다. 폰에는 키보드가 없으니
+ * 소리를 끌 방법이 아예 없었다 — 조용한 데서 켰다가 그냥 창을 닫아야 했다.
+ */
+export const PAUSE_ROWS = ['resume', 'retry', 'volume', 'mute', 'title'];
 
 /** 멈춤을 풀 수 있는 장면. 여기 아니면 Esc 를 눌러도 안 멈춘다. */
 /** 지금 멈출 수 있는 장면인가. 컷신·타이틀에서는 멈춤이 없다.
@@ -1510,8 +1531,13 @@ export const pausable = (game) => game.scene === 'play' || game.scene === 'boss'
 
 function choosePause(game) {
   const row = PAUSE_ROWS[game.pauseIndex] ?? 'resume';
+  // 소리 줄들은 멈춘 채로 머문다 — 한 칸 돌리고 바로 들어보고 싶기 때문이다
   if (row === 'volume') {
     emit(game, 'volume', {});
+    return;
+  }
+  if (row === 'mute') {
+    emit(game, 'mute', {});
     return;
   }
   // 나머지는 전부 멈춤을 푼다. 멈춘 채로 장면을 옮기면 아무 키도 안 먹어서 게임이 잠긴다.

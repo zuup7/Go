@@ -158,6 +158,9 @@ function handleEvent(name, data) {
     case 'laser':
       audio.play('flash');
       break;
+    case 'shot':
+      audio.play('shot');
+      break;
     case 'hurt':
       audio.play('hurt');
       break;
@@ -186,6 +189,10 @@ function handleEvent(name, data) {
       audio.play('phase');
       break;
     case 'bossdown':
+      // 마지막 일격에만 온다. 브금을 **여기서** 끊는다 — 쓰러지는 컷신이 뜨기까지
+      // 0.9초 동안 보스가 조용히 가라앉는데, 그 위로 전투 브금이 계속 돌면
+      // 여운이 될 자리를 음악이 덮는다.
+      audio.stopBgm();
       audio.play('bossdown');
       break;
     case 'boss':
@@ -218,6 +225,14 @@ function handleEvent(name, data) {
     case 'volume':
       // 일시정지 메뉴에서 소리 줄을 골랐다. core 는 소리를 모르니 여기서 한 칸 돌린다.
       ui.volume = audio.setVolume(nextVolume(audio.volume));
+      audio.play('blip');
+      persist();
+      break;
+    case 'mute':
+      // 폰에는 M 키가 없다. 일시정지 메뉴가 유일한 길이다.
+      ui.muted = audio.setMuted(!audio.muted);
+      // 켜는 쪽에서는 이 소리가 안 난다(play 가 음소거면 그냥 돌아온다) — 그게 맞다.
+      // 푸는 쪽에서만 한 번 울려서 "돌아왔다"를 들려준다.
       audio.play('blip');
       persist();
       break;
@@ -262,7 +277,7 @@ function handleEvent(name, data) {
 
 // ── 개발자 모드 숫자판 ──────────────────────────────────────
 // 화면에 그리는 건 hud 가 하고, 여기서는 상태와 입력만 다룬다.
-const ui = { keypad: null, volume: audio.volume };
+const ui = { keypad: null, volume: audio.volume, muted: audio.muted };
 
 function openKeypad() {
   ui.keypad = { buf: '', bad: false };
@@ -374,7 +389,9 @@ function update(dt) {
   input.sample();
   if (input.anyPressed) audio.unlock();
   if (input.mutePressed) {
-    audio.setMuted(!audio.muted);
+    // 일시정지 메뉴의 음소거 줄과 **같은 값을 본다** — 안 맞춰두면 M 으로 끈 뒤
+    // 메뉴를 열었을 때 「음소거 꺼짐」이라고 거짓말을 한다
+    ui.muted = audio.setMuted(!audio.muted);
     persist();
   }
   time += dt;

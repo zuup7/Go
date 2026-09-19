@@ -75,11 +75,14 @@ export function createHud(root) {
    * 줄마다 data-key 를 달아 **탭으로도 고를 수 있게** 한다 — 폰에는 ◀▶ 도 엔터도 없다.
    * (숫자판과 같은 이유로 핸들러는 안 달고 ui/app.js 가 #center 에 위임한다)
    */
-  function pausePanel(game, volume) {
+  function pausePanel(game, volume, muted) {
     const label = {
       resume: '이어하기',
       retry: '체크포인트부터 다시',
+      // 음소거와 크기는 **따로 보여준다.** 둘은 각각 소리를 죽일 수 있어서,
+      // 하나로 합치면 「소리 100%」인데 안 들리는 상태를 설명할 길이 없다.
       volume: `소리 ${Math.round(volume * 100)}%`,
+      mute: muted ? '음소거 켜짐' : '음소거 꺼짐',
       title: '타이틀로',
     };
     return `
@@ -264,7 +267,7 @@ export function createHud(root) {
       }
       el.ammo.hidden = inCut || !(game.player?.ammo > 0);
 
-      if (game.paused) setCenter(pausePanel(game, ui?.volume ?? 1));
+      if (game.paused) setCenter(pausePanel(game, ui?.volume ?? 1, !!ui?.muted));
       else setCenter(centerFor(game, ui));
     },
   };

@@ -638,6 +638,16 @@ body.rotated .touch button.pad-edit {
   touch-action: none;
 }
 
+/* 눌린 표시를 **여기서 다시** 준다.
+   위쪽 `.touch button.is-down` 과 `.touch button.pause-btn` 은 가중치가 똑같아서(0-2-1)
+   뒤에 오는 pause-btn 의 background·border 가 이긴다 — 그래서 ⏸ 만 눌러도 색이 안 변했다.
+   진동은 오는데 화면은 그대로라 눌렸는지 알 수가 없었다. */
+.touch button.pause-btn.is-down {
+  background: var(--hot);
+  border-color: #ffd7e2;
+  color: var(--ink);
+}
+
 /* 손잡이(✥) 왼쪽에 42px 띄워서 — 세로 화면의 right: 8px / 50px 과 같은 간격 */
 body.rotated .touch button.pause-btn {
   right: calc(var(--rotated-side) + 42px);
@@ -4426,6 +4436,9 @@ function fireRing(boss, phase, ctx) {
       boss: true,
     });
   }
+  // 탄이 소리 없이 나타나면 화면 구석에서 오는 걸 알 길이 없다.
+  // 한 번에 5~9발이 나가므로 **발마다가 아니라 한 무더기에 한 번** 운다.
+  ctx.onFire?.();
 }
 
 function updateQuarters(boss, phase, ctx, dt) {
@@ -6504,16 +6517,30 @@ function damageBoss(game, opts = {}) {
   });
   emit(game, 'bosshit', {});
 
+  /**
+   * 세 갈래다. **평타 / 페이즈 전환 / 마지막 일격**.
+   *
+   * 예전에는 두 갈래였고 (`changed` 아니면 `hp > 0`), 그래서 hp 가 0 이 되는
+   * 순간에는 **어느 쪽도 실행되지 않았다** — 아홉 번 중 가장 중요한 아홉 번째에
+   * 플래시도 전용 소리도 없었다. 게다가 'bossdown'(쓰러지는 팡파르, 1초짜리)이
+   * 평타에 붙어 있어서 매 타격마다 다음 타격 위로 겹쳐 울렸다. 이름도 사실과 반대였다.
+   */
   const changed = syncPhase(boss);
-  if (changed) {
+  if (boss.hp <= 0) {
+    // 마지막 일격. 평타 플래시(1)보다 **위로 벌린다** — 렌더가 0.85 까지 받는다
+    game.flash = 1.4;
+    shakeCamera(game.camera, 1.8);
+    // 이제야 이름이 사실이 된다. 소리가 끝나갈 즈음 보스가 다 가라앉는다
+    emit(game, 'bossdown', {});
+  } else if (changed) {
     // 페이즈가 바뀌면 싸움을 멈추고 전환 컷신을 튼다
     startBossCut(game, cutForPhase(changed, game.hard));
     game.flash = 1;
     shakeCamera(game.camera, 1.6);
     emit(game, 'phase', { phase: changed });
-  } else if (boss.hp > 0) {
+  } else {
+    // 평타. 보스 몸이 하얘지는 hurtFlash 와 별개로 화면도 한 번 번쩍인다
     game.flash = 1;
-    emit(game, 'bossdown', {});
   }
   return true;
 }
@@ -6596,6 +6623,7 @@ function updateBossScene(game, input, dt) {
     dropMic: (mic) => game.mics.push(mic),
     onAim: () => emit(game, 'laseraim', {}),
     onLaser: () => emit(game, 'laser', {}),
+    onFire: () => emit(game, 'shot', {}),
     // 꼬리는 플레이어 반대쪽에서 시작한다 — 발밑에서 생기면 예고가 있어도 못 피한다
     playerX: game.player.x + game.player.w / 2,
     onTailAim: () => emit(game, 'tailaim', {}),
@@ -6667,7 +6695,13 @@ function updateBossScene(game, input, dt) {
  * volume 은 여기서 아무것도 안 한다 — core 는 소리를 모른다. 'volume' 이벤트만 내고
  * 실제로 크기를 바꾸는 건 ui/app.js 다 (오디오는 브라우저 것이라 여기 들어오면 테스트가 죽는다).
  */
-const PAUSE_ROWS = ['resume', 'retry', 'volume', 'title'];
+/**
+ * 일시정지 메뉴의 줄.
+ *
+ * 'mute' 가 여기 있는 이유: 음소거는 **M 키뿐**이었다. 폰에는 키보드가 없으니
+ * 소리를 끌 방법이 아예 없었다 — 조용한 데서 켰다가 그냥 창을 닫아야 했다.
+ */
+const PAUSE_ROWS = ['resume', 'retry', 'volume', 'mute', 'title'];
 
 /** 멈춤을 풀 수 있는 장면. 여기 아니면 Esc 를 눌러도 안 멈춘다. */
 /** 지금 멈출 수 있는 장면인가. 컷신·타이틀에서는 멈춤이 없다.
@@ -6676,8 +6710,13 @@ const pausable = (game) => game.scene === 'play' || game.scene === 'boss';
 
 function choosePause(game) {
   const row = PAUSE_ROWS[game.pauseIndex] ?? 'resume';
+  // 소리 줄들은 멈춘 채로 머문다 — 한 칸 돌리고 바로 들어보고 싶기 때문이다
   if (row === 'volume') {
     emit(game, 'volume', {});
+    return;
+  }
+  if (row === 'mute') {
+    emit(game, 'mute', {});
     return;
   }
   // 나머지는 전부 멈춤을 푼다. 멈춘 채로 장면을 옮기면 아무 키도 안 먹어서 게임이 잠긴다.
@@ -7379,6 +7418,12 @@ function createAudio(muted = false, volume = 1) {
         tone(midi(n), ctx.currentTime + i * 0.11, 0.26, { gain: 0.24 }),
       );
     },
+    /**
+     * 보스 탄막 한 무더기. **일부러 작다** (gain .13) — 한 번에 5~9발이 나가고
+     * 페이즈 3에서는 0.85초마다 반복되므로, 크게 잡으면 전투 내내 이 소리만 들린다.
+     * 내려가는 짧은 음이라 "뭔가 날아온다"로 읽힌다.
+     */
+    shot: () => tone(660, ctx.currentTime, 0.07, { gain: 0.13, slide: 0.55 }),
     bosshit: () => {
       tone(140, ctx.currentTime, 0.24, { type: 'sawtooth', gain: 0.3, slide: 0.4 });
       noise(ctx.currentTime, 0.16, { gain: 0.24 });
@@ -7547,6 +7592,10 @@ function createAudio(muted = false, volume = 1) {
       state.muted = value;
       ensure();
       if (master) master.gain.value = level();
+      // **반드시 먼저 끊는다.** 음소거를 껐을 때 예약이 살아 있는 채로 scheduleLoop 를
+      // 또 걸면 같은 곡이 한 겹 더 돈다 — 한 마디 안에서 껐다 켜기를 반복하면
+      // 겹이 끝없이 쌓인다.
+      clearTimeout(timer);
       if (!value && current) scheduleLoop(current);
       return state.muted;
     },
@@ -12740,11 +12789,14 @@ function createHud(root) {
    * 줄마다 data-key 를 달아 **탭으로도 고를 수 있게** 한다 — 폰에는 ◀▶ 도 엔터도 없다.
    * (숫자판과 같은 이유로 핸들러는 안 달고 ui/app.js 가 #center 에 위임한다)
    */
-  function pausePanel(game, volume) {
+  function pausePanel(game, volume, muted) {
     const label = {
       resume: '이어하기',
       retry: '체크포인트부터 다시',
+      // 음소거와 크기는 **따로 보여준다.** 둘은 각각 소리를 죽일 수 있어서,
+      // 하나로 합치면 「소리 100%」인데 안 들리는 상태를 설명할 길이 없다.
       volume: `소리 ${Math.round(volume * 100)}%`,
+      mute: muted ? '음소거 켜짐' : '음소거 꺼짐',
       title: '타이틀로',
     };
     return `
@@ -12929,7 +12981,7 @@ function createHud(root) {
       }
       el.ammo.hidden = inCut || !(game.player?.ammo > 0);
 
-      if (game.paused) setCenter(pausePanel(game, ui?.volume ?? 1));
+      if (game.paused) setCenter(pausePanel(game, ui?.volume ?? 1, !!ui?.muted));
       else setCenter(centerFor(game, ui));
     },
   };
@@ -13756,6 +13808,9 @@ function handleEvent(name, data) {
     case 'laser':
       audio.play('flash');
       break;
+    case 'shot':
+      audio.play('shot');
+      break;
     case 'hurt':
       audio.play('hurt');
       break;
@@ -13784,6 +13839,10 @@ function handleEvent(name, data) {
       audio.play('phase');
       break;
     case 'bossdown':
+      // 마지막 일격에만 온다. 브금을 **여기서** 끊는다 — 쓰러지는 컷신이 뜨기까지
+      // 0.9초 동안 보스가 조용히 가라앉는데, 그 위로 전투 브금이 계속 돌면
+      // 여운이 될 자리를 음악이 덮는다.
+      audio.stopBgm();
       audio.play('bossdown');
       break;
     case 'boss':
@@ -13816,6 +13875,14 @@ function handleEvent(name, data) {
     case 'volume':
       // 일시정지 메뉴에서 소리 줄을 골랐다. core 는 소리를 모르니 여기서 한 칸 돌린다.
       ui.volume = audio.setVolume(nextVolume(audio.volume));
+      audio.play('blip');
+      persist();
+      break;
+    case 'mute':
+      // 폰에는 M 키가 없다. 일시정지 메뉴가 유일한 길이다.
+      ui.muted = audio.setMuted(!audio.muted);
+      // 켜는 쪽에서는 이 소리가 안 난다(play 가 음소거면 그냥 돌아온다) — 그게 맞다.
+      // 푸는 쪽에서만 한 번 울려서 "돌아왔다"를 들려준다.
       audio.play('blip');
       persist();
       break;
@@ -13860,7 +13927,7 @@ function handleEvent(name, data) {
 
 // ── 개발자 모드 숫자판 ──────────────────────────────────────
 // 화면에 그리는 건 hud 가 하고, 여기서는 상태와 입력만 다룬다.
-const ui = { keypad: null, volume: audio.volume };
+const ui = { keypad: null, volume: audio.volume, muted: audio.muted };
 
 function openKeypad() {
   ui.keypad = { buf: '', bad: false };
@@ -13972,7 +14039,9 @@ function update(dt) {
   input.sample();
   if (input.anyPressed) audio.unlock();
   if (input.mutePressed) {
-    audio.setMuted(!audio.muted);
+    // 일시정지 메뉴의 음소거 줄과 **같은 값을 본다** — 안 맞춰두면 M 으로 끈 뒤
+    // 메뉴를 열었을 때 「음소거 꺼짐」이라고 거짓말을 한다
+    ui.muted = audio.setMuted(!audio.muted);
     persist();
   }
   time += dt;

@@ -603,6 +603,16 @@ body.rotated .touch button.pad-edit {
   touch-action: none;
 }
 
+/* 눌린 표시를 **여기서 다시** 준다.
+   위쪽 `.touch button.is-down` 과 `.touch button.pause-btn` 은 가중치가 똑같아서(0-2-1)
+   뒤에 오는 pause-btn 의 background·border 가 이긴다 — 그래서 ⏸ 만 눌러도 색이 안 변했다.
+   진동은 오는데 화면은 그대로라 눌렸는지 알 수가 없었다. */
+.touch button.pause-btn.is-down {
+  background: var(--hot);
+  border-color: #ffd7e2;
+  color: var(--ink);
+}
+
 /* 손잡이(✥) 왼쪽에 42px 띄워서 — 세로 화면의 right: 8px / 50px 과 같은 간격 */
 body.rotated .touch button.pause-btn {
   right: calc(var(--rotated-side) + 42px);

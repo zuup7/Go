@@ -214,6 +214,12 @@ export function createAudio(muted = false, volume = 1) {
         tone(midi(n), ctx.currentTime + i * 0.11, 0.26, { gain: 0.24 }),
       );
     },
+    /**
+     * 보스 탄막 한 무더기. **일부러 작다** (gain .13) — 한 번에 5~9발이 나가고
+     * 페이즈 3에서는 0.85초마다 반복되므로, 크게 잡으면 전투 내내 이 소리만 들린다.
+     * 내려가는 짧은 음이라 "뭔가 날아온다"로 읽힌다.
+     */
+    shot: () => tone(660, ctx.currentTime, 0.07, { gain: 0.13, slide: 0.55 }),
     bosshit: () => {
       tone(140, ctx.currentTime, 0.24, { type: 'sawtooth', gain: 0.3, slide: 0.4 });
       noise(ctx.currentTime, 0.16, { gain: 0.24 });
@@ -382,6 +388,10 @@ export function createAudio(muted = false, volume = 1) {
       state.muted = value;
       ensure();
       if (master) master.gain.value = level();
+      // **반드시 먼저 끊는다.** 음소거를 껐을 때 예약이 살아 있는 채로 scheduleLoop 를
+      // 또 걸면 같은 곡이 한 겹 더 돈다 — 한 마디 안에서 껐다 켜기를 반복하면
+      // 겹이 끝없이 쌓인다.
+      clearTimeout(timer);
       if (!value && current) scheduleLoop(current);
       return state.muted;
     },

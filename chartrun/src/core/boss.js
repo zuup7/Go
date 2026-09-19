@@ -746,6 +746,9 @@ function fireRing(boss, phase, ctx) {
       boss: true,
     });
   }
+  // 탄이 소리 없이 나타나면 화면 구석에서 오는 걸 알 길이 없다.
+  // 한 번에 5~9발이 나가므로 **발마다가 아니라 한 무더기에 한 번** 운다.
+  ctx.onFire?.();
 }
 
 function updateQuarters(boss, phase, ctx, dt) {
