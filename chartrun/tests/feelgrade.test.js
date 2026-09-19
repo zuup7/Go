@@ -6,6 +6,7 @@
 // 규칙으로 박아둔다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   createGame,
   updateGame,
@@ -16,6 +17,9 @@ import {
   FREEZE,
   freezeGame,
   SKIP_AFTER,
+  ENDING_LOCK,
+  BOSS_CUT_GAP,
+  inCutscene,
 } from '../src/core/game.js';
 import { emptySave } from '../src/core/save.js';
 import { DEATH_FLY } from '../src/core/enemy.js';
@@ -418,4 +422,91 @@ test('보스 발구르기는 앨범 밟기와 **다른 이벤트**를 쏜다', (
     assert.ok(!heard.includes('stomp'), '보스가 앨범 밟기 이벤트를 쏘면 안 된다');
   }
   assert.ok(sawStomp, '공룡 페이즈에서 발구르기를 봐야 한다');
+});
+
+// ── 클라이맥스의 쉼표 ───────────────────────────────────────
+
+test('쓰러지는 컷신과 엔딩 사이에 숨이 하나 있다', () => {
+  const game = createGame({ seed: 9, save: { ...emptySave(), seenOpening: true } });
+  startRun(game);
+  loadBoss(game);
+  game.boss.hp = 0;
+  game.boss.state = 'defeated';
+  game.boss.defeatedAt = 1.2;
+  step(game, idle(), 2);
+  assert.equal(game.bossCut?.id, 'bossdown');
+
+  // 쓰러지는 컷신을 끝까지 흘린다
+  step(game, idle(), Math.ceil(game.bossCut.length * 60) + 2);
+  assert.equal(game.bossCut, null, '두 컷신이 하드컷으로 붙어 있으면 한 덩어리로 읽힌다');
+  assert.ok(game.bossCutGap > 0, '암전이 돌고 있어야 한다');
+  assert.equal(inCutscene(game), true, '암전 동안 HUD 가 돌아오면 깜빡인다');
+
+  step(game, idle(), Math.ceil(BOSS_CUT_GAP * 60) + 2);
+  assert.equal(game.bossCut?.id, 'ending', '숨을 쉬고 나면 엔딩이 이어진다');
+});
+
+test('숨은 짧다 — 반복해서 보는 자리다', () => {
+  assert.ok(BOSS_CUT_GAP > 0 && BOSS_CUT_GAP <= 0.6, `${BOSS_CUT_GAP}초는 숨이 아니라 끊김이다`);
+});
+
+// ── 엔딩 화면 ──────────────────────────────────────────────
+
+test('「아무 키나 누르면」이 **정말 누를 수 있을 때** 뜬다', () => {
+  // core 가 입력을 막는 시간과 CSS 가 글자를 띄우는 시각이 같아야 한다.
+  // 어긋나면 못 누르는 동안 누르라고 하거나(예전이 그랬다) 누를 수 있는데 말이 없다.
+  const css = readFileSync(new URL('../assets/style.css', import.meta.url), 'utf8');
+  const lock = css.match(/--ending-lock:\s*([\d.]+)s/)?.[1];
+  assert.ok(lock, 'style.css 에 --ending-lock 이 없다');
+  assert.equal(Number(lock), ENDING_LOCK);
+});
+
+test('엔딩 화면은 잠깐 입력을 안 받는다 — 18초 컷신 끝의 키를 먹는다', () => {
+  const game = createGame({ seed: 9, save: { ...emptySave(), seenOpening: true, clearedOnce: false } });
+  game.scene = 'ending';
+  game.sceneTime = 0;
+  game.ending = { rank: 1, timeMs: 1000, chartOuts: 0, score: 100 };
+  step(game, idle({ confirmPressed: true }), 10);
+  assert.equal(game.scene, 'ending', '바로 날아가면 기록을 볼 새가 없다');
+
+  step(game, idle(), Math.ceil(ENDING_LOCK * 60) + 2);
+  step(game, idle({ confirmPressed: true }));
+  assert.notEqual(game.scene, 'ending');
+});
+
+// ── 착지 ──────────────────────────────────────────────────
+
+test('세게 착지하면 소리가 난다 — 먼지와 **같은 문턱**을 쓴다', () => {
+  const heard = [];
+  const game = createGame({
+    seed: 2,
+    save: { ...emptySave(), seenOpening: true },
+    onEvent: (name) => heard.push(name),
+  });
+  startRun(game);
+  loadStage(game, 0);
+  game.scene = 'play';
+  step(game, idle(), 10);
+
+  // 살짝 떨어뜨린다 — 소리도 먼지도 없어야 한다
+  heard.length = 0;
+  game.player.y -= 6;
+  step(game, idle(), 20);
+  assert.ok(!heard.includes('land'), '한 칸 떨어진 걸로 쿵 소리가 나면 걷기만 해도 시끄럽다');
+
+  // 높이 떨어뜨린다. **떨어진 그 프레임에서** 재야 한다 — 먼지는 0.32초면 사라지므로
+  // 한참 뒤에 세면 소리는 들렸는데 먼지는 없는 것처럼 보인다 (한 번 속았다)
+  game.player.y -= 90;
+  game.player.vy = 0;
+  let landedAt = -1;
+  for (let i = 0; i < 90 && landedAt < 0; i++) {
+    heard.length = 0;
+    const before = game.particles.length;
+    step(game);
+    if (heard.includes('land')) {
+      landedAt = i;
+      assert.ok(game.particles.length > before, '소리가 났으면 먼지도 나야 한다 — 문턱이 하나다');
+    }
+  }
+  assert.ok(landedAt >= 0, '세게 떨어졌는데 조용하면 무게가 없다');
 });

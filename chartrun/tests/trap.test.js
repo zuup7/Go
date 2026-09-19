@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TRAPS, TRAP_KINDS, createTrapMemory, trapKey } from '../src/data/traps.js';
-import { createGame, updateGame, startRun, loadStage, VIEW } from '../src/core/game.js';
+import { createGame, updateGame, startRun, loadStage, VIEW, BOSS_CUT_GAP } from '../src/core/game.js';
 import { emptySave, mergeRun, beatRecord, serialize, deserialize } from '../src/core/save.js';
 import { T } from '../src/core/world.js';
 import { STAGES } from '../src/data/stages.js';
@@ -216,7 +216,8 @@ test('보스를 잡으면 1위 엔딩', () => {
   step(game);
   // 격파하면 **쓰러지는 컷신**이 먼저 돌고, 그게 끝나야 엔딩으로 이어진다
   assert.equal(game.bossCut?.id, 'bossdown', '격파하면 먼저 쓰러지는 컷신');
-  step(game, idle, Math.ceil(game.bossCut.length * 60) + 2);
+  // 쓰러지는 컷신과 엔딩 사이에는 숨이 하나 있다 (BOSS_CUT_GAP)
+  step(game, idle, Math.ceil((game.bossCut.length + BOSS_CUT_GAP) * 60) + 2);
   assert.equal(game.bossCut?.id, 'ending', '쓰러진 뒤 엔딩 컷신');
   step(game, idle, Math.ceil(game.bossCut.length * 60) + 2);
   assert.equal(game.scene, 'ending');

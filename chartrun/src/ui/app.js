@@ -194,6 +194,9 @@ function handleEvent(name, data) {
     case 'revive':
       audio.play('blip');
       break;
+    case 'land':
+      audio.play('land');
+      break;
     case 'hurt':
       buzz(25);
       audio.play('hurt');

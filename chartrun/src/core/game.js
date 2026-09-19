@@ -57,6 +57,8 @@ const CRUMBLE_TIME = 0.14;
  */
 const FLOOR_CRUMBLE_TIME = 0.16;
 const DEATH_HOLD = 1.5;
+/** 쓰러지는 컷신과 엔딩 컷신 사이의 암전(초). 숨 한 번 — 길면 끊긴 것처럼 보인다 */
+export const BOSS_CUT_GAP = 0.3;
 const CLEAR_HOLD = 2.6;
 const INTRO_HOLD = 2.0;
 
@@ -130,6 +132,8 @@ export function createGame(options = {}) {
     dev: save.dev ?? false,
     /** 히트스톱으로 멈춰 있는 프레임 수. 0 이면 평소대로 돈다 (FREEZE 참고) */
     freeze: 0,
+    /** 보스 컷신 사이의 암전에 남은 시간(초) */
+    bossCutGap: 0,
     /** 타이틀에서 고른 줄, 스테이지 선택 화면에서 고른 칸, 일시정지 메뉴에서 고른 줄 */
     titleIndex: 0,
     selectIndex: 0,
@@ -214,9 +218,20 @@ export const notesFound = (game) => game.noteMemory?.size ?? game.save?.foundNot
 /** 음표를 다 모았는가. 숨은 화면이 이 조건으로 열린다 */
 export const allNotes = (game) => notesFound(game) >= NOTE_TOTAL;
 
+/**
+ * 튀는 조각들.
+ *
+ * `dir`·`arc` 를 주면 그 방향 부채꼴로만 튄다 (라디안). 안 주면 예전 그대로
+ * 사방으로 퍼진다 — 이미 쓰고 있는 열한 군데를 안 건드리려고 기본값을 그렇게 뒀다.
+ * 접점이 분명한 것(밟기 같은 것)만 방향을 준다: 사방으로 퍼지면 어디를 맞혔는지
+ * 안 읽힌다.
+ */
 function addParticles(game, x, y, count, colors, opts = {}) {
   for (let i = 0; i < count; i++) {
-    const angle = game.rng.float() * Math.PI * 2;
+    const angle =
+      opts.dir == null
+        ? game.rng.float() * Math.PI * 2
+        : opts.dir + (game.rng.float() - 0.5) * (opts.arc ?? Math.PI * 0.6);
     const speed = (opts.speed ?? 60) * (0.4 + game.rng.float());
     game.particles.push({
       x,
@@ -398,8 +413,17 @@ function handleAlbums(game, dt, held = false) {
       // 아주 짧게. 한 판에 스무 번 넘게 하는 일이라 길면 판이 끊긴다
       freezeGame(game, FREEZE.stomp);
       emit(game, 'stomp', {});
-      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 8, album.def.palette, {
+      // 밟은 자리에서 **옆으로** 터진다. 사방으로 퍼지면 위에서 밟았다는 게 안 읽힌다.
+      // (0 = 오른쪽, π = 왼쪽. 반반씩 나눠 양옆으로 보낸다)
+      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 4, album.def.palette, {
         speed: 70,
+        dir: 0,
+        arc: Math.PI * 0.5,
+      });
+      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 4, album.def.palette, {
+        speed: 70,
+        dir: Math.PI,
+        arc: Math.PI * 0.5,
       });
       if (result === 'dead') {
         game.defeated += 1;
@@ -1085,9 +1109,15 @@ const applyEffects = (game, input) =>
  */
 const noDash = (input) => (input.dashPressed ? { ...input, dashPressed: false } : input);
 
-/** 세게 떨어졌을 때만 발밑에 먼지. 걸음마다 피우면 화면이 지저분해진다. */
+/**
+ * 세게 떨어졌을 때만 발밑에 먼지. 걸음마다 피우면 화면이 지저분해진다.
+ *
+ * 소리도 **같은 문턱**을 쓴다. 먼지는 나는데 소리가 없어서 무게가 반쪽이었다 —
+ * 문턱을 따로 두면 언젠가 "먼지는 나는데 조용한 착지"가 생긴다.
+ */
 function landingDust(game, landed) {
   if (!landed || landed.impact < 0.45) return;
+  emit(game, 'land', { impact: landed.impact });
   const p = game.player;
   addParticles(game, p.x + p.w / 2, p.y + p.h, 4 + Math.round(landed.impact * 4), ['#e8ecf7', '#b3aecd'], {
     speed: 40 * landed.impact,
@@ -1314,7 +1344,12 @@ export const SELECT_SLOTS = SELECT_ITEMS.length;
  * 안 덮으므로, HUD 도 그대로 있어야 하고 「건너뛰기」 버튼을 띄울 자리도 아니다.
  */
 export const inCutscene = (game) =>
-  game.scene === 'intro' || game.scene === 'cutscene' || !!game.bossCut || !!game.caught;
+  game.scene === 'intro' ||
+  game.scene === 'cutscene' ||
+  !!game.bossCut ||
+  // 컷신 사이의 암전도 컷신이다 — 여기서 HUD 가 0.3초 돌아왔다 사라지면 깜빡인다
+  game.bossCutGap > 0 ||
+  !!game.caught;
 
 /**
  * 컷신을 튼 뒤 이만큼은 못 건너뛴다.
@@ -1324,6 +1359,16 @@ export const inCutscene = (game) =>
  * 건너뛰기가 없었다 — 다섯 군데 중 한 군데를 빠뜨린 셈이다.
  */
 export const SKIP_AFTER = 0.5;
+
+/**
+ * 엔딩 통계 화면이 입력을 안 받는 시간(초). 18초짜리 컷신이 끝나자마자 눌려 있던
+ * 키에 화면이 날아가면 기록을 볼 새가 없다.
+ *
+ * **style.css 의 `--ending-lock` 과 같은 값이어야 한다** — 「아무 키나 누르면」
+ * 줄이 뜨는 시각을 거기서 정하기 때문이다. 둘이 어긋나면 못 누르는 동안 누르라고
+ * 하거나(예전이 그랬다), 누를 수 있는데 아무 말이 없다. 테스트가 둘을 견준다.
+ */
+export const ENDING_LOCK = 1.5;
 
 /** 지금 이 컷신(시작한 지 t 초)을 건너뛰라는 입력인가 */
 const skipping = (input, t) => input.confirmPressed && t > SKIP_AFTER;
@@ -1448,6 +1493,16 @@ function updateBossScene(game, input, dt) {
   const boss = game.boss;
 
   // 컷신이 도는 동안에는 아무것도 움직이지 않는다 — 연출 보다가 죽으면 안 된다
+  // 쓰러지는 컷신과 엔딩 사이의 숨. 화면은 이미 검다.
+  if (game.bossCutGap > 0) {
+    game.bossCutGap -= dt;
+    if (game.bossCutGap <= 0) {
+      game.bossCutGap = 0;
+      startBossCut(game, endingCut(game.hard));
+    }
+    return;
+  }
+
   if (game.bossCut) {
     const was = game.bossCut.t;
     game.bossCut.t += dt;
@@ -1461,8 +1516,10 @@ function updateBossScene(game, input, dt) {
       // 컷신이 끝났다고 알린다. 건너뛰었을 때도 반드시 나오므로,
       // 컷신 때문에 꺼둔 것(브금 같은 것)을 여기서 되돌리면 안전하다.
       emit(game, 'cutdone', { cut: finished });
-      // 쓰러지는 컷신이 끝나면 곧바로 엔딩으로 이어진다
-      if (finished === 'bossdown') startBossCut(game, endingCut(game.hard));
+      // 쓰러지는 컷신이 끝나면 엔딩으로 이어진다. **쉼표를 하나 둔다** —
+      // 하드컷으로 붙이면 4.6초와 18초짜리 두 컷신이 한 덩어리로 뭉쳐 읽힌다.
+      // (컷신 그리기가 앞뒤 0.3/0.4초를 검게 여닫으므로 그 사이가 완전한 암전이다)
+      if (finished === 'bossdown') game.bossCutGap = BOSS_CUT_GAP;
       if (isEndingCut(finished)) finishRun(game);
     }
     return;
@@ -1763,7 +1820,7 @@ export function updateGame(game, input, dt) {
       break;
 
     case 'ending':
-      if (game.sceneTime > 1.5 && input.confirmPressed) {
+      if (game.sceneTime > ENDING_LOCK && input.confirmPressed) {
         // 한 바퀴를 돈 사람은 타이틀이 아니라 **판으로 돌아온다** — 거기 NPC 가 서 있다
         if (game.save.clearedOnce) returnToHub(game);
         else {

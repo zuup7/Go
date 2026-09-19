@@ -419,6 +419,43 @@ canvas#game {
   font-size: 0.82em;
 }
 
+/* 18초짜리 결혼식 컷신의 마침표가 표 한 장 뿅 이었다. 줄을 차례로 들여보낸다 —
+   눈이 위에서 아래로 따라 읽게 된다. **전체 0.7초 안에 끝낸다**: 반복해서 보는
+   화면이라 길면 그때부터는 기다림이다. (nth-child 로 늦추므로 줄이 늘어도
+   여덟 번째까지는 저절로 붙는다) */
+.panel.ending .stats li {
+  animation: stat-in 0.26s ease-out both;
+}
+
+.panel.ending .stats li:nth-child(1) { animation-delay: 0.05s; }
+.panel.ending .stats li:nth-child(2) { animation-delay: 0.13s; }
+.panel.ending .stats li:nth-child(3) { animation-delay: 0.21s; }
+.panel.ending .stats li:nth-child(4) { animation-delay: 0.29s; }
+.panel.ending .stats li:nth-child(5) { animation-delay: 0.37s; }
+.panel.ending .stats li:nth-child(6) { animation-delay: 0.45s; }
+.panel.ending .stats li:nth-child(7) { animation-delay: 0.53s; }
+.panel.ending .stats li:nth-child(n + 8) { animation-delay: 0.61s; }
+
+@keyframes stat-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* 「아무 키나 누르면」은 **정말 누를 수 있게 된 뒤에** 뜬다.
+   --ending-lock 은 core 의 ENDING_LOCK 과 같은 값이다 (테스트가 둘을 견준다).
+   예전에는 입력을 안 받는 1.5초 동안에도 깜빡이고 있어서 거짓말을 했다. */
+.panel.ending {
+  --ending-lock: 1.5s;
+}
+
+.panel.ending .press {
+  animation:
+    stat-in 0.3s ease-out var(--ending-lock) both,
+    blink 1.1s steps(2, end) calc(var(--ending-lock) + 0.3s) infinite;
+}
+
 .stats li {
   display: flex;
   justify-content: space-between;

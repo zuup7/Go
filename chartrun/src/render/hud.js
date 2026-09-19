@@ -14,6 +14,9 @@ import {
   notesFound,
 } from '../core/game.js';
 
+/** 천 단위 구분. 세 자리마다 쉼표가 찍혀야 여섯 자리 점수가 한눈에 읽힌다 */
+const won = (n) => Number(n).toLocaleString('ko-KR');
+
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -30,6 +33,33 @@ export function createHud(root) {
   };
 
   let lastCenter = '';
+  let countRaf = 0;
+
+  /**
+   * 숫자가 굴러 올라간다 (`data-count` 가 붙은 칸).
+   *
+   * **패널 문자열은 안 건드린다.** setCenter 는 글자가 바뀔 때마다 innerHTML 을
+   * 통째로 갈아끼우므로, 굴러가는 값을 문자열에 넣으면 매 프레임 패널이 다시
+   * 그려지고 줄이 차례로 뜨는 연출도 매번 처음부터 돈다. 그래서 다 그린 **뒤에**
+   * 그 칸만 따로 만진다. 중간에 멈춰도 HTML 에는 이미 최종값이 적혀 있다.
+   */
+  const COUNT_MS = 600;
+  function startCountUp() {
+    cancelAnimationFrame(countRaf);
+    const node = el.center.querySelector('[data-count]');
+    if (!node) return;
+    const target = Number(node.dataset.count);
+    if (!Number.isFinite(target) || target <= 0) return;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const k = Math.min(1, (now - t0) / COUNT_MS);
+      // 끝에서 느려진다 — 마지막 자리가 또박또박 멈추는 게 보여야 한다
+      const eased = 1 - (1 - k) ** 3;
+      node.textContent = won(Math.round(target * eased));
+      if (k < 1) countRaf = requestAnimationFrame(tick);
+    };
+    countRaf = requestAnimationFrame(tick);
+  }
 
   const setCenter = (html) => {
     if (html === lastCenter) return;
@@ -39,6 +69,7 @@ export function createHud(root) {
     // 목록이 화면보다 길면 굴러간다. innerHTML 을 통째로 갈아끼우므로 굴린 자리는
     // 매번 처음으로 돌아간다 — 고른 줄을 다시 화면 안으로 끌어와야 한다.
     el.center.querySelector('.slots li.on')?.scrollIntoView({ block: 'nearest' });
+    startCountUp();
   };
 
   /**
@@ -213,7 +244,7 @@ export function createHud(root) {
               <li><span>물리친 앨범</span><b>${e.defeated ?? 0}</b></li>
               <li><span>찾은 함정</span><b>${game.save.revealedTraps?.length ?? 0}</b></li>
               <li><span>재생수</span><b>${e.plays ?? 0}</b></li>
-              <li><span>SCORE</span><b>${(e.score ?? 0).toLocaleString('ko-KR')}</b></li>
+              <li><span>SCORE</span><b data-count="${e.score ?? 0}">${won(e.score ?? 0)}</b></li>
               ${
                 // 2회차 칸. 깬 사람은 ♛, **이번에 막 열린 사람에게는 열렸다고 알린다** —
                 // 예전에는 여기서 아무 말도 안 해서 2회차가 있는 줄도 몰랐다.

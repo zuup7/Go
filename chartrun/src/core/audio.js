@@ -236,6 +236,11 @@ export function createAudio(muted = false, volume = 1) {
       noise(ctx.currentTime, 0.2, { gain: 0.2 });
     },
     crumble: () => noise(ctx.currentTime, 0.12, { gain: 0.16, highpass: 1200 }),
+    /**
+     * 세게 착지. **낮고 짧다** — 높은 데서 떨어질 때만 나는데도(impact 0.45 문턱)
+     * 크게 잡으면 판을 도는 내내 쿵쿵거린다. 먼지가 이는 그 프레임에 같이 난다.
+     */
+    land: () => noise(ctx.currentTime, 0.07, { gain: 0.12, highpass: 200 }),
     checkpoint: () => {
       [69, 76, 81].forEach((n, i) => tone(midi(n), ctx.currentTime + i * 0.08, 0.2, { gain: 0.22 }));
     },

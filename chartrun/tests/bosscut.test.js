@@ -1,7 +1,7 @@
 // 보스전 컷신 — 여기서 막히면 게임이 영영 안 끝나므로 제일 빡빡하게 본다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, loadBoss, updateGame } from '../src/core/game.js';
+import { createGame, loadBoss, updateGame, BOSS_CUT_GAP } from '../src/core/game.js';
 import { hitBoss, syncPhase, bossCombined } from '../src/core/boss.js';
 import {
   BOSS_CUTS,
@@ -188,7 +188,8 @@ test('건너뛰기가 세 컷신 모두에서 먹는다', () => {
     game.bossCut = { id, t: 0, length: bossCutLength(id) };
     run(game, 0.4, { confirmPressed: true });
     assert.ok(game.bossCut, `${id}: 시작하자마자 넘어가면 눌린 줄도 모른다`);
-    run(game, 0.4, { confirmPressed: true });
+    // 쓰러지는 컷신은 엔딩으로 이어지는데 **사이에 암전이 하나 있다** — 그만큼 더 흘린다
+    run(game, 0.4 + BOSS_CUT_GAP, { confirmPressed: true });
     const next = id === 'bossdown' ? 'ending' : null;
     assert.equal(game.bossCut?.id ?? null, next, `${id}: 건너뛰기가 안 먹는다`);
   }

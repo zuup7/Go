@@ -454,6 +454,43 @@ canvas#game {
   font-size: 0.82em;
 }
 
+/* 18초짜리 결혼식 컷신의 마침표가 표 한 장 뿅 이었다. 줄을 차례로 들여보낸다 —
+   눈이 위에서 아래로 따라 읽게 된다. **전체 0.7초 안에 끝낸다**: 반복해서 보는
+   화면이라 길면 그때부터는 기다림이다. (nth-child 로 늦추므로 줄이 늘어도
+   여덟 번째까지는 저절로 붙는다) */
+.panel.ending .stats li {
+  animation: stat-in 0.26s ease-out both;
+}
+
+.panel.ending .stats li:nth-child(1) { animation-delay: 0.05s; }
+.panel.ending .stats li:nth-child(2) { animation-delay: 0.13s; }
+.panel.ending .stats li:nth-child(3) { animation-delay: 0.21s; }
+.panel.ending .stats li:nth-child(4) { animation-delay: 0.29s; }
+.panel.ending .stats li:nth-child(5) { animation-delay: 0.37s; }
+.panel.ending .stats li:nth-child(6) { animation-delay: 0.45s; }
+.panel.ending .stats li:nth-child(7) { animation-delay: 0.53s; }
+.panel.ending .stats li:nth-child(n + 8) { animation-delay: 0.61s; }
+
+@keyframes stat-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* 「아무 키나 누르면」은 **정말 누를 수 있게 된 뒤에** 뜬다.
+   --ending-lock 은 core 의 ENDING_LOCK 과 같은 값이다 (테스트가 둘을 견준다).
+   예전에는 입력을 안 받는 1.5초 동안에도 깜빡이고 있어서 거짓말을 했다. */
+.panel.ending {
+  --ending-lock: 1.5s;
+}
+
+.panel.ending .press {
+  animation:
+    stat-in 0.3s ease-out var(--ending-lock) both,
+    blink 1.1s steps(2, end) calc(var(--ending-lock) + 0.3s) infinite;
+}
+
 .stats li {
   display: flex;
   justify-content: space-between;
@@ -5298,6 +5335,8 @@ const CRUMBLE_TIME = 0.14;
  */
 const FLOOR_CRUMBLE_TIME = 0.16;
 const DEATH_HOLD = 1.5;
+/** 쓰러지는 컷신과 엔딩 컷신 사이의 암전(초). 숨 한 번 — 길면 끊긴 것처럼 보인다 */
+const BOSS_CUT_GAP = 0.3;
 const CLEAR_HOLD = 2.6;
 const INTRO_HOLD = 2.0;
 
@@ -5371,6 +5410,8 @@ function createGame(options = {}) {
     dev: save.dev ?? false,
     /** 히트스톱으로 멈춰 있는 프레임 수. 0 이면 평소대로 돈다 (FREEZE 참고) */
     freeze: 0,
+    /** 보스 컷신 사이의 암전에 남은 시간(초) */
+    bossCutGap: 0,
     /** 타이틀에서 고른 줄, 스테이지 선택 화면에서 고른 칸, 일시정지 메뉴에서 고른 줄 */
     titleIndex: 0,
     selectIndex: 0,
@@ -5455,9 +5496,20 @@ const notesFound = (game) => game.noteMemory?.size ?? game.save?.foundNotes?.len
 /** 음표를 다 모았는가. 숨은 화면이 이 조건으로 열린다 */
 const allNotes = (game) => notesFound(game) >= NOTE_TOTAL;
 
+/**
+ * 튀는 조각들.
+ *
+ * `dir`·`arc` 를 주면 그 방향 부채꼴로만 튄다 (라디안). 안 주면 예전 그대로
+ * 사방으로 퍼진다 — 이미 쓰고 있는 열한 군데를 안 건드리려고 기본값을 그렇게 뒀다.
+ * 접점이 분명한 것(밟기 같은 것)만 방향을 준다: 사방으로 퍼지면 어디를 맞혔는지
+ * 안 읽힌다.
+ */
 function addParticles(game, x, y, count, colors, opts = {}) {
   for (let i = 0; i < count; i++) {
-    const angle = game.rng.float() * Math.PI * 2;
+    const angle =
+      opts.dir == null
+        ? game.rng.float() * Math.PI * 2
+        : opts.dir + (game.rng.float() - 0.5) * (opts.arc ?? Math.PI * 0.6);
     const speed = (opts.speed ?? 60) * (0.4 + game.rng.float());
     game.particles.push({
       x,
@@ -5639,8 +5691,17 @@ function handleAlbums(game, dt, held = false) {
       // 아주 짧게. 한 판에 스무 번 넘게 하는 일이라 길면 판이 끊긴다
       freezeGame(game, FREEZE.stomp);
       emit(game, 'stomp', {});
-      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 8, album.def.palette, {
+      // 밟은 자리에서 **옆으로** 터진다. 사방으로 퍼지면 위에서 밟았다는 게 안 읽힌다.
+      // (0 = 오른쪽, π = 왼쪽. 반반씩 나눠 양옆으로 보낸다)
+      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 4, album.def.palette, {
         speed: 70,
+        dir: 0,
+        arc: Math.PI * 0.5,
+      });
+      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 4, album.def.palette, {
+        speed: 70,
+        dir: Math.PI,
+        arc: Math.PI * 0.5,
       });
       if (result === 'dead') {
         game.defeated += 1;
@@ -6326,9 +6387,15 @@ const applyEffects = (game, input) =>
  */
 const noDash = (input) => (input.dashPressed ? { ...input, dashPressed: false } : input);
 
-/** 세게 떨어졌을 때만 발밑에 먼지. 걸음마다 피우면 화면이 지저분해진다. */
+/**
+ * 세게 떨어졌을 때만 발밑에 먼지. 걸음마다 피우면 화면이 지저분해진다.
+ *
+ * 소리도 **같은 문턱**을 쓴다. 먼지는 나는데 소리가 없어서 무게가 반쪽이었다 —
+ * 문턱을 따로 두면 언젠가 "먼지는 나는데 조용한 착지"가 생긴다.
+ */
 function landingDust(game, landed) {
   if (!landed || landed.impact < 0.45) return;
+  emit(game, 'land', { impact: landed.impact });
   const p = game.player;
   addParticles(game, p.x + p.w / 2, p.y + p.h, 4 + Math.round(landed.impact * 4), ['#e8ecf7', '#b3aecd'], {
     speed: 40 * landed.impact,
@@ -6555,7 +6622,12 @@ const SELECT_SLOTS = SELECT_ITEMS.length;
  * 안 덮으므로, HUD 도 그대로 있어야 하고 「건너뛰기」 버튼을 띄울 자리도 아니다.
  */
 const inCutscene = (game) =>
-  game.scene === 'intro' || game.scene === 'cutscene' || !!game.bossCut || !!game.caught;
+  game.scene === 'intro' ||
+  game.scene === 'cutscene' ||
+  !!game.bossCut ||
+  // 컷신 사이의 암전도 컷신이다 — 여기서 HUD 가 0.3초 돌아왔다 사라지면 깜빡인다
+  game.bossCutGap > 0 ||
+  !!game.caught;
 
 /**
  * 컷신을 튼 뒤 이만큼은 못 건너뛴다.
@@ -6565,6 +6637,16 @@ const inCutscene = (game) =>
  * 건너뛰기가 없었다 — 다섯 군데 중 한 군데를 빠뜨린 셈이다.
  */
 const SKIP_AFTER = 0.5;
+
+/**
+ * 엔딩 통계 화면이 입력을 안 받는 시간(초). 18초짜리 컷신이 끝나자마자 눌려 있던
+ * 키에 화면이 날아가면 기록을 볼 새가 없다.
+ *
+ * **style.css 의 `--ending-lock` 과 같은 값이어야 한다** — 「아무 키나 누르면」
+ * 줄이 뜨는 시각을 거기서 정하기 때문이다. 둘이 어긋나면 못 누르는 동안 누르라고
+ * 하거나(예전이 그랬다), 누를 수 있는데 아무 말이 없다. 테스트가 둘을 견준다.
+ */
+const ENDING_LOCK = 1.5;
 
 /** 지금 이 컷신(시작한 지 t 초)을 건너뛰라는 입력인가 */
 const skipping = (input, t) => input.confirmPressed && t > SKIP_AFTER;
@@ -6689,6 +6771,16 @@ function updateBossScene(game, input, dt) {
   const boss = game.boss;
 
   // 컷신이 도는 동안에는 아무것도 움직이지 않는다 — 연출 보다가 죽으면 안 된다
+  // 쓰러지는 컷신과 엔딩 사이의 숨. 화면은 이미 검다.
+  if (game.bossCutGap > 0) {
+    game.bossCutGap -= dt;
+    if (game.bossCutGap <= 0) {
+      game.bossCutGap = 0;
+      startBossCut(game, endingCut(game.hard));
+    }
+    return;
+  }
+
   if (game.bossCut) {
     const was = game.bossCut.t;
     game.bossCut.t += dt;
@@ -6702,8 +6794,10 @@ function updateBossScene(game, input, dt) {
       // 컷신이 끝났다고 알린다. 건너뛰었을 때도 반드시 나오므로,
       // 컷신 때문에 꺼둔 것(브금 같은 것)을 여기서 되돌리면 안전하다.
       emit(game, 'cutdone', { cut: finished });
-      // 쓰러지는 컷신이 끝나면 곧바로 엔딩으로 이어진다
-      if (finished === 'bossdown') startBossCut(game, endingCut(game.hard));
+      // 쓰러지는 컷신이 끝나면 엔딩으로 이어진다. **쉼표를 하나 둔다** —
+      // 하드컷으로 붙이면 4.6초와 18초짜리 두 컷신이 한 덩어리로 뭉쳐 읽힌다.
+      // (컷신 그리기가 앞뒤 0.3/0.4초를 검게 여닫으므로 그 사이가 완전한 암전이다)
+      if (finished === 'bossdown') game.bossCutGap = BOSS_CUT_GAP;
       if (isEndingCut(finished)) finishRun(game);
     }
     return;
@@ -7004,7 +7098,7 @@ function updateGame(game, input, dt) {
       break;
 
     case 'ending':
-      if (game.sceneTime > 1.5 && input.confirmPressed) {
+      if (game.sceneTime > ENDING_LOCK && input.confirmPressed) {
         // 한 바퀴를 돈 사람은 타이틀이 아니라 **판으로 돌아온다** — 거기 NPC 가 서 있다
         if (game.save.clearedOnce) returnToHub(game);
         else {
@@ -7034,7 +7128,7 @@ const runSummary = (game) => ({
   hard: game.hard,
 });
 
-return { VIEW, stageTable, stageCount, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary };
+return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary };
 })();
 __m["chartrun/src/core/devmode.js"] = (() => {
 // 개발자 모드. 비밀번호를 넣으면 스테이지를 골라 들어갈 수 있다.
@@ -7563,6 +7657,11 @@ function createAudio(muted = false, volume = 1) {
       noise(ctx.currentTime, 0.2, { gain: 0.2 });
     },
     crumble: () => noise(ctx.currentTime, 0.12, { gain: 0.16, highpass: 1200 }),
+    /**
+     * 세게 착지. **낮고 짧다** — 높은 데서 떨어질 때만 나는데도(impact 0.45 문턱)
+     * 크게 잡으면 판을 도는 내내 쿵쿵거린다. 먼지가 이는 그 프레임에 같이 난다.
+     */
+    land: () => noise(ctx.currentTime, 0.07, { gain: 0.12, highpass: 200 }),
     checkpoint: () => {
       [69, 76, 81].forEach((n, i) => tone(midi(n), ctx.currentTime + i * 0.08, 0.2, { gain: 0.22 }));
     },
@@ -12867,6 +12966,12 @@ function drawScene(ctx, game, time) {
 
   // 컷신은 맨 위에 — 싸움 화면이 그 아래로 비친다
   if (game.bossCut) drawBossCut(ctx, game, time);
+  // 쓰러지는 컷신과 엔딩 사이의 숨. 앞 컷신이 검게 닫고 끝났으니 **검은 채로 둔다** —
+  // 안 덮으면 0.3초 동안 아레나가 도로 보였다가 엔딩이 시작된다.
+  else if (game.bossCutGap > 0) {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
 }
 
 /** PHASE 1 카드가 떠 있는 시간 */
@@ -12920,6 +13025,9 @@ const { KEYPAD } = __m["chartrun/src/core/devmode.js"];
 const { ACTIONS } = __m["chartrun/src/core/input.js"];
 const { PAUSE_ROWS, stageTable, selectItems, titleRows, inCutscene, notesFound } = __m["chartrun/src/core/game.js"];
 
+/** 천 단위 구분. 세 자리마다 쉼표가 찍혀야 여섯 자리 점수가 한눈에 읽힌다 */
+const won = (n) => Number(n).toLocaleString('ko-KR');
+
 const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -12936,6 +13044,33 @@ function createHud(root) {
   };
 
   let lastCenter = '';
+  let countRaf = 0;
+
+  /**
+   * 숫자가 굴러 올라간다 (`data-count` 가 붙은 칸).
+   *
+   * **패널 문자열은 안 건드린다.** setCenter 는 글자가 바뀔 때마다 innerHTML 을
+   * 통째로 갈아끼우므로, 굴러가는 값을 문자열에 넣으면 매 프레임 패널이 다시
+   * 그려지고 줄이 차례로 뜨는 연출도 매번 처음부터 돈다. 그래서 다 그린 **뒤에**
+   * 그 칸만 따로 만진다. 중간에 멈춰도 HTML 에는 이미 최종값이 적혀 있다.
+   */
+  const COUNT_MS = 600;
+  function startCountUp() {
+    cancelAnimationFrame(countRaf);
+    const node = el.center.querySelector('[data-count]');
+    if (!node) return;
+    const target = Number(node.dataset.count);
+    if (!Number.isFinite(target) || target <= 0) return;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const k = Math.min(1, (now - t0) / COUNT_MS);
+      // 끝에서 느려진다 — 마지막 자리가 또박또박 멈추는 게 보여야 한다
+      const eased = 1 - (1 - k) ** 3;
+      node.textContent = won(Math.round(target * eased));
+      if (k < 1) countRaf = requestAnimationFrame(tick);
+    };
+    countRaf = requestAnimationFrame(tick);
+  }
 
   const setCenter = (html) => {
     if (html === lastCenter) return;
@@ -12945,6 +13080,7 @@ function createHud(root) {
     // 목록이 화면보다 길면 굴러간다. innerHTML 을 통째로 갈아끼우므로 굴린 자리는
     // 매번 처음으로 돌아간다 — 고른 줄을 다시 화면 안으로 끌어와야 한다.
     el.center.querySelector('.slots li.on')?.scrollIntoView({ block: 'nearest' });
+    startCountUp();
   };
 
   /**
@@ -13119,7 +13255,7 @@ function createHud(root) {
               <li><span>물리친 앨범</span><b>${e.defeated ?? 0}</b></li>
               <li><span>찾은 함정</span><b>${game.save.revealedTraps?.length ?? 0}</b></li>
               <li><span>재생수</span><b>${e.plays ?? 0}</b></li>
-              <li><span>SCORE</span><b>${(e.score ?? 0).toLocaleString('ko-KR')}</b></li>
+              <li><span>SCORE</span><b data-count="${e.score ?? 0}">${won(e.score ?? 0)}</b></li>
               ${
                 // 2회차 칸. 깬 사람은 ♛, **이번에 막 열린 사람에게는 열렸다고 알린다** —
                 // 예전에는 여기서 아무 말도 안 해서 2회차가 있는 줄도 몰랐다.
@@ -14042,6 +14178,9 @@ function handleEvent(name, data) {
       break;
     case 'revive':
       audio.play('blip');
+      break;
+    case 'land':
+      audio.play('land');
       break;
     case 'hurt':
       buzz(25);

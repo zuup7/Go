@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  BOSS_CUT_GAP,
   createGame,
   loadStage,
   loadBoss,
@@ -509,7 +510,7 @@ test('하드 보스를 쓰러뜨리면 2회차 엔딩이, 보통이면 결혼식
     step(game, idle(), 2);
     assert.equal(game.bossCut?.id, 'bossdown', '쓰러지는 컷신이 안 떴다');
 
-    step(game, idle(), Math.round((bossCutLength('bossdown') + 0.2) / DT));
+    step(game, idle(), Math.round((bossCutLength('bossdown') + BOSS_CUT_GAP + 0.2) / DT));
     assert.equal(game.bossCut?.id, endingCut(hard), `${hard ? '하드' : '보통'}에서 엉뚱한 엔딩이 떴다`);
 
     step(game, idle(), Math.round((bossCutLength(endingCut(hard)) + 0.5) / DT));

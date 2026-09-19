@@ -1531,6 +1531,12 @@ export function drawScene(ctx, game, time) {
 
   // 컷신은 맨 위에 — 싸움 화면이 그 아래로 비친다
   if (game.bossCut) drawBossCut(ctx, game, time);
+  // 쓰러지는 컷신과 엔딩 사이의 숨. 앞 컷신이 검게 닫고 끝났으니 **검은 채로 둔다** —
+  // 안 덮으면 0.3초 동안 아레나가 도로 보였다가 엔딩이 시작된다.
+  else if (game.bossCutGap > 0) {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
 }
 
 /** PHASE 1 카드가 떠 있는 시간 */
