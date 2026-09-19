@@ -21,7 +21,8 @@ export function createLoop({ update, render }) {
       steps += 1;
     }
     if (steps >= MAX_CATCHUP) acc = 0;
-    render(acc / STEP);
+    // 보간 비율은 안 넘긴다 — 픽셀 게임이라 받는 쪽이 쓸 수가 없다 (ui/app.js 의 render)
+    render();
   };
 
   return {

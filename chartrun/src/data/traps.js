@@ -1,70 +1,13 @@
-// 고양이마리오풍 트롤 함정.
+// 고양이마리오풍 트롤 함정 — **당한 자리를 기억하는 일**과 **구간 효과**만 여기 있다.
 //
 // 강도는 "중간" — 처음엔 반드시 당하지만, 한 번 당하면 화면에 붉게 표시되고
 // 목숨은 무한이라 외우면 반드시 클리어할 수 있다. 진행을 막는 함정은 없다.
 //
 // 설명 문구는 두지 않는다. 함정이 뭘 하는지는 글로 읽는 게 아니라 당해 보고 안다.
-
-export const TRAPS = {
-  fakePlatform: {
-    char: '%',
-  },
-  reverseFloor: {
-    char: '~',
-  },
-  baitBlock: {
-    char: 'X',
-  },
-  invisibleBlock: {
-    char: 'I',
-  },
-  popSpike: {
-    char: 'v',
-  },
-  fakeGoal: {
-    char: 'F',
-  },
-  fallingAlbum: {
-    char: 'g',
-  },
-  crumbleFloor: {
-    char: ',',
-  },
-  risingWall: {
-    char: '|',
-  },
-  reverseZone: {
-    char: 'R',
-  },
-  blackout: {
-    char: '@',
-  },
-  // ── 하드모드 ─────────────────────────────────────────────
-  blinkPlatform: {
-    char: ':',
-  },
-  fakeCheck: {
-    char: ';',
-  },
-  icyFloor: {
-    char: '_',
-  },
-  spring: {
-    char: '!',
-  },
-  ceilingSpike: {
-    char: 'T',
-  },
-  surgeZone: {
-    char: '>',
-  },
-  bombZone: {
-    char: 'B',
-  },
-  dropSlab: {
-    char: 'D',
-  },
-};
+//
+// **장치 글자 목록은 여기 없다.** 그건 core/world.js 의 T 하나뿐이다.
+// 예전에는 같은 글자를 여기 한 벌 더 적어뒀는데 게임은 그 표를 한 번도 안 읽었고,
+// 테스트만 그쪽을 보고 있어서 world.js 에 장치를 넣고 여기를 잊어도 그냥 통과했다.
 
 /** 시간이 지나면 저절로 풀리는 구간 효과 (영구히 걸리면 게임이 끝난다) */
 export const ZONE_EFFECTS = {
@@ -85,8 +28,6 @@ export const ZONE_EFFECTS = {
 
 /** 구간 효과 이름 → 0 인 상태. game.effects 를 두 곳에 손으로 적어두지 않으려고 여기서 만든다 */
 export const emptyEffects = () => Object.fromEntries(Object.keys(ZONE_EFFECTS).map((k) => [k, 0]));
-
-export const TRAP_KINDS = Object.keys(TRAPS);
 
 export function createTrapMemory(revealed = []) {
   const seen = new Set(revealed);

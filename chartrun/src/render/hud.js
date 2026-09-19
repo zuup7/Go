@@ -194,9 +194,8 @@ export function createHud(root) {
             <ul class="slots">
               ${slots
                 .map(
-                  (s, i) => `<li class="${i === game.selectIndex ? 'on' : ''}" data-key="slot:${i}">
-                    <span class="slot-label">${esc(s.label)}</span>
-                  </li>`,
+                  (s, i) =>
+                    `<li class="${i === game.selectIndex ? 'on' : ''}" data-key="slot:${i}">${esc(s.label)}</li>`,
                 )
                 .join('')}
             </ul>
@@ -274,7 +273,9 @@ export function createHud(root) {
       // 음표는 **몇 개 중 몇 개**로 보여준다. 그냥 올라가는 숫자였을 때는 모으는 게
       // 목표라는 걸 알 길이 없었다. 하드 판에는 음표가 하나도 없어서(NOTE_TOTAL 은
       // 1회차 것이다) 거기서는 이 칸을 아예 걷는다 — 영영 안 오르는 숫자는 고장으로 보인다.
-      el.plays.hidden = game.hard;
+      // 보스 아레나에는 음표가 **하나도 없다** — 하드와 같은 이유로 여기서도 걷는다.
+      // 안 오르는 숫자를 띄워두면 화면만 복잡해진다.
+      el.plays.hidden = game.hard || game.scene === 'boss';
       el.plays.textContent = `♪ ${notesFound(game)}/${NOTE_TOTAL}`;
       el.chartOuts.textContent = `✕ ${game.chartOuts}`;
       el.time.textContent = timeText(game.elapsedMs);
@@ -283,8 +284,14 @@ export function createHud(root) {
       // 컷신 판단은 core 의 inCutscene 하나뿐이다 — 여기 또 적었더니 잡히는
       // 컷신(caught)을 빼먹어서 그 컷신에서만 HUD 가 화면 위에 남아 있었다
       const inCut = inCutscene(game);
+      // 엔딩도 숨긴다 — 통계표가 TIME·차트아웃·#1 을 이미 말하고 있는데 HUD 가
+      // 위에 남아 같은 값을 한 번 더 보여주고 있었다.
       el.hud.hidden =
-        game.scene === 'title' || game.scene === 'select' || game.scene === 'gallery' || inCut;
+        game.scene === 'title' ||
+        game.scene === 'select' ||
+        game.scene === 'gallery' ||
+        game.scene === 'ending' ||
+        inCut;
 
       // 체력계는 캔버스가 그린다 (보스 바로 아래, 눈금까지). 여기서는 페이즈만.
       const showBoss = game.scene === 'boss' && game.boss && !inCut;

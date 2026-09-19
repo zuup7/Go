@@ -181,6 +181,29 @@ canvas#game {
   white-space: nowrap;
 }
 
+/* 데스크톱 아래쪽 키보드 안내. **규칙이 아예 없어서** 브라우저 기본 스타일로
+   떴다 — 픽셀 폰트 UI 한가운데 kbd 만 고딕 모노스페이스였다.
+   (폰에서는 body.handheld .help 가 통째로 숨긴다) */
+.help {
+  margin: 0;
+  color: var(--dim);
+  font-size: 12px;
+  line-height: 1.9;
+  text-align: center;
+  max-width: 62ch;
+}
+
+.help kbd {
+  font-family: var(--font);
+  font-size: 0.9em;
+  color: var(--ink);
+  background: rgba(36, 19, 56, 0.6);
+  border: 1px solid #43265f;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin: 0 1px;
+}
+
 /* ── 가운데 패널 ──────────────────────────────────────── */
 .center {
   flex: 1;
@@ -1002,9 +1025,19 @@ body.rotated .touch-right {
   right: var(--rotated-side);
 }
 
+/* 움직임을 줄여달라고 한 사람에게는 **끝없이 도는 것부터** 끈다.
+   .press 의 무한 깜빡임이 제일 거슬리는데 예전에는 .rotate-note 만 덮고 있었다.
+   줄이 차례로 들어오는 건 한 번 하고 마니 그대로 두되, 끝 상태에서 멈춘다. */
 @media (prefers-reduced-motion: reduce) {
-  .rotate-note {
+  .rotate-note,
+  .press,
+  .panel.ending .press,
+  .dots.bad i {
     animation: none;
+  }
+
+  .panel.ending .stats li {
+    animation-duration: 0.01s;
   }
 }
 
@@ -1030,9 +1063,9 @@ body.rotated .touch-right {
           </div>
           <div class="hud-right">
             <span id="boss-phase" hidden></span>
-            <span id="ammo" hidden>마이크 ×1</span>
+            <span id="ammo" hidden>마이크</span>
             <span id="plays">♪ 0</span>
-            <span id="chartouts">차트아웃 0</span>
+            <span id="chartouts">✕ 0</span>
             <span id="time">0:00</span>
           </div>
         </div>
@@ -2777,8 +2810,6 @@ __m["chartrun/src/core/util.js"] = (() => {
 
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 
-const lerp = (a, b, t) => a + (b - a) * t;
-
 /** 현재 값을 목표까지 step 만큼만 다가가게 한다 (가감속에 씀) */
 const approach = (value, target, step) =>
   value < target ? Math.min(value + step, target) : Math.max(value - step, target);
@@ -2800,7 +2831,7 @@ const timeText = (ms) => {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 };
 
-return { clamp, lerp, approach, sign, overlaps, centerOf, distance, timeText };
+return { clamp, approach, sign, overlaps, centerOf, distance, timeText };
 })();
 __m["chartrun/src/core/player.js"] = (() => {
 // 주인공 — 차트 1위를 노리는 신인 가수.
@@ -4616,73 +4647,16 @@ const GHOST_CATCHUP = 4;
 return { BOSS_W, DINO_W, DINO_H, BOSS_H, LASER_W, TAIL_W, WAVE_W, createBoss, tailBand, shockWaves, laserBeam, laserBeams, MIC_SIZE, createMic, throwMic, updateThrown, bossPhase, syncPhase, NEUTRAL_POSE, bossPose, updateBoss, whirlGapX, ceilingSlabs, hitBoss, bossCombined, bossBody, princessCaged, bossHealthRatio, bossGhostRatio };
 })();
 __m["chartrun/src/data/traps.js"] = (() => {
-// 고양이마리오풍 트롤 함정.
+// 고양이마리오풍 트롤 함정 — **당한 자리를 기억하는 일**과 **구간 효과**만 여기 있다.
 //
 // 강도는 "중간" — 처음엔 반드시 당하지만, 한 번 당하면 화면에 붉게 표시되고
 // 목숨은 무한이라 외우면 반드시 클리어할 수 있다. 진행을 막는 함정은 없다.
 //
 // 설명 문구는 두지 않는다. 함정이 뭘 하는지는 글로 읽는 게 아니라 당해 보고 안다.
-
-const TRAPS = {
-  fakePlatform: {
-    char: '%',
-  },
-  reverseFloor: {
-    char: '~',
-  },
-  baitBlock: {
-    char: 'X',
-  },
-  invisibleBlock: {
-    char: 'I',
-  },
-  popSpike: {
-    char: 'v',
-  },
-  fakeGoal: {
-    char: 'F',
-  },
-  fallingAlbum: {
-    char: 'g',
-  },
-  crumbleFloor: {
-    char: ',',
-  },
-  risingWall: {
-    char: '|',
-  },
-  reverseZone: {
-    char: 'R',
-  },
-  blackout: {
-    char: '@',
-  },
-  // ── 하드모드 ─────────────────────────────────────────────
-  blinkPlatform: {
-    char: ':',
-  },
-  fakeCheck: {
-    char: ';',
-  },
-  icyFloor: {
-    char: '_',
-  },
-  spring: {
-    char: '!',
-  },
-  ceilingSpike: {
-    char: 'T',
-  },
-  surgeZone: {
-    char: '>',
-  },
-  bombZone: {
-    char: 'B',
-  },
-  dropSlab: {
-    char: 'D',
-  },
-};
+//
+// **장치 글자 목록은 여기 없다.** 그건 core/world.js 의 T 하나뿐이다.
+// 예전에는 같은 글자를 여기 한 벌 더 적어뒀는데 게임은 그 표를 한 번도 안 읽었고,
+// 테스트만 그쪽을 보고 있어서 world.js 에 장치를 넣고 여기를 잊어도 그냥 통과했다.
 
 /** 시간이 지나면 저절로 풀리는 구간 효과 (영구히 걸리면 게임이 끝난다) */
 const ZONE_EFFECTS = {
@@ -4703,8 +4677,6 @@ const ZONE_EFFECTS = {
 
 /** 구간 효과 이름 → 0 인 상태. game.effects 를 두 곳에 손으로 적어두지 않으려고 여기서 만든다 */
 const emptyEffects = () => Object.fromEntries(Object.keys(ZONE_EFFECTS).map((k) => [k, 0]));
-
-const TRAP_KINDS = Object.keys(TRAPS);
 
 function createTrapMemory(revealed = []) {
   const seen = new Set(revealed);
@@ -4730,7 +4702,7 @@ function createTrapMemory(revealed = []) {
  */
 const trapKey = (tx, ty, ns = '') => (ns ? `${ns}:${tx},${ty}` : `${tx},${ty}`);
 
-return { TRAPS, ZONE_EFFECTS, emptyEffects, TRAP_KINDS, createTrapMemory, trapKey };
+return { ZONE_EFFECTS, emptyEffects, createTrapMemory, trapKey };
 })();
 __m["chartrun/src/data/cutscene.js"] = (() => {
 // 최종 보스 직전 합체 컷신. 코드가 아니라 타임라인 데이터라 고치기 쉽다.
@@ -7172,7 +7144,8 @@ function createLoop({ update, render }) {
       steps += 1;
     }
     if (steps >= MAX_CATCHUP) acc = 0;
-    render(acc / STEP);
+    // 보간 비율은 안 넘긴다 — 픽셀 게임이라 받는 쪽이 쓸 수가 없다 (ui/app.js 의 render)
+    render();
   };
 
   return {
@@ -13205,9 +13178,8 @@ function createHud(root) {
             <ul class="slots">
               ${slots
                 .map(
-                  (s, i) => `<li class="${i === game.selectIndex ? 'on' : ''}" data-key="slot:${i}">
-                    <span class="slot-label">${esc(s.label)}</span>
-                  </li>`,
+                  (s, i) =>
+                    `<li class="${i === game.selectIndex ? 'on' : ''}" data-key="slot:${i}">${esc(s.label)}</li>`,
                 )
                 .join('')}
             </ul>
@@ -13285,7 +13257,9 @@ function createHud(root) {
       // 음표는 **몇 개 중 몇 개**로 보여준다. 그냥 올라가는 숫자였을 때는 모으는 게
       // 목표라는 걸 알 길이 없었다. 하드 판에는 음표가 하나도 없어서(NOTE_TOTAL 은
       // 1회차 것이다) 거기서는 이 칸을 아예 걷는다 — 영영 안 오르는 숫자는 고장으로 보인다.
-      el.plays.hidden = game.hard;
+      // 보스 아레나에는 음표가 **하나도 없다** — 하드와 같은 이유로 여기서도 걷는다.
+      // 안 오르는 숫자를 띄워두면 화면만 복잡해진다.
+      el.plays.hidden = game.hard || game.scene === 'boss';
       el.plays.textContent = `♪ ${notesFound(game)}/${NOTE_TOTAL}`;
       el.chartOuts.textContent = `✕ ${game.chartOuts}`;
       el.time.textContent = timeText(game.elapsedMs);
@@ -13294,8 +13268,14 @@ function createHud(root) {
       // 컷신 판단은 core 의 inCutscene 하나뿐이다 — 여기 또 적었더니 잡히는
       // 컷신(caught)을 빼먹어서 그 컷신에서만 HUD 가 화면 위에 남아 있었다
       const inCut = inCutscene(game);
+      // 엔딩도 숨긴다 — 통계표가 TIME·차트아웃·#1 을 이미 말하고 있는데 HUD 가
+      // 위에 남아 같은 값을 한 번 더 보여주고 있었다.
       el.hud.hidden =
-        game.scene === 'title' || game.scene === 'select' || game.scene === 'gallery' || inCut;
+        game.scene === 'title' ||
+        game.scene === 'select' ||
+        game.scene === 'gallery' ||
+        game.scene === 'ending' ||
+        inCut;
 
       // 체력계는 캔버스가 그린다 (보스 바로 아래, 눈금까지). 여기서는 페이즈만.
       const showBoss = game.scene === 'boss' && game.boss && !inCut;
@@ -14443,6 +14423,8 @@ skipBtn.addEventListener('click', () => {
   );
 });
 
+// 인자를 안 받는다. loop 가 보간 비율을 넘겨주지만 **픽셀 게임에는 해롭다** —
+// 정수 좌표로 반올림해 찍는 그림이라 사이값을 섞으면 픽셀이 흐려진다.
 function render() {
   drawScene(ctx, game, time);
   hud.update(game, ui);

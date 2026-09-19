@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TRAPS, TRAP_KINDS, createTrapMemory, trapKey } from '../src/data/traps.js';
+import { createTrapMemory, trapKey } from '../src/data/traps.js';
 import { createGame, updateGame, startRun, loadStage, VIEW, BOSS_CUT_GAP } from '../src/core/game.js';
 import { emptySave, mergeRun, beatRecord, serialize, deserialize } from '../src/core/save.js';
 import { T } from '../src/core/world.js';
@@ -28,12 +28,6 @@ const played = (seed) => createGame({ seed, save: { ...emptySave(), seenOpening:
 const step = (game, input = idle, frames = 1) => {
   for (let i = 0; i < frames; i++) updateGame(game, input, 1 / 60);
 };
-
-test('함정 글자가 서로 겹치지 않는다', () => {
-  assert.ok(TRAP_KINDS.length >= 11, `함정이 ${TRAP_KINDS.length}종밖에 없다`);
-  const chars = TRAP_KINDS.map((k) => TRAPS[k].char);
-  assert.equal(new Set(chars).size, chars.length);
-});
 
 test('함정 기억 — 한 번 당하면 표시된다', () => {
   const memory = createTrapMemory();

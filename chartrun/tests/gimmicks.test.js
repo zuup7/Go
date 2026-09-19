@@ -11,7 +11,7 @@ import {
 import { createWorld, T, tileKind, ZONE_KINDS } from '../src/core/world.js';
 import { createPlayer, updatePlayer, PLAYER } from '../src/core/player.js';
 import { SOLID, TILE } from '../src/core/physics.js';
-import { TRAPS, TRAP_KINDS, ZONE_EFFECTS, trapKey } from '../src/data/traps.js';
+import { ZONE_EFFECTS, trapKey } from '../src/data/traps.js';
 import { STAGES, HARD_STAGES } from '../src/data/stages.js';
 import { createBoss, createMic, throwMic, updateThrown, updateBoss, MIC_SIZE } from '../src/core/boss.js';
 import { BOSS_MAX_HP } from '../src/data/bossData.js';
@@ -51,14 +51,19 @@ const standOn = (game, tx, ty) => {
 };
 
 // ── 타일과 글자 ─────────────────────────────────────────────
-test('새 장치 글자가 기존 글자와 겹치지 않는다', () => {
-  const chars = TRAP_KINDS.map((k) => TRAPS[k].char);
-  assert.equal(new Set(chars).size, chars.length);
-  // 앨범은 a~q 를 쓰니 그 범위를 침범하면 안 된다 (낙하 앨범 g 는 앨범 자체라 예외)
-  for (const kind of TRAP_KINDS) {
-    const ch = TRAPS[kind].char;
-    if (kind === 'fallingAlbum') continue;
-    assert.ok(ch < 'a' || ch > 'q', `${kind}: '${ch}' 는 앨범 글자 범위와 겹친다`);
+test('타일 글자가 서로 겹치지 않는다', () => {
+  // **진짜 표는 world.js 의 T 다.** 예전에는 data/traps.js 에 같은 글자를 한 벌 더
+  // 적어두고 그쪽만 검사했는데, 게임은 그 표를 한 번도 안 읽는다 — world.js 에
+  // 장치를 넣고 traps.js 를 잊으면 테스트가 그냥 통과했다. 거짓 안전이었다.
+  const entries = Object.entries(T);
+  const chars = entries.map(([, ch]) => ch);
+  assert.ok(chars.length >= 30, `타일이 ${chars.length}종밖에 없다`);
+  assert.equal(new Set(chars).size, chars.length, '같은 글자를 두 장치가 쓰고 있다');
+
+  // 앨범은 a~q 로 태어난다 (stages.js 의 'a'~'q'). 타일이 그 범위를 쓰면
+  // 판 데이터에서 둘을 구별할 수가 없다.
+  for (const [name, ch] of entries) {
+    assert.ok(ch < 'a' || ch > 'q', `${name}: '${ch}' 는 앨범 글자(a~q) 범위와 겹친다`);
   }
 });
 

@@ -2,8 +2,6 @@
 
 export const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 
-export const lerp = (a, b, t) => a + (b - a) * t;
-
 /** 현재 값을 목표까지 step 만큼만 다가가게 한다 (가감속에 씀) */
 export const approach = (value, target, step) =>
   value < target ? Math.min(value + step, target) : Math.max(value - step, target);

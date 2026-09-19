@@ -458,6 +458,8 @@ skipBtn.addEventListener('click', () => {
   );
 });
 
+// 인자를 안 받는다. loop 가 보간 비율을 넘겨주지만 **픽셀 게임에는 해롭다** —
+// 정수 좌표로 반올림해 찍는 그림이라 사이값을 섞으면 픽셀이 흐려진다.
 function render() {
   drawScene(ctx, game, time);
   hud.update(game, ui);
