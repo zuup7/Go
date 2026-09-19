@@ -6,6 +6,11 @@ const midi = (n) => 440 * 2 ** ((n - 69) / 12);
 /** 마스터 볼륨이 1일 때의 실제 세기. 이 위로는 찢어진다. */
 const MASTER = 0.5;
 
+/** 브금 기본 세기 */
+const BGM_LEVEL = 0.16;
+/** 곡을 갈아탈 때 앞 곡을 지우는 시간(초). 길면 끊는 맛이 없고 짧으면 뚝 끊긴다 */
+const BGM_FADE = 0.15;
+
 /**
  * 소리 크기 단계. 버튼 하나로 다 돌 수 있어야 해서 슬라이더가 아니라 칸이다 —
  * 눕힌 화면에서는 끌기 좌표가 틀어져서 슬라이더가 제대로 안 먹는다 (버튼 옮기기에서 물렸던 함정).
@@ -102,7 +107,7 @@ export function createAudio(muted = false, volume = 1) {
     master.gain.value = level();
     master.connect(ctx.destination);
     bgmGain = ctx.createGain();
-    bgmGain.gain.value = 0.16;
+    bgmGain.gain.value = BGM_LEVEL;
     bgmGain.connect(master);
     sfxGain = ctx.createGain();
     sfxGain.gain.value = 0.3;
@@ -149,6 +154,31 @@ export function createAudio(muted = false, volume = 1) {
   }
 
   /** 한 루프(32칸)를 통째로 예약하고, 끝나기 전에 다음 루프를 예약한다 */
+  /**
+   * 곡을 갈아탈 때 앞 곡을 **소리로** 지운다.
+   *
+   * clearTimeout 은 *다음* 예약만 끊는다. 이미 WebAudio 그래프에 올라간 음표는
+   * 취소할 방법이 없어서 한 마디(148bpm 이면 6.5초)까지 계속 울린다 — 스테이지에서
+   * 보스로 넘어갈 때 조성도 템포도 다른 두 곡이 그만큼 겹쳐 있었다.
+   * 예약은 못 지워도 **게인을 내리면 안 들린다.**
+   */
+  function fadeBgm() {
+    if (!ctx || !bgmGain) return;
+    const now = ctx.currentTime;
+    bgmGain.gain.cancelScheduledValues(now);
+    bgmGain.gain.setValueAtTime(bgmGain.gain.value, now);
+    // 0 이 아니라 0.0001 로 간다 — exponential 이 아니어도 0 은 클릭이 나기 쉽다
+    bgmGain.gain.linearRampToValueAtTime(0.0001, now + BGM_FADE);
+  }
+
+  /** 새 곡을 틀기 직전에 게인을 되돌린다 */
+  function openBgm() {
+    if (!ctx || !bgmGain) return;
+    const now = ctx.currentTime;
+    bgmGain.gain.cancelScheduledValues(now);
+    bgmGain.gain.setValueAtTime(BGM_LEVEL, now);
+  }
+
   function scheduleLoop(name) {
     if (!ctx || state.muted) return;
     const track = TRACKS[name];
@@ -376,13 +406,33 @@ export function createAudio(muted = false, volume = 1) {
     bgm(name) {
       ensure();
       if (!ctx || current === name) return;
+      const wasPlaying = current !== null;
       clearTimeout(timer);
       current = name;
-      if (name && !state.muted) scheduleLoop(name);
+      if (!name || state.muted) {
+        fadeBgm();
+        return;
+      }
+      if (!wasPlaying) {
+        openBgm();
+        scheduleLoop(name);
+        return;
+      }
+      // 앞 곡이 아직 울리고 있다. 지워지고 나서 새 곡을 올린다 — 겹쳐 틀면
+      // 같은 게인을 나눠 쓰는 두 곡이 페이드 동안 함께 죽는다.
+      fadeBgm();
+      timer = setTimeout(() => {
+        if (current !== name) return;
+        openBgm();
+        scheduleLoop(name);
+      }, BGM_FADE * 1000);
     },
     stopBgm() {
       clearTimeout(timer);
       current = null;
+      // 예약된 음표는 못 지운다. 게인을 내려서 들리지 않게 한다 —
+      // 안 그러면 컷신 첫 몇 초 위로 앞 곡이 새어 나온다.
+      fadeBgm();
     },
     setMuted(value) {
       state.muted = value;
@@ -392,7 +442,11 @@ export function createAudio(muted = false, volume = 1) {
       // 또 걸면 같은 곡이 한 겹 더 돈다 — 한 마디 안에서 껐다 켜기를 반복하면
       // 겹이 끝없이 쌓인다.
       clearTimeout(timer);
-      if (!value && current) scheduleLoop(current);
+      if (!value && current) {
+        // 페이드로 내려가 있을 수 있다 — 되돌리지 않으면 음소거를 풀어도 조용하다
+        openBgm();
+        scheduleLoop(current);
+      }
       return state.muted;
     },
     /** 크기만 바꾼다. 음소거는 따로다 — M 로 껐다 켜는 것과 섞이면 헷갈린다. */

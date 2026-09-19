@@ -22,6 +22,15 @@ export function updateCamera(cam, target, world, dt, back = 0) {
   cam.x = clamp(cam.x, 0, Math.max(0, world.pixelWidth - cam.viewW));
   cam.y = clamp(cam.y, 0, Math.max(0, world.pixelHeight - cam.viewH));
 
+  updateCameraShake(cam, dt);
+}
+
+/**
+ * 흔들림만 따로. 히트스톱으로 판이 멈춘 동안에도 **이것만은 계속 돌아야 한다** —
+ * 전부 멈추면 게임이 버벅인 것처럼 보인다. 멈춘 화면이 떨려야 충격으로 읽힌다.
+ * (따라가기와 한 몸이면 그 구분을 할 수가 없어서 여기로 뺐다)
+ */
+export function updateCameraShake(cam, dt) {
   if (cam.shake > 0) {
     cam.shake = Math.max(0, cam.shake - dt * 2.4);
     const power = cam.shake * 5;

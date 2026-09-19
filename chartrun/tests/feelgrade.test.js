@@ -9,9 +9,13 @@ import assert from 'node:assert/strict';
 import {
   createGame,
   updateGame,
+  loadStage,
   loadBoss,
   startRun,
   PAUSE_ROWS,
+  FREEZE,
+  freezeGame,
+  SKIP_AFTER,
 } from '../src/core/game.js';
 import { emptySave } from '../src/core/save.js';
 import { BOSS_MAX_HP } from '../src/data/bossData.js';
@@ -189,4 +193,113 @@ test('음소거 줄을 고르면 알리고, 멈춘 채로 남는다', () => {
   step(game, idle({ confirmPressed: true }));
   assert.ok(heard.includes('mute'), '소리를 끄라고 알리지 않았다');
   assert.equal(game.paused, true, '소리 줄은 멈춘 채로 머문다 — 바로 들어보고 싶기 때문이다');
+});
+
+// ── 히트스톱 ───────────────────────────────────────────────
+
+test('히트스톱 세기가 사건의 무게 순서를 지킨다', () => {
+  assert.ok(FREEZE.stomp < FREEZE.bossHit, '앨범 밟기가 보스 평타보다 짧아야 한다');
+  assert.ok(FREEZE.bossHit < FREEZE.bossBig, '평타가 마지막 일격보다 짧아야 한다');
+  assert.ok(FREEZE.death <= FREEZE.bossBig);
+  // 한 판에 스무 번 넘게 하는 일이다. 0.05초(3프레임)를 넘기면 판이 끊긴다
+  assert.ok(FREEZE.stomp <= 3, `밟기 멈춤이 ${FREEZE.stomp}프레임이면 너무 길다`);
+});
+
+test('더 센 멈춤이 이긴다 — 약한 사건이 큰 사건의 여운을 못 자른다', () => {
+  const game = createGame({ seed: 1, save: { ...emptySave(), seenOpening: true } });
+  freezeGame(game, FREEZE.bossBig);
+  freezeGame(game, FREEZE.stomp);
+  assert.equal(game.freeze, FREEZE.bossBig);
+});
+
+test('멈춘 동안 판은 서고, **화면 흔들림과 파티클은 계속 돈다**', () => {
+  const game = createGame({ seed: 1, save: { ...emptySave(), seenOpening: true } });
+  startRun(game);
+  loadStage(game, 0);
+  game.scene = 'play';
+  game.sceneTime = 0;
+  step(game, idle(), 10);
+
+  // 흔들림과 파티클을 깔아두고 멈춘다
+  game.camera.shake = 1.5;
+  game.particles.push({ x: 0, y: 0, vx: 10, vy: 0, life: 1, max: 1, size: 2, color: '#fff', gravity: 0 });
+  const shakeBefore = game.camera.shake;
+  const partBefore = game.particles[0].x;
+  const px = game.player.x;
+  const py = game.player.y;
+
+  freezeGame(game, 3);
+  step(game, idle({ right: true }));
+
+  assert.equal(game.player.x, px, '멈춘 동안 플레이어가 움직이면 안 된다');
+  assert.equal(game.player.y, py, '중력도 안 먹어야 한다');
+  assert.ok(game.camera.shake < shakeBefore, '흔들림은 계속 줄어야 한다 — 멈춘 화면이 떨려야 충격이다');
+  assert.ok(game.particles[0].x > partBefore, '튄 조각도 계속 날아가야 한다');
+});
+
+test('멈춤이 끝나면 정확히 그만큼만 쉬고 돌아온다', () => {
+  const game = createGame({ seed: 1, save: { ...emptySave(), seenOpening: true } });
+  startRun(game);
+  loadStage(game, 0);
+  game.scene = 'play';
+  step(game, idle(), 10);
+
+  freezeGame(game, 3);
+  const px = game.player.x;
+  step(game, idle({ right: true }), 3);
+  assert.equal(game.player.x, px, '세 프레임 동안은 그대로');
+  assert.equal(game.freeze, 0, '세 프레임이면 다 풀려야 한다');
+
+  step(game, idle({ right: true }));
+  assert.ok(game.player.x > px, '풀리면 다시 움직인다');
+});
+
+test('멈춤은 시간 기록을 늦춰주지 않는다', () => {
+  const game = createGame({ seed: 1, save: { ...emptySave(), seenOpening: true } });
+  startRun(game);
+  loadStage(game, 0);
+  game.scene = 'play';
+  const before = game.elapsedMs;
+  freezeGame(game, 6);
+  step(game, idle(), 6);
+  assert.ok(game.elapsedMs > before, '멈춰 있어도 시계는 간다 — 안 그러면 히트스톱이 기록을 깎아준다');
+});
+
+// ── 죽음·클리어 건너뛰기 ────────────────────────────────────
+
+/** 판에 들어가 죽인다 */
+function dieIn(game) {
+  game.scene = 'death';
+  game.sceneTime = 0;
+  game.freeze = 0;
+}
+
+test('죽는 연출을 건너뛸 수 있다 — 트롤 게임이라 수십 번 죽는다', () => {
+  const game = createGame({ seed: 1, save: { ...emptySave(), seenOpening: true } });
+  startRun(game);
+  loadStage(game, 0);
+  dieIn(game);
+
+  // 최소 시간 전에는 안 먹는다 (죽은 순간 눌려 있던 점프가 연출을 날리면 안 된다)
+  step(game, idle({ confirmPressed: true }), 10);
+  assert.equal(game.scene, 'death', `${SKIP_AFTER}초 전에는 안 건너뛴다`);
+
+  step(game, idle(), 30);
+  step(game, idle({ confirmPressed: true }));
+  assert.notEqual(game.scene, 'death', '최소 시간이 지나면 바로 되살아난다');
+});
+
+test('스테이지 클리어 연출도 건너뛸 수 있다', () => {
+  const game = createGame({ seed: 1, save: { ...emptySave(), seenOpening: true } });
+  startRun(game);
+  loadStage(game, 0);
+  game.scene = 'stageClear';
+  game.sceneTime = 0;
+
+  step(game, idle({ confirmPressed: true }), 10);
+  assert.equal(game.scene, 'stageClear', `${SKIP_AFTER}초 전에는 안 건너뛴다`);
+
+  step(game, idle(), 30);
+  step(game, idle({ confirmPressed: true }));
+  assert.notEqual(game.scene, 'stageClear', '최소 시간이 지나면 다음 판으로');
 });

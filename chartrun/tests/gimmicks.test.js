@@ -326,8 +326,11 @@ test('마이크 아홉 번이면 보스가 쓰러진다 — 3페이즈까지 실
     game.thrown.push(mic);
     step(game);
     seen.add(game.boss.phaseId);
-    // 페이즈가 바뀌면 전환 컷신이 싸움을 멈춘다 — 여기선 대미지만 세므로 건너뛴다
+    // 페이즈가 바뀌면 전환 컷신이 싸움을 멈춘다 — 여기선 대미지만 세므로 건너뛴다.
+    // 히트스톱(FREEZE)도 같은 이유로 푼다: 안 풀면 다음 step 한 프레임을 멈춤이
+    // 먹어버려서 그 마이크가 아예 안 날아간다.
     game.bossCut = null;
+    game.freeze = 0;
   }
   assert.deepEqual([...seen].sort(), [1, 2, 3]);
   assert.equal(game.boss.state, 'defeated');

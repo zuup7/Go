@@ -3,7 +3,7 @@ import { createWorld, T } from './world.js';
 import { STAGES, HARD_STAGES, BOSS_STAGE, NOTE_TOTAL } from '../data/stages.js';
 import { createPlayer, respawnPlayer, updatePlayer, bounce, damagePlayer } from './player.js';
 import { spawnAlbum, updateAlbum, stompAlbum, updateShot } from './enemy.js';
-import { createCamera, updateCamera, shakeCamera } from './camera.js';
+import { createCamera, updateCamera, updateCameraShake, shakeCamera } from './camera.js';
 import { rankAt, TOP_RANK } from './chart.js';
 import {
   createBoss,
@@ -128,6 +128,8 @@ export function createGame(options = {}) {
     ending: null,
     /** 개발자 모드가 켜져 있는지 (비번 1234). 켜면 스테이지를 골라 들어갈 수 있다 */
     dev: save.dev ?? false,
+    /** 히트스톱으로 멈춰 있는 프레임 수. 0 이면 평소대로 돈다 (FREEZE 참고) */
+    freeze: 0,
     /** 타이틀에서 고른 줄, 스테이지 선택 화면에서 고른 칸, 일시정지 메뉴에서 고른 줄 */
     titleIndex: 0,
     selectIndex: 0,
@@ -169,6 +171,35 @@ const emit = (game, name, data) => game.onEvent(name, data ?? {});
  * 한쪽만 이름을 붙이면 표시가 켜져도 안 그려지므로, 두 곳이 이 함수 하나를 같이 쓴다.
  */
 export const markKey = (game, tx, ty) => trapKey(tx, ty, game.hard ? game.world.stage.id : '');
+
+/**
+ * 히트스톱 — 맞은 순간 판을 몇 프레임 세운다.
+ *
+ * 세기를 **사건의 무게에 비례해서** 나눈다. 전부 같은 값을 주면 앨범 하나 밟는 것과
+ * 보스를 쓰러뜨리는 것이 똑같이 느껴진다. 한 판에 서른 번 하는 일은 짧아야 하고,
+ * 한 판에 한 번 하는 일은 길어도 된다.
+ *
+ * 프레임 수다 (60Hz 고정 타임스텝이라 그대로 쓴다). 0.05초를 넘기면 조작이
+ * 끊기는 느낌이 들기 시작하므로 평범한 행동은 두 프레임에서 끊는다.
+ */
+export const FREEZE = {
+  /** 앨범 밟기 — 한 판에 스무 번 넘게 한다. 있는 줄 모르게 짧아야 한다 */
+  stomp: 2,
+  /** 보스 평타 */
+  bossHit: 5,
+  /** 죽음 */
+  death: 6,
+  /** 페이즈 전환 · 마지막 일격 — 한 판에 서너 번뿐이라 길어도 된다 */
+  bossBig: 9,
+};
+
+/**
+ * 판을 멈춘다. **더 센 것이 이긴다** — 이미 멈춰 있는데 약한 사건이 덮어쓰면
+ * 큰 사건의 여운이 잘린다 (마지막 일격 다음 프레임에 탄이 스쳐도 9프레임을 지킨다).
+ */
+export const freezeGame = (game, frames) => {
+  game.freeze = Math.max(game.freeze ?? 0, frames);
+};
 
 /**
  * 주운 음표를 기억하는 열쇠. **판 이름을 언제나 붙인다** — markKey 를 그대로 쓰면 안 된다.
@@ -310,6 +341,7 @@ function killPlayer(game) {
   game.chartOuts += 1;
   game.scene = 'death';
   game.sceneTime = 0;
+  freezeGame(game, FREEZE.death);
   shakeCamera(game.camera, 1.2);
   addParticles(game, game.player.x + 5, game.player.y + 7, 14, ['#ff5d8f', '#ffd166', '#ffffff'], {
     speed: 110,
@@ -363,6 +395,8 @@ function handleAlbums(game, dt, held = false) {
         continue;
       }
       bounce(player, result === 'dead', held);
+      // 아주 짧게. 한 판에 스무 번 넘게 하는 일이라 길면 판이 끊긴다
+      freezeGame(game, FREEZE.stomp);
       emit(game, 'stomp', {});
       addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 8, album.def.palette, {
         speed: 70,
@@ -1350,6 +1384,7 @@ function damageBoss(game, opts = {}) {
   if (boss.hp <= 0) {
     // 마지막 일격. 평타 플래시(1)보다 **위로 벌린다** — 렌더가 0.85 까지 받는다
     game.flash = 1.4;
+    freezeGame(game, FREEZE.bossBig);
     shakeCamera(game.camera, 1.8);
     // 이제야 이름이 사실이 된다. 소리가 끝나갈 즈음 보스가 다 가라앉는다
     emit(game, 'bossdown', {});
@@ -1357,11 +1392,13 @@ function damageBoss(game, opts = {}) {
     // 페이즈가 바뀌면 싸움을 멈추고 전환 컷신을 튼다
     startBossCut(game, cutForPhase(changed, game.hard));
     game.flash = 1;
+    freezeGame(game, FREEZE.bossBig);
     shakeCamera(game.camera, 1.6);
     emit(game, 'phase', { phase: changed });
   } else {
     // 평타. 보스 몸이 하얘지는 hurtFlash 와 별개로 화면도 한 번 번쩍인다
     game.flash = 1;
+    freezeGame(game, FREEZE.bossHit);
   }
   return true;
 }
@@ -1577,6 +1614,22 @@ export function updateGame(game, input, dt) {
 
   updateParticles(game, dt);
 
+  /**
+   * 히트스톱. 맞은 프레임을 몇 개 붙잡아 둬야 "닿았다"가 손에 남는다.
+   *
+   * **파티클과 화면 흔들림은 계속 돌린다** (위에서 이미 updateParticles 를 지났고,
+   * 아래에서 카메라도 흔든다). 그게 이 기능의 핵심이다 — 전부 멈추면 게임이
+   * 버벅인 것처럼 보이고, 튄 조각이 떨리는 화면 위로 흩어져야 충격으로 읽힌다.
+   *
+   * 판만 세운다. sceneTime·elapsedMs 는 위에서 이미 흘렀다 — 기록이 히트스톱만큼
+   * 유리해지면 안 되고, 컷신 타이밍도 멈춤에 끌려가면 안 된다.
+   */
+  if (game.freeze > 0) {
+    game.freeze -= 1;
+    if (game.camera) updateCameraShake(game.camera, dt);
+    return;
+  }
+
   switch (game.scene) {
     case 'title': {
       const rows = titleRows(game);
@@ -1670,11 +1723,17 @@ export function updateGame(game, input, dt) {
       // 죽는 연출: 잠깐 튀어올랐다 떨어진다
       game.player.vy += 900 * dt;
       game.player.y += game.player.vy * dt;
-      if (game.sceneTime >= DEATH_HOLD) reviveAtCheckpoint(game);
+      // 트롤 게임이라 한 판에 수십 번 죽는다. 다 본 연출을 매번 1.5초씩 기다리게
+      // 하면 그건 긴장이 아니라 그냥 지루함이다. 스테이지 카드(아래 stageIntro)가
+      // 이미 쓰던 수법 그대로 — 다만 죽은 순간 눌려 있던 점프가 그대로 먹으면
+      // 연출이 시작도 못 하므로 최소 시간을 둔다 (컷신의 SKIP_AFTER 와 같은 이유).
+      if (game.sceneTime >= DEATH_HOLD || skipping(input, game.sceneTime)) {
+        reviveAtCheckpoint(game);
+      }
       break;
 
     case 'stageClear':
-      if (game.sceneTime >= CLEAR_HOLD) {
+      if (game.sceneTime >= CLEAR_HOLD || skipping(input, game.sceneTime)) {
         const next = game.stageIndex + 1;
         if (next < stageCount(game)) loadStage(game, next);
         else {

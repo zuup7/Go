@@ -805,6 +805,29 @@ body.in-cut:not(.pad-editing) .touch-right {
   color: var(--ink);
 }
 
+/* ── 눌린 표시 ────────────────────────────────────────── */
+/* 조작 버튼은 .is-down 으로 색이 바뀌는데(bindTouchButtons), 화면 UI 버튼에는
+   :hover 밖에 없었다. **폰에는 hover 가 없다.** 게다가 body 에
+   -webkit-tap-highlight-color: transparent 를 깔아둬서 브라우저 기본 탭 반응도
+   없앴다 — 「건너뛰기」나 「뒤로」를 눌러도 정말로 아무 일도 안 일어난 것처럼 보였다.
+   조작 버튼과 **같은 색**(--hot)을 써서 "눌림"이 게임 안에서 한 가지 뜻이 되게 한다. */
+.skip-btn:active,
+.back-btn:active,
+.dev-open:active,
+.pad-bar button:active,
+.menu li:active,
+.slots li:active {
+  background: var(--hot);
+  border-color: #ffd7e2;
+  color: var(--ink);
+}
+
+/* 고른 줄은 원래 테두리가 밝다 — 누르는 동안에는 배경까지 차야 눌림이 읽힌다 */
+.menu li:active,
+.slots li:active {
+  border-color: #ffd7e2;
+}
+
 /* 숨은 화면. 앨범 열일곱 장은 캔버스가 그리므로 **패널을 띄우지 않는다** —
    가운데에 패널이 뜨면 정작 보여줄 격자를 통째로 가린다. 나가는 버튼만 아래에 둔다
    (.center 가 grid 라 align-self 로 바닥에 붙는다) */
