@@ -9,6 +9,7 @@ import { drawSprite } from './pixel.js';
 import { playerFrame, NOTE, DISC, BRIDE, RING } from './sprites.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
+import { bossBody, NEUTRAL_POSE } from '../core/boss.js';
 import { phaseAt, phaseAtIn, CUT_AT } from '../data/cutscene.js';
 import {
   BOSS_CUTS,
@@ -23,7 +24,17 @@ import {
 import { INTRO_CUT, INTRO_AT, HARD_OPEN_CUT, HARD_OPEN_AT } from '../data/introCutscene.js';
 import { drawBigTextCentered } from './bigtext.js';
 import { VINYL, clamp01, ease, mixHex, noise , drawChartLabel } from './sceneParts.js';
-import { drawBossCore, drawBossDisc, drawCage, drawDinoBody, drawEvolvedDisc, drawMicShape, drawRobotBody } from './sceneBoss.js';
+import {
+  drawBossCore,
+  drawBossDisc,
+  drawCage,
+  drawDinoBody,
+  drawEvolvedDisc,
+  drawMicShape,
+  drawRobotBody,
+  drawSparks,
+  giantCanvas,
+} from './sceneBoss.js';
 
 // ── 합체 컷신 ───────────────────────────────────────────────
 export function drawCutscene(ctx, t, hard = false) {
@@ -111,11 +122,17 @@ export function drawBossCut(ctx, game, time) {
   ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   ctx.globalAlpha = fade;
 
+  // **몸은 보스에게 물어본다.** 그리는 쪽이 game.hard 로 저마다 판단하면 어긋난다 —
+  // 실제로 어긋나 있었다. phase4 만 hard 를 안 받아서, 하드 마지막 전환에
+  // 있지도 않은 로봇이 5.8초 동안 나왔다 (하드 페이즈 4는 이미 공룡이다).
+  // bossBody 는 싸움 화면이 쓰는 바로 그 함수라 둘이 갈라질 수가 없다.
+  const body = bossBody(game.boss);
+
   if (game.bossCut.id === 'phase2') drawPhase2Cut(ctx, t, phase, time, game.hard);
   else if (game.bossCut.id === 'phase3') drawPhase3Cut(ctx, t, phase, time);
   else if (game.bossCut.id === 'hard3') drawHard3Cut(ctx, t, phase, time);
-  else if (game.bossCut.id === 'phase4') drawPhase4Cut(ctx, t, phase, time);
-  else if (game.bossCut.id === 'bossdown') drawBossDownCut(ctx, t, phase, time, game.hard);
+  else if (game.bossCut.id === 'phase4') drawPhase4Cut(ctx, t, phase, time, body);
+  else if (game.bossCut.id === 'bossdown') drawBossDownCut(ctx, t, phase, time, body);
   else if (game.bossCut.id === 'hardEnd') drawHardEndCut(ctx, t, phase, time);
   else drawEndingCut(ctx, t, phase, time);
 
@@ -237,34 +254,59 @@ function drawHard3Cut(ctx, t, phase, time) {
     }
   }
 
+  const hatched = phase === 'hatch' || phase === 'roar' || phase === 'title';
+
+  // 포효할 때 뒤로 뻗는 속도선. **몸보다 먼저** 그려야 뒤에 깔린다
+  if (phase === 'roar' || phase === 'title') {
+    const k = clamp01((t - HARD3_AT.roar) / 0.5);
+    drawRays(ctx, CUT_CX, CUT_CY, time * 0.7, '#ff3b3b', 0.22 * k);
+  }
+
   ctx.save();
-  const shakeAmt = phase === 'shake' ? 3 : phase === 'shell' ? 2 : 0;
+  // 정적(still)에서는 딱 멈춘다 — 흔들림이 멎는 게 곧 「숨을 참는」 그림이다.
+  // 껍질이 갈라지는 동안 점점 더 크게 떤다.
+  const shakeAmt =
+    phase === 'shake' ? 3 : phase === 'shell' ? 2 + clamp01((t - HARD3_AT.shell) / 1.2) * 3 : 0;
   ctx.translate(CUT_CX + Math.sin(time * 63) * shakeAmt, CUT_CY);
 
-  if (phase === 'shake' || phase === 'graves' || phase === 'swarm' || phase === 'shell') {
+  if (!hatched) {
     // 아직 **진화한 원반**이다 — 이 컷신 직전까지 2페이즈로 싸우던 그 몸.
     // 여기서 로봇을 그리면 있지도 않았던 놈이 찢어지는 게 된다.
-    drawEvolvedDisc(ctx, r, time, '#7c5cff', false, 1, time * 0.5);
-    if (phase === 'shell') {
-      const crack = clamp01((t - HARD3_AT.shell) / 1.0);
-      ctx.strokeStyle = '#ffd166';
-      ctx.lineWidth = 2;
+    // 정적 동안에는 회전도 멈춘다
+    const spin = phase === 'still' ? HARD3_AT.still * 0.5 : time * 0.5;
+    drawEvolvedDisc(ctx, r, time, '#7c5cff', false, 1, spin);
+
+    // 껍질에 금 — 한 점에서 나가는 직선이 아니라 **들쭉날쭉하게** 번진다
+    if (phase === 'shell' || phase === 'still') {
+      const crack = clamp01((t - HARD3_AT.shell) / 1.2);
+      ctx.save();
       ctx.globalAlpha = crack;
-      for (let i = 0; i < 4; i++) {
-        const a = -1.2 + i * 0.7;
-        ctx.beginPath();
-        ctx.moveTo(0, -r * 0.3);
-        ctx.lineTo(Math.cos(a) * r * crack, Math.sin(a) * r * crack - r * 0.2);
-        ctx.stroke();
-      }
+      drawCracks(ctx, 0, 0, r * 0.95, crack);
+      ctx.restore();
+      // 갈라진 틈으로 안에서 붉은 빛이 샌다
+      ctx.save();
+      ctx.globalAlpha = crack * (phase === 'still' ? 0.55 + Math.sin(time * 9) * 0.25 : 0.4);
+      ctx.fillStyle = '#ff3b3b';
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.5 * crack, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
   } else {
-    // 갈라진 틈에서 목과 꼬리가 뻗어 나온다
-    const out = clamp01((t - HARD3_AT.hatch) / 1.4);
-    ctx.scale(0.6 + out * 0.4, 0.6 + out * 0.4);
-    drawDinoBody(ctx, r, time, phase === 'roar' || phase === 'title' ? '#ff3b3b' : '#7c5cff', false);
+    // 껍질을 찢고 나온다. 조금 **넘겨서** 커졌다가 제자리로 — 튀어나오는 맛이 난다
+    const out = clamp01((t - HARD3_AT.hatch) / 1.0);
+    const pop = 0.6 + ease(out) * 0.46 - Math.max(0, out - 0.7) * 0.2;
+    ctx.scale(pop, pop);
+    drawDinoBody(ctx, r, time, hatched && phase !== 'hatch' ? '#ff3b3b' : mixHex('#7c5cff', '#ff3b3b', out), false, hard3Pose(t, phase, time));
   }
   ctx.restore();
+
+  // 찢고 나오는 순간 껍질 조각이 사방으로 튄다
+  if (phase === 'hatch') {
+    const since = t - HARD3_AT.hatch;
+    drawBlasts(ctx, since, CUT_CY);
+    drawSparks(ctx, CUT_CX, CUT_CY, r * 0.9, since, '#ffd166');
+  }
 
   // 포효 — 화면이 붉게 번쩍인다
   if (phase === 'roar') {
@@ -274,46 +316,94 @@ function drawHard3Cut(ctx, t, phase, time) {
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
     ctx.restore();
   }
+
+  // **드디어 제목을 띄운다.** 이 컷신만 drawCutTitle 을 안 불러서, 마지막 1.4초가
+  // 정지한 공룡만 떠 있는 빈 화면이었다 (BOSS_CUTS.hard3.title 은 적혀만 있었다).
+  if (phase === 'title') drawCutTitle(ctx, BOSS_CUTS.hard3.title, t - HARD3_AT.title, 4, 14);
+}
+
+/**
+ * 변신하는 공룡의 자세.
+ *
+ * 예전에는 포즈를 아예 안 넘겨서 `NEUTRAL_POSE` 로 그려졌다 — **포효 장면에서
+ * 입을 안 벌렸다.** 턱·꼬리·앞발이 다 붙은 리그인데 하나도 안 쓰고 있었다.
+ */
+function hard3Pose(t, phase, time) {
+  if (phase === 'hatch') {
+    // 껍질을 밀어내는 중 — 앞발을 뻗고 꼬리를 크게 휘두른다
+    const out = clamp01((t - HARD3_AT.hatch) / 1.0);
+    return { ...NEUTRAL_POSE, paw: ease(out), swing: Math.sin(out * 6) * 0.9, jaw: out * 0.4 };
+  }
+  // 포효 — 입을 크게 벌리고 고개를 든다. 여운으로 잘게 떤다
+  const since = t - HARD3_AT.roar;
+  const open = clamp01(since / 0.35);
+  return {
+    ...NEUTRAL_POSE,
+    jaw: open * (0.82 + Math.sin(time * 16) * 0.18),
+    swing: Math.sin(time * 5) * 0.45,
+    paw: 0.35 + Math.sin(time * 4) * 0.12,
+  };
 }
 
 /**
  * 보스가 쓰러진다 — **박혀 있던 앨범이 하나씩 떨어져 나간다.**
  * 진화가 풀리는 것이 곧 패배다. 그냥 사라지면 이긴 것 같지가 않다.
  */
-function drawBossDownCut(ctx, t, phase, time, hard) {
+/** body 는 dispatcher 가 bossBody 에게 물어온 값 ('dino' | 'robot' | …) */
+function drawBossDownCut(ctx, t, phase, time, body) {
   const r = 52;
-  const kneel = clamp01((t - BOSS_DOWN_AT.kneel) / 1.0);
+  // 직선으로 꺾이면 기계가 접히는 것 같다. ease 로 꺾여야 힘이 빠지는 것으로 보인다
+  const kneel = ease(clamp01((t - BOSS_DOWN_AT.kneel) / 1.2));
   const gone = clamp01((t - BOSS_DOWN_AT.burst) / 0.8);
 
   ctx.save();
-  // 비틀거리다 무릎이 꺾인다
-  ctx.translate(CUT_CX + Math.sin(time * 26) * (1 - kneel) * 4, CUT_CY + kneel * 26);
+  // 비틀거리다 무릎이 꺾인다. 정적(still)에서는 **딱 멈춘다** — 다 꺾인 채로 버틴다
+  const wobble = phase === 'still' || phase === 'burst' ? 0 : Math.sin(time * 26) * (1 - kneel) * 5;
+  ctx.translate(CUT_CX + wobble, CUT_CY + kneel * 26);
   ctx.rotate(kneel * 0.35);
   ctx.globalAlpha = 1 - gone;
   // hurt 는 **한 프레임짜리** 피격 번쩍임이다. 컷신 내내 켜두면 몸이 하얗게 날아가
   // 무엇이 쓰러지는지가 안 보인다. 색이 식는 것으로 죽어가는 걸 보여준다.
-  // 쓰러지는 건 **방금까지 싸우던 그 몸**이다 — 보통 모드는 합체 로봇,
-  // 하드는 껍질을 찢고 나온 공룡. 하나로 고정하면 한쪽은 딴 놈이 죽는다.
+  // 쓰러지는 건 **방금까지 싸우던 그 몸**이다 — bossBody 가 정해서 넘겨준다.
   const dying = mixHex('#ff3b3b', '#3a2a4e', kneel);
-  if (hard) drawDinoBody(ctx, r, time, dying, false);
+  if (body === 'dino') drawDinoBody(ctx, r, time, dying, false, downPose(t, phase, time, kneel));
   else drawRobotBody(ctx, r, time, dying, 1, false);
   ctx.restore();
 
-  // 박혀 있던 앨범이 튕겨 나간다
+  // 비틀거리는 동안 이음새에서 불꽃이 튄다
+  if (phase === 'stagger' || phase === 'shed') {
+    drawSparks(ctx, CUT_CX + wobble, CUT_CY - r * 0.3, r * 0.7, t, '#ffd166');
+  }
+
+  // 박혀 있던 앨범이 튕겨 나간다 — **하나씩 시차를 두고** (예전에는 열 장이 한
+  // 프레임에 일제히 날아가서 터진 게 아니라 흩어진 것처럼 보였다)
   if (t >= BOSS_DOWN_AT.shed) {
-    const k = t - BOSS_DOWN_AT.shed;
     for (let i = 0; i < 10; i++) {
+      const k = t - BOSS_DOWN_AT.shed - i * 0.09;
+      if (k <= 0) continue;
       const a = (i / 10) * Math.PI * 2 + 0.4;
       const d = k * (60 + i * 9);
+      const x = CUT_CX + Math.cos(a) * d;
+      const y = CUT_CY + Math.sin(a) * d + k * k * 30;
       ctx.save();
       ctx.globalAlpha = Math.max(0, 1 - k * 0.5);
-      drawCoverAt(ctx, ALBUMS[i], CUT_CX + Math.cos(a) * d - 6, CUT_CY + Math.sin(a) * d - 6 + k * k * 30, 12);
+      // 떨어져 나가는 순간 한 번 번쩍
+      if (k < 0.12) {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(Math.round(x) - 7, Math.round(y) - 7, 14, 14);
+      }
+      // 돌면서 날아간다
+      ctx.translate(Math.round(x), Math.round(y));
+      ctx.rotate(k * 5 * (i % 2 ? 1 : -1));
+      drawCoverAt(ctx, ALBUMS[i], -6, -6, 12);
       ctx.restore();
     }
   }
 
-  // 코어가 터진다
+  // 코어가 터진다 — 흰 원 하나가 아니라 폭발 + 퍼지는 충격파 링
   if (phase === 'burst') {
+    const since = t - BOSS_DOWN_AT.burst;
+    drawBlasts(ctx, since, CUT_CY);
     ctx.save();
     ctx.globalAlpha = Math.max(0, 1 - gone);
     ctx.fillStyle = '#fff';
@@ -321,16 +411,53 @@ function drawBossDownCut(ctx, t, phase, time, hard) {
     ctx.beginPath();
     ctx.arc(CUT_CX, CUT_CY, rad, 0, Math.PI * 2);
     ctx.fill();
+    // 바깥으로 퍼지는 링 두 겹 — 뒤엣것이 늦게 따라간다
+    ctx.strokeStyle = '#ffd166';
+    ctx.lineWidth = 2;
+    for (const lag of [0, 0.18]) {
+      const q = clamp01((since - lag) / 0.7);
+      if (q <= 0 || q >= 1) continue;
+      ctx.globalAlpha = (1 - q) * 0.9;
+      ctx.beginPath();
+      ctx.arc(CUT_CX, CUT_CY, 12 + q * 150, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 }
 
-function drawPhase4Cut(ctx, t, phase, time) {
+/** 쓰러지는 공룡의 자세 — 고개를 떨구고 꼬리가 힘없이 늘어진다 */
+function downPose(t, phase, time, kneel) {
+  if (phase === 'stagger' || phase === 'shed') {
+    // 아직 버틴다 — 휘청이며 입을 벌린 채 헐떡인다
+    return {
+      ...NEUTRAL_POSE,
+      swing: Math.sin(time * 4) * 0.7,
+      jaw: 0.4 + Math.sin(time * 6) * 0.25,
+      paw: -0.3,
+    };
+  }
+  // 무릎이 꺾인 뒤 — 힘이 빠진다
+  return { ...NEUTRAL_POSE, swing: -0.2 * (1 - kneel), jaw: 0.5 * (1 - kneel), paw: -kneel };
+}
+
+/**
+ * 마지막 전환. **하드모드에만 나온다** (보통은 페이즈가 셋이라 여기 못 온다).
+ *
+ * body 는 dispatcher 가 bossBody 에게 물어온 값이다. 예전에는 이 함수만 그 질문을
+ * 안 해서 **늘 로봇을 그렸다** — 하드 페이즈 4 는 이미 공룡인데.
+ */
+function drawPhase4Cut(ctx, t, phase, time, body = 'dino') {
   const r = 52;
+  const drawBody = (color) =>
+    body === 'dino'
+      ? drawDinoBody(ctx, r, time, color, false, phase4Pose(t, phase, time))
+      : drawRobotBody(ctx, r, time, color, 1, false);
+
   if (phase === 'shake') {
     ctx.save();
     ctx.translate(CUT_CX + Math.sin(time * 63) * 3, CUT_CY);
-    drawRobotBody(ctx, r, time, '#7c5cff', 1, false);
+    drawBody('#7c5cff');
     ctx.restore();
     return;
   }
@@ -339,10 +466,24 @@ function drawPhase4Cut(ctx, t, phase, time) {
   const heat = clamp01((t - PHASE4_AT.overheat) / 1.4);
   const color = phase === 'overheat' ? mixHex('#7c5cff', P4_HOT, heat) : P4_HOT;
 
+  // 뒤에서 거대한 것이 일어선다. **먼저 그린다** — 앞의 몸이 그 위에 얹혀야 한다.
+  // 예전에는 붉은 사각형이 차오르는 게 전부였다. giantCanvas 가 실루엣을 구워주니
+  // 진짜 그림자가 일어서게 한다 (dino 면 공룡 실루엣이 나온다).
+  if (phase === 'rise' || phase === 'core' || phase === 'title') {
+    const up = ease(clamp01((t - PHASE4_AT.rise) / 1.2));
+    const g = giantCanvas(P4_HOT, body === 'dino');
+    ctx.save();
+    ctx.globalAlpha = 0.5 * up;
+    const s = 1.9;
+    // 아래에서 솟아오른다 — 다 서면 화면 위쪽으로 머리가 잘려 나갈 만큼 크다
+    ctx.drawImage(g, CUT_CX - (g.width * s) / 2, VIEW.h - g.height * s * up, g.width * s, g.height * s);
+    ctx.restore();
+  }
+
   ctx.save();
   const jolt = phase === 'core' ? Math.sin(time * 90) * 2 : Math.sin(time * 40) * heat;
   ctx.translate(CUT_CX + jolt, CUT_CY);
-  drawRobotBody(ctx, r, time, color, 1, false);
+  drawBody(color);
   ctx.restore();
   drawBossCore(ctx, CUT_CX + jolt, CUT_CY, phase === 'core' || phase === 'title', time, 14);
 
@@ -358,17 +499,24 @@ function drawPhase4Cut(ctx, t, phase, time) {
     ctx.restore();
   }
 
-  // 뒤의 거대 로봇이 일어선다 — 크기가 그림으로 읽히는 자리다
-  if (phase === 'rise' || phase === 'core' || phase === 'title') {
-    const up = clamp01((t - PHASE4_AT.rise) / 1.2);
-    ctx.save();
-    ctx.globalAlpha = 0.3 * up;
-    ctx.fillStyle = P4_HOT;
-    ctx.fillRect(0, VIEW.h - VIEW.h * up, VIEW.w, VIEW.h * up);
-    ctx.restore();
-  }
-
   if (phase === 'title') drawCutTitle(ctx, 'FINAL', t - PHASE4_AT.title, 4, 14);
+}
+
+/**
+ * 마지막 전환에서 공룡이 취하는 자세. 과열될수록 몸이 떨리고, 코어가 터질 때
+ * 입을 벌린다. 예전에는 포즈를 아예 안 넘겨서(NEUTRAL_POSE) 턱도 꼬리도 굳어 있었다.
+ */
+function phase4Pose(t, phase, time) {
+  const heat = clamp01((t - PHASE4_AT.overheat) / 1.4);
+  const open = phase === 'core' || phase === 'title' ? 1 : 0;
+  return {
+    ...NEUTRAL_POSE,
+    // 열을 못 견디고 부르르 — 꼬리가 좌우로 잘게 떤다
+    swing: Math.sin(time * 11) * 0.5 * heat,
+    // 앞발을 치켜든다
+    paw: heat * 0.7,
+    jaw: open ? 0.5 + Math.sin(time * 7) * 0.5 : heat * 0.25,
+  };
 }
 
 function drawPhase3Cut(ctx, t, phase, time) {

@@ -111,6 +111,8 @@ export const CUT_SOUND = {
     graves: { sfx: 'blip' },
     swarm: { sfx: 'scatter' },
     shell: { sfx: 'crack' },
+    // **일부러 조용하다.** 금이 간 채로 멈춘 한 박자다 — 여기가 비어야 hatch 가 터진다
+    still: {},
     hatch: { sfx: 'split' },
     roar: { sfx: 'roar', bgm: 'boss' },
     title: { sfx: 'title' },
@@ -121,6 +123,8 @@ export const CUT_SOUND = {
     stagger: { sfx: 'thud' },
     shed: { sfx: 'scatter' },
     kneel: { sfx: 'crack' },
+    // 무너지기 직전. 이 컷신은 무음 위에서 도니 여기는 정말로 아무 소리도 없다
+    still: {},
     burst: { sfx: 'burst' },
     end: {},
   },

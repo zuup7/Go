@@ -47,10 +47,12 @@ export const HARD3_CUT = [
   { at: 0.8, kind: 'graves' }, // 밟혀 사라졌던 앨범들이 바닥에서 떠오른다
   { at: 2.2, kind: 'swarm' }, // 그것들이 보스에게 몰려들어 달라붙는다
   { at: 3.6, kind: 'shell' }, // 껍질에 금이 간다
-  { at: 4.6, kind: 'hatch' }, // 갈라진 틈에서 목과 꼬리가 뻗어 나온다
-  { at: 6.0, kind: 'roar' }, // 공룡로봇이 고개를 들고 포효한다
-  { at: 7.4, kind: 'title' },
-  { at: 8.8, kind: 'end' },
+  // 금이 간 채로 멈춘다. **아무 소리도 없다** — 이 한 박자가 있어야 다음이 산다.
+  { at: 4.8, kind: 'still' },
+  { at: 5.4, kind: 'hatch' }, // 껍질을 찢고 목과 꼬리가 뻗어 나온다
+  { at: 7.0, kind: 'roar' }, // 고개를 들고 **입을 벌려** 포효한다
+  { at: 8.6, kind: 'title' },
+  { at: 10.2, kind: 'end' },
 ];
 
 /**
@@ -61,10 +63,13 @@ export const HARD3_CUT = [
  */
 export const BOSS_DOWN_CUT = [
   { at: 0.0, kind: 'stagger' }, // 비틀거린다
-  { at: 1.0, kind: 'shed' }, // 박혀 있던 앨범이 하나씩 튕겨 나간다
-  { at: 2.6, kind: 'kneel' }, // 무릎이 꺾인다
-  { at: 3.6, kind: 'burst' }, // 코어가 터진다
-  { at: 4.6, kind: 'end' },
+  { at: 1.2, kind: 'shed' }, // 박혀 있던 앨범이 하나씩 튕겨 나간다
+  { at: 2.8, kind: 'kneel' }, // 무릎이 꺾인다
+  // 무너지기 직전의 정적. 이 컷신은 **무음 위에서 돈다**(마지막 일격에 브금을 끊는다)
+  // 라 한 박자 쉬는 게 특히 잘 듣는다.
+  { at: 4.0, kind: 'still' },
+  { at: 4.6, kind: 'burst' }, // 코어가 터진다
+  { at: 6.0, kind: 'end' },
 ];
 
 /**
