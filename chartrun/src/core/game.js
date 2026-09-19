@@ -1242,6 +1242,11 @@ function openGallery(game, from) {
  */
 export function titleRows(game) {
   const rows = [{ label: '처음부터', action: 'start' }];
+  // 하던 판이 있으면 **맨 위**에. 나갔다 들어온 사람이 제일 먼저 찾는 줄이다.
+  // (어디까지 갔는지도 같이 적는다 — 「이어하기」만 있으면 어디로 가는지 모른다)
+  if (game.save?.resume) {
+    rows.unshift({ label: resumeLabel(game.save.resume), action: 'resume' });
+  }
   if (canSelect(game)) rows.push({ label: '스테이지 선택', action: 'select' });
   // 2회차가 있다는 걸 **여기서 말해준다.** 예전에는 깨고 나면 말없이 스테이지 1 로
   // 되돌려놓는 게 전부라, NPC 를 지나치면 2회차가 있는 줄도 몰랐다.
@@ -1708,6 +1713,7 @@ export function updateGame(game, input, dt) {
           game.selectIndex = 0;
         } else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'gallery') openGallery(game, 'title');
+        else if (pick?.action === 'resume') resumeRun(game, game.save.resume);
         else startRun(game);
       }
       break;
@@ -1849,3 +1855,82 @@ export const runSummary = (game) => ({
   /** 하드모드 판인지. 기록이 어느 칸으로 갈지 이걸로 갈린다 */
   hard: game.hard,
 });
+
+// ── 이어하기 ─────────────────────────────────────────────────
+/**
+ * 하던 판을 한 장으로 찍는다. 판 중이 아니면 null.
+ *
+ * **한 시점을 통째로 찍는 게 핵심이다.** 자리는 체크포인트에서 가져오고 숫자는
+ * 나가던 순간에서 가져오면, 체크포인트 뒤에 주운 음표를 돌아와서 또 줍는다 —
+ * 음표 이스터에그에서 한 번 물렸던 그 함정이다. 그래서 이걸 부르는 쪽(ui/app.js)이
+ * **체크포인트를 밟는 순간과 판이 시작되는 순간**에만 찍는다. 나갈 때는 안 찍는다.
+ *
+ * **pausable 을 쓰면 안 된다.** 그건 「지금 멈출 수 있나」라 play·boss 뿐인데,
+ * 찍는 순간의 장면은 그보다 넓다 — loadStage 는 scene 을 'stageIntro' 로 둔 채
+ * 'stage' 를 알리고, 골에 닿으면 'stageClear' 다. 좁게 잡으면 그 자리에서 null 이
+ * 나가고, null 은 **지우라는 뜻**이라 하던 판이 오히려 날아간다.
+ */
+const RUN_SCENES = new Set(['stageIntro', 'play', 'death', 'stageClear', 'boss']);
+
+export const resumeState = (game) =>
+  RUN_SCENES.has(game.scene) && game.world
+    ? {
+        stage: game.stageIndex,
+        hard: game.hard,
+        boss: game.scene === 'boss',
+        // 개발자 모드로 연 포탈 판. 저장엔 안 남는 값이라(createGame 주석) 여기 싣는다
+        forceHub: !!game.forceHub,
+        checkpoint: game.checkpoint ? { ...game.checkpoint } : null,
+        elapsedMs: game.elapsedMs,
+        chartOuts: game.chartOuts,
+        plays: game.plays,
+        score: game.score,
+        defeated: game.defeated,
+        partial: game.partial,
+      }
+    : null;
+
+/**
+ * 하던 판으로 돌아간다. **죽었다 되살아난 것과 같은 상태**로 만든다 —
+ * 플레이어가 이미 아는 규칙이라 따로 설명할 게 없다.
+ *
+ * 순서가 중요하다. loadStage 안의 stageTable 이 game.hard 를 보고 1회차/하드 표를
+ * 고르므로 **hard 를 먼저** 세워야 하고, loadStage 가 체크포인트를 시작점으로
+ * 덮어쓰므로 **그 뒤에** 되돌려야 한다.
+ */
+export function resumeRun(game, resume) {
+  if (!resume) return false;
+  game.hard = !!resume.hard;
+  game.partial = !!resume.partial;
+  game.forceHub = !!resume.forceHub;
+  game.ending = null;
+
+  if (resume.boss) loadBoss(game);
+  else loadStage(game, clamp(resume.stage ?? 0, 0, stageCount(game) - 1));
+
+  game.elapsedMs = resume.elapsedMs ?? 0;
+  game.chartOuts = resume.chartOuts ?? 0;
+  game.plays = resume.plays ?? 0;
+  game.score = resume.score ?? 0;
+  game.defeated = resume.defeated ?? 0;
+
+  // 보스 아레나는 체크포인트가 하나뿐(시작점)이라 되돌릴 게 없다
+  if (!resume.boss && resume.checkpoint) {
+    game.checkpoint = { ...resume.checkpoint };
+    respawnPlayer(game.player, game.checkpoint);
+    updateRank(game);
+  }
+  return true;
+}
+
+/**
+ * 타이틀 줄에 적을 글자. 판 번호는 **표에서 꺼낸다** — 찍어둔 쪽에 번호를 또 적으면
+ * 판 표를 고쳤을 때 조용히 어긋난다.
+ */
+export function resumeLabel(resume) {
+  if (!resume) return '';
+  if (resume.boss) return '이어하기 — 보스전';
+  const table = resume.hard ? HARD_STAGES : STAGES;
+  const number = table[resume.stage]?.number ?? 1;
+  return `이어하기 — ${resume.hard ? '하드 ' : ''}STAGE ${number}`;
+}

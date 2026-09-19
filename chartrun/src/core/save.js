@@ -57,6 +57,22 @@ export const emptySave = () => ({
    * revealedTraps 와 같은 모양이라 여러 판에 걸쳐 모을 수 있다.
    */
   foundNotes: [],
+  /**
+   * **하던 판.** 없으면 null.
+   *
+   * 이 칸이 생기기 전에는 게임을 닫으면 판이 통째로 날아갔다 — 스테이지 3 을 하다
+   * 나가면 1 부터 다시였다. 게다가 스테이지 선택은 한 바퀴를 깨야 열려서
+   * (`selectItems` 의 `needs: 'clearedOnce'`), 첫 판을 도는 중에 나간 사람은
+   * 돌아올 방법이 **아예 없었다.**
+   *
+   * { stage, hard, boss, forceHub, checkpoint: {x,y}|null,
+   *   elapsedMs, chartOuts, plays, score, defeated, partial }
+   *
+   * **한 시점을 통째로 찍은 것**이다. 자리는 체크포인트에서 가져오고 숫자는
+   * 나가던 순간에서 가져오면, 체크포인트 뒤에 주운 음표를 돌아와서 또 줍는다.
+   * 그래서 체크포인트를 밟는 순간·판이 시작되는 순간에만 찍는다 (ui/app.js).
+   */
+  resume: null,
 });
 
 export function serialize(data) {
@@ -123,6 +139,10 @@ export function mergeRun(save, run) {
   if (run.foundNotes) {
     next.foundNotes = [...new Set([...(save.foundNotes ?? []), ...run.foundNotes])];
   }
+  // 하던 판은 **키가 있을 때만** 건드린다.
+  // null 을 넣는 것(판이 끝났다)과 안 건드리는 것을 구별해야 해서 `in` 으로 본다 —
+  // 타이틀에서 M 로 음소거만 해도 persist 가 도는데, 그때 하던 판이 지워지면 안 된다.
+  if ('resume' in run) next.resume = run.resume;
   if (run.clearedOnce) next.clearedOnce = true;
   if (run.clearedHard) next.clearedHard = true;
   // 하드 기록은 하드 칸으로 간다. 안 나누면 어려운 판을 깬 시간이 보통 기록을 덮어써서

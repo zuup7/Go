@@ -5129,6 +5129,22 @@ const emptySave = () => ({
    * revealedTraps 와 같은 모양이라 여러 판에 걸쳐 모을 수 있다.
    */
   foundNotes: [],
+  /**
+   * **하던 판.** 없으면 null.
+   *
+   * 이 칸이 생기기 전에는 게임을 닫으면 판이 통째로 날아갔다 — 스테이지 3 을 하다
+   * 나가면 1 부터 다시였다. 게다가 스테이지 선택은 한 바퀴를 깨야 열려서
+   * (`selectItems` 의 `needs: 'clearedOnce'`), 첫 판을 도는 중에 나간 사람은
+   * 돌아올 방법이 **아예 없었다.**
+   *
+   * { stage, hard, boss, forceHub, checkpoint: {x,y}|null,
+   *   elapsedMs, chartOuts, plays, score, defeated, partial }
+   *
+   * **한 시점을 통째로 찍은 것**이다. 자리는 체크포인트에서 가져오고 숫자는
+   * 나가던 순간에서 가져오면, 체크포인트 뒤에 주운 음표를 돌아와서 또 줍는다.
+   * 그래서 체크포인트를 밟는 순간·판이 시작되는 순간에만 찍는다 (ui/app.js).
+   */
+  resume: null,
 });
 
 function serialize(data) {
@@ -5195,6 +5211,10 @@ function mergeRun(save, run) {
   if (run.foundNotes) {
     next.foundNotes = [...new Set([...(save.foundNotes ?? []), ...run.foundNotes])];
   }
+  // 하던 판은 **키가 있을 때만** 건드린다.
+  // null 을 넣는 것(판이 끝났다)과 안 건드리는 것을 구별해야 해서 `in` 으로 본다 —
+  // 타이틀에서 M 로 음소거만 해도 persist 가 도는데, 그때 하던 판이 지워지면 안 된다.
+  if ('resume' in run) next.resume = run.resume;
   if (run.clearedOnce) next.clearedOnce = true;
   if (run.clearedHard) next.clearedHard = true;
   // 하드 기록은 하드 칸으로 간다. 안 나누면 어려운 판을 깬 시간이 보통 기록을 덮어써서
@@ -6492,6 +6512,11 @@ function openGallery(game, from) {
  */
 function titleRows(game) {
   const rows = [{ label: '처음부터', action: 'start' }];
+  // 하던 판이 있으면 **맨 위**에. 나갔다 들어온 사람이 제일 먼저 찾는 줄이다.
+  // (어디까지 갔는지도 같이 적는다 — 「이어하기」만 있으면 어디로 가는지 모른다)
+  if (game.save?.resume) {
+    rows.unshift({ label: resumeLabel(game.save.resume), action: 'resume' });
+  }
   if (canSelect(game)) rows.push({ label: '스테이지 선택', action: 'select' });
   // 2회차가 있다는 걸 **여기서 말해준다.** 예전에는 깨고 나면 말없이 스테이지 1 로
   // 되돌려놓는 게 전부라, NPC 를 지나치면 2회차가 있는 줄도 몰랐다.
@@ -6958,6 +6983,7 @@ function updateGame(game, input, dt) {
           game.selectIndex = 0;
         } else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'gallery') openGallery(game, 'title');
+        else if (pick?.action === 'resume') resumeRun(game, game.save.resume);
         else startRun(game);
       }
       break;
@@ -7100,7 +7126,86 @@ const runSummary = (game) => ({
   hard: game.hard,
 });
 
-return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary };
+// ── 이어하기 ─────────────────────────────────────────────────
+/**
+ * 하던 판을 한 장으로 찍는다. 판 중이 아니면 null.
+ *
+ * **한 시점을 통째로 찍는 게 핵심이다.** 자리는 체크포인트에서 가져오고 숫자는
+ * 나가던 순간에서 가져오면, 체크포인트 뒤에 주운 음표를 돌아와서 또 줍는다 —
+ * 음표 이스터에그에서 한 번 물렸던 그 함정이다. 그래서 이걸 부르는 쪽(ui/app.js)이
+ * **체크포인트를 밟는 순간과 판이 시작되는 순간**에만 찍는다. 나갈 때는 안 찍는다.
+ *
+ * **pausable 을 쓰면 안 된다.** 그건 「지금 멈출 수 있나」라 play·boss 뿐인데,
+ * 찍는 순간의 장면은 그보다 넓다 — loadStage 는 scene 을 'stageIntro' 로 둔 채
+ * 'stage' 를 알리고, 골에 닿으면 'stageClear' 다. 좁게 잡으면 그 자리에서 null 이
+ * 나가고, null 은 **지우라는 뜻**이라 하던 판이 오히려 날아간다.
+ */
+const RUN_SCENES = new Set(['stageIntro', 'play', 'death', 'stageClear', 'boss']);
+
+const resumeState = (game) =>
+  RUN_SCENES.has(game.scene) && game.world
+    ? {
+        stage: game.stageIndex,
+        hard: game.hard,
+        boss: game.scene === 'boss',
+        // 개발자 모드로 연 포탈 판. 저장엔 안 남는 값이라(createGame 주석) 여기 싣는다
+        forceHub: !!game.forceHub,
+        checkpoint: game.checkpoint ? { ...game.checkpoint } : null,
+        elapsedMs: game.elapsedMs,
+        chartOuts: game.chartOuts,
+        plays: game.plays,
+        score: game.score,
+        defeated: game.defeated,
+        partial: game.partial,
+      }
+    : null;
+
+/**
+ * 하던 판으로 돌아간다. **죽었다 되살아난 것과 같은 상태**로 만든다 —
+ * 플레이어가 이미 아는 규칙이라 따로 설명할 게 없다.
+ *
+ * 순서가 중요하다. loadStage 안의 stageTable 이 game.hard 를 보고 1회차/하드 표를
+ * 고르므로 **hard 를 먼저** 세워야 하고, loadStage 가 체크포인트를 시작점으로
+ * 덮어쓰므로 **그 뒤에** 되돌려야 한다.
+ */
+function resumeRun(game, resume) {
+  if (!resume) return false;
+  game.hard = !!resume.hard;
+  game.partial = !!resume.partial;
+  game.forceHub = !!resume.forceHub;
+  game.ending = null;
+
+  if (resume.boss) loadBoss(game);
+  else loadStage(game, clamp(resume.stage ?? 0, 0, stageCount(game) - 1));
+
+  game.elapsedMs = resume.elapsedMs ?? 0;
+  game.chartOuts = resume.chartOuts ?? 0;
+  game.plays = resume.plays ?? 0;
+  game.score = resume.score ?? 0;
+  game.defeated = resume.defeated ?? 0;
+
+  // 보스 아레나는 체크포인트가 하나뿐(시작점)이라 되돌릴 게 없다
+  if (!resume.boss && resume.checkpoint) {
+    game.checkpoint = { ...resume.checkpoint };
+    respawnPlayer(game.player, game.checkpoint);
+    updateRank(game);
+  }
+  return true;
+}
+
+/**
+ * 타이틀 줄에 적을 글자. 판 번호는 **표에서 꺼낸다** — 찍어둔 쪽에 번호를 또 적으면
+ * 판 표를 고쳤을 때 조용히 어긋난다.
+ */
+function resumeLabel(resume) {
+  if (!resume) return '';
+  if (resume.boss) return '이어하기 — 보스전';
+  const table = resume.hard ? HARD_STAGES : STAGES;
+  const number = table[resume.stage]?.number ?? 1;
+  return `이어하기 — ${resume.hard ? '하드 ' : ''}STAGE ${number}`;
+}
+
+return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcInReach, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_OPENING, SELECT_HUB, SELECT_HARD_OPEN, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary, resumeState, resumeRun, resumeLabel };
 })();
 __m["chartrun/src/core/devmode.js"] = (() => {
 // 개발자 모드. 비밀번호를 넣으면 스테이지를 골라 들어갈 수 있다.
@@ -13973,7 +14078,7 @@ return { LAYOUT_KEY, ROTATED_SIDE, MIN_SCALE, MAX_SCALE, SCALE_STEP, ALPHA_STEPS
 })();
 __m["chartrun/src/ui/app.js"] = (() => {
 // 차트런 진입점. 캔버스를 켜고, 입력·소리·게임 상태를 이어 붙인다.
-const { createGame, updateGame, runSummary, setDevMode, pausable, inCutscene, PAUSE_ROWS, VIEW } = __m["chartrun/src/core/game.js"];
+const { createGame, updateGame, runSummary, resumeState, setDevMode, pausable, inCutscene, PAUSE_ROWS, VIEW } = __m["chartrun/src/core/game.js"];
 const { DEV_CODE, pushDigit, codeMatches } = __m["chartrun/src/core/devmode.js"];
 const { createLoop } = __m["chartrun/src/core/loop.js"];
 const { createInput, bindTouchButtons } = __m["chartrun/src/core/input.js"];
@@ -14175,7 +14280,9 @@ function handleEvent(name, data) {
       break;
     case 'checkpoint':
       audio.play('checkpoint');
-      persist();
+      // 하던 판을 **여기서** 찍는다. 자리와 숫자를 한 시점에서 통째로 가져와야
+      // 이어했을 때 체크포인트 뒤에 주운 걸 또 줍지 않는다 (core 의 resumeState).
+      persist({ resume: resumeState(game) });
       break;
     case 'death':
       buzz(60);
@@ -14183,6 +14290,9 @@ function handleEvent(name, data) {
       break;
     case 'clear':
       audio.play('clear');
+      // 여기서는 하던 판을 안 찍는다. 2.6초 뒤 다음 판이 열리면서 'stage' 가
+      // 찍을 거고, 그 사이에 나가도 이 판 마지막 체크포인트로 돌아오면 그만이다.
+      // 방금 깬 판의 시작점을 가리키게 두면 그게 오히려 한 판을 되돌린다.
       persist({ clearedStage: data.stage });
       break;
     case 'bosshit':
@@ -14201,6 +14311,7 @@ function handleEvent(name, data) {
       break;
     case 'boss':
       audio.bgm('boss');
+      persist({ resume: resumeState(game) });
       break;
     case 'pause':
       // 멈춤이 풀렸다 — 뒤로가기 칸을 다시 심는다 (멈출 때 하나 빠졌다)
@@ -14211,10 +14322,10 @@ function handleEvent(name, data) {
       // 새 판이 시작됐다. 타이틀에서 나가느라 칸이 빠져 있을 수 있다
       armBackTrap();
       // 판이 시작됐으면 조작 안내는 할 일을 다 했다 — 타이틀에 다시 안 띄운다
-      if (!persisted.seenHelp) {
-        persisted = { ...persisted, seenHelp: true };
-        persist();
-      }
+      if (!persisted.seenHelp) persisted = { ...persisted, seenHelp: true };
+      // **판마다 찍는다.** 예전에는 seenHelp 일 때만 저장해서 첫 판 말고는
+      // 아무것도 안 남았다. 이게 있어야 판에 들어서자마자 나가도 그 판에서 다시 연다.
+      persist({ resume: resumeState(game) });
       break;
     case 'cutscene':
       // 컷신은 정적으로 시작한다. 음악은 아래 cutbeat 가 알맞은 때에 다시 켠다.
@@ -14258,8 +14369,16 @@ function handleEvent(name, data) {
     case 'ending':
       audio.stopBgm();
       audio.play('ending');
-      // 한 바퀴를 돌았다고 남긴다 — 이걸로 NPC 와 하드모드가 열린다
-      persist({ timeMs: data.timeMs, rank: 1, clearedOnce: true, clearedHard: data.hard });
+      // 한 바퀴를 돌았다고 남긴다 — 이걸로 NPC 와 하드모드가 열린다.
+      // resume: null 은 **판이 끝났다**는 뜻이다. 안 지우면 다 깬 뒤에도 타이틀에
+      // 「이어하기」가 남아서, 끝난 판으로 되돌아가게 된다.
+      persist({
+        timeMs: data.timeMs,
+        rank: 1,
+        clearedOnce: true,
+        clearedHard: data.hard,
+        resume: null,
+      });
       break;
     case 'talk':
       audio.play('blip');

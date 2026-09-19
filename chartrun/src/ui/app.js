@@ -3,6 +3,7 @@ import {
   createGame,
   updateGame,
   runSummary,
+  resumeState,
   setDevMode,
   pausable,
   inCutscene,
@@ -210,7 +211,9 @@ function handleEvent(name, data) {
       break;
     case 'checkpoint':
       audio.play('checkpoint');
-      persist();
+      // 하던 판을 **여기서** 찍는다. 자리와 숫자를 한 시점에서 통째로 가져와야
+      // 이어했을 때 체크포인트 뒤에 주운 걸 또 줍지 않는다 (core 의 resumeState).
+      persist({ resume: resumeState(game) });
       break;
     case 'death':
       buzz(60);
@@ -218,6 +221,9 @@ function handleEvent(name, data) {
       break;
     case 'clear':
       audio.play('clear');
+      // 여기서는 하던 판을 안 찍는다. 2.6초 뒤 다음 판이 열리면서 'stage' 가
+      // 찍을 거고, 그 사이에 나가도 이 판 마지막 체크포인트로 돌아오면 그만이다.
+      // 방금 깬 판의 시작점을 가리키게 두면 그게 오히려 한 판을 되돌린다.
       persist({ clearedStage: data.stage });
       break;
     case 'bosshit':
@@ -236,6 +242,7 @@ function handleEvent(name, data) {
       break;
     case 'boss':
       audio.bgm('boss');
+      persist({ resume: resumeState(game) });
       break;
     case 'pause':
       // 멈춤이 풀렸다 — 뒤로가기 칸을 다시 심는다 (멈출 때 하나 빠졌다)
@@ -246,10 +253,10 @@ function handleEvent(name, data) {
       // 새 판이 시작됐다. 타이틀에서 나가느라 칸이 빠져 있을 수 있다
       armBackTrap();
       // 판이 시작됐으면 조작 안내는 할 일을 다 했다 — 타이틀에 다시 안 띄운다
-      if (!persisted.seenHelp) {
-        persisted = { ...persisted, seenHelp: true };
-        persist();
-      }
+      if (!persisted.seenHelp) persisted = { ...persisted, seenHelp: true };
+      // **판마다 찍는다.** 예전에는 seenHelp 일 때만 저장해서 첫 판 말고는
+      // 아무것도 안 남았다. 이게 있어야 판에 들어서자마자 나가도 그 판에서 다시 연다.
+      persist({ resume: resumeState(game) });
       break;
     case 'cutscene':
       // 컷신은 정적으로 시작한다. 음악은 아래 cutbeat 가 알맞은 때에 다시 켠다.
@@ -293,8 +300,16 @@ function handleEvent(name, data) {
     case 'ending':
       audio.stopBgm();
       audio.play('ending');
-      // 한 바퀴를 돌았다고 남긴다 — 이걸로 NPC 와 하드모드가 열린다
-      persist({ timeMs: data.timeMs, rank: 1, clearedOnce: true, clearedHard: data.hard });
+      // 한 바퀴를 돌았다고 남긴다 — 이걸로 NPC 와 하드모드가 열린다.
+      // resume: null 은 **판이 끝났다**는 뜻이다. 안 지우면 다 깬 뒤에도 타이틀에
+      // 「이어하기」가 남아서, 끝난 판으로 되돌아가게 된다.
+      persist({
+        timeMs: data.timeMs,
+        rank: 1,
+        clearedOnce: true,
+        clearedHard: data.hard,
+        resume: null,
+      });
       break;
     case 'talk':
       audio.play('blip');
