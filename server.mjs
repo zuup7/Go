@@ -11,14 +11,21 @@ const TYPES = {
   '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  // GitHub Pages 가 주는 것과 같은 타입이어야 한다 — 틀리면 크롬이 manifest 를 무시한다
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
   '.ico': 'image/x-icon',
 };
 
 createServer(async (req, res) => {
   const url = decodeURIComponent((req.url || '/').split('?')[0]);
-  const rel = normalize(url === '/' ? '/index.html' : url).replace(/^(\.\.[/\\])+/, '');
+  // '/' 나 '/chartrun/' 처럼 폴더를 가리키면 그 안의 index.html 을 준다
+  const path = url.endsWith('/') ? `${url}index.html` : url;
+  const rel = normalize(path).replace(/^(\.\.[/\\])+/, '');
   const file = join(ROOT, rel);
   if (!file.startsWith(ROOT)) {
     res.writeHead(403).end('Forbidden');
@@ -32,5 +39,6 @@ createServer(async (req, res) => {
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('404 Not Found');
   }
 }).listen(PORT, () => {
-  console.log(`Family Go! → http://localhost:${PORT}`);
+  console.log(`Family Go! → http://localhost:${PORT}/`);
+  console.log(`차트런     → http://localhost:${PORT}/chartrun/`);
 });
