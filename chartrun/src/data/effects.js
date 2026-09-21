@@ -72,6 +72,48 @@ export const KILLS = [
     life: 0.7,
     split: true,
   },
+  {
+    id: 'heart',
+    label: '하트',
+    cost: 1,
+    colors: ['#ff5d8f', '#ffd7e2'],
+    count: 6,
+    speed: 85,
+    gravity: 220,
+    lift: 50,
+    life: 0.9,
+    shape: 'heart',
+    split: true,
+  },
+  {
+    // 결혼식 컷신의 반지를 그대로 쓴다. 이 게임에서 제일 어울리는 것이라
+    // 새로 그릴 이유가 없다 (render/sprites.js 의 RING, 6×6)
+    id: 'ring',
+    label: '반지',
+    cost: 1,
+    colors: ['#ffd166'],
+    count: 4,
+    speed: 70,
+    gravity: 230,
+    lift: 60,
+    life: 1.1,
+    shape: 'ring',
+    split: true,
+  },
+  {
+    id: 'smoke',
+    label: '연기',
+    cost: 1,
+    colors: ['#b3aecd', '#8a7fb8', '#5a5766'],
+    count: 8,
+    speed: 30,
+    // 위로 느리게 흩어졌다 사라진다. 큰 알갱이라야 연기로 읽힌다
+    gravity: -20,
+    lift: 18,
+    life: 1.6,
+    size: 3,
+    split: true,
+  },
 ];
 
 /** 데스 — 내가 죽었을 때. 밟기와 달리 원래부터 사방이다 */
@@ -123,12 +165,52 @@ export const DEATHS = [
     /** 이것만 화면을 더 흔든다 (core 가 읽는다) */
     shake: 2.0,
   },
+  {
+    id: 'note',
+    label: '음표',
+    cost: 1,
+    colors: ['#ffd166'],
+    count: 9,
+    speed: 80,
+    gravity: 190,
+    lift: 55,
+    life: 1.3,
+    shape: 'note',
+  },
+  {
+    // 합체 컷신의 레코드판. 10×10 이라 **개수를 적게** 둔다 — 많으면 화면이 덮인다
+    id: 'disc',
+    label: '레코드',
+    cost: 1,
+    colors: ['#f2f0ff'],
+    count: 5,
+    speed: 95,
+    gravity: 300,
+    lift: 70,
+    life: 1.1,
+    shape: 'disc',
+  },
+  {
+    id: 'bubble',
+    label: '거품',
+    cost: 1,
+    colors: ['#ffffff', '#cfe6ff', '#a9d8ff'],
+    count: 14,
+    speed: 22,
+    // 아주 느리게 위로, 오래 남는다 — 물속 같은 느낌
+    gravity: -28,
+    lift: 16,
+    life: 2.4,
+    size: 2,
+  },
 ];
 
 /** 상점 줄 한 벌. 고르는 쪽(core)과 그리는 쪽(hud)이 **이걸 같이 쓴다** */
 export const FX_SLOTS = [
   { key: 'kill', label: '킬', items: KILLS },
-  { key: 'death', label: '죽음', items: DEATHS },
+  // 「죽음」이 아니라 「데스」다. 열다섯 개가 되면서 칸이 셋으로 늘어나
+  // 이름이 한 글자만 길어도 화면 밖으로 나간다
+  { key: 'death', label: '데스', items: DEATHS },
 ];
 
 /** 목록 전체를 한 줄로. 상점 화면이 이 순서로 보여준다 */
@@ -144,7 +226,8 @@ export const SHOP_ITEMS = FX_SLOTS.flatMap((slot) =>
      * 나뉘어 보이긴 하는데, 「기본 / 기본」처럼 이름만 늘어놓으면 어느 칸이
      * 무엇인지 알 길이 없다 (화면을 보고서야 알았다).
      */
-    label: `${slot.label} · ${item.label}`,
+    // 가운뎃점만, **공백은 뺀다** — 칸이 셋이라 한 글자가 아쉽다
+    label: `${slot.label}·${item.label}`,
   })),
 );
 
@@ -154,6 +237,12 @@ export const DEFAULT_FX = { kill: 'base', death: 'base' };
 export const owns = (save, uid) => {
   const item = SHOP_ITEMS.find((i) => i.uid === uid);
   if (!item) return false;
+  // 개발자 모드면 전부 가진 셈. **사지는 않는다** — 끼워서 써보기만 하고,
+  // owned 는 안 건드리므로 모드를 끄면 진짜 산 것만 남는다 (setDevMode 가
+  // 끄면서 sanitizeFx 를 다시 돌린다).
+  //
+  // 만든 사람이 이펙트를 훑어보려고 완주를 열세 번 할 수는 없다.
+  if (save?.dev) return true;
   return item.cost === 0 || (save?.owned ?? []).includes(uid);
 };
 
@@ -177,6 +266,9 @@ export const spent = (save) =>
   );
 
 export const points = (save) => earned(save) - spent(save);
+
+/** 화면에 적을 점수. 개발자 모드면 ∞ — 값이 안 보이면 왜 다 되는지 모른다 */
+export const pointsText = (save) => (save?.dev ? '∞' : String(points(save)));
 
 export const canBuy = (save, uid) => {
   const item = SHOP_ITEMS.find((i) => i.uid === uid);

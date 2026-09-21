@@ -16,7 +16,7 @@ import {
   inCutscene,
   notesFound,
   shopItems,
-  shopPoints,
+  shopPointsText,
 } from '../core/game.js';
 
 /** 천 단위 구분. 세 자리마다 쉼표가 찍혀야 여섯 자리 점수가 한눈에 읽힌다 */
@@ -216,7 +216,7 @@ export function createHud(root) {
        * 목록도 점수도 core 가 갖고 있다 — 여기 또 적으면 화면과 실제로 팔리는 게 어긋난다.
        */
       case 'shop': {
-        const left = shopPoints(game);
+        const left = shopPointsText(game);
         return `
           <div class="panel select-panel shop-panel">
             <h2>상점</h2>

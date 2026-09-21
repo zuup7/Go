@@ -19,7 +19,7 @@ import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
 import { playerFrame, setLook, PLAYER_OFFSET, NOTE, HEART, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
 
 /** 알갱이가 네모 대신 쓸 그림 (data/effects.js 의 shape 이름) */
-const PARTICLE_SHAPES = { note: NOTE, heart: HEART };
+export const PARTICLE_SHAPES = { note: NOTE, heart: HEART, ring: RING, disc: DISC };
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import {

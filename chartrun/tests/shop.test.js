@@ -4,6 +4,7 @@
 // 진짜로 앨범을 밟고 진짜로 죽여서 game.particles 에 뭐가 들어갔는지 본다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   createGame,
   updateGame,
@@ -12,6 +13,8 @@ import {
   buyOrEquip,
   shopItems,
   shopPoints,
+  shopPointsText,
+  setDevMode,
 } from '../src/core/game.js';
 import { emptySave, mergeRun, serialize, deserialize, SAVE_VERSION } from '../src/core/save.js';
 import {
@@ -27,6 +30,7 @@ import {
   fxOf,
   sanitizeFx,
 } from '../src/data/effects.js';
+import { PARTICLE_SHAPES } from '../src/render/scene.js';
 
 const DT = 1 / 60;
 const idle = (over = {}) => ({
@@ -147,6 +151,75 @@ test('가진 것으로 점수를 다 쓰면 더는 못 산다', () => {
   assert.ok(buyOrEquip(game, SHOP_ITEMS.indexOf(paid[0])));
   assert.equal(shopPoints(game), 1 - paid[0].cost);
   assert.equal(canBuy(game.save, paid[1].uid), false, '점수를 다 썼는데 또 살 수 있다');
+});
+
+// ── 개발자 모드 ─────────────────────────────────────────────
+//
+// 만든 사람이 이펙트를 훑어보려고 완주를 열세 번 할 수는 없다.
+// **사는 게 아니라 써보는 것**이다 — 끄면 진짜 산 것만 남아야 한다.
+
+test('개발자 모드면 점수가 0이어도 전부 끼워진다', () => {
+  const game = createGame({ seed: 3, save: { ...emptySave(), seenOpening: true, dev: true } });
+  assert.equal(shopPoints(game), 0, '점수가 있으면 이 테스트가 아무것도 안 지킨다');
+  for (const item of SHOP_ITEMS) {
+    assert.ok(owns(game.save, item.uid), `${item.label} 이 잠겨 있다`);
+  }
+  const at = SHOP_ITEMS.findIndex((i) => i.id === 'disc');
+  assert.ok(buyOrEquip(game, at), '개발자 모드인데 안 끼워진다');
+  assert.equal(game.save.fx.death, 'disc');
+});
+
+test('개발자 모드로 끼운 건 **안 산 것**이다 — owned 도 점수도 그대로', () => {
+  const game = createGame({ seed: 3, save: { ...emptySave(), seenOpening: true, dev: true, clears: 4 } });
+  const before = shopPoints(game);
+  buyOrEquip(game, SHOP_ITEMS.findIndex((i) => i.id === 'ring'));
+  buyOrEquip(game, SHOP_ITEMS.findIndex((i) => i.id === 'bubble'));
+  assert.deepEqual(game.save.owned, [], `개발자 모드인데 ${game.save.owned} 를 샀다`);
+  assert.equal(shopPoints(game), before, '점수가 깎였다');
+});
+
+test('개발자 모드를 끄면 안 산 건 기본으로 돌아간다', () => {
+  // 이게 핵심이다. 안 되돌리면 개발자 모드로 끼운 걸 끄고도 공짜로 쓴다
+  const game = createGame({ seed: 3, save: { ...emptySave(), seenOpening: true, clears: 1 } });
+  setDevMode(game, true);
+  buyOrEquip(game, SHOP_ITEMS.findIndex((i) => i.id === 'ring'));
+  assert.equal(game.save.fx.kill, 'ring');
+
+  setDevMode(game, false);
+  assert.equal(game.save.fx.kill, 'base', '개발자 모드를 껐는데 안 산 게 그대로 끼워져 있다');
+  assert.deepEqual(game.save.owned, []);
+});
+
+test('진짜 산 것은 개발자 모드를 꺼도 남는다', () => {
+  const game = createGame({ seed: 3, save: { ...emptySave(), seenOpening: true, clears: 3 } });
+  buyOrEquip(game, SHOP_ITEMS.findIndex((i) => i.id === 'heart' && true)); // 킬·하트
+  const bought = [...game.save.owned];
+  assert.equal(bought.length, 1, '안 샀다');
+  setDevMode(game, true);
+  setDevMode(game, false);
+  assert.deepEqual(game.save.owned, bought, '산 게 날아갔다');
+  assert.equal(game.save.fx.kill, 'heart', '산 건 끼운 채로 남아야 한다');
+});
+
+test('점수 표시는 개발자 모드에서 ∞ 다', () => {
+  const plain = createGame({ seed: 3, save: { ...emptySave(), clears: 2 } });
+  assert.equal(shopPointsText(plain), '2');
+  const dev = createGame({ seed: 3, save: { ...emptySave(), clears: 2, dev: true } });
+  assert.equal(shopPointsText(dev), '∞', '왜 다 되는지 화면이 말해주지 않는다');
+});
+
+// ── 모양 ────────────────────────────────────────────────────
+
+test('모양 이름마다 진짜 그림이 있다 — 양쪽 다', () => {
+  // data 에만 적고 그림을 안 이으면 **모양 이름만 붙고 아무것도 안 그려진다**.
+  // 반대로 그림만 있고 쓰는 데가 없으면 죽은 코드다.
+  const used = new Set(SHOP_ITEMS.map((i) => i.shape).filter(Boolean));
+  const drawn = new Set(Object.keys(PARTICLE_SHAPES));
+  for (const name of used) assert.ok(drawn.has(name), `${name} 에 그림이 없다`);
+  for (const name of drawn) assert.ok(used.has(name), `${name} 그림을 쓰는 이펙트가 없다`);
+  for (const [name, spr] of Object.entries(PARTICLE_SHAPES)) {
+    assert.ok(spr?.w > 0 && spr.w <= 10, `${name} 이 ${spr?.w}px — 알갱이로는 너무 크다`);
+  }
 });
 
 // ── 저장값이 이상할 때 ──────────────────────────────────────
@@ -281,10 +354,20 @@ test('◀▶ 로 칸을 옮기고 양쪽 끝에서 돌아온다', () => {
 });
 
 test('목록이 폰 화면 안에 들어간다 — 「뒤로」가 밀려나면 갇힌다', () => {
-  // 컷신 보기와 같은 규칙이다 (4줄 × 3칸)
-  assert.ok(SHOP_ITEMS.length <= 12, `칸이 ${SHOP_ITEMS.length}개면 넷으로 늘어 화면 밖으로 나간다`);
+  // 숫자를 박아두지 않고 **CSS 에서 읽는다.** 줄 수를 늘리면 여기도 같이 늘어야
+  // 하는데, 따로 적어두면 한쪽만 고치는 날 화면과 어긋난다.
+  const css = readFileSync(new URL('../assets/style.css', import.meta.url), 'utf8');
+  const rows = Number(css.match(/\.slots\.shop-slots\s*\{[^}]*--slot-rows:\s*(\d+)/)?.[1]);
+  assert.ok(rows > 0, 'CSS 에 .slots.shop-slots 의 --slot-rows 가 없다');
+  // 칸 셋까지가 폰에 들어간다 (컷신 목록에서 확인한 것과 같은 한계)
+  assert.ok(
+    SHOP_ITEMS.length <= rows * 3,
+    `칸이 ${SHOP_ITEMS.length}개면 ${rows}줄로는 넷이 되어 화면 밖으로 나간다`,
+  );
+  // **세로가 더 아슬아슬하다.** 844×390 에서 패널이 이미 320px 를 쓴다
+  assert.ok(rows <= 5, `${rows}줄이면 「뒤로」가 화면 밖으로 밀린다`);
   for (const i of SHOP_ITEMS) {
-    assert.ok(i.label.length <= 10, `「${i.label}」 이 길어서 세 칸에 안 들어간다`);
+    assert.ok(i.label.length <= 8, `「${i.label}」 이 길어서 세 칸에 안 들어간다`);
   }
 });
 

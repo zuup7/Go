@@ -34,7 +34,7 @@ import {
 import { introTimeline, introCutLength } from '../data/introCutscene.js';
 import { talkTimeline, talkLength, HINT_TALKS } from '../data/npcTalk.js';
 import { LOOK_SLOTS, sanitizeLook, cycleLook } from '../data/looks.js';
-import { FX_SLOTS, SHOP_ITEMS, fxOf, owns, canBuy, points, sanitizeFx, sanitizeOwned } from '../data/effects.js';
+import { FX_SLOTS, SHOP_ITEMS, fxOf, owns, canBuy, points, pointsText, sanitizeFx, sanitizeOwned } from '../data/effects.js';
 import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
@@ -1134,6 +1134,8 @@ export function buyOrEquip(game, index) {
 /** 상점 목록 (그리는 쪽이 이걸 쓴다 — 여기 또 적으면 화면과 고르기가 어긋난다) */
 export const shopItems = () => SHOP_ITEMS;
 export const shopPoints = (game) => points(game.save);
+/** 화면에 적을 점수 (개발자 모드면 ∞) */
+export const shopPointsText = (game) => pointsText(game.save);
 
 /**
  * 말을 걸 수 있는 거리.
@@ -1640,6 +1642,18 @@ const skipping = (input, t) => input.confirmPressed && t > SKIP_AFTER;
 /** 개발자 모드를 켜고 끈다. 비번 판정은 ui 가 하고 결과만 여기로 온다. */
 export function setDevMode(game, on) {
   game.dev = on;
+  /**
+   * 저장에도 맞춰둔다. 이펙트가 잠겼나를 보는 owns() 는 **save** 를 읽는데,
+   * 예전에는 game.dev 만 바뀌고 save.dev 는 persist 할 때나 따라왔다 —
+   * 그 사이에는 개발자 모드인데 상점이 잠겨 있다.
+   */
+  game.save.dev = on;
+  /**
+   * **끌 때가 중요하다.** 개발자 모드에서는 안 산 이펙트도 끼울 수 있는데,
+   * 끄면서 다시 안 걸러주면 그대로 공짜로 쓰게 된다.
+   * (owned 는 애초에 안 건드렸으므로 진짜 산 것만 남는다)
+   */
+  game.save.fx = sanitizeFx(game.save);
   game.titleIndex = 0;
   // 목록이 짧아지므로 고른 자리가 범위 밖일 수 있다
   game.selectIndex = 0;
