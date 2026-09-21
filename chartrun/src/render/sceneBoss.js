@@ -602,10 +602,24 @@ export function pauldron(ctx, x, y, rad, side, color, hurt, cover) {
  * 구울 때 보스 없이 이 함수를 부른다. 기본 자세가 없으면 구워둔 거인이 공격
  * 자세로 굳는다.
  */
-export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_POSE) {
+/**
+ * 공룡로봇의 몸.
+ *
+ * grow 는 **조립 진행도** 0~1 이다. 로봇(drawRobotBody)과 **같은 규칙**으로
+ * 부위를 다섯 단계에 나눠 하나씩 꽂는다 — 뒷다리 · 몸통 · 꼬리 · 앞발 · 목머리.
+ * 단계 수를 로봇과 맞춰야 합체 컷신의 시계(assembleAt)를 둘이 같이 쓸 수 있다.
+ *
+ * 2회차 변신은 「알에서 깨어난다」가 아니라 **「조립된다」**여야 한다 —
+ * 1회차에서 부품을 불러 모아 로봇을 만든 그 공장에서 나온 물건이라야
+ * 두 회차가 한 이야기로 읽힌다.
+ */
+export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_POSE, grow = 1) {
   const opt = { hurt };
   const hot = { hurt, face: color, lit: '#ffffff' };
   const px = (v) => v * r;
+  /** 조립 다섯 단계 중 i 번째가 얼마나 꽂혔나 (로봇과 같은 계산) */
+  const P = (i) => clamp01((grow - i * 0.2) / 0.2);
+  const done = grow >= 1;
   const swing = pose.swing ?? 0;
   const paw = pose.paw ?? 0;
   const jaw = pose.jaw ?? 0;
@@ -615,8 +629,9 @@ export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_P
    * 이 놈도 **떠 있는 기계**다 (homeY 40, 바닥에서 84px 위). 로봇과 똑같이
    * 높이를 몰라서 공중에 있든 땅을 딛든 같은 그림이었다.
    */
-  const rise = pose.lift ?? 0;
-  const lean = pose.lean ?? 0;
+  // 조립 중에는 뜨지도 기울지도 않는다 — 부품이 제자리에 잠긴 걸로 보여야 한다
+  const rise = done ? (pose.lift ?? 0) : 0;
+  const lean = done ? (pose.lean ?? 0) : 0;
   // 숨쉬기. 뜰수록 크게 출렁인다 — 로봇 hover 와 같은 규칙이다.
   // 꼬리를 휘두르거나 발을 꽂는 동안에는 숨보다 그 동작이 커서 묻는다.
   const breathe =
@@ -630,6 +645,8 @@ export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_P
   // ── 꼬리 — 마디를 이어 붙인 사슬. swing 으로 감기고 휘둘린다.
   // 마디마다 조금씩 더 꺾어 호를 만든다. 뒤 마디는 덜, 끝은 더 — 통째로 같은
   // 각도로 돌리면 휘두르는 게 아니라 막대기가 회전하는 것으로 보인다.
+  // 조립할 때는 **뒤에서** 날아와 꽂힌다 (2단계)
+  slam(ctx, P(2), -110, 0, () => {
   ctx.save();
   ctx.translate(-px(0.55), -px(0.02));
   for (let i = 0; i < 5; i++) {
@@ -645,10 +662,12 @@ export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_P
   ctx.rotate(-swing * 0.3);
   plate(ctx, -px(0.34), -px(0.05), px(0.34), px(0.1), hot);
   ctx.restore();
+  });
 
   // ── 뒷다리 (몸통 뒤) — 굵은 허벅지 + 꺾인 정강이.
   // 좌우가 반대 위상으로 굽어 걷는 것처럼 보인다. 발을 꽂는 동안에는 둘 다
   // 버틴다 (한쪽 발만 들고 내리찍으면 넘어질 자세다).
+  slam(ctx, P(0), 0, 90, () => {
   for (const side of [-1, 1]) {
     const x = side * px(0.26);
     // 걸을 때 발이 오르내리는 몫. **pose.lift(뜬 높이)와 다른 것이다** —
@@ -665,8 +684,10 @@ export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_P
       plate(ctx, x + px(0.16) + i * px(0.06), px(0.9) - footLift + dangle, px(0.05), px(0.08), hot);
     }
   }
+  });
 
-  // ── 몸통 — 가로로 긴 통. 등에 앨범이 줄줄이 박혀 있다
+  // ── 몸통 — 가로로 긴 통. 등에 앨범이 줄줄이 박혀 있다. 위에서 내려와 꽂힌다 (1단계)
+  slam(ctx, P(1), 0, -90, () => {
   wedge(
     ctx,
     [
@@ -686,8 +707,10 @@ export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_P
     const h = px(0.18 + Math.sin(i * 0.9) * 0.08);
     wedge(ctx, [[bx, -px(0.1)], [bx + px(0.1), -px(0.1) - h], [bx + px(0.2), -px(0.1)]], hot);
   }
+  });
 
   // ── 앞발 — 짧고 접혀 있다. paw 가 +면 치켜들고(예고), −면 내리꽂는다.
+  slam(ctx, P(3), 70, 0, () => {
   for (const side of [-1, 1]) {
     const x = px(0.42) + side * px(0.06);
     ctx.save();
@@ -703,8 +726,10 @@ export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_P
     plate(ctx, -px(0.08), px(0.28 + reach * 0.2), px(0.16), px(0.13 + reach * 0.06), hot);
     ctx.restore();
   }
+  });
 
-  // ── 목 — 앞(오른쪽) 위로 뻗는다. 울 때 젖혀진다.
+  // ── 목과 머리 — **마지막 철컥**. 위에서 얹힌다 (4단계)
+  slam(ctx, P(4), 40, -90, () => {
   ctx.save();
   ctx.translate(px(0.5), -px(0.24));
   ctx.rotate(-jaw * 0.12);
@@ -729,6 +754,7 @@ export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_P
   for (let i = 0; i < 4; i++) plate(ctx, px(0.04) + i * px(0.09), -px(0.06), px(0.05), px(0.06), hot);
   ctx.restore();
   ctx.restore();
+  });
 
   ctx.restore();
 
@@ -736,7 +762,7 @@ export function drawDinoBody(ctx, r, time, color, hurt = false, pose = NEUTRAL_P
   // 로봇과 **같은 함수**를 쓴다. 불길 생김새를 몸마다 따로 적으면 1회차 로봇과
   // 2회차 공룡이 다른 세계의 물건으로 보인다.
   // 기울기(lean) 밖에서 그린다 — 몸이 기울어도 불길은 아래로 떨어진다.
-  if (rise > 0.02) {
+  if (done && rise > 0.02) {
     drawThrust(ctx, r, time, color, {
       lift: rise,
       hover: breathe,

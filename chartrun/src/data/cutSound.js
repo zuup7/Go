@@ -109,11 +109,13 @@ export const CUT_SOUND = {
   hard3: {
     shake: { sfx: 'rumble' },
     graves: { sfx: 'blip' },
-    swarm: { sfx: 'scatter' },
-    shell: { sfx: 'crack' },
-    // **일부러 조용하다.** 금이 간 채로 멈춘 한 박자다 — 여기가 비어야 hatch 가 터진다
+    swarm: { sfx: 'gather' }, // 부품이 대형을 이뤄 모인다 (보통 모드의 call 과 같은 소리)
+    split: { sfx: 'split' }, // 싸우던 원반이 갈라진다
+    // **일부러 조용하다.** 부품이 멈춰 선 한 박자다 — 여기가 비어야 조립이 터진다
     still: {},
-    hatch: { sfx: 'split' },
+    assemble: { sfx: 'thud' }, // 부위가 하나씩 꽂힌다
+    lock: { sfx: 'thud' }, // 마지막 철컥 — 머리가 얹힌다
+    core: { sfx: 'roar' }, // 코어 점화
     roar: { sfx: 'roar', bgm: 'boss' },
     title: { sfx: 'title' },
     end: {},

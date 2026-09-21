@@ -233,79 +233,130 @@ const P4_HOT = '#ff3b3b';
  * 이야기가 여기서 드러난다: 1회차에서 밟아 없앤 앨범들이 바닥에서 떠올라
  * 보스에게 달라붙고, 그 무게로 껍질이 갈라진다. 대사는 없다 — 그림이 말한다.
  */
+/**
+ * 하드 3페이즈 — **공룡로봇 합체**.
+ *
+ * 1회차에서 밟아 없앤 앨범들이 돌아와, 싸우던 원반이 갈라진 부품과 함께
+ * **새 몸으로 조립된다.** 보통 모드의 3페이즈가 부품을 모아 로봇을 만드는 것과
+ * 같은 공장이다 — 나오는 물건만 짐승이다.
+ *
+ * 예전에는 껍질에 금이 가고 안에서 찢고 나오는 그림이었는데, 그건 알에서 깨는
+ * 이야기라 조립해서 만든 로봇과 세계가 어긋났다. 삐죽삐죽한 폭발(drawBlasts)도
+ * 여기서는 뺐다 — 기계가 맞물려 잠기는 데 별이 터질 이유가 없다.
+ */
 function drawHard3Cut(ctx, t, phase, time) {
   const r = 52;
+  const cy = CUT_CY;
+  const EVO = (c, rr, tt) => drawEvolvedDisc(c, rr, tt, '#7c5cff', false, 1, tt * 0.5);
 
-  // 밟혀 사라졌던 앨범들이 바닥에서 떠오른다
-  if (phase === 'graves' || phase === 'swarm') {
+  /**
+   * 부품이 **각자의 칸**에서 정면으로 달려온다.
+   *
+   * 1회차 로봇 합체(drawCombine 의 call)가 쓰는 바로 그 화면이다. 흩어진 걸
+   * 한 화면에 떠다니게 두면 그냥 날아다니는 것으로 보이는데, 칸을 나눠 각자
+   * 달려오게 하면 「모인다」가 된다 — **이 게임에서 「합체」를 말하는 그림**이라
+   * 2회차도 같은 걸 써야 같은 공장에서 나온 물건으로 읽힌다.
+   */
+  if (phase === 'swarm') {
+    drawFormation(ctx, clamp01((t - HARD3_AT.swarm) / (HARD3_AT.split - HARD3_AT.swarm)), time);
+    return;
+  }
+
+  // 밟혀 사라졌던 앨범들이 바닥에서 떠오른다 — 저것들이 곧 부품이 된다
+  if (phase === 'graves') {
     const rise = clamp01((t - HARD3_AT.graves) / 1.2);
-    const pull = clamp01((t - HARD3_AT.swarm) / 1.2);
     for (let i = 0; i < 12; i++) {
       const a = (i / 12) * Math.PI * 2;
-      const floorY = CUT_CY + 62;
-      const gx = CUT_CX + Math.cos(a) * 84;
-      // 떠오른 뒤 보스 쪽으로 빨려 들어간다
-      const x = gx + (CUT_CX - gx) * pull;
-      const y = floorY - rise * 40 + (CUT_CY - (floorY - 40)) * pull;
+      const floorY = cy + 62;
+      const x = CUT_CX + Math.cos(a) * 84;
       ctx.save();
-      ctx.globalAlpha = rise * (1 - pull * 0.3);
-      drawCoverAt(ctx, ALBUMS[i % ALBUMS.length], x - 6, y - 6, 12);
+      ctx.globalAlpha = rise;
+      drawCoverAt(ctx, ALBUMS[i % ALBUMS.length], x - 6, floorY - rise * 40 - 6, 12);
       ctx.restore();
     }
   }
-
-  const hatched = phase === 'hatch' || phase === 'roar' || phase === 'title';
 
   // 포효할 때 뒤로 뻗는 속도선. **몸보다 먼저** 그려야 뒤에 깔린다
   if (phase === 'roar' || phase === 'title') {
     const k = clamp01((t - HARD3_AT.roar) / 0.5);
-    drawRays(ctx, CUT_CX, CUT_CY, time * 0.7, '#ff3b3b', 0.22 * k);
+    drawRays(ctx, CUT_CX, cy, time * 0.7, '#ff3b3b', 0.22 * k);
+  } else if (phase === 'assemble' || phase === 'lock' || phase === 'core') {
+    // 조립하는 동안에도 뒤에 깔린다 — 로봇 합체와 같은 배경이라야 같은 공장으로 보인다
+    drawRays(ctx, CUT_CX, cy, time * 0.9, '#7c5cff', 0.2);
   }
 
+  // ── 싸우던 원반이 갈라져 부품이 된다 ──
+  // 여기서 이미 공룡을 그리면 「있지도 않던 놈이 갈라진다」가 된다.
+  if (phase === 'shake' || phase === 'graves') {
+    const shakeAmt = phase === 'shake' ? 3 : 1.5;
+    ctx.save();
+    ctx.translate(CUT_CX + Math.sin(time * 63) * shakeAmt, cy);
+    drawEvolvedDisc(ctx, r, time, '#7c5cff', false, 1, time * 0.5);
+    ctx.restore();
+    return;
+  }
+
+  if (phase === 'split' || phase === 'still') {
+    // 정적에서는 **딱 멈춘다.** 시간을 얼려 부품이 공중에 선 그림을 만든다.
+    const frozen = phase === 'still' ? HARD3_AT.still : time;
+    const p = phase === 'still' ? 1 : clamp01((t - HARD3_AT.split) / (HARD3_AT.still - HARD3_AT.split));
+    drawDiscSplit(ctx, CUT_CX, cy, r, p, frozen, EVO);
+    // 갈라진 틈에서 붉은 열이 샌다 — 안에 들어갈 것이 벌써 달아 있다
+    ctx.save();
+    ctx.globalAlpha = p * (phase === 'still' ? 0.5 + Math.sin(time * 9) * 0.2 : 0.35);
+    ctx.fillStyle = '#ff3b3b';
+    ctx.beginPath();
+    ctx.arc(CUT_CX, cy, r * 0.45 * p, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  // ── 조립 ──
+  const building = phase === 'assemble' || phase === 'lock';
+  const { grow, flash, jolt } = building ? assembleAt(t, HARD3_AT) : { grow: 1, flash: 0, jolt: 0 };
+
   ctx.save();
-  // 정적(still)에서는 딱 멈춘다 — 흔들림이 멎는 게 곧 「숨을 참는」 그림이다.
-  // 껍질이 갈라지는 동안 점점 더 크게 떤다.
-  const shakeAmt =
-    phase === 'shake' ? 3 : phase === 'shell' ? 2 + clamp01((t - HARD3_AT.shell) / 1.2) * 3 : 0;
-  ctx.translate(CUT_CX + Math.sin(time * 63) * shakeAmt, CUT_CY);
+  ctx.translate(Math.round(CUT_CX + jolt), cy);
+  // 조립이 끝나고 코어에 불이 들어오면서 보라 → 붉은색으로 달아오른다
+  const heat = clamp01((t - HARD3_AT.core) / 0.8);
+  drawDinoBody(ctx, r, time, mixHex('#7c5cff', '#ff3b3b', heat), false, hard3Pose(t, phase, time), grow);
+  ctx.restore();
 
-  if (!hatched) {
-    // 아직 **진화한 원반**이다 — 이 컷신 직전까지 2페이즈로 싸우던 그 몸.
-    // 여기서 로봇을 그리면 있지도 않았던 놈이 찢어지는 게 된다.
-    // 정적 동안에는 회전도 멈춘다
-    const spin = phase === 'still' ? HARD3_AT.still * 0.5 : time * 0.5;
-    drawEvolvedDisc(ctx, r, time, '#7c5cff', false, 1, spin);
-
-    // 껍질에 금 — 한 점에서 나가는 직선이 아니라 **들쭉날쭉하게** 번진다
-    if (phase === 'shell' || phase === 'still') {
-      const crack = clamp01((t - HARD3_AT.shell) / 1.2);
+  if (phase === 'core' || phase === 'roar' || phase === 'title') {
+    // 코어 점화 — 에너지 링이 밖으로 퍼진다 (로봇 합체와 같은 그림)
+    const lit = ease((t - HARD3_AT.core) / 0.6);
+    for (const ring of [0, 0.35]) {
+      const q = clamp01((t - HARD3_AT.core) / 0.9 - ring);
+      if (q <= 0 || q >= 1) continue;
       ctx.save();
-      ctx.globalAlpha = crack;
-      drawCracks(ctx, 0, 0, r * 0.95, crack);
-      ctx.restore();
-      // 갈라진 틈으로 안에서 붉은 빛이 샌다
-      ctx.save();
-      ctx.globalAlpha = crack * (phase === 'still' ? 0.55 + Math.sin(time * 9) * 0.25 : 0.4);
-      ctx.fillStyle = '#ff3b3b';
+      ctx.globalAlpha = 1 - q;
+      ctx.strokeStyle = '#39ff9a';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(0, 0, r * 0.5 * crack, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.arc(CUT_CX, cy, 12 + q * 80, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    drawBossCore(ctx, CUT_CX, cy, true, time);
+    if (phase === 'core') {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - lit) * 0.8;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, VIEW.w, VIEW.h);
       ctx.restore();
     }
   } else {
-    // 껍질을 찢고 나온다. 조금 **넘겨서** 커졌다가 제자리로 — 튀어나오는 맛이 난다
-    const out = clamp01((t - HARD3_AT.hatch) / 1.0);
-    const pop = 0.6 + ease(out) * 0.46 - Math.max(0, out - 0.7) * 0.2;
-    ctx.scale(pop, pop);
-    drawDinoBody(ctx, r, time, hatched && phase !== 'hatch' ? '#ff3b3b' : mixHex('#7c5cff', '#ff3b3b', out), false, hard3Pose(t, phase, time));
-  }
-  ctx.restore();
-
-  // 찢고 나오는 순간 껍질 조각이 사방으로 튄다
-  if (phase === 'hatch') {
-    const since = t - HARD3_AT.hatch;
-    drawBlasts(ctx, since, CUT_CY);
-    drawSparks(ctx, CUT_CX, CUT_CY, r * 0.9, since, '#ffd166');
+    if (grow >= 0.4) drawBossCore(ctx, CUT_CX + jolt, cy, false, time);
+    // 부위가 꽂힐 때마다 화면이 한 번 하얘진다. **이게 「철컥」이다** —
+    // 별이 터지는 그림이 아니라 쇳덩이가 맞물리는 빛이어야 한다.
+    if (flash > 0) {
+      ctx.save();
+      ctx.globalAlpha = flash * 0.55;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+      ctx.restore();
+    }
   }
 
   // 포효 — 화면이 붉게 번쩍인다
@@ -317,22 +368,21 @@ function drawHard3Cut(ctx, t, phase, time) {
     ctx.restore();
   }
 
-  // **드디어 제목을 띄운다.** 이 컷신만 drawCutTitle 을 안 불러서, 마지막 1.4초가
-  // 정지한 공룡만 떠 있는 빈 화면이었다 (BOSS_CUTS.hard3.title 은 적혀만 있었다).
   if (phase === 'title') drawCutTitle(ctx, BOSS_CUTS.hard3.title, t - HARD3_AT.title, 4, 14);
 }
 
 /**
- * 변신하는 공룡의 자세.
+ * 합체하는 공룡의 자세.
  *
- * 예전에는 포즈를 아예 안 넘겨서 `NEUTRAL_POSE` 로 그려졌다 — **포효 장면에서
- * 입을 안 벌렸다.** 턱·꼬리·앞발이 다 붙은 리그인데 하나도 안 쓰고 있었다.
+ * 조립하는 동안에는 **가만히 있어야 한다** — 부품이 꽂히는 중에 꼬리가 휘둘리면
+ * 조립이 아니라 몸부림으로 보인다. 다 붙고 나서야 움직인다.
  */
 function hard3Pose(t, phase, time) {
-  if (phase === 'hatch') {
-    // 껍질을 밀어내는 중 — 앞발을 뻗고 꼬리를 크게 휘두른다
-    const out = clamp01((t - HARD3_AT.hatch) / 1.0);
-    return { ...NEUTRAL_POSE, paw: ease(out), swing: Math.sin(out * 6) * 0.9, jaw: out * 0.4 };
+  if (phase === 'assemble' || phase === 'lock') return NEUTRAL_POSE;
+  if (phase === 'core') {
+    // 불이 들어오자마자 몸이 한 번 깨어난다 — 꼬리가 들리고 턱이 살짝 벌어진다
+    const wake = clamp01((t - HARD3_AT.core) / 0.6);
+    return { ...NEUTRAL_POSE, swing: Math.sin(wake * 4) * 0.35 * wake, jaw: wake * 0.3 };
   }
   // 포효 — 입을 크게 벌리고 고개를 든다. 여운으로 잘게 떤다
   const since = t - HARD3_AT.roar;
@@ -607,7 +657,7 @@ function drawFormation(ctx, p, time) {
 }
 
 /** 원반이 반으로 쩍 갈라진다 — 이 두 쪽이 어깨 견갑이 된다 */
-function drawDiscSplit(ctx, cx, cy, r, p, time) {
+function drawDiscSplit(ctx, cx, cy, r, p, time, drawDisc = (c, rr, tt) => drawBossDisc(c, 0, 0, rr, tt * 0.6)) {
   const gap = ease(p) * r * 0.55;
   for (const side of [-1, 1]) {
     ctx.save();
@@ -618,7 +668,7 @@ function drawDiscSplit(ctx, cx, cy, r, p, time) {
     else ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2);
     ctx.closePath();
     ctx.clip();
-    drawBossDisc(ctx, 0, 0, r, time * 0.6);
+    drawDisc(ctx, r, time);
     ctx.restore();
   }
 }
@@ -628,24 +678,27 @@ function drawDiscSplit(ctx, cx, cy, r, p, time) {
  *
  * 매끄럽게 자라면 합체로 안 보인다. 칸의 앞 4분의 1 동안만 날아와 꽂히고
  * 나머지는 정지 — 그 정지가 "철컥"으로 읽힌다.
- * 시각은 PHASE3_AT 에서만 온다.
+ *
+ * **로봇(1회차)과 공룡(2회차)이 같이 쓴다.** 둘 다 다섯 단계로 조립되는데
+ * 단계 나누는 계산을 두 군데 적으면 한쪽만 고치는 날 박자가 어긋난다.
+ * 시각표(AT)만 다르게 받는다.
  */
-function assembleAt(t) {
+function assembleAt(t, AT = PHASE3_AT) {
   const STEP_IN = 0.25;
   let i;
   let frac;
   let stepDur;
-  if (t < PHASE3_AT.lock) {
-    // assemble 구간을 넷으로 — 다리 · 몸통 · 견갑 · 팔
-    stepDur = (PHASE3_AT.lock - PHASE3_AT.assemble) / 4;
-    const s = (t - PHASE3_AT.assemble) / stepDur;
+  if (t < AT.lock) {
+    // assemble 구간을 넷으로 — 로봇은 다리·몸통·견갑·팔, 공룡은 뒷다리·몸통·꼬리·앞발
+    stepDur = (AT.lock - AT.assemble) / 4;
+    const s = (t - AT.assemble) / stepDur;
     i = Math.min(3, Math.max(0, Math.floor(s)));
     frac = clamp01(s - i);
   } else {
-    // lock — 머리와 크레스트, 마지막 하나
-    stepDur = PHASE3_AT.core - PHASE3_AT.lock;
+    // lock — 마지막 하나 (로봇은 머리와 크레스트, 공룡은 목과 머리)
+    stepDur = AT.core - AT.lock;
     i = 4;
-    frac = clamp01((t - PHASE3_AT.lock) / stepDur);
+    frac = clamp01((t - AT.lock) / stepDur);
   }
   const q = Math.min(1, frac / STEP_IN);
   const since = Math.max(0, frac - STEP_IN) * stepDur;

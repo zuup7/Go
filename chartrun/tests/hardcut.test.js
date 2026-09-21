@@ -128,3 +128,47 @@ test('늘어난 컷신도 반드시 저절로 풀린다', () => {
     }
   }
 });
+
+// ── 변신은 **합체**다 ───────────────────────────────────────
+//
+// 예전에는 껍질에 금이 가고(shell) 안에서 찢고 나오는(hatch) 이야기였다.
+// 그건 알에서 깨는 그림이라, 1회차에서 부품을 불러 모아 조립한 로봇과
+// 세계가 어긋났다. 이제 같은 공장에서 나온 물건으로 만든다.
+
+test('하드 변신은 로봇 합체와 **같은 비트**로 조립된다', () => {
+  const kinds = BOSS_CUTS.hard3.timeline.map((s) => s.kind);
+  for (const beat of ['assemble', 'lock', 'core']) {
+    assert.ok(kinds.includes(beat), `합체에 ${beat} 이 없다`);
+    assert.ok(
+      BOSS_CUTS.phase3.timeline.some((s) => s.kind === beat),
+      `${beat} 이 1회차 로봇 합체에는 없는 이름이다 — 둘이 같은 말을 써야 한다`,
+    );
+  }
+});
+
+test('알에서 깨는 비트는 없어졌다', () => {
+  const kinds = BOSS_CUTS.hard3.timeline.map((s) => s.kind);
+  for (const gone of ['shell', 'hatch']) {
+    assert.ok(!kinds.includes(gone), `${gone} 이 남아 있다 — 조립 이야기와 안 맞는다`);
+  }
+});
+
+test('**조립 구간의 길이가 양수여야 한다** — 0 이면 보스가 사라진다', () => {
+  // 그리는 쪽(assembleAt)이 (lock - assemble) / 4 와 (core - lock) 으로 나눈다.
+  // 순서를 뒤집거나 붙여 놓으면 0 으로 나눠서 grow 가 NaN 이 되고,
+  // 몸이 한 조각도 안 그려진다. 타임라인만 고쳤을 때 여기서 잡힌다.
+  for (const id of ['phase3', 'hard3']) {
+    const at = Object.fromEntries(BOSS_CUTS[id].timeline.map((s) => [s.kind, s.at]));
+    assert.ok(at.lock > at.assemble, `${id}: lock 이 assemble 보다 앞이거나 같다`);
+    assert.ok(at.core > at.lock, `${id}: core 가 lock 보다 앞이거나 같다`);
+    // 네 단계로 쪼개므로 한 단계가 최소한 눈에 보일 만큼은 돼야 한다
+    assert.ok((at.lock - at.assemble) / 4 > 0.2, `${id}: 한 부위가 꽂히는 시간이 너무 짧다`);
+  }
+});
+
+test('합체 앞에 정적이 있고, 그 뒤에 조립이 온다 (순서가 곧 연출이다)', () => {
+  const at = Object.fromEntries(BOSS_CUTS.hard3.timeline.map((s) => [s.kind, s.at]));
+  assert.ok(at.split < at.still, '갈라지기 전에 멈추면 뭐가 멈춘 건지 알 수 없다');
+  assert.ok(at.still < at.assemble, '정적이 조립 뒤로 가면 한 박자 쉬는 뜻이 없다');
+  assert.ok(at.core < at.roar, '코어에 불이 들어오기 전에 포효하면 죽은 몸이 우는 것이다');
+});
