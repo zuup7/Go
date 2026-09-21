@@ -11,6 +11,7 @@ import {
   startRun,
   stageTable,
   npcInReach,
+  npcSays,
   startIntro,
   runSummary,
   SELECT_HARD,
@@ -31,6 +32,7 @@ import { SOLID, TILE } from '../src/core/physics.js';
 import { HARD_PHASES, HARD_MAX_HP, phaseFor } from '../src/data/bossData.js';
 import { createBoss, syncPhase } from '../src/core/boss.js';
 import { HARD_OPEN_CUT, hardOpenLength, INTRO_CUT } from '../src/data/introCutscene.js';
+import { talkLength } from '../src/data/npcTalk.js';
 import { HARD_END_CUT, ENDING_CUT, endingCut, isEndingCut, BOSS_CUTS, bossCutLength } from '../src/data/bossCutscenes.js';
 
 const DT = 1 / 60;
@@ -63,19 +65,95 @@ function inStage1(save) {
   return game;
 }
 
-// ── 처음 하는 사람 판을 건드리지 않는다 ──────────────────────
-test('한 바퀴 돌기 전에는 NPC 도 포탈도 없는 셈이다', () => {
-  // 튜토리얼 판에 낯선 사람이 서 있으면 그냥 헷갈리기만 한다
+// ── 못 깬 사람에게도 말은 해준다. 다만 문은 안 열어준다 ──────
+//
+// 예전에는 깨기 전이면 이 사람이 통째로 없는 셈이었다. 그런데 판에는 그려져 있어서,
+// 아무 반응 없는 장식이 하나 서 있는 꼴이었다 — 2회차가 있는 줄도 몰랐다.
+test('한 바퀴 돌기 전에는 문이 안 열린다 — 대신 아직이라고 말해준다', () => {
   const game = inStage1({ clearedOnce: false });
   assert.ok(game.world.npcs.length > 0, '판에는 박혀 있다');
 
   const npc = game.world.npcs[0];
+  assert.equal(npcSays(game, npc), 'talkLocked', '못 깬 사람에게 할 말이 다르다');
+
   game.player.x = npc.x;
   game.player.y = npc.y;
   step(game, idle({ confirmPressed: true }), 3);
-  assert.equal(npcInReach(game), null, '깨기 전인데 말을 걸 수 있다');
-  assert.equal(game.npcTalk, null, '깨기 전인데 대화가 시작됐다');
+  assert.equal(npcInReach(game), null, '깨기 전인데 눌러서 말을 걸 수 있다');
+  assert.equal(game.npcTalk, null, '깨기 전인데 판을 멈추는 대화가 시작됐다');
+  assert.ok(game.npcHint, '지나가는데 아무 말도 안 한다');
+  assert.equal(game.npcHint.id, 'talkLocked');
   assert.equal(game.world.portals[0].open, false, '깨기 전인데 문이 열렸다');
+});
+
+// 아래 테스트들은 좌표를 직접 꽂는다. 그것만으로는 **진짜로 걸어가서 닿는지**를
+// 못 본다 — 실제로 NPC 가 바닥에서 한 칸 떠 있어서, 걸어서는 1픽셀 차이로
+// 영영 안 닿는 상태였다. 그래서 이 하나는 스폰에서 걸어간다.
+test('스폰에서 걸어가기만 해도 말을 건다', () => {
+  const game = inStage1({ clearedOnce: false });
+  const npc = game.world.npcs[0];
+  for (let i = 0; i < 300 && !npc.near; i++) step(game, idle({ right: true }), 1);
+  assert.ok(
+    npc.near,
+    `바닥으로 걸어가면 말 걸기 상자에 안 닿는다 (플레이어 y ${Math.round(game.player.y)}, NPC y ${npc.y})`,
+  );
+});
+
+test('못 깬 사람에게 하는 말은 판을 안 멈춘다', () => {
+  // 튜토리얼 판이다. 점프(= 말 거는 키)할 때마다 2초씩 멈추면 그게 함정이다
+  const game = inStage1({ clearedOnce: false });
+  const npc = game.world.npcs[0];
+  game.player.x = npc.x;
+  game.player.y = npc.y;
+  step(game, idle(), 2);
+  assert.ok(game.npcHint, '한 마디가 안 떴다');
+
+  const px = game.player.x;
+  step(game, idle({ right: true }), 12);
+  assert.ok(game.player.x > px, '말풍선이 떠 있다고 판이 멈췄다');
+});
+
+test('지나갈 때마다 한 번씩 — 서 있는 동안 계속 말하지는 않는다', () => {
+  const game = inStage1({ clearedOnce: false });
+  const npc = game.world.npcs[0];
+  game.player.x = npc.x;
+  game.player.y = npc.y;
+  step(game, idle(), 2);
+  assert.ok(game.npcHint, '처음 다가갔는데 말이 없다');
+
+  // 옆에 계속 서 있는다 — 한 마디가 끝나도 도로 뜨면 안 된다
+  step(game, idle(), 60 * 4);
+  assert.equal(game.npcHint, null, '옆에 서 있다고 같은 말을 또 한다');
+
+  // 멀어졌다가 다시 오면 또 말해준다
+  game.player.x = npc.x + 200;
+  step(game, idle(), 2);
+  game.player.x = npc.x;
+  step(game, idle(), 2);
+  assert.ok(game.npcHint, '갔다 왔는데 말을 안 건다');
+});
+
+test('문을 열어준 뒤에도 지나가면 문을 가리킨다', () => {
+  const game = inStage1({ clearedOnce: true });
+  const npc = game.world.npcs[0];
+  game.player.x = npc.x;
+  game.player.y = npc.y;
+
+  // 한 번 말을 걸어 문을 연다
+  step(game, idle({ confirmPressed: true }), 1);
+  step(game, idle(), 60 * 5);
+  assert.ok(npc.opened, '문이 안 열렸다');
+  assert.equal(npcSays(game, npc), 'talkAgain', '이미 아는 사람에게 할 말이 그대로다');
+
+  // 멀어졌다 다시 오면 — 같은 4초짜리가 아니라 짧게 문만 가리킨다
+  game.player.x = npc.x + 200;
+  step(game, idle(), 2);
+  game.player.x = npc.x;
+  step(game, idle(), 2);
+  assert.ok(game.npcHint, '열어준 뒤로는 아무 말도 안 한다');
+  assert.equal(game.npcHint.id, 'talkAgain');
+  assert.equal(game.npcTalk, null, '아는 이야기를 다시 틀면서 판까지 멈췄다');
+  assert.ok(game.npcHint.length < talkLength('talk'), '아는 이야기인데 처음과 똑같이 길다');
 });
 
 test('깬 사람에게는 말을 걸 수 있고, 말을 걸어야 문이 열린다', () => {

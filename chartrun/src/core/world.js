@@ -149,7 +149,11 @@ export function createWorld(stage) {
           break;
         case T.NPC:
           // 체크포인트와 같은 모양 — 안 막고, 가까이 가면 반응하는 표시일 뿐이다
-          world.npcs.push({ tx, ty, x: x + 2, y: y + 2, talked: false });
+          //   opened  문을 열어줬는가 (한 번 열면 끝. 포탈이 이걸 본다)
+          //   near    지금 플레이어가 옆에 있는가 (그리는 쪽이 이걸 보고 돌아본다)
+          //   said    이번에 다가온 동안 이미 한 마디 했는가 —
+          //           **멀어져야 풀린다.** 이게 없으면 서 있기만 해도 계속 말한다
+          world.npcs.push({ tx, ty, x: x + 2, y: y + 2, opened: false, near: false, said: false });
           grid[ty][tx] = T.EMPTY;
           break;
         case T.PORTAL:
@@ -243,7 +247,12 @@ export function createWorld(stage) {
     }
     for (const f of world.fakeChecks) f.taken = false;
     // 깜빡이는 발판은 되돌릴 것이 없다 — 저 혼자 계속 깜빡인다
-    // NPC 는 되돌리지 않는다 — 한 번 말을 걸었으면 죽어도 다시 말 걸 필요가 없다
+    // NPC 가 열어준 문은 되돌리지 않는다 — 죽었다고 다시 열어달라고 할 일은 없다.
+    // 다만 said 는 푼다: 체크포인트에서 다시 시작하면 그 사람 옆을 다시 지나게 된다
+    for (const n of world.npcs) {
+      n.said = false;
+      n.near = false;
+    }
   };
 
   /** 픽셀 좌표가 어떤 글자 위에 있는지 */

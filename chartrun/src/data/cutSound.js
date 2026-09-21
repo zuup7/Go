@@ -173,6 +173,22 @@ export const CUT_SOUND = {
     portal: { sfx: 'swirl' }, // 문이 열린다 — 실제로 문을 지날 때와 같은 소리다
     end: {},
   },
+
+  /**
+   * 아직 못 깬 사람이 지나갈 때. 판이 안 멈추고 저 혼자 뜨는 것이라
+   * **작은 소리만** 낸다 — 달리는 중에 큰 소리가 나면 함정인 줄 안다.
+   */
+  talkLocked: {
+    empty: { sfx: 'blip' },
+    shut: { sfx: 'thud' }, // 빗장이 걸려 있다
+    end: {},
+  },
+
+  /** 이미 열어준 뒤. 문을 가리키는 그림이 같으니 소리도 같다 */
+  talkAgain: {
+    portal: { sfx: 'swirl' },
+    end: {},
+  },
 };
 
 /** 이 단계에서 낼 소리 (없으면 undefined) */

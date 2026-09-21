@@ -13,7 +13,7 @@ import { cameraOffset } from '../core/camera.js';
 import { drawAlbum, drawCoverAt } from './albumArt.js';
 import { drawSprite, crisp, makeCanvas } from './pixel.js';
 import { npcInReach, markKey, CEIL_BLADE, SLAB_HANG } from '../core/game.js';
-import { NPC_TALK } from '../data/npcTalk.js';
+import { talkTimeline } from '../data/npcTalk.js';
 import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
 import { ALBUMS } from '../data/albums.js';
@@ -889,11 +889,23 @@ function drawCaught(ctx, game, ox, oy, time) {
   ctx.restore();
 }
 
-/** 2회차의 NPC. 한 바퀴를 돈 사람에게만 보인다 */
+/**
+ * 2회차 문 옆에 선 사람. **한 바퀴 돌기 전에도 서 있다.**
+ *
+ * 예전에는 깨기 전이면 아무 반응이 없어서 판에 박힌 장식처럼 보였다. 이제
+ * 가까이 가면 **돌아보고 지팡이를 든다** — 말을 건다는 걸 몸으로 먼저 알린다.
+ * 무슨 말을 하는지는 core 가 정한다 (npcSays); 여기서는 그 말을 그리기만 한다.
+ */
 function drawNpc(ctx, game, ox, oy, time) {
   for (const npc of game.world.npcs) {
     const x = Math.round(npc.x - ox);
     const y = Math.round(npc.y - oy);
+    // 플레이어 쪽을 본다. 멀리 있으면 원래대로 오른쪽
+    const faceLeft = npc.near && game.player.x + game.player.w / 2 < npc.x + 5;
+    // 가까이 오면 지팡이를 든다 (한 번 들고 유지 — 계속 흔들면 산만하다)
+    const raise = npc.near ? 3 : 0;
+    const sway = npc.near ? Math.sin(time * 3) * 0.5 : 0;
+
     ctx.save();
     // 몸 — 두건을 쓴 작은 사람
     ctx.fillStyle = '#241a33';
@@ -902,16 +914,19 @@ function drawNpc(ctx, game, ox, oy, time) {
     ctx.fillRect(x + 1, y - 1, 8, 6);
     ctx.fillStyle = '#ffd9b3';
     ctx.fillRect(x + 2, y + 5, 6, 3);
+    // 눈은 보는 쪽으로 몰린다 — 한 픽셀이지만 돌아본 게 읽힌다
     ctx.fillStyle = '#241a33';
-    ctx.fillRect(x + 3, y + 6, 1, 1);
-    ctx.fillRect(x + 6, y + 6, 1, 1);
-    // 지팡이
+    const eye = faceLeft ? -1 : 0;
+    ctx.fillRect(x + 3 + eye, y + 6, 1, 1);
+    ctx.fillRect(x + 6 + eye, y + 6, 1, 1);
+    // 지팡이 — 보는 쪽 손에 든다
+    const sx = faceLeft ? x - 1 : x + 10;
     ctx.fillStyle = '#8a7fb8';
-    ctx.fillRect(x + 10, y - 4, 1, 18);
+    ctx.fillRect(sx, Math.round(y - 4 - raise + sway), 1, 18);
     ctx.fillStyle = '#ffd166';
-    ctx.fillRect(x + 9, y - 6, 3, 3);
-    // 말을 걸 수 있으면 머리 위에 꼭지가 뜬다 (대사는 없다 — 누를 수 있다는 신호뿐)
-    if (!npc.talked && npcInReach(game)) {
+    ctx.fillRect(sx - 1, Math.round(y - 6 - raise + sway), 3, 3);
+    // 누를 수 있으면 머리 위에 꼭지가 뜬다 (대사는 없다 — 누를 수 있다는 신호뿐)
+    if (npcInReach(game) === npc) {
       const bob = Math.sin(time * 5) * 1.5;
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(x + 3, Math.round(y - 12 + bob), 4, 4);
@@ -930,11 +945,13 @@ function drawNpc(ctx, game, ox, oy, time) {
  * → 문(저기로 가라).
  */
 function drawNpcTalk(ctx, game, ox, oy, time) {
-  const talk = game.npcTalk;
+  // 멈추는 이야기(npcTalk)와 지나가며 뜨는 한 마디(npcHint)는 **같은 말풍선**이다.
+  // 둘이 다른 건 판이 멈추느냐뿐이라, 그리는 건 한 군데서 한다.
+  const talk = game.npcTalk ?? game.npcHint;
   if (!talk) return;
   const npc = game.world.npcs[0];
   if (!npc) return;
-  const kind = beatKind(NPC_TALK, talk.t);
+  const kind = beatKind(talkTimeline(talk.id), talk.t);
   if (!kind || kind === 'end') return;
 
   const bx = Math.round(npc.x - ox - 14);
@@ -981,6 +998,42 @@ function drawNpcTalk(ctx, game, ox, oy, time) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(cx + 13, cy - 10, 3, 1);
     ctx.fillRect(cx + 14, cy - 11, 1, 3);
+  } else if (kind === 'empty') {
+    // 빈 받침 — 여기 올릴 게 아직 없다. 컵 자리는 점선으로만 그린다
+    ctx.fillStyle = '#5a4a72';
+    ctx.fillRect(cx - 2, cy - 1, 4, 5);
+    ctx.fillRect(cx - 7, cy + 4, 14, 3);
+    ctx.fillStyle = '#8a7fb8';
+    for (let i = 0; i < 12; i += 2) ctx.fillRect(cx - 6 + i, cy - 9, 1, 1);
+    for (let i = 0; i < 8; i += 2) {
+      ctx.fillRect(cx - 6, cy - 9 + i, 1, 1);
+      ctx.fillRect(cx + 5, cy - 9 + i, 1, 1);
+    }
+    // **안은 채우지 않는다.** 흐린 금색이라도 채워두면 「빛바랜 트로피가 있다」로
+    // 읽혀서 뜻이 뒤집힌다. 대신 테두리가 느리게 맥박쳐 자리만 가리킨다
+    ctx.globalAlpha = 0.35 + Math.sin(time * 3) * 0.25;
+    ctx.fillStyle = '#ffd166';
+    for (let i = 0; i < 12; i += 2) ctx.fillRect(cx - 6 + i, cy - 9, 1, 1);
+    ctx.globalAlpha = 1;
+  } else if (kind === 'shut') {
+    // 빗장 걸린 문 — 아직 아니다
+    ctx.fillStyle = '#140828';
+    ctx.fillRect(cx - 6, cy - 10, 12, 20);
+    ctx.strokeStyle = '#3a2a55';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx - 5.5, cy - 9.5, 11, 19);
+    // 가로 빗장 둘
+    ctx.fillStyle = '#8a7fb8';
+    ctx.fillRect(cx - 9, cy - 5, 18, 3);
+    ctx.fillRect(cx - 9, cy + 3, 18, 3);
+    // 자물쇠. 열려고 흔들다 마는 것처럼 한 픽셀 떤다
+    const jig = Math.round(Math.sin(time * 18) * (Math.sin(time * 1.2) > 0.6 ? 1 : 0));
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(cx - 3 + jig, cy - 1, 6, 5);
+    ctx.fillStyle = '#8a7fb8';
+    ctx.fillRect(cx - 2 + jig, cy - 4, 1, 3);
+    ctx.fillRect(cx + 1 + jig, cy - 4, 1, 3);
+    ctx.fillRect(cx - 2 + jig, cy - 5, 4, 1);
   } else if (kind === 'portal') {
     // 문 — 저기로 가라
     ctx.fillStyle = '#140828';

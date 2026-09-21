@@ -32,7 +32,7 @@ import {
   isEndingCut,
 } from '../data/bossCutscenes.js';
 import { introTimeline, introCutLength } from '../data/introCutscene.js';
-import { NPC_TALK, npcTalkLength } from '../data/npcTalk.js';
+import { talkTimeline, talkLength, HINT_TALKS } from '../data/npcTalk.js';
 import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
@@ -90,8 +90,13 @@ export function createGame(options = {}) {
     effects: emptyEffects(),
     /** 보스전 중간에 끼어드는 컷신 { id, t, length }. 있는 동안 싸움이 멈춘다 */
     bossCut: null,
-    /** NPC 와 이야기하는 중 { t, length }. 있는 동안 판이 멈춘다 (bossCut 과 같은 모양) */
+    /** NPC 와 이야기하는 중 { id, t, length }. 있는 동안 판이 멈춘다 (bossCut 과 같은 모양) */
     npcTalk: null,
+    /**
+     * 지나갈 때 저 혼자 떴다 지는 한 마디 { id, t, length }.
+     * npcTalk 과 **모양은 같고 판을 안 멈춘다** — 그게 둘을 나눈 이유의 전부다.
+     */
+    npcHint: null,
     /** 뒤에서 쫓아오는 거대 로봇 { x }. 추격 판에서만 있다 */
     chaser: null,
     /** 잡혀서 컷신이 도는 중 { t, length } (npcTalk 과 같은 모양) */
@@ -315,6 +320,9 @@ export function loadStage(game, index) {
   game.player = createPlayer(game.world.spawn);
   game.checkpoint = { ...game.world.spawn };
   game.boss = null;
+  // 판이 바뀌면 말풍선도 치운다 — 안 그러면 다음 판 허공에 남는다
+  game.npcTalk = null;
+  game.npcHint = null;
   spawnEntities(game);
   game.camera = createCamera(VIEW.w, VIEW.h);
   game.camera.x = clamp(game.player.x - VIEW.w / 2, 0, Math.max(0, game.world.pixelWidth - VIEW.w));
@@ -326,6 +334,8 @@ export function loadStage(game, index) {
 }
 
 export function loadBoss(game) {
+  game.npcTalk = null;
+  game.npcHint = null;
   game.world = createWorld(BOSS_STAGE);
   game.player = createPlayer(game.world.spawn);
   game.checkpoint = { ...game.world.spawn };
@@ -1054,15 +1064,49 @@ export function openHub(game) {
   returnToHub(game);
 }
 
-/** 지금 말을 걸 수 있는 NPC (가까이 서 있고, 아직 안 걸었다). 없으면 null */
+/**
+ * 말을 걸 수 있는 거리.
+ *
+ * **바닥까지 내려와야 한다.** 예전엔 `TILE * 2` 라 상자 아래끝(178)이 바닥에 선
+ * 플레이어의 머리 높이(178)와 딱 같았고, `overlaps` 는 딱 닿는 걸 안 쳐준다 —
+ * 그래서 **걸어가서는 1픽셀 차이로 영영 안 닿았다.** 옆에서 점프해야만 말이 걸렸다.
+ */
+const npcReach = (npc) => ({ x: npc.x - 14, y: npc.y - TILE, w: TILE + 28, h: TILE * 3 });
+
+/**
+ * 이 사람이 지금 **무슨 말을 할 차례인가**.
+ *
+ * 세 갈래를 한 군데서 정한다. 그리는 쪽도 소리 쪽도 이걸 타므로, 조건을 두 군데
+ * 적어두면 말풍선과 소리가 서로 다른 말을 하는 날이 온다.
+ *   'talkLocked'  아직 한 바퀴를 못 돌았다 — 「여기는 아직 아니다」
+ *   'talk'        깨고 왔는데 아직 안 열어줬다 — 문을 열어준다
+ *   'talkAgain'   이미 열어줬다 — 「저기다」
+ */
+export function npcSays(game, npc) {
+  if (!hubOpen(game)) return 'talkLocked';
+  return npc.opened ? 'talkAgain' : 'talk';
+}
+
+/**
+ * 지금 **눌러서** 말을 걸 수 있는 NPC. 없으면 null.
+ *
+ * 눌러서 거는 건 문을 열어주는 이야기 하나뿐이다. 나머지 둘은 지나가면 저절로 뜨므로
+ * (handleNpc 의 아래쪽) 버튼을 기다리지 않는다 — 안 그러면 잠긴 사람 옆에서
+ * 점프할 때마다 판이 멈춘다.
+ */
 export function npcInReach(game) {
-  if (!hubOpen(game) || game.player.dead || game.npcTalk) return null;
+  if (game.player.dead || game.npcTalk) return null;
   for (const npc of game.world.npcs) {
-    if (npc.talked) continue;
-    const box = { x: npc.x - 14, y: npc.y - TILE, w: TILE + 28, h: TILE * 2 };
-    if (overlaps(game.player, box)) return npc;
+    if (npcSays(game, npc) !== 'talk') continue;
+    if (npc.said) continue;
+    if (overlaps(game.player, npcReach(npc))) return npc;
   }
   return null;
+}
+
+/** 저 혼자 떴다 지는 한 마디. 판은 계속 돈다 */
+function startHint(game, id) {
+  game.npcHint = { id, t: 0, length: talkLength(id) };
 }
 
 /**
@@ -1071,19 +1115,45 @@ export function npcInReach(game) {
  * 말 걸기는 **점프 키 그대로**다 (input.confirmPressed 가 confirm || jump).
  * 새 키를 만들면 폰에 버튼이 하나 더 붙어야 하는데, 딱 한 번 쓰는 것 때문에
  * 조작 화면을 더 복잡하게 만들 이유가 없다.
+ *
+ * 이 사람은 **언제나 서 있다** — 한 바퀴 돌기 전에도. 예전에는 아무 반응이 없어서
+ * 판에 박힌 장식처럼 보였고, 그래서 2회차가 있는 줄도 몰랐다. 이제 지나가면
+ * 아직 아니라고 말해주고, 깨고 오면 열어주고, 열어준 뒤에도 문을 가리킨다.
  */
 function handleNpc(game, input) {
-  if (!hubOpen(game)) return;
+  const npcs = game.world?.npcs;
+  if (!npcs?.length || game.hard) return;
+
+  for (const npc of npcs) {
+    const near = !game.player.dead && overlaps(game.player, npcReach(npc));
+    npc.near = near;
+    // **멀어지면 풀린다.** 이게 다시 말을 걸 수 있게 하는 전부다
+    if (!near) {
+      npc.said = false;
+      continue;
+    }
+    if (npc.said || game.npcTalk || game.npcHint) continue;
+    const id = npcSays(game, npc);
+    // 문을 열어주는 이야기만 버튼을 기다린다. 나머지는 지나가면 저절로
+    if (HINT_TALKS.includes(id)) {
+      npc.said = true;
+      startHint(game, id);
+      emit(game, 'talk', {});
+    }
+  }
+
   const npc = npcInReach(game);
   if (npc && input.confirmPressed) {
-    npc.talked = true;
-    game.npcTalk = { t: 0, length: npcTalkLength() };
+    npc.opened = true;
+    npc.said = true;
+    game.npcHint = null; // 진짜 이야기가 시작되면 스쳐가는 한 마디는 치운다
+    game.npcTalk = { id: 'talk', t: 0, length: talkLength('talk') };
     game.player.vx = 0;
     emit(game, 'talk', {});
   }
   // 말을 걸어야 문이 열린다
-  const talked = game.world.npcs.some((n) => n.talked);
-  for (const portal of game.world.portals) portal.open = talked && !game.npcTalk;
+  const opened = npcs.some((n) => n.opened);
+  for (const portal of game.world.portals) portal.open = opened && !game.npcTalk;
 }
 
 /** 열린 포탈에 들어가면 2회차가 시작된다 */
@@ -1176,10 +1246,19 @@ function updatePlay(game, input, dt) {
   if (game.npcTalk) {
     const was = game.npcTalk.t;
     game.npcTalk.t += dt;
-    beat(game, 'talk', NPC_TALK, was, game.npcTalk.t);
+    beat(game, game.npcTalk.id, talkTimeline(game.npcTalk.id), was, game.npcTalk.t);
     if (skipping(input, game.npcTalk.t)) game.npcTalk.t = game.npcTalk.length;
     if (game.npcTalk.t >= game.npcTalk.length) game.npcTalk = null;
     return;
+  }
+
+  // 지나갈 때 뜨는 한 마디. **return 이 없다** — 판은 계속 돌고 말풍선만 뜬다.
+  // 위의 npcTalk 과 나눠둔 이유가 이 한 줄이다.
+  if (game.npcHint) {
+    const was = game.npcHint.t;
+    game.npcHint.t += dt;
+    beat(game, game.npcHint.id, talkTimeline(game.npcHint.id), was, game.npcHint.t);
+    if (game.npcHint.t >= game.npcHint.length) game.npcHint = null;
   }
 
   const events = updatePlayer(game.player, noDash(applyEffects(game, input)), game.world, dt);

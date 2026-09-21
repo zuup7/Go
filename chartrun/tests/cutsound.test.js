@@ -18,7 +18,7 @@ import {
 import { CUT_SOUND, soundFor } from '../src/data/cutSound.js';
 import { INTRO_CUT, HARD_OPEN_CUT } from '../src/data/introCutscene.js';
 import { CAUGHT_CUT } from '../src/data/caughtCut.js';
-import { NPC_TALK } from '../src/data/npcTalk.js';
+import { NPC_TALK, NPC_LOCKED, NPC_AGAIN } from '../src/data/npcTalk.js';
 
 const DT = 1 / 60;
 
@@ -84,8 +84,11 @@ const TIMELINES = {
   caught: CAUGHT_CUT,
   ending: ENDING_CUT,
   // NPC 대화도 같은 타임라인 모양이라 같은 규칙을 받아야 한다 —
-  // 여기 없었더니 표가 통째로 비어 있는 걸 아무도 못 잡았다
+  // 여기 없었더니 표가 통째로 비어 있는 걸 아무도 못 잡았다.
+  // 이 사람은 상황에 따라 셋 중 하나를 말한다 (core/game.js 의 npcSays)
   talk: NPC_TALK,
+  talkLocked: NPC_LOCKED,
+  talkAgain: NPC_AGAIN,
 };
 
 test('소리 표와 타임라인이 서로 빠짐없이 맞는다', () => {
