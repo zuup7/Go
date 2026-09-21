@@ -204,3 +204,30 @@ export const cutForPhase = (phaseId, hard = false) => {
   if (phaseId === 3 && hard) return 'hard3';
   return `phase${phaseId}`;
 };
+
+/**
+ * 개발자 모드에서 **바로 볼 수 있는** 보스 컷신 목록.
+ *
+ * 컷신 하나를 확인하려고 보스를 3페이즈까지 때려야 하는 건 너무 오래 걸린다.
+ * 여기에 「보려면 보스가 어떤 몸이어야 하는가」를 같이 적어둔다 — 그게 이 목록의
+ * 요점이다. 그리는 쪽은 bossBody(game.boss) 에게 몸을 물어보므로,
+ * hard 와 phaseId 를 맞춰 세워주지 않으면 엉뚱한 놈이 나온다.
+ *
+ * **이름은 짧게.** 390px 짜리 폰에서 목록이 세 칸으로 서는데(4줄 × 3칸),
+ * 이름이 길면 칸이 넓어져 패널이 화면 밖으로 나간다. 테스트가 길이를 지킨다.
+ */
+export const CUT_PREVIEWS = [
+  // 보스 컷신이 아닌 둘도 여기 둔다. 「컷신을 본다」는 한 가지 일인데 목록이
+  // 셋으로 흩어져 있을 이유가 없다 (스테이지 선택 칸도 그만큼 줄어든다).
+  { id: 'intro', label: '오프닝', intro: 'intro' },
+  { id: 'hardopen', label: '2회차 시작', intro: 'hardopen' },
+  { id: 'phase2', label: 'PHASE 2', hard: false, phaseId: 2 },
+  { id: 'phase3', label: 'PHASE 3', hard: false, phaseId: 3 },
+  { id: 'hard3', label: 'EVOLVED', hard: true, phaseId: 3 },
+  { id: 'phase4', label: 'FINAL', hard: true, phaseId: 4 },
+  // 격파는 **몸마다 다르게 그려진다** — 둘 다 볼 수 있어야 한다
+  { id: 'bossdown', label: '격파 로봇', hard: false, phaseId: 3 },
+  { id: 'bossdown', label: '격파 공룡', hard: true, phaseId: 3 },
+  { id: 'ending', label: '엔딩', hard: false, phaseId: 3 },
+  { id: 'hardEnd', label: '2회차 엔딩', hard: true, phaseId: 4 },
+];

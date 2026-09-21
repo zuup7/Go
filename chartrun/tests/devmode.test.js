@@ -8,7 +8,8 @@ import {
   startRun,
   setDevMode,
   runSummary,
-  SELECT_OPENING,
+  SELECT_CUTS,
+  cutSlotOf,
   SELECT_DEV_OFF,
   SELECT_SLOTS,
 } from '../src/core/game.js';
@@ -116,12 +117,18 @@ test('선택 화면 마지막 칸은 개발자 모드 끄기다', () => {
   assert.equal(game.scene, 'title');
 });
 
-test('오프닝 다시 보기 칸이 오프닝을 다시 튼다', () => {
-  // 오프닝은 한 번 보면 저절로는 안 뜬다 — 여기가 유일하게 다시 보는 길이다
+test('컷신 목록에서 오프닝을 다시 틀 수 있다', () => {
+  // 오프닝은 한 번 보면 저절로는 안 뜬다 — 여기가 유일하게 다시 보는 길이다.
+  // 예전에는 선택 목록에 제 칸이 있었는데 컷신 보기 안으로 들어갔다.
   const game = played();
   setDevMode(game, true);
   game.scene = 'select';
-  game.selectIndex = SELECT_OPENING;
+  game.selectIndex = SELECT_CUTS;
+  tap(game, { confirmPressed: true });
+  assert.equal(game.scene, 'cutList', '컷신 목록으로 안 들어간다');
+
+  game.cutIndex = cutSlotOf('intro');
+  assert.ok(game.cutIndex >= 0, '목록에 오프닝이 없다');
   tap(game, { confirmPressed: true });
   assert.equal(game.scene, 'intro');
   assert.equal(game.cutsceneTime, 0, '처음부터 다시 틀어야 한다');

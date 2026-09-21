@@ -10,6 +10,7 @@ import {
   updateBoss,
   hitBoss,
   syncPhase,
+  enterPhaseId,
   bossPhase,
   throwMic,
   updateThrown,
@@ -22,7 +23,14 @@ import {
 } from './boss.js';
 import { ZONE_EFFECTS, emptyEffects, createTrapMemory, trapKey } from '../data/traps.js';
 import { CUTSCENE, CUTSCENE_LENGTH, beatsCrossed } from '../data/cutscene.js';
-import { BOSS_CUTS, bossCutLength, cutForPhase, endingCut, isEndingCut } from '../data/bossCutscenes.js';
+import {
+  BOSS_CUTS,
+  CUT_PREVIEWS,
+  bossCutLength,
+  cutForPhase,
+  endingCut,
+  isEndingCut,
+} from '../data/bossCutscenes.js';
 import { introTimeline, introCutLength } from '../data/introCutscene.js';
 import { NPC_TALK, npcTalkLength } from '../data/npcTalk.js';
 import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
@@ -163,6 +171,15 @@ export function createGame(options = {}) {
      * returnToHub 의 주석에 무슨 일이 있었는지 적어뒀다.
      */
     hubVisit: false,
+    /**
+     * 개발자 모드에서 컷신만 보고 있는 중인가 (CUT_PREVIEWS 의 자리 번호).
+     *
+     * 이것도 hubVisit 과 같은 뜻이다 — **판이 아니다.** 이어하기로 찍히면 안 되고,
+     * 컷신이 끝나도 엔딩으로 이어지면 안 된다 (목록으로 돌아간다).
+     */
+    cutPreview: null,
+    /** 컷신 목록에서 고르고 있는 자리 */
+    cutIndex: 0,
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -339,8 +356,9 @@ export function startRun(game, index = 0, { hard = false } = {}) {
   // 오프닝은 1회차에서만. 하드모드는 이미 다 본 사람이 들어오는 곳이다.
   // 개발자 모드로 열어둔 포탈 판에서 넘어왔을 수도 있다 — 새 판에서는 원래 규칙으로
   game.forceHub = false;
-  // 새 판이 시작되므로 「둘러보기」가 아니다
+  // 새 판이 시작되므로 「둘러보기」도 「컷신만 보기」도 아니다
   game.hubVisit = false;
+  game.cutPreview = null;
   if (index === 0 && !hard && !game.save.seenOpening) startIntro(game);
   else if (index >= stageCount(game)) loadBoss(game);
   else loadStage(game, index);
@@ -1246,6 +1264,57 @@ function returnToHub(game) {
  * **어디서 들어왔는지 기억해 둔다**(galleryBack). 타이틀에서 들어왔는데 나갈 때
  * 선택 화면으로 떨어지면, 한 바퀴를 안 깬 사람은 거기 갈 자격이 없는 자리에 서게 된다.
  */
+/**
+ * 개발자 모드 · **컷신 보기.**
+ *
+ * 컷신 하나 확인하려고 보스를 3페이즈까지 때리는 데 시간이 너무 든다.
+ * 목록에서 골라 바로 튼다.
+ */
+export function openCutList(game) {
+  game.scene = 'cutList';
+  game.sceneTime = 0;
+  game.cutPreview = null;
+  game.bossCut = null;
+  game.bossCutGap = 0;
+}
+
+/** 컷신 목록에서 고를 수 있는 것들 (개발자 모드에서만 들어온다) */
+export const cutPreviews = () => CUT_PREVIEWS;
+
+/**
+ * 컷신 하나를 바로 튼다.
+ *
+ * **몸을 맞춰 세우는 게 이 함수의 전부다.** 그리는 쪽은 bossBody(game.boss) 에게
+ * 물어보므로, hard 와 페이즈를 안 맞추면 공룡 컷신에 로봇이 나온다 —
+ * 예전에 실제로 그 버그가 있었다. 페이즈에 들어가는 건 enterPhaseId 가 하는데,
+ * phaseId 를 그냥 대입하면 공룡 몸 크기를 건너뛰기 때문이다.
+ */
+export function previewCut(game, index) {
+  const p = CUT_PREVIEWS[index];
+  if (!p) return false;
+  game.cutPreview = index;
+  // 오프닝·2회차 시작은 보스가 없는 컷신이다 — 같은 목록에 있지만 트는 길이 다르다
+  if (p.intro) {
+    startIntro(game, p.intro);
+    return true;
+  }
+  // cutPreview 를 **loadBoss 보다 먼저** 세워야 한다. loadBoss 가 'boss' 를
+  // 알리고 저장 쪽이 그걸 이어하기로 찍는데, 컷신 보기는 판이 아니다.
+  game.hard = p.hard;
+  game.partial = true;
+  game.hubVisit = false;
+  loadBoss(game);
+  enterPhaseId(game.boss, p.phaseId);
+  // 격파 컷신은 쓰러지는 몸을 그린다 — 살아 있는 채로 틀면 몸이 안 맞는다
+  if (p.id === 'bossdown' || isEndingCut(p.id)) {
+    game.boss.hp = 0;
+    game.boss.state = 'defeated';
+    game.boss.defeatedAt = 0;
+  }
+  startBossCut(game, p.id);
+  return true;
+}
+
 function openGallery(game, from) {
   game.scene = 'gallery';
   game.sceneTime = 0;
@@ -1313,8 +1382,7 @@ export const SELECT_ITEMS = [
   /** 음표를 다 모으면 열리는 숨은 화면. 'allNotes' 는 저장 칸이 아니라 아래 GATES 가 센다 */
   { label: '숨은 화면', action: 'gallery', needs: 'allNotes' },
   { label: '포탈 스테이지 1', action: 'hub', needs: 'dev' },
-  { label: '오프닝 다시 보기', action: 'opening', needs: 'dev' },
-  { label: '2회차 시작 컷신', action: 'hardopen', needs: 'dev' },
+  { label: '컷신 보기', action: 'cuts', needs: 'dev' },
   { label: '개발자 모드 끄기', action: 'devOff', needs: 'dev' },
 ];
 
@@ -1348,12 +1416,17 @@ const slotOf = (test) => SELECT_ITEMS.findIndex(test);
 export const SELECT_HARD = slotOf((s) => s.run?.hard && s.run.index === 0);
 /** 하드 보스전으로 바로 */
 export const SELECT_HARD_BOSS = slotOf((s) => s.run?.hard && s.run.index === HARD_STAGES.length);
-/** 오프닝 다시 보기 (한 번 보면 저절로는 안 뜨므로 여기서만 다시 볼 수 있다) */
-export const SELECT_OPENING = slotOf((s) => s.action === 'opening');
+/**
+ * 컷신 보기 (개발자 모드).
+ *
+ * 오프닝·2회차 시작 컷신도 **여기 안으로 들어갔다** — 「컷신을 본다」는 한 가지 일인데
+ * 선택 목록에 칸이 셋으로 흩어져 있었다. 어느 컷신이든 CUT_PREVIEWS 에서 고른다.
+ */
+export const SELECT_CUTS = slotOf((s) => s.action === 'cuts');
 /** 포탈이 열려 있는 스테이지 1 (2회차 입구를 통째로 보는 칸) */
 export const SELECT_HUB = slotOf((s) => s.action === 'hub');
-/** 2회차 시작 컷신 다시 보기 */
-export const SELECT_HARD_OPEN = slotOf((s) => s.action === 'hardopen');
+/** 컷신 목록에서 오프닝 / 2회차 시작이 몇 번째인가 */
+export const cutSlotOf = (id) => CUT_PREVIEWS.findIndex((c) => c.id === id);
 /** 개발자 모드 끄기 */
 export const SELECT_DEV_OFF = slotOf((s) => s.action === 'devOff');
 export const SELECT_SLOTS = SELECT_ITEMS.length;
@@ -1544,6 +1617,14 @@ function updateBossScene(game, input, dt) {
       // 쓰러지는 컷신이 끝나면 엔딩으로 이어진다. **쉼표를 하나 둔다** —
       // 하드컷으로 붙이면 4.6초와 18초짜리 두 컷신이 한 덩어리로 뭉쳐 읽힌다.
       // (컷신 그리기가 앞뒤 0.3/0.4초를 검게 여닫으므로 그 사이가 완전한 암전이다)
+      /**
+       * 컷신만 보는 중이면 **여기서 끊는다.** 안 끊으면 격파 컷신이 엔딩으로
+       * 이어지고 엔딩이 기록을 남긴다 — 보기만 했는데 깬 걸로 저장된다.
+       */
+      if (game.cutPreview != null) {
+        openCutList(game);
+        return;
+      }
       if (finished === 'bossdown') game.bossCutGap = BOSS_CUT_GAP;
       if (isEndingCut(finished)) finishRun(game);
     }
@@ -1739,6 +1820,19 @@ export function updateGame(game, input, dt) {
       break;
     }
 
+    case 'cutList': {
+      const cuts = CUT_PREVIEWS;
+      const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
+      if (moved) game.cutIndex = (game.cutIndex + moved + cuts.length) % cuts.length;
+      if (input.restartPressed) {
+        game.scene = 'select';
+        game.sceneTime = 0;
+      } else if (input.confirmPressed) {
+        previewCut(game, game.cutIndex);
+      }
+      break;
+    }
+
     case 'select': {
       const slots = selectItems(game);
       const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
@@ -1749,8 +1843,7 @@ export function updateGame(game, input, dt) {
       } else if (input.confirmPressed) {
         const pick = slots[game.selectIndex];
         if (pick?.run) startRun(game, pick.run.index, { hard: !!pick.run.hard });
-        else if (pick?.action === 'opening') startIntro(game, 'intro');
-        else if (pick?.action === 'hardopen') startIntro(game, 'hardopen');
+        else if (pick?.action === 'cuts') openCutList(game);
         else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'gallery') openGallery(game, 'select');
         else if (pick?.action === 'devOff') {
@@ -1780,9 +1873,18 @@ export function updateGame(game, input, dt) {
       beat(game, id, introTimeline(id), wasIntro, game.cutsceneTime);
       if (skipping(input, game.cutsceneTime)) game.cutsceneTime = length;
       if (game.cutsceneTime >= length) {
+        if (game.cutPreview != null) {
+          openCutList(game);
+          break;
+        }
         if (id === 'hardopen') {
           // 2회차가 여기서 시작된다. startRun 이 시간·차트아웃을 지우므로 기록이 안 섞인다.
           startRun(game, 0, { hard: true });
+          break;
+        }
+        // 컷신만 보는 중이면 판을 시작하지 않고 목록으로 돌아간다
+        if (game.cutPreview != null) {
+          openCutList(game);
           break;
         }
         // 건너뛰어도 여기를 지나므로 반드시 한 번 나온다 — 저장이 여기 달려 있다
@@ -1893,7 +1995,7 @@ export const runSummary = (game) => ({
 const RUN_SCENES = new Set(['stageIntro', 'play', 'death', 'stageClear', 'boss']);
 
 export const resumeState = (game) =>
-  RUN_SCENES.has(game.scene) && game.world && !game.hubVisit
+  RUN_SCENES.has(game.scene) && game.world && !game.hubVisit && game.cutPreview == null
     ? {
         stage: game.stageIndex,
         hard: game.hard,
@@ -1924,6 +2026,7 @@ export function resumeRun(game, resume) {
   game.partial = !!resume.partial;
   game.forceHub = !!resume.forceHub;
   game.hubVisit = false;
+  game.cutPreview = null;
   game.ending = null;
 
   if (resume.boss) loadBoss(game);

@@ -9,6 +9,7 @@ import {
   PAUSE_ROWS,
   stageTable,
   selectItems,
+  cutPreviews,
   titleRows,
   inCutscene,
   notesFound,
@@ -178,6 +179,23 @@ export function createHud(root) {
             ${game.save.seenHelp ? '' : firstHelp()}
             ${game.saveBroken ? '<p class="warn">이 기기에서는 기록이 안 남습니다</p>' : ''}
             <button type="button" class="dev-open" data-key="open" aria-label="개발자 모드">⚙</button>
+          </div>`;
+      }
+      case 'cutList': {
+        // 목록은 core 가 갖고 있다 — 여기 또 적으면 화면과 실제로 트는 게 어긋난다
+        return `
+          <div class="panel select-panel">
+            <h2>컷신 보기</h2>
+            <ul class="slots cut-slots">
+              ${cutPreviews()
+                .map(
+                  (c, i) =>
+                    `<li class="${i === game.cutIndex ? 'on' : ''}" data-key="cut:${i}">${esc(c.label)}</li>`,
+                )
+                .join('')}
+            </ul>
+            <p class="press">◀▶ 로 고르고 점프로 재생 · 눌러도 된다</p>
+            <button type="button" class="back-btn" data-key="cut:back">뒤로</button>
           </div>`;
       }
       case 'select': {

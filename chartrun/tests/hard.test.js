@@ -15,8 +15,8 @@ import {
   runSummary,
   SELECT_HARD,
   SELECT_HUB,
-  SELECT_HARD_OPEN,
-  SELECT_OPENING,
+  SELECT_CUTS,
+  cutSlotOf,
   SELECT_DEV_OFF,
   SELECT_SLOTS,
   markKey,
@@ -136,7 +136,7 @@ test('개발자 선택에 하드모드 입구가 있다', () => {
   assert.equal(game.hard, true, '하드 칸을 골랐는데 하드모드가 아니다');
   assert.equal(game.world.stage.id, HARD_STAGES[0].id);
   // 칸들이 서로 안 겹친다
-  assert.equal(new Set([SELECT_HARD, SELECT_OPENING, SELECT_DEV_OFF]).size, 3);
+  assert.equal(new Set([SELECT_HARD, SELECT_CUTS, SELECT_DEV_OFF]).size, 3);
   assert.ok(SELECT_DEV_OFF < SELECT_SLOTS);
 });
 
@@ -520,10 +520,12 @@ test('하드 보스를 쓰러뜨리면 2회차 엔딩이, 보통이면 결혼식
 });
 
 // ── 포탈 스테이지 1 (개발자 모드) ───────────────────────────
-test('개발자 선택에 포탈 스테이지 1 과 2회차 시작 컷신이 있다', () => {
+test('개발자 선택에 포탈 스테이지 1 이 있고, 시작 컷신은 컷신 보기 안에 있다', () => {
   assert.ok(SELECT_HUB >= 0, '포탈 스테이지 칸이 없다');
-  assert.ok(SELECT_HARD_OPEN >= 0, '2회차 시작 컷신 칸이 없다');
-  assert.equal(new Set([SELECT_HARD, SELECT_HUB, SELECT_HARD_OPEN, SELECT_OPENING, SELECT_DEV_OFF]).size, 5);
+  assert.ok(SELECT_CUTS >= 0, '컷신 보기 칸이 없다');
+  // 2회차 시작 컷신은 제 칸을 버리고 컷신 목록으로 들어갔다 — 그래도 볼 수 있어야 한다
+  assert.ok(cutSlotOf('hardopen') >= 0, '컷신 목록에 2회차 시작이 없다');
+  assert.equal(new Set([SELECT_HARD, SELECT_HUB, SELECT_CUTS, SELECT_DEV_OFF]).size, 4);
 });
 
 test('포탈 스테이지 칸은 한 바퀴를 안 돈 사람에게도 포탈을 열어준다', () => {

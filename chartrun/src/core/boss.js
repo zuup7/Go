@@ -227,23 +227,39 @@ export const bossPhase = (boss) => {
 };
 
 /** 체력이 깎이면 페이즈를 다시 본다. 뒤로는 가지 않는다. */
+/**
+ * 페이즈 하나로 실제로 **들어간다.**
+ *
+ * phaseId 를 그냥 대입하면 안 된다 — 공룡이 되면 몸이 커지는데 그걸 건너뛰어서
+ * 로봇 크기로 그려진다(예전에 여러 번 물렸다). 들어가는 방법을 여기 한 곳에만 둔다.
+ * syncPhase(싸움 중)와 컷신 미리보기(개발자 모드)가 같이 쓴다.
+ */
+export function enterPhase(boss, next) {
+  boss.phaseId = next.id;
+  // 공룡이 되면 몸이 커진다. 가운데를 잡아두고 넓혀야 갑자기 옆으로 튀지 않는다.
+  if (next.dino && boss.w !== DINO_W) {
+    const cx = boss.x + boss.w / 2;
+    boss.w = DINO_W;
+    boss.h = DINO_H;
+    boss.x = cx - DINO_W / 2;
+  }
+  boss.quarters = [];
+  boss.state = 'recover';
+  boss.timer = 1.2;
+  return next.id;
+}
+
 export function syncPhase(boss) {
   const next = phaseFor(boss.hp, boss.maxHp, boss.phases ?? phasesFor(false));
-  if (next.id > boss.phaseId) {
-    boss.phaseId = next.id;
-    // 공룡이 되면 몸이 커진다. 가운데를 잡아두고 넓혀야 갑자기 옆으로 튀지 않는다.
-    if (next.dino && boss.w !== DINO_W) {
-      const cx = boss.x + boss.w / 2;
-      boss.w = DINO_W;
-      boss.h = DINO_H;
-      boss.x = cx - DINO_W / 2;
-    }
-    boss.quarters = [];
-    boss.state = 'recover';
-    boss.timer = 1.2;
-    return next.id;
-  }
+  if (next.id > boss.phaseId) return enterPhase(boss, next);
   return null;
+}
+
+/** 번호로 그 페이즈에 들어간다 (컷신 미리보기용). 표는 보스가 들고 있는 것을 쓴다 */
+export function enterPhaseId(boss, id) {
+  const table = boss.phases ?? phasesFor(false);
+  const next = table.find((p) => p.id === id) ?? table[table.length - 1];
+  return enterPhase(boss, next);
 }
 
 /** 큰 걸 쓰려고 겨누는 중인 상태들 — 몸이 움츠러든다 */

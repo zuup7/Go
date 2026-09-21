@@ -378,6 +378,19 @@ function pressKey(key) {
     }
     return;
   }
+  // 컷신 보기도 같은 방식 (개발자 모드). 여기도 폰에는 R 키가 없다.
+  if (key.startsWith('cut:')) {
+    if (game.scene !== 'cutList') return;
+    const what = key.slice('cut:'.length);
+    const frame = { ...input, leftPressed: false, rightPressed: false };
+    if (what === 'back') {
+      updateGame(game, { ...frame, restartPressed: true, confirmPressed: false }, 0);
+    } else {
+      game.cutIndex = Number(what);
+      updateGame(game, { ...frame, restartPressed: false, confirmPressed: true }, 0);
+    }
+    return;
+  }
   // 숨은 화면에서 나가기. 선택 화면의 「뒤로」와 같은 이유로 꼭 있어야 한다 —
   // 폰에는 R 키가 없고, 이 화면은 캔버스만 있어서 안 그러면 갇힌다.
   if (key === 'gallery:back') {
