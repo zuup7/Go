@@ -16,6 +16,7 @@ import {
   SELECT_HARD_BOSS,
   SELECT_DEV_OFF,
   stageTable,
+  titleRows,
 } from '../src/core/game.js';
 import { STAGES, HARD_STAGES } from '../src/data/stages.js';
 import { emptySave } from '../src/core/save.js';
@@ -200,7 +201,9 @@ test('깬 판을 다시 골라도 최고 기록은 안 망가진다', () => {
 
 test('타이틀에서 「스테이지 선택」 줄을 고르고 확인하면 선택 화면으로 간다', () => {
   const game = gameWith({ clearedOnce: true });
-  game.titleIndex = 1;
+  // 자리 번호를 박아두지 않는다 — 타이틀에 줄이 하나 늘 때마다 엉뚱하게 깨진다
+  game.titleIndex = titleRows(game).findIndex((r) => r.action === 'select');
+  assert.ok(game.titleIndex >= 0, '「스테이지 선택」 줄이 없다');
   step(game, idle({ confirmPressed: true }));
   assert.equal(game.scene, 'select');
   assert.equal(game.selectIndex, 0, '들어올 때는 첫 칸부터');

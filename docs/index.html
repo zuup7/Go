@@ -362,6 +362,69 @@ canvas#game {
   border-color: var(--hot);
 }
 
+/* 꾸미기 — 줄마다 「◀ 이름 ▶」. 패널을 화면 오른쪽으로 밀어 캔버스가 그리는
+   주인공(왼쪽 아래)을 안 가린다 */
+.look-panel {
+  margin-left: auto;
+  margin-right: 6%;
+}
+
+.looks {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.9em;
+}
+
+.looks li {
+  display: grid;
+  grid-template-columns: 3.2em 1.8em 1fr 1.8em;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  color: var(--dim);
+}
+
+/* 고르고 있는 줄. ◀▶ 키가 **이 줄**을 바꾼다는 걸 테두리로 말한다 */
+.looks li.on {
+  border-color: var(--hot);
+  color: var(--ink);
+}
+
+.looks .look-name {
+  text-align: left;
+  font-size: 0.85em;
+}
+
+.looks b {
+  text-align: center;
+  color: var(--ink);
+}
+
+.looks button {
+  /* .ui 전체가 pointer-events: none 이라 눌리는 것만 되살린다 */
+  pointer-events: auto;
+  padding: 2px 0;
+  min-height: 28px;
+  font-family: var(--font);
+  font-size: 0.9em;
+  color: var(--dim);
+  background: rgba(67, 38, 95, 0.55);
+  border: 1px solid #6b4a8f;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.looks button:active {
+  background: var(--hot);
+  border-color: #ffd7e2;
+  color: var(--ink);
+}
+
 /* 고르는 줄 (타이틀 · 스테이지 선택) */
 .menu,
 .slots {
@@ -877,8 +940,18 @@ body.in-cut:not(.pad-editing) .touch-right {
    .ui 위에 캔버스가 얹혀 있어서 여기서 되살리지 않으면 줄을 눌러도 캔버스가 먹는다.
    특히 「뒤로」는 이게 없으면 폰에서 누를 방법이 아예 없다 (R 키가 없다). */
 .title-panel .menu,
-.select-panel .slots,
-.select-panel .back-btn {
+.select-panel .slots {
+  pointer-events: auto;
+}
+
+/**
+ * 「뒤로」는 **패널을 가리지 않고** 항상 눌린다.
+ *
+ * 예전엔 `.select-panel .back-btn` 이라고 화면을 찍어 적어뒀는데, 꾸미기 화면을
+ * 새로 만들면서 거기 「뒤로」가 죽은 채로 나갔다 — 폰에는 R 키가 없어서 그 화면에
+ * 들어가면 **나올 방법이 없었다.** 화면 이름을 안 적어야 다음 화면도 안 걸린다.
+ */
+.back-btn {
   pointer-events: auto;
 }
 
@@ -5258,6 +5331,85 @@ const TALK_AT = Object.fromEntries(NPC_TALK.map((s) => [s.kind, s.at]));
 
 return { NPC_TALK, NPC_LOCKED, NPC_AGAIN, TALKS, HINT_TALKS, talkTimeline, talkLength, npcTalkLength, TALK_AT };
 })();
+__m["chartrun/src/data/looks.js"] = (() => {
+// 주인공 꾸미기. 머리 한 벌 + 옷 색 + 바지 색.
+//
+// **여기는 데이터만 둔다** (core 가 읽는다). 머리 그림 자체는 render/sprites.js 에
+// 있다 — 그림은 DOM 쪽이라 core 가 못 본다. 둘이 어긋나지 않게
+// tests/look.test.js 가 **양방향으로** 맞춰본다 (id 가 여기 있는데 그림이 없거나,
+// 그림만 있고 여기 없으면 잡힌다). 소리 표를 타임라인과 맞추는 것과 같은 수법이다.
+
+/** 머리 — id 는 sprites.js 의 그림 이름이다 */
+const HAIRS = [
+  { id: 'base', label: '기본' },
+  { id: 'cap', label: '모자' },
+  { id: 'band', label: '머리띠' },
+  { id: 'long', label: '장발' },
+];
+
+/**
+ * 옷 색. 첫 칸이 원래 색이라 **아무것도 안 고른 사람은 지금과 똑같이** 보인다.
+ * 색은 전부 게임이 이미 쓰는 것들이다 (assets/style.css 의 --hot·--good·--warn 등) —
+ * 새 색을 들이면 픽셀 화면에서 혼자 떠 보인다.
+ */
+const JACKETS = [
+  { label: '하늘', color: '#4ec3ff' },
+  { label: '분홍', color: '#ff5d8f' },
+  { label: '초록', color: '#39ff9a' },
+  { label: '노랑', color: '#ffd166' },
+  { label: '보라', color: '#a98cff' },
+  { label: '하양', color: '#e8e4f0' },
+];
+
+const PANTS = [
+  { label: '남색', color: '#33324a' },
+  { label: '검정', color: '#20182e' },
+  { label: '청바지', color: '#3a5a9a' },
+  { label: '베이지', color: '#b89a6a' },
+];
+
+/**
+ * 꾸미기 화면의 줄. **고르는 쪽(core)과 그리는 쪽(hud)이 이걸 같이 쓴다** —
+ * 여기 또 적으면 화면은 맞는데 엉뚱한 칸이 바뀐다 (스테이지 선택에서 겪은 그 사고다).
+ */
+const LOOK_SLOTS = [
+  { key: 'hair', label: '머리', items: HAIRS },
+  { key: 'jacket', label: '옷', items: JACKETS },
+  { key: 'pants', label: '바지', items: PANTS },
+];
+
+const DEFAULT_LOOK = { hair: 0, jacket: 0, pants: 0 };
+
+/**
+ * 저장값을 믿지 않는다. 옛 저장에는 이 칸이 아예 없고, 항목을 줄이면
+ * 있던 번호가 범위 밖으로 나간다 — 그러면 그림이 undefined 가 되어 안 그려진다.
+ */
+function sanitizeLook(look) {
+  const out = { ...DEFAULT_LOOK };
+  for (const slot of LOOK_SLOTS) {
+    const n = Math.trunc(look?.[slot.key] ?? 0);
+    out[slot.key] = Number.isFinite(n) && n >= 0 && n < slot.items.length ? n : 0;
+  }
+  return out;
+}
+
+/** 캐시 열쇠. 같은 차림새면 스프라이트를 다시 굽지 않는다 */
+const lookKey = (look) => {
+  const l = sanitizeLook(look);
+  return LOOK_SLOTS.map((s) => l[s.key]).join('-');
+};
+
+/** 한 칸을 옆으로 넘긴다 (양쪽 끝에서 돌아온다) */
+const cycleLook = (look, key, step) => {
+  const l = sanitizeLook(look);
+  const slot = LOOK_SLOTS.find((s) => s.key === key);
+  if (!slot) return l;
+  const n = slot.items.length;
+  return { ...l, [key]: (((l[key] + step) % n) + n) % n };
+};
+
+return { HAIRS, JACKETS, PANTS, LOOK_SLOTS, DEFAULT_LOOK, sanitizeLook, lookKey, cycleLook };
+})();
 __m["chartrun/src/data/caughtCut.js"] = (() => {
 // 추격 판에서 보스에게 잡혔을 때. **대사는 없다.**
 //
@@ -5283,6 +5435,8 @@ __m["chartrun/src/core/save.js"] = (() => {
 // 저장/불러오기. 기록·해금·설정만 담는다 (진행 중인 판은 저장하지 않는다).
 const SAVE_KEY = 'chartrun/save-v1';
 const SAVE_VERSION = 1;
+
+const { DEFAULT_LOOK } = __m["chartrun/src/data/looks.js"];
 
 /**
  * 저장소. 없으면 null 이고, 그러면 게임은 기록 없이 그냥 돌아간다.
@@ -5339,6 +5493,12 @@ const emptySave = () => ({
    * revealedTraps 와 같은 모양이라 여러 판에 걸쳐 모을 수 있다.
    */
   foundNotes: [],
+  /**
+   * 꾸민 차림새 `{ hair, jacket, pants }` (data/looks.js 의 번호들).
+   * 저장값을 그대로 믿지 않는다 — sanitizeLook 을 거쳐서 쓴다. 항목을 줄이면
+   * 있던 번호가 범위 밖으로 나가고, 그러면 그림이 undefined 가 되어 안 그려진다.
+   */
+  look: { ...DEFAULT_LOOK },
   /**
    * **하던 판.** 없으면 null.
    *
@@ -5505,6 +5665,7 @@ const { CUTSCENE, CUTSCENE_LENGTH, beatsCrossed } = __m["chartrun/src/data/cutsc
 const { BOSS_CUTS, CUT_PREVIEWS, bossCutLength, cutForPhase, endingCut, isEndingCut } = __m["chartrun/src/data/bossCutscenes.js"];
 const { introTimeline, introCutLength } = __m["chartrun/src/data/introCutscene.js"];
 const { talkTimeline, talkLength, HINT_TALKS } = __m["chartrun/src/data/npcTalk.js"];
+const { LOOK_SLOTS, sanitizeLook, cycleLook } = __m["chartrun/src/data/looks.js"];
 const { CAUGHT_CUT, caughtLength } = __m["chartrun/src/data/caughtCut.js"];
 const { emptySave } = __m["chartrun/src/core/save.js"];
 const { createRng } = __m["chartrun/src/core/rng.js"];
@@ -5544,6 +5705,9 @@ const INTRO_HOLD = 2.0;
 
 function createGame(options = {}) {
   const save = options.save ?? emptySave();
+  // 저장값을 그대로 믿지 않는다. 옛 저장에는 이 칸이 아예 없고, 항목을 줄이면
+  // 있던 번호가 범위 밖으로 나가 그림이 undefined 가 된다 — 주인공이 안 그려진다.
+  save.look = sanitizeLook(save.look);
   const game = {
     scene: 'title',
     sceneTime: 0,
@@ -5657,6 +5821,8 @@ function createGame(options = {}) {
     cutPreview: null,
     /** 컷신 목록에서 고르고 있는 자리 */
     cutIndex: 0,
+    /** 꾸미기에서 고르고 있는 줄 (LOOK_SLOTS 의 자리) */
+    lookIndex: 0,
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -6896,6 +7062,10 @@ function titleRows(game) {
   if (game.save?.resume) {
     rows.unshift({ label: resumeLabel(game.save.resume), action: 'resume' });
   }
+  // 꾸미기. **처음 켠 사람에게는 안 보인다** — 아래 updateGame 이 줄이 하나뿐이면
+  // 메뉴 없이 바로 시작하는데, 그게 이 게임의 첫인상이다. 오프닝을 본 뒤,
+  // 즉 두 번째로 켰을 때부터 타이틀에 나온다. 해금이랄 것도 없이 바로 보인다.
+  if (game.save?.seenOpening) rows.push({ label: '꾸미기', action: 'look' });
   if (canSelect(game)) rows.push({ label: '스테이지 선택', action: 'select' });
   // 2회차가 있다는 걸 **여기서 말해준다.** 예전에는 깨고 나면 말없이 스테이지 1 로
   // 되돌려놓는 게 전부라, NPC 를 지나치면 2회차가 있는 줄도 몰랐다.
@@ -7372,10 +7542,38 @@ function updateGame(game, input, dt) {
           game.scene = 'select';
           game.sceneTime = 0;
           game.selectIndex = 0;
+        } else if (pick?.action === 'look') {
+          game.scene = 'look';
+          game.sceneTime = 0;
+          game.lookIndex = 0;
         } else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'gallery') openGallery(game, 'title');
         else if (pick?.action === 'resume') resumeRun(game, game.save.resume);
         else startRun(game);
+      }
+      break;
+    }
+
+    /**
+     * 꾸미기. 줄(머리·옷·바지)을 위아래로 고르고 좌우로 넘긴다.
+     *
+     * 스테이지 선택과 **좌우의 뜻이 다르다.** 거기는 좌우로 칸을 옮기지만
+     * 여기는 좌우가 「그 줄의 다음 것」이다 — 줄이 셋뿐이고 각 줄마다 고를 게
+     * 여럿이라, 좌우를 줄 이동에 쓰면 넘기는 데 키가 하나 모자란다.
+     * 줄 이동은 점프(확인)가 맡는다 — 폰에 버튼을 더 안 붙이려고.
+     */
+    case 'look': {
+      const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
+      const slot = LOOK_SLOTS[game.lookIndex % LOOK_SLOTS.length];
+      if (moved) {
+        game.save.look = cycleLook(game.save.look, slot.key, moved);
+        emit(game, 'look', { look: game.save.look });
+      }
+      if (input.restartPressed) {
+        game.scene = 'title';
+        game.sceneTime = 0;
+      } else if (input.confirmPressed) {
+        game.lookIndex = (game.lookIndex + 1) % LOOK_SLOTS.length;
       }
       break;
     }
@@ -8993,6 +9191,7 @@ return { NPC_SPRITES, NPC_OFFSET, npcFrame, npcSpin, npcBob };
 __m["chartrun/src/render/sprites.js"] = (() => {
 // 주인공 스프라이트. 12×16 픽셀, 히트박스(10×14)보다 살짝 크다.
 const { sprite } = __m["chartrun/src/render/pixel.js"];
+const { HAIRS, JACKETS, PANTS, DEFAULT_LOOK, sanitizeLook, lookKey } = __m["chartrun/src/data/looks.js"];
 
 const PAL = {
   k: '#20182e', // 머리·윤곽
@@ -9007,26 +9206,102 @@ const PAL = {
 const W = 12;
 const BLANK = '............';
 
-const HEAD = [
-  '....kkkk....',
-  '...kkkkkk...',
-  '..kkkkkkkk..',
-  '..kssssssk..',
-  '..kskssksk..',
-  '..ksskkssk..',
-  '...kssssk...',
-];
-
-/** 달릴 때 앞으로 숙인 머리 — 한 칸 앞으로 나간다 */
-const HEAD_LEAN = [
-  '.....kkkk...',
-  '....kkkkkk..',
-  '...kkkkkkkk.',
-  '...kssssssk.',
-  '...kskssksk.',
-  '...ksskkssk.',
-  '....kssssk..',
-];
+/**
+ * 머리 네 벌. **어느 벌이든 7줄 × 12칸**이고, 얼굴(눈·입)은 아래 네 줄에서
+ * 똑같다 — 머리만 갈아 끼우는 것이라 표정은 안 건드린다.
+ *
+ * 벌마다 숙인 것(달릴 때)을 따로 둔다. 한 칸 앞으로 나간 것뿐인데, 코드로
+ * 밀면 12칸 밖으로 나가는 줄이 생겨서 손으로 적어둔다.
+ *
+ * `H` 는 **옷 색을 따라간다** (모자를 옷과 맞춘다). `R` 은 포인트 색이다.
+ * 이름(base·cap·band·long)은 data/looks.js 의 HAIRS 와 같아야 한다 —
+ * 어긋나면 tests/look.test.js 가 양쪽에서 잡는다.
+ */
+const HAIR = {
+  base: {
+    head: [
+      '....kkkk....',
+      '...kkkkkk...',
+      '..kkkkkkkk..',
+      '..kssssssk..',
+      '..kskssksk..',
+      '..ksskkssk..',
+      '...kssssk...',
+    ],
+    lean: [
+      '.....kkkk...',
+      '....kkkkkk..',
+      '...kkkkkkkk.',
+      '...kssssssk.',
+      '...kskssksk.',
+      '...ksskkssk.',
+      '....kssssk..',
+    ],
+  },
+  /** 캡 모자 — 챙이 앞(오른쪽)으로 나간다. 색은 옷을 따라간다 */
+  cap: {
+    head: [
+      '...HHHHHH...',
+      '..HHHHHHHHH.',
+      '..kkkkkkkk..',
+      '..kssssssk..',
+      '..kskssksk..',
+      '..ksskkssk..',
+      '...kssssk...',
+    ],
+    lean: [
+      '....HHHHHH..',
+      '...HHHHHHHHH',
+      '...kkkkkkkk.',
+      '...kssssssk.',
+      '...kskssksk.',
+      '...ksskkssk.',
+      '....kssssk..',
+    ],
+  },
+  /** 머리띠 — 머리선 자리에 포인트 색 한 줄 */
+  band: {
+    head: [
+      '....kkkk....',
+      '...kkkkkk...',
+      '.RRRRRRRRRR.',
+      '..kssssssk..',
+      '..kskssksk..',
+      '..ksskkssk..',
+      '...kssssk...',
+    ],
+    lean: [
+      '.....kkkk...',
+      '....kkkkkk..',
+      '..RRRRRRRRRR',
+      '...kssssssk.',
+      '...kskssksk.',
+      '...ksskkssk.',
+      '....kssssk..',
+    ],
+  },
+  /** 장발 — 옆머리가 턱 밑까지 내려온다 */
+  long: {
+    head: [
+      '....kkkk....',
+      '...kkkkkk...',
+      '..kkkkkkkk..',
+      '.kksssssskk.',
+      '.kksksskskk.',
+      '.kksskksskk.',
+      '.kkksssskkk.',
+    ],
+    lean: [
+      '.....kkkk...',
+      '....kkkkkk..',
+      '...kkkkkkkk.',
+      '..kksssssskk',
+      '..kksksskskk',
+      '..kksskksskk',
+      '..kkksssskkk',
+    ],
+  },
+};
 
 const TORSO = {
   /** 가만히 — 두 팔이 몸 옆에 */
@@ -9114,49 +9389,103 @@ const LEGS = {
  * 실제로 한 번 그렇게 만들어놓고 화면에서 다리를 잃어버렸다.
  * 몸통이 줄어드는 건 발이 땅을 찰 때 상체가 눌리는 것이라 그림으로도 맞다.
  */
-const build = (head, torso, legs, drop = 0) => {
+const build = (pal, head, torso, legs, drop = 0) => {
   const body = drop > 0 ? torso.slice(0, torso.length - drop) : torso;
   const rows = [...Array(drop).fill(BLANK), ...head, ...body, ...legs];
   if (rows.length !== 16) throw new Error(`프레임이 ${rows.length}줄이다 — 16줄이어야 한다`);
-  return sprite(rows, PAL);
+  // 머리를 네 벌로 늘리면서 넣었다. 한 줄만 길어도 sprite 의 너비가 늘어나
+  // **그 프레임만 옆으로 밀린다** — 달리다 머리가 덜컥거리는 걸로 보인다.
+  for (const row of rows) {
+    if (row.length !== W) throw new Error(`프레임에 ${row.length}칸짜리 줄이 있다 — ${W}칸이어야 한다`);
+  }
+  return sprite(rows, pal);
 };
 
-const PLAYER_SPRITES = {
-  stand: build(HEAD, TORSO.idle, LEGS.stand),
-  runPassA: build(HEAD_LEAN, TORSO.swingA, LEGS.passA),
-  runReachA: build(HEAD_LEAN, TORSO.swingA, LEGS.reachA, 1),
-  runPassB: build(HEAD_LEAN, TORSO.swingB, LEGS.passB),
-  runReachB: build(HEAD_LEAN, TORSO.swingB, LEGS.reachB, 1),
-  jump: build(HEAD, TORSO.rise, LEGS.jump),
-  fall: build(HEAD, TORSO.fall, LEGS.fall),
-  dash: build(HEAD_LEAN, TORSO.dash, LEGS.dash),
+/** 차림새 한 벌의 여덟 프레임 */
+const buildSet = (look) => {
+  const l = sanitizeLook(look);
+  const hair = HAIR[HAIRS[l.hair].id];
+  const pal = {
+    ...PAL,
+    j: JACKETS[l.jacket].color,
+    p: PANTS[l.pants].color,
+    H: JACKETS[l.jacket].color, // 모자는 옷을 따라간다
+    R: PAL.r, // 머리띠는 포인트 색
+  };
+  const b = (head, torso, legs, drop) => build(pal, head, torso, legs, drop);
+  const frames = {
+    stand: b(hair.head, TORSO.idle, LEGS.stand),
+    runPassA: b(hair.lean, TORSO.swingA, LEGS.passA),
+    runReachA: b(hair.lean, TORSO.swingA, LEGS.reachA, 1),
+    runPassB: b(hair.lean, TORSO.swingB, LEGS.passB),
+    runReachB: b(hair.lean, TORSO.swingB, LEGS.reachB, 1),
+    jump: b(hair.head, TORSO.rise, LEGS.jump),
+    fall: b(hair.head, TORSO.fall, LEGS.fall),
+    dash: b(hair.lean, TORSO.dash, LEGS.dash),
+  };
+  // 달리기 한 바퀴는 **frames 바깥**에 둔다. 안에 섞으면 「프레임을 전부 돌며
+  // 크기를 재는」 테스트가 배열 하나를 프레임으로 알고 걸린다 (실제로 걸렸다).
+  return {
+    frames,
+    run: [frames.runReachA, frames.runPassA, frames.runReachB, frames.runPassB],
+  };
 };
+
+/**
+ * 구운 차림새를 들고 있는다.
+ *
+ * **새로 만들어야지 고치면 안 된다.** bake() 는 스프라이트 **객체를 열쇠로**
+ * WeakMap 에 구워두므로, PAL 을 제자리에서 바꾸면 색만 바뀌고 화면은 옛 그림
+ * 그대로다. 차림새마다 객체를 따로 만들어 두면 그 캐시가 저절로 맞는다.
+ */
+const SETS = new Map();
+const spritesFor = (look) => {
+  const key = lookKey(look);
+  if (!SETS.has(key)) SETS.set(key, buildSet(look));
+  return SETS.get(key);
+};
+
+/**
+ * 지금 그릴 차림새.
+ *
+ * playerFrame 은 **일곱 군데**에서 불린다 — 판을 그리는 곳 둘, 컷신 다섯.
+ * 인자로 넘기면 컷신 속 깊은 함수까지 줄줄이 고쳐야 하고, 한 군데라도 빠뜨리면
+ * 「판에서는 꾸민 대로인데 결혼식에서는 원래 옷」이 된다. 그래서 여기서 한 번
+ * 정하고 모두가 같은 걸 본다 (scene.js 가 매 프레임 setLook 을 부른다 — 값이
+ * 같으면 Map 조회 한 번이라 공짜다).
+ */
+let current = spritesFor(DEFAULT_LOOK);
+const setLook = (look) => {
+  current = spritesFor(look);
+};
+
+/** 기본 차림새의 프레임 여덟 장 */
+const PLAYER_SPRITES = spritesFor(DEFAULT_LOOK).frames;
 
 /**
  * 달리기 한 바퀴. 닿음 → 스침 → 닿음(반대) → 스침(반대).
  * 몸이 닿음에서 내려앉고 스침에서 올라와, 걸음마다 위아래로 까딱인다.
  */
-const RUN_CYCLE = [
-  PLAYER_SPRITES.runReachA,
-  PLAYER_SPRITES.runPassA,
-  PLAYER_SPRITES.runReachB,
-  PLAYER_SPRITES.runPassB,
-];
-
 /** 이만큼 달릴 때마다 발이 한 칸 넘어간다 (픽셀) */
 const STRIDE = 9;
 
 /** 이보다 빨리 떨어지고 있으면 떨어지는 그림 */
 const FALLING = 40;
 
-/** 상태에 맞는 프레임 하나 고르기 */
-function playerFrame(player) {
-  if (player.dashTime > 0) return PLAYER_SPRITES.dash;
-  if (!player.onGround) return player.vy > FALLING ? PLAYER_SPRITES.fall : PLAYER_SPRITES.jump;
-  if (Math.abs(player.vx) < 6) return PLAYER_SPRITES.stand;
+/**
+ * 상태에 맞는 프레임 하나 고르기.
+ *
+ * 달리기 한 바퀴는 닿음 → 스침 → 닿음(반대) → 스침(반대). 몸이 닿음에서
+ * 내려앉고 스침에서 올라와, 걸음마다 위아래로 까딱인다.
+ */
+function playerFrame(player, set = current) {
+  const f = set.frames;
+  if (player.dashTime > 0) return f.dash;
+  if (!player.onGround) return player.vy > FALLING ? f.fall : f.jump;
+  if (Math.abs(player.vx) < 6) return f.stand;
   // **시간이 아니라 달린 거리**로 돈다. 시간으로 돌리면 느리게 걸을 때 발이 미끄러진다.
-  const step = Math.floor((player.stride ?? 0) / STRIDE) % RUN_CYCLE.length;
-  return RUN_CYCLE[step];
+  const step = Math.floor((player.stride ?? 0) / STRIDE) % set.run.length;
+  return set.run[step];
 }
 
 /** 스프라이트를 히트박스 기준으로 놓을 때의 보정 */
@@ -9290,7 +9619,7 @@ const RING = sprite(
   { w: '#fff6ef', g: '#ffd166' },
 );
 
-return { PLAYER_SPRITES, playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING };
+return { spritesFor, setLook, PLAYER_SPRITES, playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING };
 })();
 __m["chartrun/src/render/bigtext.js"] = (() => {
 // 컷신에 박히는 큰 글자(PHASE 2, #1 …). 캔버스 폰트를 쓰면 픽셀이 뭉개져서
@@ -12946,7 +13275,7 @@ const { npcInReach, npcDancing, markKey, CEIL_BLADE, SLAB_HANG } = __m["chartrun
 const { npcFrame, npcSpin, npcBob, NPC_OFFSET } = __m["chartrun/src/render/npcSprites.js"];
 const { talkTimeline } = __m["chartrun/src/data/npcTalk.js"];
 const { CAUGHT_CUT, CAUGHT_AT } = __m["chartrun/src/data/caughtCut.js"];
-const { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } = __m["chartrun/src/render/sprites.js"];
+const { playerFrame, setLook, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } = __m["chartrun/src/render/sprites.js"];
 const { ALBUMS } = __m["chartrun/src/data/albums.js"];
 const { VIEW } = __m["chartrun/src/core/game.js"];
 const { bossPhase, bossCombined, ceilingSlabs, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
@@ -14345,6 +14674,39 @@ function drawTitle(ctx, time) {
 // top 은 격자 위 여백. 아래에는 「뒤로」 버튼이 얹히므로 위보다 조금 더 남긴다.
 const GAL = { cols: 6, size: 44, gap: 8, top: 26 };
 
+/**
+ * 꾸미기 화면. 타이틀 배경 위에 주인공을 **크게** 세우고 달리게 한다.
+ *
+ * 서 있는 그림만 보여주면 모자·장발이 달릴 때 어떻게 보이는지 알 수 없다.
+ * 그래서 제자리에서 달리는 걸 보여준다 — stride 를 시간으로 굴리면
+ * 판에서 달릴 때와 **같은 사이클**이 돈다 (playerFrame 이 거리로 고르므로).
+ */
+function drawLook(ctx, game, time) {
+  drawTitle(ctx, time);
+  // 패널이 화면 가운데를 덮으므로 주인공은 **왼쪽 아래**에 둔다
+  const cx = 62;
+  const cy = VIEW.h - 46;
+  const Z = 3;
+
+  // 발 디딜 자리 — 허공에 떠 있으면 크기가 안 읽힌다
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(cx - 22, cy + 1, 44, 3);
+
+  const frame = playerFrame({
+    onGround: true,
+    vx: 40,
+    vy: 0,
+    dashTime: 0,
+    stride: time * 60,
+  });
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.translate(cx - (frame.w * Z) / 2, cy - frame.h * Z);
+  ctx.scale(Z, Z);
+  drawSprite(ctx, frame, 0, 0);
+  ctx.restore();
+}
+
 function drawGallery(ctx, time) {
   const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
   grad.addColorStop(0, '#09040f');
@@ -14380,10 +14742,18 @@ function drawGallery(ctx, time) {
 
 // ── 전체 ────────────────────────────────────────────────────
 function drawScene(ctx, game, time) {
+  // 꾸민 차림새를 **여기 한 군데서** 정한다. playerFrame 은 판에서 둘, 컷신에서
+  // 다섯 번 불리는데 인자로 넘기면 한 군데만 빠뜨려도 「판에서는 꾸민 대로인데
+  // 결혼식에서는 원래 옷」이 된다. 값이 같으면 Map 조회 한 번이라 공짜다.
+  setLook(game.save?.look);
   crisp(ctx);
   // 스테이지 선택도 타이틀 배경 위에 뜬다 (판이 아직 없어서 그릴 월드가 없다)
   if (game.scene === 'title' || game.scene === 'select') {
     drawTitle(ctx, time);
+    return;
+  }
+  if (game.scene === 'look') {
+    drawLook(ctx, game, time);
     return;
   }
   if (game.scene === 'gallery') {
@@ -14551,7 +14921,7 @@ function drawEffects(ctx, game, ox, oy, time) {
 }
 
 
-return { drawTitle, drawGallery, drawScene };
+return { drawTitle, drawLook, drawGallery, drawScene };
 })();
 __m["chartrun/src/render/hud.js"] = (() => {
 // 화면에 나오는 글자는 여기가 전부고, 전부 "정보"다 —
@@ -14560,6 +14930,7 @@ const { timeText } = __m["chartrun/src/core/util.js"];
 const { beatRecord } = __m["chartrun/src/core/save.js"];
 const { STAGES, NOTE_TOTAL } = __m["chartrun/src/data/stages.js"];
 const { KEYPAD } = __m["chartrun/src/core/devmode.js"];
+const { LOOK_SLOTS } = __m["chartrun/src/data/looks.js"];
 const { ACTIONS } = __m["chartrun/src/core/input.js"];
 const { PAUSE_ROWS, stageTable, selectItems, cutPreviews, titleRows, inCutscene, notesFound } = __m["chartrun/src/core/game.js"];
 
@@ -14731,6 +15102,30 @@ function createHud(root) {
             <button type="button" class="dev-open" data-key="open" aria-label="개발자 모드">DEV</button>
           </div>`;
       }
+      /**
+       * 꾸미기. 줄마다 「◀ 이름 ▶」이고, 고르고 있는 줄만 밝다.
+       * 캔버스가 주인공을 크게 그려주므로 **여기서는 이름만** 말한다.
+       */
+      case 'look': {
+        const look = game.save.look ?? {};
+        return `
+          <div class="panel look-panel">
+            <h2>꾸미기</h2>
+            <ul class="looks">
+              ${LOOK_SLOTS.map((slot, i) => {
+                const item = slot.items[look[slot.key] ?? 0] ?? slot.items[0];
+                return `<li class="${i === game.lookIndex ? 'on' : ''}">
+                  <span class="look-name">${esc(slot.label)}</span>
+                  <button type="button" data-key="look:${slot.key}:-1">◀</button>
+                  <b>${esc(item.label)}</b>
+                  <button type="button" data-key="look:${slot.key}:1">▶</button>
+                </li>`;
+              }).join('')}
+            </ul>
+            <p class="press">◀▶ 로 바꾸고 점프로 다음 줄 · 눌러도 된다</p>
+            <button type="button" class="back-btn" data-key="look:back">뒤로</button>
+          </div>`;
+      }
       case 'cutList': {
         // 목록은 core 가 갖고 있다 — 여기 또 적으면 화면과 실제로 트는 게 어긋난다
         return `
@@ -14856,6 +15251,7 @@ function createHud(root) {
       // 위에 남아 같은 값을 한 번 더 보여주고 있었다.
       el.hud.hidden =
         game.scene === 'title' ||
+        game.scene === 'look' ||
         game.scene === 'select' ||
         game.scene === 'gallery' ||
         game.scene === 'ending' ||
@@ -15585,6 +15981,7 @@ __m["chartrun/src/ui/app.js"] = (() => {
 // 차트런 진입점. 캔버스를 켜고, 입력·소리·게임 상태를 이어 붙인다.
 const { createGame, updateGame, runSummary, resumeState, setDevMode, pausable, inCutscene, PAUSE_ROWS, VIEW } = __m["chartrun/src/core/game.js"];
 const { DEV_CODE, pushDigit, codeMatches, pushTap, tapOpens } = __m["chartrun/src/core/devmode.js"];
+const { LOOK_SLOTS } = __m["chartrun/src/data/looks.js"];
 const { createLoop } = __m["chartrun/src/core/loop.js"];
 const { createInput, bindTouchButtons } = __m["chartrun/src/core/input.js"];
 const { createAudio, nextVolume } = __m["chartrun/src/core/audio.js"];
@@ -15950,6 +16347,24 @@ function pressKey(key) {
       game.selectIndex = Number(what);
       updateGame(game, { ...frame, restartPressed: false, confirmPressed: true }, 0);
     }
+    return;
+  }
+  // 꾸미기. 화살표를 눌러 그 줄만 바꾼다 — 줄을 옮길 것 없이 바로 그 칸이 돈다.
+  // (◀▶ 키는 「고르고 있는 줄」을 바꾸지만, 탭은 누른 줄을 바꾸는 게 자연스럽다)
+  if (key.startsWith('look:')) {
+    if (game.scene !== 'look') return;
+    const what = key.slice('look:'.length);
+    const frame = { ...input, leftPressed: false, rightPressed: false };
+    if (what === 'back') {
+      updateGame(game, { ...frame, restartPressed: true, confirmPressed: false }, 0);
+      return;
+    }
+    const [slot, step] = what.split(':');
+    const at = LOOK_SLOTS.findIndex((s) => s.key === slot);
+    if (at < 0) return;
+    game.lookIndex = at;
+    const dir = Number(step) > 0 ? { rightPressed: true } : { leftPressed: true };
+    updateGame(game, { ...frame, ...dir, confirmPressed: false }, 0);
     return;
   }
   // 컷신 보기도 같은 방식 (개발자 모드). 여기도 폰에는 R 키가 없다.

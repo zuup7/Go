@@ -1,5 +1,6 @@
 // 주인공 스프라이트. 12×16 픽셀, 히트박스(10×14)보다 살짝 크다.
 import { sprite } from './pixel.js';
+import { HAIRS, JACKETS, PANTS, DEFAULT_LOOK, sanitizeLook, lookKey } from '../data/looks.js';
 
 const PAL = {
   k: '#20182e', // 머리·윤곽
@@ -14,26 +15,102 @@ const PAL = {
 const W = 12;
 const BLANK = '............';
 
-const HEAD = [
-  '....kkkk....',
-  '...kkkkkk...',
-  '..kkkkkkkk..',
-  '..kssssssk..',
-  '..kskssksk..',
-  '..ksskkssk..',
-  '...kssssk...',
-];
-
-/** 달릴 때 앞으로 숙인 머리 — 한 칸 앞으로 나간다 */
-const HEAD_LEAN = [
-  '.....kkkk...',
-  '....kkkkkk..',
-  '...kkkkkkkk.',
-  '...kssssssk.',
-  '...kskssksk.',
-  '...ksskkssk.',
-  '....kssssk..',
-];
+/**
+ * 머리 네 벌. **어느 벌이든 7줄 × 12칸**이고, 얼굴(눈·입)은 아래 네 줄에서
+ * 똑같다 — 머리만 갈아 끼우는 것이라 표정은 안 건드린다.
+ *
+ * 벌마다 숙인 것(달릴 때)을 따로 둔다. 한 칸 앞으로 나간 것뿐인데, 코드로
+ * 밀면 12칸 밖으로 나가는 줄이 생겨서 손으로 적어둔다.
+ *
+ * `H` 는 **옷 색을 따라간다** (모자를 옷과 맞춘다). `R` 은 포인트 색이다.
+ * 이름(base·cap·band·long)은 data/looks.js 의 HAIRS 와 같아야 한다 —
+ * 어긋나면 tests/look.test.js 가 양쪽에서 잡는다.
+ */
+const HAIR = {
+  base: {
+    head: [
+      '....kkkk....',
+      '...kkkkkk...',
+      '..kkkkkkkk..',
+      '..kssssssk..',
+      '..kskssksk..',
+      '..ksskkssk..',
+      '...kssssk...',
+    ],
+    lean: [
+      '.....kkkk...',
+      '....kkkkkk..',
+      '...kkkkkkkk.',
+      '...kssssssk.',
+      '...kskssksk.',
+      '...ksskkssk.',
+      '....kssssk..',
+    ],
+  },
+  /** 캡 모자 — 챙이 앞(오른쪽)으로 나간다. 색은 옷을 따라간다 */
+  cap: {
+    head: [
+      '...HHHHHH...',
+      '..HHHHHHHHH.',
+      '..kkkkkkkk..',
+      '..kssssssk..',
+      '..kskssksk..',
+      '..ksskkssk..',
+      '...kssssk...',
+    ],
+    lean: [
+      '....HHHHHH..',
+      '...HHHHHHHHH',
+      '...kkkkkkkk.',
+      '...kssssssk.',
+      '...kskssksk.',
+      '...ksskkssk.',
+      '....kssssk..',
+    ],
+  },
+  /** 머리띠 — 머리선 자리에 포인트 색 한 줄 */
+  band: {
+    head: [
+      '....kkkk....',
+      '...kkkkkk...',
+      '.RRRRRRRRRR.',
+      '..kssssssk..',
+      '..kskssksk..',
+      '..ksskkssk..',
+      '...kssssk...',
+    ],
+    lean: [
+      '.....kkkk...',
+      '....kkkkkk..',
+      '..RRRRRRRRRR',
+      '...kssssssk.',
+      '...kskssksk.',
+      '...ksskkssk.',
+      '....kssssk..',
+    ],
+  },
+  /** 장발 — 옆머리가 턱 밑까지 내려온다 */
+  long: {
+    head: [
+      '....kkkk....',
+      '...kkkkkk...',
+      '..kkkkkkkk..',
+      '.kksssssskk.',
+      '.kksksskskk.',
+      '.kksskksskk.',
+      '.kkksssskkk.',
+    ],
+    lean: [
+      '.....kkkk...',
+      '....kkkkkk..',
+      '...kkkkkkkk.',
+      '..kksssssskk',
+      '..kksksskskk',
+      '..kksskksskk',
+      '..kkksssskkk',
+    ],
+  },
+};
 
 const TORSO = {
   /** 가만히 — 두 팔이 몸 옆에 */
@@ -121,49 +198,103 @@ const LEGS = {
  * 실제로 한 번 그렇게 만들어놓고 화면에서 다리를 잃어버렸다.
  * 몸통이 줄어드는 건 발이 땅을 찰 때 상체가 눌리는 것이라 그림으로도 맞다.
  */
-const build = (head, torso, legs, drop = 0) => {
+const build = (pal, head, torso, legs, drop = 0) => {
   const body = drop > 0 ? torso.slice(0, torso.length - drop) : torso;
   const rows = [...Array(drop).fill(BLANK), ...head, ...body, ...legs];
   if (rows.length !== 16) throw new Error(`프레임이 ${rows.length}줄이다 — 16줄이어야 한다`);
-  return sprite(rows, PAL);
+  // 머리를 네 벌로 늘리면서 넣었다. 한 줄만 길어도 sprite 의 너비가 늘어나
+  // **그 프레임만 옆으로 밀린다** — 달리다 머리가 덜컥거리는 걸로 보인다.
+  for (const row of rows) {
+    if (row.length !== W) throw new Error(`프레임에 ${row.length}칸짜리 줄이 있다 — ${W}칸이어야 한다`);
+  }
+  return sprite(rows, pal);
 };
 
-export const PLAYER_SPRITES = {
-  stand: build(HEAD, TORSO.idle, LEGS.stand),
-  runPassA: build(HEAD_LEAN, TORSO.swingA, LEGS.passA),
-  runReachA: build(HEAD_LEAN, TORSO.swingA, LEGS.reachA, 1),
-  runPassB: build(HEAD_LEAN, TORSO.swingB, LEGS.passB),
-  runReachB: build(HEAD_LEAN, TORSO.swingB, LEGS.reachB, 1),
-  jump: build(HEAD, TORSO.rise, LEGS.jump),
-  fall: build(HEAD, TORSO.fall, LEGS.fall),
-  dash: build(HEAD_LEAN, TORSO.dash, LEGS.dash),
+/** 차림새 한 벌의 여덟 프레임 */
+const buildSet = (look) => {
+  const l = sanitizeLook(look);
+  const hair = HAIR[HAIRS[l.hair].id];
+  const pal = {
+    ...PAL,
+    j: JACKETS[l.jacket].color,
+    p: PANTS[l.pants].color,
+    H: JACKETS[l.jacket].color, // 모자는 옷을 따라간다
+    R: PAL.r, // 머리띠는 포인트 색
+  };
+  const b = (head, torso, legs, drop) => build(pal, head, torso, legs, drop);
+  const frames = {
+    stand: b(hair.head, TORSO.idle, LEGS.stand),
+    runPassA: b(hair.lean, TORSO.swingA, LEGS.passA),
+    runReachA: b(hair.lean, TORSO.swingA, LEGS.reachA, 1),
+    runPassB: b(hair.lean, TORSO.swingB, LEGS.passB),
+    runReachB: b(hair.lean, TORSO.swingB, LEGS.reachB, 1),
+    jump: b(hair.head, TORSO.rise, LEGS.jump),
+    fall: b(hair.head, TORSO.fall, LEGS.fall),
+    dash: b(hair.lean, TORSO.dash, LEGS.dash),
+  };
+  // 달리기 한 바퀴는 **frames 바깥**에 둔다. 안에 섞으면 「프레임을 전부 돌며
+  // 크기를 재는」 테스트가 배열 하나를 프레임으로 알고 걸린다 (실제로 걸렸다).
+  return {
+    frames,
+    run: [frames.runReachA, frames.runPassA, frames.runReachB, frames.runPassB],
+  };
 };
+
+/**
+ * 구운 차림새를 들고 있는다.
+ *
+ * **새로 만들어야지 고치면 안 된다.** bake() 는 스프라이트 **객체를 열쇠로**
+ * WeakMap 에 구워두므로, PAL 을 제자리에서 바꾸면 색만 바뀌고 화면은 옛 그림
+ * 그대로다. 차림새마다 객체를 따로 만들어 두면 그 캐시가 저절로 맞는다.
+ */
+const SETS = new Map();
+export const spritesFor = (look) => {
+  const key = lookKey(look);
+  if (!SETS.has(key)) SETS.set(key, buildSet(look));
+  return SETS.get(key);
+};
+
+/**
+ * 지금 그릴 차림새.
+ *
+ * playerFrame 은 **일곱 군데**에서 불린다 — 판을 그리는 곳 둘, 컷신 다섯.
+ * 인자로 넘기면 컷신 속 깊은 함수까지 줄줄이 고쳐야 하고, 한 군데라도 빠뜨리면
+ * 「판에서는 꾸민 대로인데 결혼식에서는 원래 옷」이 된다. 그래서 여기서 한 번
+ * 정하고 모두가 같은 걸 본다 (scene.js 가 매 프레임 setLook 을 부른다 — 값이
+ * 같으면 Map 조회 한 번이라 공짜다).
+ */
+let current = spritesFor(DEFAULT_LOOK);
+export const setLook = (look) => {
+  current = spritesFor(look);
+};
+
+/** 기본 차림새의 프레임 여덟 장 */
+export const PLAYER_SPRITES = spritesFor(DEFAULT_LOOK).frames;
 
 /**
  * 달리기 한 바퀴. 닿음 → 스침 → 닿음(반대) → 스침(반대).
  * 몸이 닿음에서 내려앉고 스침에서 올라와, 걸음마다 위아래로 까딱인다.
  */
-const RUN_CYCLE = [
-  PLAYER_SPRITES.runReachA,
-  PLAYER_SPRITES.runPassA,
-  PLAYER_SPRITES.runReachB,
-  PLAYER_SPRITES.runPassB,
-];
-
 /** 이만큼 달릴 때마다 발이 한 칸 넘어간다 (픽셀) */
 const STRIDE = 9;
 
 /** 이보다 빨리 떨어지고 있으면 떨어지는 그림 */
 const FALLING = 40;
 
-/** 상태에 맞는 프레임 하나 고르기 */
-export function playerFrame(player) {
-  if (player.dashTime > 0) return PLAYER_SPRITES.dash;
-  if (!player.onGround) return player.vy > FALLING ? PLAYER_SPRITES.fall : PLAYER_SPRITES.jump;
-  if (Math.abs(player.vx) < 6) return PLAYER_SPRITES.stand;
+/**
+ * 상태에 맞는 프레임 하나 고르기.
+ *
+ * 달리기 한 바퀴는 닿음 → 스침 → 닿음(반대) → 스침(반대). 몸이 닿음에서
+ * 내려앉고 스침에서 올라와, 걸음마다 위아래로 까딱인다.
+ */
+export function playerFrame(player, set = current) {
+  const f = set.frames;
+  if (player.dashTime > 0) return f.dash;
+  if (!player.onGround) return player.vy > FALLING ? f.fall : f.jump;
+  if (Math.abs(player.vx) < 6) return f.stand;
   // **시간이 아니라 달린 거리**로 돈다. 시간으로 돌리면 느리게 걸을 때 발이 미끄러진다.
-  const step = Math.floor((player.stride ?? 0) / STRIDE) % RUN_CYCLE.length;
-  return RUN_CYCLE[step];
+  const step = Math.floor((player.stride ?? 0) / STRIDE) % set.run.length;
+  return set.run[step];
 }
 
 /** 스프라이트를 히트박스 기준으로 놓을 때의 보정 */

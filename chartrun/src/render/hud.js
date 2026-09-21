@@ -4,6 +4,7 @@ import { timeText } from '../core/util.js';
 import { beatRecord } from '../core/save.js';
 import { STAGES, NOTE_TOTAL } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
+import { LOOK_SLOTS } from '../data/looks.js';
 import { ACTIONS } from '../core/input.js';
 import {
   PAUSE_ROWS,
@@ -183,6 +184,30 @@ export function createHud(root) {
             <button type="button" class="dev-open" data-key="open" aria-label="개발자 모드">DEV</button>
           </div>`;
       }
+      /**
+       * 꾸미기. 줄마다 「◀ 이름 ▶」이고, 고르고 있는 줄만 밝다.
+       * 캔버스가 주인공을 크게 그려주므로 **여기서는 이름만** 말한다.
+       */
+      case 'look': {
+        const look = game.save.look ?? {};
+        return `
+          <div class="panel look-panel">
+            <h2>꾸미기</h2>
+            <ul class="looks">
+              ${LOOK_SLOTS.map((slot, i) => {
+                const item = slot.items[look[slot.key] ?? 0] ?? slot.items[0];
+                return `<li class="${i === game.lookIndex ? 'on' : ''}">
+                  <span class="look-name">${esc(slot.label)}</span>
+                  <button type="button" data-key="look:${slot.key}:-1">◀</button>
+                  <b>${esc(item.label)}</b>
+                  <button type="button" data-key="look:${slot.key}:1">▶</button>
+                </li>`;
+              }).join('')}
+            </ul>
+            <p class="press">◀▶ 로 바꾸고 점프로 다음 줄 · 눌러도 된다</p>
+            <button type="button" class="back-btn" data-key="look:back">뒤로</button>
+          </div>`;
+      }
       case 'cutList': {
         // 목록은 core 가 갖고 있다 — 여기 또 적으면 화면과 실제로 트는 게 어긋난다
         return `
@@ -308,6 +333,7 @@ export function createHud(root) {
       // 위에 남아 같은 값을 한 번 더 보여주고 있었다.
       el.hud.hidden =
         game.scene === 'title' ||
+        game.scene === 'look' ||
         game.scene === 'select' ||
         game.scene === 'gallery' ||
         game.scene === 'ending' ||

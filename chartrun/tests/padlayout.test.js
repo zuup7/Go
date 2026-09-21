@@ -273,3 +273,12 @@ test('개발자 버튼은 글자체에 있는 글자로 찍는다', () => {
   assert.ok(btn != null, 'hud 에 개발자 모드 버튼이 없다');
   assert.match(btn.trim(), /^[A-Za-z]+$/, `"${btn}" — 글자체에 없는 글자는 기기마다 다르게 나온다`);
 });
+
+test('「뒤로」는 어느 화면에서든 눌린다 — 폰에는 R 키가 없다', () => {
+  // .ui 전체가 pointer-events: none 이라 되살려야 눌린다. 예전엔 화면 이름을
+  // 찍어 적어뒀고(.select-panel .back-btn), 새 화면을 만들자 거기 「뒤로」가
+  // 죽은 채로 나갔다 — 들어가면 나올 방법이 없었다. 화면 이름 없이 적혀야 한다.
+  const css = readFileSync(new URL('../assets/style.css', import.meta.url), 'utf8');
+  const rule = css.match(/(^|\})\s*\.back-btn\s*\{([^}]*)\}/m)?.[2] ?? '';
+  assert.match(rule, /pointer-events:\s*auto/, '「뒤로」가 화면을 찍어 적혀 있다');
+});

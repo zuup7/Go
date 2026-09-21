@@ -12,6 +12,7 @@ import {
   cutSlotOf,
   SELECT_DEV_OFF,
   SELECT_SLOTS,
+  titleRows,
 } from '../src/core/game.js';
 import { DEV_CODE, pushDigit, codeMatches, KEYPAD, pushTap, tapOpens, TAP_OPEN, TAP_WINDOW } from '../src/core/devmode.js';
 import { readFileSync } from 'node:fs';
@@ -82,20 +83,21 @@ test('개발자 모드를 안 켰으면 타이틀에서 바로 시작한다 — 
   assert.equal(game.partial, false);
 });
 
-test('개발자 모드가 꺼져 있으면 ◀▶ 를 눌러도 선택 화면이 안 열린다', () => {
+test('개발자 모드가 꺼져 있으면 타이틀에 「스테이지 선택」이 없다', () => {
+  // **자리 번호로 보지 않는다.** 예전엔 titleIndex 가 0 인지 봤는데, 타이틀에
+  // 줄을 하나 더하자(꾸미기) 번호가 밀려서 엉뚱하게 깨졌다. 줄 이름으로 찾는다.
   const game = played();
-  tap(game, { rightPressed: true });
-  assert.equal(game.titleIndex, 0, '고를 줄 자체가 없어야 한다');
-  tap(game, { confirmPressed: true });
-  assert.equal(game.scene, 'stageIntro');
+  const actions = titleRows(game).map((r) => r.action);
+  assert.ok(!actions.includes('select'), `깨지도 않았는데 ${actions.join(',')} 가 보인다`);
 });
 
 // ── 켠 뒤 ───────────────────────────────────────────────────
 test('켜면 타이틀에서 스테이지 선택으로 갈 수 있다', () => {
   const game = played();
   setDevMode(game, true);
-  tap(game, { rightPressed: true });
-  assert.equal(game.titleIndex, 1);
+  const at = titleRows(game).findIndex((r) => r.action === 'select');
+  assert.ok(at >= 0, '켰는데 「스테이지 선택」 줄이 없다');
+  game.titleIndex = at;
   tap(game, { confirmPressed: true });
   assert.equal(game.scene, 'select');
 });

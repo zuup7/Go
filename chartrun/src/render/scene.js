@@ -16,7 +16,7 @@ import { npcInReach, npcDancing, markKey, CEIL_BLADE, SLAB_HANG } from '../core/
 import { npcFrame, npcSpin, npcBob, NPC_OFFSET } from './npcSprites.js';
 import { talkTimeline } from '../data/npcTalk.js';
 import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
-import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
+import { playerFrame, setLook, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import {
@@ -1430,6 +1430,39 @@ export function drawTitle(ctx, time) {
 // top 은 격자 위 여백. 아래에는 「뒤로」 버튼이 얹히므로 위보다 조금 더 남긴다.
 const GAL = { cols: 6, size: 44, gap: 8, top: 26 };
 
+/**
+ * 꾸미기 화면. 타이틀 배경 위에 주인공을 **크게** 세우고 달리게 한다.
+ *
+ * 서 있는 그림만 보여주면 모자·장발이 달릴 때 어떻게 보이는지 알 수 없다.
+ * 그래서 제자리에서 달리는 걸 보여준다 — stride 를 시간으로 굴리면
+ * 판에서 달릴 때와 **같은 사이클**이 돈다 (playerFrame 이 거리로 고르므로).
+ */
+export function drawLook(ctx, game, time) {
+  drawTitle(ctx, time);
+  // 패널이 화면 가운데를 덮으므로 주인공은 **왼쪽 아래**에 둔다
+  const cx = 62;
+  const cy = VIEW.h - 46;
+  const Z = 3;
+
+  // 발 디딜 자리 — 허공에 떠 있으면 크기가 안 읽힌다
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(cx - 22, cy + 1, 44, 3);
+
+  const frame = playerFrame({
+    onGround: true,
+    vx: 40,
+    vy: 0,
+    dashTime: 0,
+    stride: time * 60,
+  });
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.translate(cx - (frame.w * Z) / 2, cy - frame.h * Z);
+  ctx.scale(Z, Z);
+  drawSprite(ctx, frame, 0, 0);
+  ctx.restore();
+}
+
 export function drawGallery(ctx, time) {
   const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
   grad.addColorStop(0, '#09040f');
@@ -1465,10 +1498,18 @@ export function drawGallery(ctx, time) {
 
 // ── 전체 ────────────────────────────────────────────────────
 export function drawScene(ctx, game, time) {
+  // 꾸민 차림새를 **여기 한 군데서** 정한다. playerFrame 은 판에서 둘, 컷신에서
+  // 다섯 번 불리는데 인자로 넘기면 한 군데만 빠뜨려도 「판에서는 꾸민 대로인데
+  // 결혼식에서는 원래 옷」이 된다. 값이 같으면 Map 조회 한 번이라 공짜다.
+  setLook(game.save?.look);
   crisp(ctx);
   // 스테이지 선택도 타이틀 배경 위에 뜬다 (판이 아직 없어서 그릴 월드가 없다)
   if (game.scene === 'title' || game.scene === 'select') {
     drawTitle(ctx, time);
+    return;
+  }
+  if (game.scene === 'look') {
+    drawLook(ctx, game, time);
     return;
   }
   if (game.scene === 'gallery') {

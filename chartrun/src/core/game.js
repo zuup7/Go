@@ -33,6 +33,7 @@ import {
 } from '../data/bossCutscenes.js';
 import { introTimeline, introCutLength } from '../data/introCutscene.js';
 import { talkTimeline, talkLength, HINT_TALKS } from '../data/npcTalk.js';
+import { LOOK_SLOTS, sanitizeLook, cycleLook } from '../data/looks.js';
 import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
@@ -72,6 +73,9 @@ const INTRO_HOLD = 2.0;
 
 export function createGame(options = {}) {
   const save = options.save ?? emptySave();
+  // 저장값을 그대로 믿지 않는다. 옛 저장에는 이 칸이 아예 없고, 항목을 줄이면
+  // 있던 번호가 범위 밖으로 나가 그림이 undefined 가 된다 — 주인공이 안 그려진다.
+  save.look = sanitizeLook(save.look);
   const game = {
     scene: 'title',
     sceneTime: 0,
@@ -185,6 +189,8 @@ export function createGame(options = {}) {
     cutPreview: null,
     /** 컷신 목록에서 고르고 있는 자리 */
     cutIndex: 0,
+    /** 꾸미기에서 고르고 있는 줄 (LOOK_SLOTS 의 자리) */
+    lookIndex: 0,
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -1424,6 +1430,10 @@ export function titleRows(game) {
   if (game.save?.resume) {
     rows.unshift({ label: resumeLabel(game.save.resume), action: 'resume' });
   }
+  // 꾸미기. **처음 켠 사람에게는 안 보인다** — 아래 updateGame 이 줄이 하나뿐이면
+  // 메뉴 없이 바로 시작하는데, 그게 이 게임의 첫인상이다. 오프닝을 본 뒤,
+  // 즉 두 번째로 켰을 때부터 타이틀에 나온다. 해금이랄 것도 없이 바로 보인다.
+  if (game.save?.seenOpening) rows.push({ label: '꾸미기', action: 'look' });
   if (canSelect(game)) rows.push({ label: '스테이지 선택', action: 'select' });
   // 2회차가 있다는 걸 **여기서 말해준다.** 예전에는 깨고 나면 말없이 스테이지 1 로
   // 되돌려놓는 게 전부라, NPC 를 지나치면 2회차가 있는 줄도 몰랐다.
@@ -1900,10 +1910,38 @@ export function updateGame(game, input, dt) {
           game.scene = 'select';
           game.sceneTime = 0;
           game.selectIndex = 0;
+        } else if (pick?.action === 'look') {
+          game.scene = 'look';
+          game.sceneTime = 0;
+          game.lookIndex = 0;
         } else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'gallery') openGallery(game, 'title');
         else if (pick?.action === 'resume') resumeRun(game, game.save.resume);
         else startRun(game);
+      }
+      break;
+    }
+
+    /**
+     * 꾸미기. 줄(머리·옷·바지)을 위아래로 고르고 좌우로 넘긴다.
+     *
+     * 스테이지 선택과 **좌우의 뜻이 다르다.** 거기는 좌우로 칸을 옮기지만
+     * 여기는 좌우가 「그 줄의 다음 것」이다 — 줄이 셋뿐이고 각 줄마다 고를 게
+     * 여럿이라, 좌우를 줄 이동에 쓰면 넘기는 데 키가 하나 모자란다.
+     * 줄 이동은 점프(확인)가 맡는다 — 폰에 버튼을 더 안 붙이려고.
+     */
+    case 'look': {
+      const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
+      const slot = LOOK_SLOTS[game.lookIndex % LOOK_SLOTS.length];
+      if (moved) {
+        game.save.look = cycleLook(game.save.look, slot.key, moved);
+        emit(game, 'look', { look: game.save.look });
+      }
+      if (input.restartPressed) {
+        game.scene = 'title';
+        game.sceneTime = 0;
+      } else if (input.confirmPressed) {
+        game.lookIndex = (game.lookIndex + 1) % LOOK_SLOTS.length;
       }
       break;
     }

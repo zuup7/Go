@@ -2,6 +2,8 @@
 export const SAVE_KEY = 'chartrun/save-v1';
 export const SAVE_VERSION = 1;
 
+import { DEFAULT_LOOK } from '../data/looks.js';
+
 /**
  * 저장소. 없으면 null 이고, 그러면 게임은 기록 없이 그냥 돌아간다.
  *
@@ -57,6 +59,12 @@ export const emptySave = () => ({
    * revealedTraps 와 같은 모양이라 여러 판에 걸쳐 모을 수 있다.
    */
   foundNotes: [],
+  /**
+   * 꾸민 차림새 `{ hair, jacket, pants }` (data/looks.js 의 번호들).
+   * 저장값을 그대로 믿지 않는다 — sanitizeLook 을 거쳐서 쓴다. 항목을 줄이면
+   * 있던 번호가 범위 밖으로 나가고, 그러면 그림이 undefined 가 되어 안 그려진다.
+   */
+  look: { ...DEFAULT_LOOK },
   /**
    * **하던 판.** 없으면 null.
    *

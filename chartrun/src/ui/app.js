@@ -11,6 +11,7 @@ import {
   VIEW,
 } from '../core/game.js';
 import { DEV_CODE, pushDigit, codeMatches, pushTap, tapOpens } from '../core/devmode.js';
+import { LOOK_SLOTS } from '../data/looks.js';
 import { createLoop } from '../core/loop.js';
 import { createInput, bindTouchButtons } from '../core/input.js';
 import { createAudio, nextVolume } from '../core/audio.js';
@@ -376,6 +377,24 @@ function pressKey(key) {
       game.selectIndex = Number(what);
       updateGame(game, { ...frame, restartPressed: false, confirmPressed: true }, 0);
     }
+    return;
+  }
+  // 꾸미기. 화살표를 눌러 그 줄만 바꾼다 — 줄을 옮길 것 없이 바로 그 칸이 돈다.
+  // (◀▶ 키는 「고르고 있는 줄」을 바꾸지만, 탭은 누른 줄을 바꾸는 게 자연스럽다)
+  if (key.startsWith('look:')) {
+    if (game.scene !== 'look') return;
+    const what = key.slice('look:'.length);
+    const frame = { ...input, leftPressed: false, rightPressed: false };
+    if (what === 'back') {
+      updateGame(game, { ...frame, restartPressed: true, confirmPressed: false }, 0);
+      return;
+    }
+    const [slot, step] = what.split(':');
+    const at = LOOK_SLOTS.findIndex((s) => s.key === slot);
+    if (at < 0) return;
+    game.lookIndex = at;
+    const dir = Number(step) > 0 ? { rightPressed: true } : { leftPressed: true };
+    updateGame(game, { ...frame, ...dir, confirmPressed: false }, 0);
     return;
   }
   // 컷신 보기도 같은 방식 (개발자 모드). 여기도 폰에는 R 키가 없다.

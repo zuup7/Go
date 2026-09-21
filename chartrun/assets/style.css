@@ -327,6 +327,69 @@ canvas#game {
   border-color: var(--hot);
 }
 
+/* 꾸미기 — 줄마다 「◀ 이름 ▶」. 패널을 화면 오른쪽으로 밀어 캔버스가 그리는
+   주인공(왼쪽 아래)을 안 가린다 */
+.look-panel {
+  margin-left: auto;
+  margin-right: 6%;
+}
+
+.looks {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.9em;
+}
+
+.looks li {
+  display: grid;
+  grid-template-columns: 3.2em 1.8em 1fr 1.8em;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  color: var(--dim);
+}
+
+/* 고르고 있는 줄. ◀▶ 키가 **이 줄**을 바꾼다는 걸 테두리로 말한다 */
+.looks li.on {
+  border-color: var(--hot);
+  color: var(--ink);
+}
+
+.looks .look-name {
+  text-align: left;
+  font-size: 0.85em;
+}
+
+.looks b {
+  text-align: center;
+  color: var(--ink);
+}
+
+.looks button {
+  /* .ui 전체가 pointer-events: none 이라 눌리는 것만 되살린다 */
+  pointer-events: auto;
+  padding: 2px 0;
+  min-height: 28px;
+  font-family: var(--font);
+  font-size: 0.9em;
+  color: var(--dim);
+  background: rgba(67, 38, 95, 0.55);
+  border: 1px solid #6b4a8f;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.looks button:active {
+  background: var(--hot);
+  border-color: #ffd7e2;
+  color: var(--ink);
+}
+
 /* 고르는 줄 (타이틀 · 스테이지 선택) */
 .menu,
 .slots {
@@ -842,8 +905,18 @@ body.in-cut:not(.pad-editing) .touch-right {
    .ui 위에 캔버스가 얹혀 있어서 여기서 되살리지 않으면 줄을 눌러도 캔버스가 먹는다.
    특히 「뒤로」는 이게 없으면 폰에서 누를 방법이 아예 없다 (R 키가 없다). */
 .title-panel .menu,
-.select-panel .slots,
-.select-panel .back-btn {
+.select-panel .slots {
+  pointer-events: auto;
+}
+
+/**
+ * 「뒤로」는 **패널을 가리지 않고** 항상 눌린다.
+ *
+ * 예전엔 `.select-panel .back-btn` 이라고 화면을 찍어 적어뒀는데, 꾸미기 화면을
+ * 새로 만들면서 거기 「뒤로」가 죽은 채로 나갔다 — 폰에는 R 키가 없어서 그 화면에
+ * 들어가면 **나올 방법이 없었다.** 화면 이름을 안 적어야 다음 화면도 안 걸린다.
+ */
+.back-btn {
   pointer-events: auto;
 }
 
