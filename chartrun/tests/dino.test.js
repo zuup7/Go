@@ -33,12 +33,18 @@ const step = (boss, seconds, over) => {
   for (let i = 0; i < Math.round(seconds / DT); i++) updateBoss(boss, ctx(over), DT);
 };
 
-/** 값 넷이 제 범위 안이고 숫자인가 */
+/** 값들이 제 범위 안이고 숫자인가 */
 function assertSane(pose, where) {
   for (const [key, lo, hi] of [
     ['swing', -1, 1],
     ['paw', -1, 1],
     ['jaw', 0, 1],
+    // 몸을 움직이는 값들. 범위를 넘으면 팔이 한 바퀴 돌거나 불길이 화면을 덮는다
+    ['lift', 0, 1],
+    ['lean', -1, 1],
+    ['fire', 0, 1],
+    ['charge', 0, 1],
+    ['beam', 0, 1],
   ]) {
     assert.ok(Number.isFinite(pose[key]), `${where}: ${key} 가 숫자가 아니다 (${pose[key]})`);
     assert.ok(pose[key] >= lo && pose[key] <= hi, `${where}: ${key} 가 범위 밖 (${pose[key]})`);
@@ -231,4 +237,128 @@ test('내리꽂기가 멈추는 자리가 곧 발이 닿는 높이다 — 값이
   assert.equal(boss.y, bossFloor(boss), '멈춘 자리와 bossFloor 가 어긋났다');
   assert.equal(bossPose(boss).lift, 0, '발은 땅에 닿았는데 추진기가 타고 있다');
   assert.equal(bossFloor(boss), boss.floorY - BOSS_H - 6);
+});
+
+// ── 팔을 움직이는 값들 ──────────────────────────────────────
+// 로봇 팔이 「떠 있기만 하고 아무것도 안 하는」 이유는 그리는 쪽이 읽을 게
+// 없어서였다. 무엇을 하는 중인지 core 가 값으로 말해줘야 한다.
+
+/** 보스가 실제로 한 무더기 쏠 때까지 굴린다 */
+function untilFires(boss, over) {
+  const before = boss.fireKick ?? 0;
+  for (let i = 0; i < 600; i++) {
+    updateBoss(boss, ctx(over), DT);
+    if ((boss.fireKick ?? 0) > before) return true;
+  }
+  return false;
+}
+
+/**
+ * **진짜로 겨누고 있는** 로봇 보스(3페이즈).
+ *
+ * `boss.state = 'aim'` 만 세우면 안 된다 — createBoss 의 timer 가 0 이고
+ * `case 'aim'` 은 `timer <= 0` 이면 **그 프레임에 바로 'laser'** 로 넘어간다.
+ * 겨누는 구간을 한 프레임도 안 거쳐서 charge 가 0 인 채로 나온다.
+ * startLaser 를 실제로 태워야 timer 까지 제대로 선다.
+ */
+function aiming() {
+  const boss = createBoss(ARENA, 192, false);
+  boss.phaseId = 3; // 레이저는 3페이즈에만 있다 (1페이즈는 laserEvery 가 0)
+  boss.hp = 1;
+  boss.state = 'attack';
+  for (let i = 0; i < 3000 && boss.state !== 'aim'; i++) updateBoss(boss, ctx(), DT);
+  assert.equal(boss.state, 'aim', '보스가 레이저를 안 겨눈다 — 테스트가 아무것도 안 지킨다');
+  return boss;
+}
+
+test('한 무더기 쏘면 fire 가 튄다 — 그 반동으로 팔이 움직인다', () => {
+  const boss = createBoss(ARENA, 192, false);
+  boss.state = 'attack';
+  assert.equal(bossPose(boss).fire, 0, '시작부터 쏜 걸로 돼 있다');
+  assert.ok(untilFires(boss), '보스가 아예 안 쐈다 (테스트가 아무것도 안 지킨다)');
+  assert.ok(bossPose(boss).fire > 0.9, `쏜 프레임에 fire 가 안 찼다 (${bossPose(boss).fire})`);
+});
+
+test('쏜 반동은 **다음 무더기 전에** 빠진다', () => {
+  // 안 빠지면 팔이 내리꽂힌 채 굳는다 — 매번 새로 쏘는 걸로 안 보인다
+  const boss = createBoss(ARENA, 192, false);
+  boss.state = 'attack';
+  untilFires(boss);
+  // 먼저 **실제로 찼는지** 본다. 이게 없으면 기능을 통째로 지워도(늘 0) 통과한다
+  assert.ok(bossPose(boss).fire > 0.9, '반동이 애초에 안 찼다 — 아래 검사가 공짜로 통과한다');
+  step(boss, 0.3);
+  const after = bossPose(boss).fire;
+  assert.ok(after < 0.05, `0.3초 뒤에도 반동이 남아 있다 (${after})`);
+  // 페이즈 1 의 fireEvery 가 1.6초다. 그보다 빨리 풀려야 매번 새 동작이 된다
+  assert.ok(0.3 < PHASES[0].fireEvery, '전제가 깨졌다 — 감쇄가 발사 주기보다 길다');
+});
+
+test('안 쏘는 동안에는 fire 가 0 이다', () => {
+  // **거짓 양성**을 막는 자리. 다만 「늘 0」이어도 통과하면 안 되므로,
+  // 같은 보스가 쏠 때는 차오른다는 것부터 확인하고 시작한다.
+  const proof = createBoss(ARENA, 192, false);
+  proof.state = 'attack';
+  untilFires(proof);
+  assert.ok(bossPose(proof).fire > 0.9, '쏠 때조차 안 찬다 — 이 테스트가 공짜로 통과한다');
+
+  const boss = createBoss(ARENA, 192, false);
+  boss.state = 'open'; // 약점이 열린 동안에는 안 쏜다
+  for (let i = 0; i < 120; i++) {
+    updateBoss(boss, ctx(), DT);
+    assert.equal(bossPose(boss).fire, 0, '안 쏘는데 반동이 생겼다');
+  }
+});
+
+test('charge 는 겨누는 동안 오르고 끝나면 돌아온다', () => {
+  const boss = aiming();
+  step(boss, 0.4);
+  const mid = bossPose(boss).charge;
+  assert.ok(mid > 0.5, `겨누는데 안 모은다 (${mid})`);
+
+  boss.state = 'attack';
+  step(boss, 1.2);
+  assert.ok(bossPose(boss).charge < 0.05, `겨누기가 끝났는데 안 풀린다 (${bossPose(boss).charge})`);
+});
+
+test('charge 는 squash 에서 되돌린 값과 **같아야** 한다', () => {
+  // squash 는 charge 를 1 - c*0.12 로 뭉개서 내보낸다. 그리는 쪽이 거기서
+  // 되돌리게 두면 계수가 두 군데 적혀서 한쪽만 고치는 날 자세가 어긋난다.
+  const boss = createBoss(ARENA, 192, false);
+  boss.state = 'aim';
+  step(boss, 0.4);
+  const pose = bossPose(boss);
+  assert.ok(Math.abs((1 - pose.squash) / 0.12 - pose.charge) < 1e-9, 'charge 와 squash 가 어긋났다');
+});
+
+test('beam 은 레이저를 **쏘는 중**에만 선다 (모으는 중과 다르다)', () => {
+  const boss = aiming();
+  step(boss, 0.5);
+  assert.equal(boss.state, 'aim', '아직 겨누는 중이어야 한다');
+  assert.ok(bossPose(boss).beam < 0.05, `겨누기만 하는데 beam 이 섰다 (${bossPose(boss).beam})`);
+
+  // 겨누기가 끝나면 **저절로** 쏘기로 넘어간다 (상태를 손으로 안 바꾼다)
+  step(boss, 0.6);
+  assert.equal(boss.state, 'laser', '겨누기가 끝났는데 안 쏜다');
+  assert.ok(bossPose(boss).beam > 0.8, `쏘는데 beam 이 안 선다 (${bossPose(boss).beam})`);
+
+  boss.state = 'recover';
+  step(boss, 0.8);
+  assert.ok(bossPose(boss).beam < 0.05, `다 쐈는데 beam 이 남았다 (${bossPose(boss).beam})`);
+});
+
+test('기본 자세에도 새 값들이 있다 — 구워둔 거대 로봇과 컷신이 이걸 쓴다', () => {
+  for (const key of ['lift', 'lean', 'fire', 'charge', 'beam']) {
+    assert.ok(key in NEUTRAL_POSE, `NEUTRAL_POSE 에 ${key} 가 없다`);
+    assert.equal(NEUTRAL_POSE[key], 0, `${key} 는 아무것도 안 하는 값이어야 한다`);
+  }
+  assertSane(NEUTRAL_POSE, '기본 자세');
+});
+
+test('공룡도 같은 bossPose 를 쓴다 — 떠 있으면 lift 가 잡힌다', () => {
+  // 공룡 몸에만 따로 자세 함수를 만들면 로봇에서 고친 걸 공룡이 못 받는다
+  const boss = dino(3);
+  boss.y = bossFloor(boss) - 200;
+  assert.equal(bossPose(boss).lift, 1, '공룡이 떠 있는데 안 떠 있는 걸로 나온다');
+  boss.y = bossFloor(boss);
+  assert.equal(bossPose(boss).lift, 0, '공룡이 땅을 딛었는데 떠 있는 걸로 나온다');
 });

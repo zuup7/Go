@@ -68,6 +68,14 @@ export function createBoss(arenaWidth, floorY = 192, hard = false) {
     openness: 0,
     recoil: 0,
     /**
+     * 한 무더기 쏘고 난 반동 1→0. fireRing 이 1 로 차고 stepLooks 가 깎는다.
+     * 0.85초마다 아홉 발이 나가므로 **이 값 하나로 팔이 쉬지 않는다** —
+     * 로봇이 가만히 떠서 탄만 뱉는 것처럼 보이던 게 이게 없어서였다.
+     */
+    fireKick: 0,
+    /** 레이저를 쏘는 중 0~1. 겨누는 charge 와는 따로다 (모으기 ≠ 쏘기) */
+    beam: 0,
+    /**
      * 공룡 형태의 몸짓. 원반·로봇은 안 읽는다 (읽을 부위가 없다).
      *
      * swing  꼬리가 감긴(−) / 휘둘린(+) 정도 −1~1
@@ -256,6 +264,10 @@ function stepLooks(boss, dt) {
   const open = boss.state === 'open' ? 1 : 0;
   boss.openness = toward(boss.openness, open, open ? 9 : 3.5, dt);
   boss.recoil = Math.max(0, boss.recoil - dt * 3);
+  // 쏜 반동은 **빨리** 빠진다 (0.25초). 다음 무더기가 0.85초 뒤라 그 사이에
+  // 팔이 제자리로 돌아와야 매번 새로 내리꽂는 것으로 보인다.
+  boss.fireKick = Math.max(0, (boss.fireKick ?? 0) - dt * 4);
+  boss.beam = toward(boss.beam ?? 0, boss.state === 'laser' ? 1 : 0, 8, dt);
   stepDinoLooks(boss, dt);
 }
 
@@ -326,6 +338,9 @@ export const NEUTRAL_POSE = {
   stride: 0,
   lift: 0,
   lean: 0,
+  fire: 0,
+  charge: 0,
+  beam: 0,
 };
 
 /**
@@ -359,6 +374,18 @@ export const bossPose = (boss) => {
     lift: clamp((bossFloor(boss) - boss.y) / 90, 0, 1),
     /** 어느 쪽으로 밀고 있나 −1~1. 그쪽으로 몸이 기운다 */
     lean: boss.drift ?? 0,
+    /** 방금 한 무더기 쐈나 1→0. 팔이 내리꽂혔다 돌아오고 추진기가 확 뿜는다 */
+    fire: boss.fireKick ?? 0,
+    /**
+     * 큰 걸 모으는 중 0~1.
+     *
+     * 위 squash 가 이 값을 `1 - c*0.12` 로 **뭉개서** 내보낸다. 그리는 쪽이
+     * 거기서 `(1-squash)/0.12` 로 되돌리게 두면 계수 0.12 가 두 군데 적히고,
+     * 한쪽만 고치는 날 자세가 조용히 어긋난다. 원값을 같이 준다.
+     */
+    charge: boss.charge,
+    /** 레이저를 쏘는 중 0~1. 모으는 것(charge)과 쏘는 것은 자세가 반대다 */
+    beam: boss.beam ?? 0,
   };
 };
 
@@ -774,6 +801,8 @@ function fireRing(boss, phase, ctx) {
       boss: true,
     });
   }
+  // 쏜 티가 나야 한다 — 몸이 반동으로 튕기고 팔이 내리꽂힌다.
+  boss.fireKick = 1;
   // 탄이 소리 없이 나타나면 화면 구석에서 오는 걸 알 길이 없다.
   // 한 번에 5~9발이 나가므로 **발마다가 아니라 한 무더기에 한 번** 운다.
   ctx.onFire?.();

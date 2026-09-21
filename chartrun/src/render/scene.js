@@ -1482,6 +1482,9 @@ export function drawScene(ctx, game, time) {
 
   drawMics(ctx, game, ox, oy, time);
   if (game.boss) {
+    // 체력계를 **보스보다 먼저** 그린다. 화면 위 고정 자리인데(sceneBoss 의 HP_BAR),
+    // 보스가 떠 있으면 공주 새장이 바로 거기에 걸린다 — 나중에 그리면 UI 가 공주를 덮는다.
+    if (game.boss.state !== 'defeated') drawBossHealth(ctx, game.boss, bossPhase(game.boss).color);
     drawBoss(ctx, game.boss, ox, oy, time);
     drawLaser(ctx, game.boss, ox, oy, time, bossPhase(game.boss).color);
     drawGroundSweeps(ctx, game.boss, ox, oy, time, bossPhase(game.boss).color);
