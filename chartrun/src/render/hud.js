@@ -167,7 +167,9 @@ export function createHud(root) {
             : '<p class="press">아무 키나 / 점프 버튼으로 시작</p>';
         return `
           <div class="panel title-panel">
-            <h1>차트런${game.save.clearedHard ? ' <span class="crown">♛</span>' : ''}</h1>
+            <h1 data-key="logo" class="${(ui?.taps?.length ?? 0) >= 2 ? 'tapped' : ''}">차트런${
+              game.save.clearedHard ? ' <span class="crown">♛</span>' : ''
+            }</h1>
             ${menu}
             <p class="record">BEST #${game.save.bestRank} · ${
               game.save.bestTimeMs == null ? '--:--' : timeText(game.save.bestTimeMs)

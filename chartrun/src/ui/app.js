@@ -10,7 +10,7 @@ import {
   PAUSE_ROWS,
   VIEW,
 } from '../core/game.js';
-import { DEV_CODE, pushDigit, codeMatches } from '../core/devmode.js';
+import { DEV_CODE, pushDigit, codeMatches, pushTap, tapOpens } from '../core/devmode.js';
 import { createLoop } from '../core/loop.js';
 import { createInput, bindTouchButtons } from '../core/input.js';
 import { createAudio, nextVolume } from '../core/audio.js';
@@ -331,7 +331,7 @@ function handleEvent(name, data) {
 
 // ── 개발자 모드 숫자판 ──────────────────────────────────────
 // 화면에 그리는 건 hud 가 하고, 여기서는 상태와 입력만 다룬다.
-const ui = { keypad: null, volume: audio.volume, muted: audio.muted };
+const ui = { keypad: null, taps: [], volume: audio.volume, muted: audio.muted };
 
 function openKeypad() {
   ui.keypad = { buf: '', bad: false };
@@ -404,6 +404,24 @@ function pressKey(key) {
   }
   if (key === 'open') {
     openKeypad();
+    return;
+  }
+  /**
+   * 제목을 두드려 여는 길.
+   *
+   * 배포되는 빌드에는 DEV 버튼이 **없다** (--pwa 가 KIOSK 를 켜서 display:none).
+   * 받는 사람 화면을 깨끗하게 두려고 일부러 그런 건데, 그러면 폰에서는 들어갈
+   * 길이 통째로 없었다 — 데스크톱의 ` 키(아래 keydown)에 해당하는 것이 이것이다.
+   *
+   * 몇 번을 얼마 안에 쳐야 하는지는 core/devmode.js 가 정한다.
+   */
+  if (key === 'logo') {
+    if (game.scene !== 'title') return;
+    ui.taps = pushTap(ui.taps, performance.now() / 1000);
+    if (tapOpens(ui.taps)) {
+      ui.taps = [];
+      openKeypad();
+    }
     return;
   }
   const pad = ui.keypad;

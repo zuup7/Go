@@ -847,6 +847,20 @@ body.in-cut:not(.pad-editing) .touch-right {
   pointer-events: auto;
 }
 
+/* 제목이 탭을 받는다 (개발자 모드 입구). .ui 전체가 pointer-events: none 이라 되살린다.
+   **cursor 는 주지 않는다** — 누를 수 있는 것처럼 보이면 숨긴 뜻이 없다. */
+.title-panel h1 {
+  pointer-events: auto;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 세고 있다는 티. 세 번째 두드림부터 — 두 번까지는 아무 일도 안 일어나야
+   지나가다 눌린 걸로는 안 들킨다 */
+.title-panel h1.tapped {
+  text-shadow: 0 0 6px var(--hot);
+}
+
 .title-panel .menu li,
 .select-panel .slots li {
   cursor: pointer;

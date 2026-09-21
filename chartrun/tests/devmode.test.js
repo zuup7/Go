@@ -13,7 +13,8 @@ import {
   SELECT_DEV_OFF,
   SELECT_SLOTS,
 } from '../src/core/game.js';
-import { DEV_CODE, pushDigit, codeMatches, KEYPAD } from '../src/core/devmode.js';
+import { DEV_CODE, pushDigit, codeMatches, KEYPAD, pushTap, tapOpens, TAP_OPEN, TAP_WINDOW } from '../src/core/devmode.js';
+import { readFileSync } from 'node:fs';
 import { emptySave, mergeRun, deserialize, serialize } from '../src/core/save.js';
 import { STAGES } from '../src/data/stages.js';
 
@@ -210,4 +211,57 @@ test('켠 상태가 저장을 거쳐 살아남는다', () => {
   assert.equal(save.dev, true);
   const game = createGame({ save });
   assert.equal(game.dev, true, '새로고침해도 켜져 있어야 한다');
+});
+
+// ── 숫자판을 여는 길 ────────────────────────────────────────
+//
+// 배포되는 빌드에는 DEV 버튼이 **없다** (--pwa 가 KIOSK 를 켜서 display:none).
+// 그래서 폰에서는 들어갈 길이 통째로 없었다. 제목을 두드려 연다.
+
+test('제목을 빠르게 다섯 번 두드리면 열린다', () => {
+  let taps = [];
+  for (let i = 0; i < TAP_OPEN; i++) taps = pushTap(taps, i * 0.3);
+  assert.ok(tapOpens(taps), `${taps.length}번밖에 안 남았다`);
+});
+
+test('느리게 치면 안 열린다 — 지나가다 눌린 게 쌓이면 안 된다', () => {
+  // 제목은 화면 한가운데 있다. 천천히 눌린 게 계속 쌓이면 남이 우연히 연다.
+  //
+  // **간격을 TAP_WINDOW 로 계산하지 않는다.** 처음엔 창의 0.8배로 잡았더니
+  // 창을 100초로 늘려도 테스트가 같이 늘어나 그대로 통과했다 — 아무것도
+  // 안 지키는 테스트였다. 1초에 한 번은 「빠르게 두드림」이 아니다, 절대값으로 쓴다.
+  let taps = [];
+  for (let i = 0; i < TAP_OPEN + 3; i++) taps = pushTap(taps, i * 1.0);
+  assert.equal(tapOpens(taps), false, `1초 간격인데 ${taps.length}번이 남아 열린다`);
+});
+
+test('두드림 창이 지나치게 길지 않다', () => {
+  // 위 테스트를 통과시키는 값의 상한. 둘이 같이 있어야 창이 슬금슬금 안 는다
+  assert.ok(TAP_WINDOW < TAP_OPEN - 1, `창이 ${TAP_WINDOW}초면 1초 간격으로도 열린다`);
+});
+
+test('한 번 모자라면 안 열린다', () => {
+  let taps = [];
+  for (let i = 0; i < TAP_OPEN - 1; i++) taps = pushTap(taps, i * 0.2);
+  assert.equal(tapOpens(taps), false);
+});
+
+test('열고 나면 다시 처음부터 — 한 번 더 두드려야 또 열린다', () => {
+  let taps = [];
+  for (let i = 0; i < TAP_OPEN; i++) taps = pushTap(taps, i * 0.2);
+  assert.ok(tapOpens(taps));
+  taps = [];
+  assert.equal(tapOpens(pushTap(taps, 1.1)), false, '비운 뒤에 한 번으로 또 열린다');
+});
+
+// ── 배포되는 파일을 직접 본다 ───────────────────────────────
+//
+// 이 한 쌍이 핵심이다. 전에 dist/play.html 을 재고 「버튼 잘 보인다」고 했는데
+// 사람이 여는 건 docs/index.html 이었다 — 거기엔 버튼이 아예 없었다.
+// **숨기기와 들어갈 길은 같이 있어야 한다.** 한쪽만 있으면 문 없는 방이 된다.
+
+test('배포 빌드는 DEV 버튼을 숨기고, 대신 제목으로 들어간다', () => {
+  const doc = readFileSync(new URL('../../docs/index.html', import.meta.url), 'utf8');
+  assert.match(doc, /\.dev-open\s*\{\s*display:\s*none/, '숨기기로 한 걸 안 숨긴다');
+  assert.match(doc, /data-key="logo"/, '숨겼는데 들어갈 길이 없다 — 문 없는 방이다');
 });

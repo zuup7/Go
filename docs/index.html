@@ -882,6 +882,20 @@ body.in-cut:not(.pad-editing) .touch-right {
   pointer-events: auto;
 }
 
+/* 제목이 탭을 받는다 (개발자 모드 입구). .ui 전체가 pointer-events: none 이라 되살린다.
+   **cursor 는 주지 않는다** — 누를 수 있는 것처럼 보이면 숨긴 뜻이 없다. */
+.title-panel h1 {
+  pointer-events: auto;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 세고 있다는 티. 세 번째 두드림부터 — 두 번까지는 아무 일도 안 일어나야
+   지나가다 눌린 걸로는 안 들킨다 */
+.title-panel h1.tapped {
+  text-shadow: 0 0 6px var(--hot);
+}
+
 .title-panel .menu li,
 .select-panel .slots li {
   cursor: pointer;
@@ -7623,7 +7637,30 @@ const codeMatches = (buf) => buf === DEV_CODE;
 /** 숫자판에 놓을 키들 (그리는 순서 그대로) */
 const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'back', '0', 'close'];
 
-return { DEV_CODE, pushDigit, codeMatches, KEYPAD };
+// ── 숫자판을 여는 길 ────────────────────────────────────────
+//
+// 배포되는 빌드(--pwa)는 KIOSK 로 쳐서 `.dev-open { display: none }` 을 얹는다.
+// **버튼이 아예 없다.** 앱으로 깔았을 때 받는 사람한테 DEV 버튼이 보이면 안 되니까
+// 일부러 그런 건데, 그러면 만든 사람도 폰에서는 들어갈 길이 없었다
+// (데스크톱은 ` 키가 있다 — ui/app.js).
+//
+// 그래서 제목을 두드려 연다. 숨긴 건 그대로 두고 문만 낸다.
+
+/** 제목을 몇 번 두드려야 열리나, 그리고 그 안에 다 쳐야 하는 시간(초) */
+const TAP_OPEN = 5;
+const TAP_WINDOW = 2.5;
+
+/**
+ * 두드린 시각들. **창 밖으로 나간 건 저절로 밀려난다** — 위 pushDigit 과 같은 수법이라
+ * 「몇 번 남았나」를 따로 세지 않아도 배열 길이가 그대로 답이다.
+ * 그래서 화면이 이걸 보고 「세고 있다」는 티를 낼 수 있다.
+ */
+const pushTap = (taps, now) =>
+  [...(taps ?? []), now].filter((t) => now - t < TAP_WINDOW).slice(-TAP_OPEN);
+
+const tapOpens = (taps) => (taps?.length ?? 0) >= TAP_OPEN;
+
+return { DEV_CODE, pushDigit, codeMatches, KEYPAD, TAP_OPEN, TAP_WINDOW, pushTap, tapOpens };
 })();
 __m["chartrun/src/core/loop.js"] = (() => {
 // 고정 타임스텝 루프. 논리는 항상 60Hz 로 돌고, 그리기만 화면 주사율을 따른다.
@@ -14678,7 +14715,9 @@ function createHud(root) {
             : '<p class="press">아무 키나 / 점프 버튼으로 시작</p>';
         return `
           <div class="panel title-panel">
-            <h1>차트런${game.save.clearedHard ? ' <span class="crown">♛</span>' : ''}</h1>
+            <h1 data-key="logo" class="${(ui?.taps?.length ?? 0) >= 2 ? 'tapped' : ''}">차트런${
+              game.save.clearedHard ? ' <span class="crown">♛</span>' : ''
+            }</h1>
             ${menu}
             <p class="record">BEST #${game.save.bestRank} · ${
               game.save.bestTimeMs == null ? '--:--' : timeText(game.save.bestTimeMs)
@@ -15545,7 +15584,7 @@ return { LAYOUT_KEY, ROTATED_SIDE, MIN_SCALE, MAX_SCALE, SCALE_STEP, ALPHA_STEPS
 __m["chartrun/src/ui/app.js"] = (() => {
 // 차트런 진입점. 캔버스를 켜고, 입력·소리·게임 상태를 이어 붙인다.
 const { createGame, updateGame, runSummary, resumeState, setDevMode, pausable, inCutscene, PAUSE_ROWS, VIEW } = __m["chartrun/src/core/game.js"];
-const { DEV_CODE, pushDigit, codeMatches } = __m["chartrun/src/core/devmode.js"];
+const { DEV_CODE, pushDigit, codeMatches, pushTap, tapOpens } = __m["chartrun/src/core/devmode.js"];
 const { createLoop } = __m["chartrun/src/core/loop.js"];
 const { createInput, bindTouchButtons } = __m["chartrun/src/core/input.js"];
 const { createAudio, nextVolume } = __m["chartrun/src/core/audio.js"];
@@ -15866,7 +15905,7 @@ function handleEvent(name, data) {
 
 // ── 개발자 모드 숫자판 ──────────────────────────────────────
 // 화면에 그리는 건 hud 가 하고, 여기서는 상태와 입력만 다룬다.
-const ui = { keypad: null, volume: audio.volume, muted: audio.muted };
+const ui = { keypad: null, taps: [], volume: audio.volume, muted: audio.muted };
 
 function openKeypad() {
   ui.keypad = { buf: '', bad: false };
@@ -15939,6 +15978,24 @@ function pressKey(key) {
   }
   if (key === 'open') {
     openKeypad();
+    return;
+  }
+  /**
+   * 제목을 두드려 여는 길.
+   *
+   * 배포되는 빌드에는 DEV 버튼이 **없다** (--pwa 가 KIOSK 를 켜서 display:none).
+   * 받는 사람 화면을 깨끗하게 두려고 일부러 그런 건데, 그러면 폰에서는 들어갈
+   * 길이 통째로 없었다 — 데스크톱의 ` 키(아래 keydown)에 해당하는 것이 이것이다.
+   *
+   * 몇 번을 얼마 안에 쳐야 하는지는 core/devmode.js 가 정한다.
+   */
+  if (key === 'logo') {
+    if (game.scene !== 'title') return;
+    ui.taps = pushTap(ui.taps, performance.now() / 1000);
+    if (tapOpens(ui.taps)) {
+      ui.taps = [];
+      openKeypad();
+    }
     return;
   }
   const pad = ui.keypad;
