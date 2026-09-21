@@ -475,6 +475,55 @@ canvas#game {
   --slot-rows: 4;
 }
 
+/* 상점 — 컷신 목록과 같은 격자에 값·✓ 를 오른쪽에 붙인다 */
+.slots.shop-slots {
+  --slot-rows: 5;
+}
+
+.shop-slots li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.shop-slots li i {
+  font-style: normal;
+  font-size: 0.8em;
+  color: var(--warn);
+}
+
+/* 이미 산 것 — 값 대신 ✓, 색을 죽인다 */
+.shop-slots li.has i {
+  color: var(--good);
+}
+
+/* 지금 끼운 것 ★ */
+.shop-slots li.worn {
+  border-color: var(--good);
+}
+
+.shop-points {
+  margin: 2px 0 0;
+  font-size: 0.85em;
+  color: var(--dim);
+}
+
+.shop-points b {
+  color: var(--warn);
+}
+
+/* 점수가 모자라 못 샀을 때 한 번 흔든다 */
+.shop-points.denied {
+  color: var(--hot);
+  animation: shopShake 0.25s;
+}
+
+@keyframes shopShake {
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
 .slots li {
   display: flex;
   align-items: center;
@@ -5410,6 +5459,222 @@ const cycleLook = (look, key, step) => {
 
 return { HAIRS, JACKETS, PANTS, LOOK_SLOTS, DEFAULT_LOOK, sanitizeLook, lookKey, cycleLook };
 })();
+__m["chartrun/src/data/effects.js"] = (() => {
+// 킬·데스 이펙트와 그걸 사는 데 쓰는 점수.
+//
+// **이펙트는 그림이 아니라 값이다.** addParticles(core/game.js)가 받는 것들을
+// 그대로 적어둔다 — 그래서 「밟으면 정말 그 색 그 개수가 나오나」를 브라우저 없이
+// 확인할 수 있다. 모양(shape)만 그리는 쪽이 읽는다.
+//
+// 첫 칸(base)은 **값이 0 이고 지금과 똑같다.** 아무것도 안 산 사람 화면은 안 변한다.
+
+/**
+ * 킬 — 앨범을 밟았을 때.
+ *
+ * `split` 은 「양옆으로 나눠 튄다」다. 밟기는 접점이 분명해서 사방으로 퍼지면
+ * 어디를 밟았는지가 안 읽힌다 (addParticles 주석의 그 이야기). 폭죽처럼
+ * 일부러 사방으로 터뜨리는 것만 false 로 둔다.
+ */
+const KILLS = [
+  {
+    id: 'base',
+    label: '기본',
+    cost: 0,
+    // colors 가 없으면 **밟힌 앨범 색**을 쓴다. 지금 그대로다
+    count: 4,
+    speed: 70,
+    split: true,
+  },
+  {
+    id: 'confetti',
+    label: '꽃가루',
+    cost: 1,
+    colors: ['#ff5d8f', '#ffd166', '#39ff9a', '#4ec3ff', '#ffffff'],
+    count: 7,
+    speed: 55,
+    // 천천히 떠올랐다 나풀나풀 내려앉는다
+    gravity: 90,
+    lift: 55,
+    life: 1.5,
+    split: true,
+  },
+  {
+    id: 'note',
+    label: '음표',
+    cost: 1,
+    colors: ['#ffd166'],
+    count: 4,
+    speed: 65,
+    gravity: 200,
+    lift: 55,
+    life: 1.0,
+    shape: 'note',
+    split: true,
+  },
+  {
+    id: 'boom',
+    label: '폭죽',
+    cost: 1,
+    colors: ['#ffffff', '#ffd166', '#ff5d8f'],
+    count: 14,
+    speed: 130,
+    gravity: 260,
+    life: 0.5,
+    size: 2,
+    // 여기만 사방이다 — 「터졌다」가 읽혀야 한다
+    split: false,
+  },
+  {
+    id: 'mono',
+    label: '흑백',
+    cost: 1,
+    colors: ['#f2f0ff', '#b3aecd', '#5a5766'],
+    count: 6,
+    speed: 80,
+    life: 0.7,
+    split: true,
+  },
+];
+
+/** 데스 — 내가 죽었을 때. 밟기와 달리 원래부터 사방이다 */
+const DEATHS = [
+  {
+    id: 'base',
+    label: '기본',
+    cost: 0,
+    colors: ['#ff5d8f', '#ffd166', '#ffffff'],
+    count: 14,
+    speed: 110,
+    life: 0.9,
+  },
+  {
+    id: 'soul',
+    label: '승천',
+    cost: 1,
+    colors: ['#ffffff', '#cfe6a6', '#a98cff'],
+    count: 12,
+    speed: 26,
+    // 중력을 음수로 두면 **위로만** 천천히 오른다
+    gravity: -40,
+    lift: 30,
+    life: 1.8,
+    size: 2,
+  },
+  {
+    id: 'heart',
+    label: '하트',
+    cost: 1,
+    colors: ['#ff5d8f', '#ffd7e2'],
+    count: 8,
+    speed: 70,
+    gravity: 150,
+    lift: 60,
+    life: 1.4,
+    shape: 'heart',
+  },
+  {
+    id: 'pop',
+    label: '폭발',
+    cost: 1,
+    colors: ['#ffffff', '#ffd166', '#ff5d8f', '#ff9ec4'],
+    count: 22,
+    speed: 190,
+    gravity: 380,
+    life: 0.6,
+    size: 3,
+    /** 이것만 화면을 더 흔든다 (core 가 읽는다) */
+    shake: 2.0,
+  },
+];
+
+/** 상점 줄 한 벌. 고르는 쪽(core)과 그리는 쪽(hud)이 **이걸 같이 쓴다** */
+const FX_SLOTS = [
+  { key: 'kill', label: '킬', items: KILLS },
+  { key: 'death', label: '죽음', items: DEATHS },
+];
+
+/** 목록 전체를 한 줄로. 상점 화면이 이 순서로 보여준다 */
+const SHOP_ITEMS = FX_SLOTS.flatMap((slot) =>
+  slot.items.map((item) => ({
+    ...item,
+    slot: slot.key,
+    uid: `${slot.key}:${item.id}`,
+    /** 짧은 이름 (꾸미기처럼 한 줄에 하나만 보일 때) */
+    name: item.label,
+    /**
+     * 목록에 적히는 이름. **어느 쪽인지를 같이 적는다** — 킬과 죽음이 칸 둘로
+     * 나뉘어 보이긴 하는데, 「기본 / 기본」처럼 이름만 늘어놓으면 어느 칸이
+     * 무엇인지 알 길이 없다 (화면을 보고서야 알았다).
+     */
+    label: `${slot.label} · ${item.label}`,
+  })),
+);
+
+const DEFAULT_FX = { kill: 'base', death: 'base' };
+
+/** 값이 0 인 건 처음부터 가진 것으로 친다 — 목록에 값 0 과 ✓ 를 같이 적을 일이 없다 */
+const owns = (save, uid) => {
+  const item = SHOP_ITEMS.find((i) => i.uid === uid);
+  if (!item) return false;
+  return item.cost === 0 || (save?.owned ?? []).includes(uid);
+};
+
+/**
+ * 번 점수. 완주 1회 = 1점, 하드 완주는 거기 2점 더.
+ *
+ * **후하게 잡았다.** 선물받는 사람은 한두 번 깨고 만다. 비싸게 굴면 값만 적힌
+ * 빈 상점을 보게 된다 — 음표를 다 모아야 열리는 숨은 화면에서 겪은 그 실수다.
+ */
+const earned = (save) => (save?.clears ?? 0) + (save?.hardClears ?? 0) * 2;
+
+/**
+ * 쓴 점수. **따로 저장하지 않고 가진 것들의 값을 더한다.**
+ * 두 군데 적으면 언젠가 어긋난다 — 진짜인 건 「가진 목록」 하나뿐이다.
+ * (값을 나중에 고쳐도 저절로 맞는다)
+ */
+const spent = (save) =>
+  SHOP_ITEMS.filter((i) => i.cost > 0 && (save?.owned ?? []).includes(i.uid)).reduce(
+    (n, i) => n + i.cost,
+    0,
+  );
+
+const points = (save) => earned(save) - spent(save);
+
+const canBuy = (save, uid) => {
+  const item = SHOP_ITEMS.find((i) => i.uid === uid);
+  return !!item && !owns(save, uid) && points(save) >= item.cost;
+};
+
+/** 지금 끼운 이펙트의 값들 */
+const fxOf = (save, key) => {
+  const slot = FX_SLOTS.find((s) => s.key === key);
+  const want = save?.fx?.[key];
+  return slot.items.find((i) => i.id === want) ?? slot.items[0];
+};
+
+/**
+ * 저장값을 믿지 않는다.
+ *
+ * 없는 id 를 끼워두면 이펙트가 undefined 가 되어 **밟아도 아무것도 안 튄다.**
+ * 안 산 걸 끼워둔 것도 되돌린다 — 저장을 손으로 고쳐 공짜로 쓰는 길을 막는 게
+ * 아니라, 목록에서 뺀 항목이 남아 있을 때 조용히 깨지지 않게 하려는 것이다.
+ */
+function sanitizeFx(save) {
+  const out = { ...DEFAULT_FX };
+  for (const slot of FX_SLOTS) {
+    const want = save?.fx?.[slot.key];
+    const uid = `${slot.key}:${want}`;
+    if (slot.items.some((i) => i.id === want) && owns(save, uid)) out[slot.key] = want;
+  }
+  return out;
+}
+
+/** 목록에 없는 id 가 저장에 남아 있으면 걷어낸다 */
+const sanitizeOwned = (owned) =>
+  [...new Set(owned ?? [])].filter((uid) => SHOP_ITEMS.some((i) => i.uid === uid && i.cost > 0));
+
+return { KILLS, DEATHS, FX_SLOTS, SHOP_ITEMS, DEFAULT_FX, owns, earned, spent, points, canBuy, fxOf, sanitizeFx, sanitizeOwned };
+})();
 __m["chartrun/src/data/caughtCut.js"] = (() => {
 // 추격 판에서 보스에게 잡혔을 때. **대사는 없다.**
 //
@@ -5437,6 +5702,7 @@ const SAVE_KEY = 'chartrun/save-v1';
 const SAVE_VERSION = 1;
 
 const { DEFAULT_LOOK } = __m["chartrun/src/data/looks.js"];
+const { DEFAULT_FX, sanitizeOwned } = __m["chartrun/src/data/effects.js"];
 
 /**
  * 저장소. 없으면 null 이고, 그러면 게임은 기록 없이 그냥 돌아간다.
@@ -5500,6 +5766,17 @@ const emptySave = () => ({
    */
   look: { ...DEFAULT_LOOK },
   /**
+   * 완주 횟수. 상점의 점수는 **이걸로** 센다 (data/effects.js 의 earned).
+   * clearedOnce 는 참·거짓뿐이라 「몇 번 깼나」를 담을 수 없어서 따로 둔다.
+   */
+  clears: 0,
+  /** 그중 하드모드 완주. 2점씩 더 쳐준다 */
+  hardClears: 0,
+  /** 산 이펙트들의 id (`kill:note` 꼴). 쓴 점수는 이 목록에서 계산한다 */
+  owned: [],
+  /** 끼운 이펙트 */
+  fx: { ...DEFAULT_FX },
+  /**
    * **하던 판.** 없으면 null.
    *
    * 이 칸이 생기기 전에는 게임을 닫으면 판이 통째로 날아갔다 — 스테이지 3 을 하다
@@ -5525,7 +5802,23 @@ function deserialize(text) {
   const parsed = JSON.parse(text);
   if (!parsed?.data) throw new Error('저장 형식이 올바르지 않습니다.');
   if (parsed.version !== SAVE_VERSION) throw new Error('저장 버전이 다릅니다.');
-  return { ...emptySave(), ...parsed.data };
+  return backfillClears({ ...emptySave(), ...parsed.data });
+}
+
+/**
+ * **이미 깬 사람이 0점으로 시작하지 않게** 한다.
+ *
+ * 완주 횟수는 상점을 만들면서 생긴 칸이라, 그 전에 깬 사람의 저장에는 없다.
+ * 그대로 두면 다 깨고 온 사람이 값만 적힌 빈 상점을 보게 된다.
+ * clearedOnce 는 「한 번은 깼다」는 뜻이므로 최소 1회로 쳐준다 — 세던 값이
+ * 이미 있으면 안 건드린다(한 번만 메운다).
+ */
+function backfillClears(save) {
+  const next = { ...save };
+  if (next.clearedOnce && !(next.clears > 0)) next.clears = 1;
+  if (next.clearedHard && !(next.hardClears > 0)) next.hardClears = 1;
+  next.owned = sanitizeOwned(next.owned);
+  return next;
 }
 
 function loadSave() {
@@ -5587,6 +5880,17 @@ function mergeRun(save, run) {
   if ('resume' in run) next.resume = run.resume;
   if (run.clearedOnce) next.clearedOnce = true;
   if (run.clearedHard) next.clearedHard = true;
+  /**
+   * 완주를 **센다.** 상점 점수가 여기서 나온다.
+   *
+   * `partial` 은 빼야 한다 — 개발자 모드로 보스만 골라 이기는 것도 엔딩으로 이어지는데,
+   * 그걸 세면 스테이지 선택으로 점수를 얼마든지 찍어낼 수 있다.
+   * (기록을 안 갱신하는 조건과 같은 판단이다. 위 bestRank 와 나란히 둔 이유다)
+   */
+  if (run.clearedOnce && !run.partial) {
+    next.clears = (save.clears ?? 0) + 1;
+    if (run.clearedHard) next.hardClears = (save.hardClears ?? 0) + 1;
+  }
   // 하드 기록은 하드 칸으로 간다. 안 나누면 어려운 판을 깬 시간이 보통 기록을 덮어써서
   // "최고 기록"이 무슨 판의 기록인지 알 수 없게 된다.
   if (!run.partial && run.timeMs != null && beatRecord(save, run.timeMs, run.hard)) {
@@ -5666,6 +5970,7 @@ const { BOSS_CUTS, CUT_PREVIEWS, bossCutLength, cutForPhase, endingCut, isEnding
 const { introTimeline, introCutLength } = __m["chartrun/src/data/introCutscene.js"];
 const { talkTimeline, talkLength, HINT_TALKS } = __m["chartrun/src/data/npcTalk.js"];
 const { LOOK_SLOTS, sanitizeLook, cycleLook } = __m["chartrun/src/data/looks.js"];
+const { FX_SLOTS, SHOP_ITEMS, fxOf, owns, canBuy, points, sanitizeFx, sanitizeOwned } = __m["chartrun/src/data/effects.js"];
 const { CAUGHT_CUT, caughtLength } = __m["chartrun/src/data/caughtCut.js"];
 const { emptySave } = __m["chartrun/src/core/save.js"];
 const { createRng } = __m["chartrun/src/core/rng.js"];
@@ -5708,6 +6013,9 @@ function createGame(options = {}) {
   // 저장값을 그대로 믿지 않는다. 옛 저장에는 이 칸이 아예 없고, 항목을 줄이면
   // 있던 번호가 범위 밖으로 나가 그림이 undefined 가 된다 — 주인공이 안 그려진다.
   save.look = sanitizeLook(save.look);
+  // 없는 id 를 끼워두면 밟아도 **아무것도 안 튄다** — 조용히 깨지는 쪽이라 꼭 거른다
+  save.owned = sanitizeOwned(save.owned);
+  save.fx = sanitizeFx(save);
   const game = {
     scene: 'title',
     sceneTime: 0,
@@ -5823,6 +6131,10 @@ function createGame(options = {}) {
     cutIndex: 0,
     /** 꾸미기에서 고르고 있는 줄 (LOOK_SLOTS 의 자리) */
     lookIndex: 0,
+    /** 상점에서 고르고 있는 칸 (SHOP_ITEMS 의 자리) */
+    shopIndex: 0,
+    /** 점수가 모자라 못 산 직후. 화면이 이걸 보고 값을 한 번 흔든다 */
+    shopDenied: 0,
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -5911,8 +6223,40 @@ function addParticles(game, x, y, count, colors, opts = {}) {
       size: opts.size ?? 2,
       color: colors[Math.floor(game.rng.float() * colors.length)],
       gravity: opts.gravity ?? 320,
+      // 네모 말고 다른 걸 그릴 때만 붙는다 (render/scene.js 가 읽는다)
+      shape: opts.shape,
     });
   }
+}
+
+/**
+ * 산 이펙트 하나를 터뜨린다.
+ *
+ * 이펙트는 **값일 뿐**이다 (data/effects.js) — 여기서 addParticles 로 넘기기만 한다.
+ * 그래서 「밟으면 정말 그 색 그 개수가 나오나」를 브라우저 없이 확인할 수 있다.
+ *
+ * `fallback` 은 색을 안 적은 이펙트(기본)가 쓸 색이다. 밟기는 **밟힌 앨범의 색**이
+ * 튀어야 뭘 밟았는지가 읽힌다.
+ */
+function burstFx(game, fx, x, y, fallback) {
+  const colors = fx.colors ?? fallback;
+  const opts = {
+    speed: fx.speed,
+    life: fx.life,
+    size: fx.size,
+    gravity: fx.gravity,
+    lift: fx.lift,
+    shape: fx.shape,
+  };
+  if (fx.split) {
+    // 양옆으로 나눠 보낸다 — 접점이 분명한 것(밟기)은 사방으로 퍼지면 안 읽힌다.
+    // 개수는 **합쳐서** fx.count 다 (한쪽만 세면 산 사람이 두 배를 보게 된다)
+    const half = Math.max(1, Math.round(fx.count / 2));
+    addParticles(game, x, y, half, colors, { ...opts, dir: 0, arc: Math.PI * 0.5 });
+    addParticles(game, x, y, fx.count - half, colors, { ...opts, dir: Math.PI, arc: Math.PI * 0.5 });
+    return;
+  }
+  addParticles(game, x, y, fx.count, colors, opts);
 }
 
 function addText(game, x, y, text, color = '#fff') {
@@ -6033,11 +6377,9 @@ function killPlayer(game) {
   game.scene = 'death';
   game.sceneTime = 0;
   freezeGame(game, FREEZE.death);
-  shakeCamera(game.camera, 1.2);
-  addParticles(game, game.player.x + 5, game.player.y + 7, 14, ['#ff5d8f', '#ffd166', '#ffffff'], {
-    speed: 110,
-    life: 0.9,
-  });
+  const fx = fxOf(game.save, 'death');
+  shakeCamera(game.camera, fx.shake ?? 1.2);
+  burstFx(game, fx, game.player.x + 5, game.player.y + 7);
   emit(game, 'death', {});
 }
 
@@ -6089,18 +6431,15 @@ function handleAlbums(game, dt, held = false) {
       // 아주 짧게. 한 판에 스무 번 넘게 하는 일이라 길면 판이 끊긴다
       freezeGame(game, FREEZE.stomp);
       emit(game, 'stomp', {});
-      // 밟은 자리에서 **옆으로** 터진다. 사방으로 퍼지면 위에서 밟았다는 게 안 읽힌다.
-      // (0 = 오른쪽, π = 왼쪽. 반반씩 나눠 양옆으로 보낸다)
-      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 4, album.def.palette, {
-        speed: 70,
-        dir: 0,
-        arc: Math.PI * 0.5,
-      });
-      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 4, album.def.palette, {
-        speed: 70,
-        dir: Math.PI,
-        arc: Math.PI * 0.5,
-      });
+      // 밟은 자리에서 터진다. 무엇이 튀는지는 **상점에서 끼운 것**이 정한다 —
+      // 아무것도 안 산 사람은 예전 그대로(앨범 색이 양옆으로) 나온다.
+      burstFx(
+        game,
+        fxOf(game.save, 'kill'),
+        album.x + album.w / 2,
+        album.y + album.h / 2,
+        album.def.palette,
+      );
       if (result === 'dead') {
         game.defeated += 1;
         game.score += album.def.score;
@@ -6703,6 +7042,36 @@ function openHub(game) {
 }
 
 /**
+ * 상점 칸 하나를 누른 것.
+ *
+ * 안 샀고 점수가 되면 **사서 바로 끼운다** (사놓고 또 눌러 끼우게 하면
+ * 산 게 아무 일도 안 일어난 것처럼 보인다). 이미 샀으면 끼우기만.
+ * 점수가 모자라면 아무것도 안 하고 화면에 알린다.
+ *
+ * 쓴 점수를 따로 적지 않는다 — owned 목록 하나만 진짜고, 점수는 거기서 계산된다.
+ */
+function buyOrEquip(game, index) {
+  const item = SHOP_ITEMS[index];
+  if (!item) return false;
+  if (!owns(game.save, item.uid)) {
+    if (!canBuy(game.save, item.uid)) {
+      game.shopDenied = 0.5;
+      emit(game, 'denied', {});
+      return false;
+    }
+    game.save.owned = [...(game.save.owned ?? []), item.uid];
+    emit(game, 'buy', { uid: item.uid });
+  }
+  game.save.fx = { ...game.save.fx, [item.slot]: item.id };
+  emit(game, 'equip', { uid: item.uid });
+  return true;
+}
+
+/** 상점 목록 (그리는 쪽이 이걸 쓴다 — 여기 또 적으면 화면과 고르기가 어긋난다) */
+const shopItems = () => SHOP_ITEMS;
+const shopPoints = (game) => points(game.save);
+
+/**
  * 말을 걸 수 있는 거리.
  *
  * **바닥까지 내려와야 한다.** 예전엔 `TILE * 2` 라 상자 아래끝(178)이 바닥에 선
@@ -7066,6 +7435,9 @@ function titleRows(game) {
   // 메뉴 없이 바로 시작하는데, 그게 이 게임의 첫인상이다. 오프닝을 본 뒤,
   // 즉 두 번째로 켰을 때부터 타이틀에 나온다. 해금이랄 것도 없이 바로 보인다.
   if (game.save?.seenOpening) rows.push({ label: '꾸미기', action: 'look' });
+  // 상점도 같이. **0점이어도 보여준다** — 점수가 있다는 것과 어떻게 버는지를
+  // 거기서 알게 된다. 숨겨두면 있는 줄도 모르는 기능이 된다
+  if (game.save?.seenOpening) rows.push({ label: '상점', action: 'shop' });
   if (canSelect(game)) rows.push({ label: '스테이지 선택', action: 'select' });
   // 2회차가 있다는 걸 **여기서 말해준다.** 예전에는 깨고 나면 말없이 스테이지 1 로
   // 되돌려놓는 게 전부라, NPC 를 지나치면 2회차가 있는 줄도 몰랐다.
@@ -7546,6 +7918,11 @@ function updateGame(game, input, dt) {
           game.scene = 'look';
           game.sceneTime = 0;
           game.lookIndex = 0;
+        } else if (pick?.action === 'shop') {
+          game.scene = 'shop';
+          game.sceneTime = 0;
+          game.shopIndex = 0;
+          game.shopDenied = 0;
         } else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'gallery') openGallery(game, 'title');
         else if (pick?.action === 'resume') resumeRun(game, game.save.resume);
@@ -7574,6 +7951,28 @@ function updateGame(game, input, dt) {
         game.sceneTime = 0;
       } else if (input.confirmPressed) {
         game.lookIndex = (game.lookIndex + 1) % LOOK_SLOTS.length;
+      }
+      break;
+    }
+
+    /**
+     * 상점. 컷신 보기와 **같은 목록 꼴**이다 — 꾸미기의 ◀▶ 꼴은 「사기」와
+     * 「끼우기」가 한 버튼에 겹쳐서 안 맞는다.
+     *
+     * 점프 하나가 둘을 다 한다: 안 샀으면 사서 바로 끼우고, 이미 샀으면 끼운다.
+     * 점수가 모자라면 아무 일도 안 일어나고 값만 한 번 흔들린다.
+     */
+    case 'shop': {
+      game.shopDenied = Math.max(0, game.shopDenied - dt);
+      const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
+      if (moved) {
+        game.shopIndex = (game.shopIndex + moved + SHOP_ITEMS.length) % SHOP_ITEMS.length;
+      }
+      if (input.restartPressed) {
+        game.scene = 'title';
+        game.sceneTime = 0;
+      } else if (input.confirmPressed) {
+        buyOrEquip(game, game.shopIndex);
       }
       break;
     }
@@ -7817,7 +8216,7 @@ function resumeLabel(resume) {
   return `이어하기 — ${resume.hard ? '하드 ' : ''}STAGE ${number}`;
 }
 
-return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, npcSays, npcDancing, npcInReach, openCutList, cutPreviews, previewCut, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_CUTS, SELECT_HUB, cutSlotOf, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary, resumeState, resumeRun, resumeLabel };
+return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, buyOrEquip, shopItems, shopPoints, npcSays, npcDancing, npcInReach, openCutList, cutPreviews, previewCut, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_CUTS, SELECT_HUB, cutSlotOf, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary, resumeState, resumeRun, resumeLabel };
 })();
 __m["chartrun/src/core/devmode.js"] = (() => {
 // 개발자 모드. 비밀번호를 넣으면 스테이지를 골라 들어갈 수 있다.
@@ -9506,6 +9905,21 @@ const NOTE = sprite(
   { n: '#ffd166' },
 );
 
+/**
+ * 죽을 때 흩어지는 하트 — 7×5. 상점의 「하트」 데스 이펙트가 쓴다.
+ * 알갱이 하나 크기라 작아야 한다. 이보다 키우면 화면이 하트로 덮인다.
+ */
+const HEART = sprite(
+  [
+    '.hh.hh.',
+    'hhhhhhh',
+    'hhhhhhh',
+    '.hhhhh.',
+    '...h...',
+  ],
+  { h: '#ff5d8f' },
+);
+
 // 적이 쏘는 음표 탄환 — 6×6
 const SHOT = sprite(
   [
@@ -9619,7 +10033,7 @@ const RING = sprite(
   { w: '#fff6ef', g: '#ffd166' },
 );
 
-return { spritesFor, setLook, PLAYER_SPRITES, playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING };
+return { spritesFor, setLook, PLAYER_SPRITES, playerFrame, PLAYER_OFFSET, NOTE, HEART, SHOT, SHOT_BOSS, DISC, BRIDE, RING };
 })();
 __m["chartrun/src/render/bigtext.js"] = (() => {
 // 컷신에 박히는 큰 글자(PHASE 2, #1 …). 캔버스 폰트를 쓰면 픽셀이 뭉개져서
@@ -13275,7 +13689,10 @@ const { npcInReach, npcDancing, markKey, CEIL_BLADE, SLAB_HANG } = __m["chartrun
 const { npcFrame, npcSpin, npcBob, NPC_OFFSET } = __m["chartrun/src/render/npcSprites.js"];
 const { talkTimeline } = __m["chartrun/src/data/npcTalk.js"];
 const { CAUGHT_CUT, CAUGHT_AT } = __m["chartrun/src/data/caughtCut.js"];
-const { playerFrame, setLook, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } = __m["chartrun/src/render/sprites.js"];
+const { playerFrame, setLook, PLAYER_OFFSET, NOTE, HEART, SHOT, SHOT_BOSS, DISC, BRIDE, RING } = __m["chartrun/src/render/sprites.js"];
+
+/** 알갱이가 네모 대신 쓸 그림 (data/effects.js 의 shape 이름) */
+const PARTICLE_SHAPES = { note: NOTE, heart: HEART };
 const { ALBUMS } = __m["chartrun/src/data/albums.js"];
 const { VIEW } = __m["chartrun/src/core/game.js"];
 const { bossPhase, bossCombined, ceilingSlabs, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
@@ -14832,11 +15249,18 @@ function drawScene(ctx, game, time) {
 
   drawPlayer(ctx, game.player, ox, oy, time);
 
-  // 알갱이와 숫자
+  // 알갱이와 숫자.
+  // 모양(shape)은 상점에서 산 이펙트만 붙는다 — 없으면 예전 그대로 네모다.
   for (const p of game.particles) {
     ctx.globalAlpha = Math.max(0, p.life / p.max);
-    ctx.fillStyle = p.color;
-    ctx.fillRect(Math.round(p.x - ox), Math.round(p.y - oy), p.size, p.size);
+    const px = Math.round(p.x - ox);
+    const py = Math.round(p.y - oy);
+    const spr = PARTICLE_SHAPES[p.shape];
+    if (spr) drawSprite(ctx, spr, px - (spr.w >> 1), py - (spr.h >> 1));
+    else {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(px, py, p.size, p.size);
+    }
   }
   ctx.globalAlpha = 1;
   for (const txt of game.texts) {
@@ -14931,8 +15355,9 @@ const { beatRecord } = __m["chartrun/src/core/save.js"];
 const { STAGES, NOTE_TOTAL } = __m["chartrun/src/data/stages.js"];
 const { KEYPAD } = __m["chartrun/src/core/devmode.js"];
 const { LOOK_SLOTS } = __m["chartrun/src/data/looks.js"];
+const { owns } = __m["chartrun/src/data/effects.js"];
 const { ACTIONS } = __m["chartrun/src/core/input.js"];
-const { PAUSE_ROWS, stageTable, selectItems, cutPreviews, titleRows, inCutscene, notesFound } = __m["chartrun/src/core/game.js"];
+const { PAUSE_ROWS, stageTable, selectItems, cutPreviews, titleRows, inCutscene, notesFound, shopItems, shopPoints } = __m["chartrun/src/core/game.js"];
 
 /** 천 단위 구분. 세 자리마다 쉼표가 찍혀야 여섯 자리 점수가 한눈에 읽힌다 */
 const won = (n) => Number(n).toLocaleString('ko-KR');
@@ -15126,6 +15551,35 @@ function createHud(root) {
             <button type="button" class="back-btn" data-key="look:back">뒤로</button>
           </div>`;
       }
+      /**
+       * 상점. 컷신 보기와 같은 목록 꼴이고, 칸마다 값 또는 ✓ 가 붙는다.
+       * 목록도 점수도 core 가 갖고 있다 — 여기 또 적으면 화면과 실제로 팔리는 게 어긋난다.
+       */
+      case 'shop': {
+        const left = shopPoints(game);
+        return `
+          <div class="panel select-panel shop-panel">
+            <h2>상점</h2>
+            <p class="shop-points ${game.shopDenied > 0 ? 'denied' : ''}">
+              남은 점수 <b>${left}</b> · 완주 ${game.save.clears ?? 0}회
+            </p>
+            <ul class="slots shop-slots">
+              ${shopItems()
+                .map((item, i) => {
+                  const has = owns(game.save, item.uid);
+                  const on = game.save.fx?.[item.slot] === item.id;
+                  const tag = on ? '★' : has ? '✓' : `${item.cost}`;
+                  const cls = [i === game.shopIndex ? 'on' : '', has ? 'has' : 'buy', on ? 'worn' : '']
+                    .filter(Boolean)
+                    .join(' ');
+                  return `<li class="${cls}" data-key="shop:${i}">${esc(item.label)}<i>${tag}</i></li>`;
+                })
+                .join('')}
+            </ul>
+            <p class="press">깨면 점수가 는다 · 점프로 사고 끼운다</p>
+            <button type="button" class="back-btn" data-key="shop:back">뒤로</button>
+          </div>`;
+      }
       case 'cutList': {
         // 목록은 core 가 갖고 있다 — 여기 또 적으면 화면과 실제로 트는 게 어긋난다
         return `
@@ -15252,6 +15706,7 @@ function createHud(root) {
       el.hud.hidden =
         game.scene === 'title' ||
         game.scene === 'look' ||
+        game.scene === 'shop' ||
         game.scene === 'select' ||
         game.scene === 'gallery' ||
         game.scene === 'ending' ||
@@ -16365,6 +16820,21 @@ function pressKey(key) {
     game.lookIndex = at;
     const dir = Number(step) > 0 ? { rightPressed: true } : { leftPressed: true };
     updateGame(game, { ...frame, ...dir, confirmPressed: false }, 0);
+    return;
+  }
+  // 상점도 같은 방식 — 줄만 옮겨두고 합성 입력 한 프레임을 흘린다.
+  if (key.startsWith('shop:')) {
+    if (game.scene !== 'shop') return;
+    const what = key.slice('shop:'.length);
+    const frame = { ...input, leftPressed: false, rightPressed: false };
+    if (what === 'back') {
+      updateGame(game, { ...frame, restartPressed: true, confirmPressed: false }, 0);
+    } else {
+      game.shopIndex = Number(what);
+      updateGame(game, { ...frame, restartPressed: false, confirmPressed: true }, 0);
+      // 산 건 바로 저장한다 — 여기서 안 찍으면 껐다 켰을 때 점수만 빠져 있다
+      persist();
+    }
     return;
   }
   // 컷신 보기도 같은 방식 (개발자 모드). 여기도 폰에는 R 키가 없다.

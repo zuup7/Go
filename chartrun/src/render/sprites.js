@@ -315,6 +315,21 @@ export const NOTE = sprite(
   { n: '#ffd166' },
 );
 
+/**
+ * 죽을 때 흩어지는 하트 — 7×5. 상점의 「하트」 데스 이펙트가 쓴다.
+ * 알갱이 하나 크기라 작아야 한다. 이보다 키우면 화면이 하트로 덮인다.
+ */
+export const HEART = sprite(
+  [
+    '.hh.hh.',
+    'hhhhhhh',
+    'hhhhhhh',
+    '.hhhhh.',
+    '...h...',
+  ],
+  { h: '#ff5d8f' },
+);
+
 // 적이 쏘는 음표 탄환 — 6×6
 export const SHOT = sprite(
   [

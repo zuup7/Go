@@ -5,6 +5,7 @@ import { beatRecord } from '../core/save.js';
 import { STAGES, NOTE_TOTAL } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
 import { LOOK_SLOTS } from '../data/looks.js';
+import { owns } from '../data/effects.js';
 import { ACTIONS } from '../core/input.js';
 import {
   PAUSE_ROWS,
@@ -14,6 +15,8 @@ import {
   titleRows,
   inCutscene,
   notesFound,
+  shopItems,
+  shopPoints,
 } from '../core/game.js';
 
 /** 천 단위 구분. 세 자리마다 쉼표가 찍혀야 여섯 자리 점수가 한눈에 읽힌다 */
@@ -208,6 +211,35 @@ export function createHud(root) {
             <button type="button" class="back-btn" data-key="look:back">뒤로</button>
           </div>`;
       }
+      /**
+       * 상점. 컷신 보기와 같은 목록 꼴이고, 칸마다 값 또는 ✓ 가 붙는다.
+       * 목록도 점수도 core 가 갖고 있다 — 여기 또 적으면 화면과 실제로 팔리는 게 어긋난다.
+       */
+      case 'shop': {
+        const left = shopPoints(game);
+        return `
+          <div class="panel select-panel shop-panel">
+            <h2>상점</h2>
+            <p class="shop-points ${game.shopDenied > 0 ? 'denied' : ''}">
+              남은 점수 <b>${left}</b> · 완주 ${game.save.clears ?? 0}회
+            </p>
+            <ul class="slots shop-slots">
+              ${shopItems()
+                .map((item, i) => {
+                  const has = owns(game.save, item.uid);
+                  const on = game.save.fx?.[item.slot] === item.id;
+                  const tag = on ? '★' : has ? '✓' : `${item.cost}`;
+                  const cls = [i === game.shopIndex ? 'on' : '', has ? 'has' : 'buy', on ? 'worn' : '']
+                    .filter(Boolean)
+                    .join(' ');
+                  return `<li class="${cls}" data-key="shop:${i}">${esc(item.label)}<i>${tag}</i></li>`;
+                })
+                .join('')}
+            </ul>
+            <p class="press">깨면 점수가 는다 · 점프로 사고 끼운다</p>
+            <button type="button" class="back-btn" data-key="shop:back">뒤로</button>
+          </div>`;
+      }
       case 'cutList': {
         // 목록은 core 가 갖고 있다 — 여기 또 적으면 화면과 실제로 트는 게 어긋난다
         return `
@@ -334,6 +366,7 @@ export function createHud(root) {
       el.hud.hidden =
         game.scene === 'title' ||
         game.scene === 'look' ||
+        game.scene === 'shop' ||
         game.scene === 'select' ||
         game.scene === 'gallery' ||
         game.scene === 'ending' ||

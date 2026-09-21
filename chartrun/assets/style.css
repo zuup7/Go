@@ -440,6 +440,55 @@ canvas#game {
   --slot-rows: 4;
 }
 
+/* 상점 — 컷신 목록과 같은 격자에 값·✓ 를 오른쪽에 붙인다 */
+.slots.shop-slots {
+  --slot-rows: 5;
+}
+
+.shop-slots li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.shop-slots li i {
+  font-style: normal;
+  font-size: 0.8em;
+  color: var(--warn);
+}
+
+/* 이미 산 것 — 값 대신 ✓, 색을 죽인다 */
+.shop-slots li.has i {
+  color: var(--good);
+}
+
+/* 지금 끼운 것 ★ */
+.shop-slots li.worn {
+  border-color: var(--good);
+}
+
+.shop-points {
+  margin: 2px 0 0;
+  font-size: 0.85em;
+  color: var(--dim);
+}
+
+.shop-points b {
+  color: var(--warn);
+}
+
+/* 점수가 모자라 못 샀을 때 한 번 흔든다 */
+.shop-points.denied {
+  color: var(--hot);
+  animation: shopShake 0.25s;
+}
+
+@keyframes shopShake {
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
 .slots li {
   display: flex;
   align-items: center;

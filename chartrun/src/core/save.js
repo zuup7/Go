@@ -3,6 +3,7 @@ export const SAVE_KEY = 'chartrun/save-v1';
 export const SAVE_VERSION = 1;
 
 import { DEFAULT_LOOK } from '../data/looks.js';
+import { DEFAULT_FX, sanitizeOwned } from '../data/effects.js';
 
 /**
  * 저장소. 없으면 null 이고, 그러면 게임은 기록 없이 그냥 돌아간다.
@@ -66,6 +67,17 @@ export const emptySave = () => ({
    */
   look: { ...DEFAULT_LOOK },
   /**
+   * 완주 횟수. 상점의 점수는 **이걸로** 센다 (data/effects.js 의 earned).
+   * clearedOnce 는 참·거짓뿐이라 「몇 번 깼나」를 담을 수 없어서 따로 둔다.
+   */
+  clears: 0,
+  /** 그중 하드모드 완주. 2점씩 더 쳐준다 */
+  hardClears: 0,
+  /** 산 이펙트들의 id (`kill:note` 꼴). 쓴 점수는 이 목록에서 계산한다 */
+  owned: [],
+  /** 끼운 이펙트 */
+  fx: { ...DEFAULT_FX },
+  /**
    * **하던 판.** 없으면 null.
    *
    * 이 칸이 생기기 전에는 게임을 닫으면 판이 통째로 날아갔다 — 스테이지 3 을 하다
@@ -91,7 +103,23 @@ export function deserialize(text) {
   const parsed = JSON.parse(text);
   if (!parsed?.data) throw new Error('저장 형식이 올바르지 않습니다.');
   if (parsed.version !== SAVE_VERSION) throw new Error('저장 버전이 다릅니다.');
-  return { ...emptySave(), ...parsed.data };
+  return backfillClears({ ...emptySave(), ...parsed.data });
+}
+
+/**
+ * **이미 깬 사람이 0점으로 시작하지 않게** 한다.
+ *
+ * 완주 횟수는 상점을 만들면서 생긴 칸이라, 그 전에 깬 사람의 저장에는 없다.
+ * 그대로 두면 다 깨고 온 사람이 값만 적힌 빈 상점을 보게 된다.
+ * clearedOnce 는 「한 번은 깼다」는 뜻이므로 최소 1회로 쳐준다 — 세던 값이
+ * 이미 있으면 안 건드린다(한 번만 메운다).
+ */
+function backfillClears(save) {
+  const next = { ...save };
+  if (next.clearedOnce && !(next.clears > 0)) next.clears = 1;
+  if (next.clearedHard && !(next.hardClears > 0)) next.hardClears = 1;
+  next.owned = sanitizeOwned(next.owned);
+  return next;
 }
 
 export function loadSave() {
@@ -153,6 +181,17 @@ export function mergeRun(save, run) {
   if ('resume' in run) next.resume = run.resume;
   if (run.clearedOnce) next.clearedOnce = true;
   if (run.clearedHard) next.clearedHard = true;
+  /**
+   * 완주를 **센다.** 상점 점수가 여기서 나온다.
+   *
+   * `partial` 은 빼야 한다 — 개발자 모드로 보스만 골라 이기는 것도 엔딩으로 이어지는데,
+   * 그걸 세면 스테이지 선택으로 점수를 얼마든지 찍어낼 수 있다.
+   * (기록을 안 갱신하는 조건과 같은 판단이다. 위 bestRank 와 나란히 둔 이유다)
+   */
+  if (run.clearedOnce && !run.partial) {
+    next.clears = (save.clears ?? 0) + 1;
+    if (run.clearedHard) next.hardClears = (save.hardClears ?? 0) + 1;
+  }
   // 하드 기록은 하드 칸으로 간다. 안 나누면 어려운 판을 깬 시간이 보통 기록을 덮어써서
   // "최고 기록"이 무슨 판의 기록인지 알 수 없게 된다.
   if (!run.partial && run.timeMs != null && beatRecord(save, run.timeMs, run.hard)) {

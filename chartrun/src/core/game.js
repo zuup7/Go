@@ -34,6 +34,7 @@ import {
 import { introTimeline, introCutLength } from '../data/introCutscene.js';
 import { talkTimeline, talkLength, HINT_TALKS } from '../data/npcTalk.js';
 import { LOOK_SLOTS, sanitizeLook, cycleLook } from '../data/looks.js';
+import { FX_SLOTS, SHOP_ITEMS, fxOf, owns, canBuy, points, sanitizeFx, sanitizeOwned } from '../data/effects.js';
 import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
 import { emptySave } from './save.js';
 import { createRng } from './rng.js';
@@ -76,6 +77,9 @@ export function createGame(options = {}) {
   // 저장값을 그대로 믿지 않는다. 옛 저장에는 이 칸이 아예 없고, 항목을 줄이면
   // 있던 번호가 범위 밖으로 나가 그림이 undefined 가 된다 — 주인공이 안 그려진다.
   save.look = sanitizeLook(save.look);
+  // 없는 id 를 끼워두면 밟아도 **아무것도 안 튄다** — 조용히 깨지는 쪽이라 꼭 거른다
+  save.owned = sanitizeOwned(save.owned);
+  save.fx = sanitizeFx(save);
   const game = {
     scene: 'title',
     sceneTime: 0,
@@ -191,6 +195,10 @@ export function createGame(options = {}) {
     cutIndex: 0,
     /** 꾸미기에서 고르고 있는 줄 (LOOK_SLOTS 의 자리) */
     lookIndex: 0,
+    /** 상점에서 고르고 있는 칸 (SHOP_ITEMS 의 자리) */
+    shopIndex: 0,
+    /** 점수가 모자라 못 산 직후. 화면이 이걸 보고 값을 한 번 흔든다 */
+    shopDenied: 0,
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -279,8 +287,40 @@ function addParticles(game, x, y, count, colors, opts = {}) {
       size: opts.size ?? 2,
       color: colors[Math.floor(game.rng.float() * colors.length)],
       gravity: opts.gravity ?? 320,
+      // 네모 말고 다른 걸 그릴 때만 붙는다 (render/scene.js 가 읽는다)
+      shape: opts.shape,
     });
   }
+}
+
+/**
+ * 산 이펙트 하나를 터뜨린다.
+ *
+ * 이펙트는 **값일 뿐**이다 (data/effects.js) — 여기서 addParticles 로 넘기기만 한다.
+ * 그래서 「밟으면 정말 그 색 그 개수가 나오나」를 브라우저 없이 확인할 수 있다.
+ *
+ * `fallback` 은 색을 안 적은 이펙트(기본)가 쓸 색이다. 밟기는 **밟힌 앨범의 색**이
+ * 튀어야 뭘 밟았는지가 읽힌다.
+ */
+function burstFx(game, fx, x, y, fallback) {
+  const colors = fx.colors ?? fallback;
+  const opts = {
+    speed: fx.speed,
+    life: fx.life,
+    size: fx.size,
+    gravity: fx.gravity,
+    lift: fx.lift,
+    shape: fx.shape,
+  };
+  if (fx.split) {
+    // 양옆으로 나눠 보낸다 — 접점이 분명한 것(밟기)은 사방으로 퍼지면 안 읽힌다.
+    // 개수는 **합쳐서** fx.count 다 (한쪽만 세면 산 사람이 두 배를 보게 된다)
+    const half = Math.max(1, Math.round(fx.count / 2));
+    addParticles(game, x, y, half, colors, { ...opts, dir: 0, arc: Math.PI * 0.5 });
+    addParticles(game, x, y, fx.count - half, colors, { ...opts, dir: Math.PI, arc: Math.PI * 0.5 });
+    return;
+  }
+  addParticles(game, x, y, fx.count, colors, opts);
 }
 
 function addText(game, x, y, text, color = '#fff') {
@@ -401,11 +441,9 @@ function killPlayer(game) {
   game.scene = 'death';
   game.sceneTime = 0;
   freezeGame(game, FREEZE.death);
-  shakeCamera(game.camera, 1.2);
-  addParticles(game, game.player.x + 5, game.player.y + 7, 14, ['#ff5d8f', '#ffd166', '#ffffff'], {
-    speed: 110,
-    life: 0.9,
-  });
+  const fx = fxOf(game.save, 'death');
+  shakeCamera(game.camera, fx.shake ?? 1.2);
+  burstFx(game, fx, game.player.x + 5, game.player.y + 7);
   emit(game, 'death', {});
 }
 
@@ -457,18 +495,15 @@ function handleAlbums(game, dt, held = false) {
       // 아주 짧게. 한 판에 스무 번 넘게 하는 일이라 길면 판이 끊긴다
       freezeGame(game, FREEZE.stomp);
       emit(game, 'stomp', {});
-      // 밟은 자리에서 **옆으로** 터진다. 사방으로 퍼지면 위에서 밟았다는 게 안 읽힌다.
-      // (0 = 오른쪽, π = 왼쪽. 반반씩 나눠 양옆으로 보낸다)
-      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 4, album.def.palette, {
-        speed: 70,
-        dir: 0,
-        arc: Math.PI * 0.5,
-      });
-      addParticles(game, album.x + album.w / 2, album.y + album.h / 2, 4, album.def.palette, {
-        speed: 70,
-        dir: Math.PI,
-        arc: Math.PI * 0.5,
-      });
+      // 밟은 자리에서 터진다. 무엇이 튀는지는 **상점에서 끼운 것**이 정한다 —
+      // 아무것도 안 산 사람은 예전 그대로(앨범 색이 양옆으로) 나온다.
+      burstFx(
+        game,
+        fxOf(game.save, 'kill'),
+        album.x + album.w / 2,
+        album.y + album.h / 2,
+        album.def.palette,
+      );
       if (result === 'dead') {
         game.defeated += 1;
         game.score += album.def.score;
@@ -1071,6 +1106,36 @@ export function openHub(game) {
 }
 
 /**
+ * 상점 칸 하나를 누른 것.
+ *
+ * 안 샀고 점수가 되면 **사서 바로 끼운다** (사놓고 또 눌러 끼우게 하면
+ * 산 게 아무 일도 안 일어난 것처럼 보인다). 이미 샀으면 끼우기만.
+ * 점수가 모자라면 아무것도 안 하고 화면에 알린다.
+ *
+ * 쓴 점수를 따로 적지 않는다 — owned 목록 하나만 진짜고, 점수는 거기서 계산된다.
+ */
+export function buyOrEquip(game, index) {
+  const item = SHOP_ITEMS[index];
+  if (!item) return false;
+  if (!owns(game.save, item.uid)) {
+    if (!canBuy(game.save, item.uid)) {
+      game.shopDenied = 0.5;
+      emit(game, 'denied', {});
+      return false;
+    }
+    game.save.owned = [...(game.save.owned ?? []), item.uid];
+    emit(game, 'buy', { uid: item.uid });
+  }
+  game.save.fx = { ...game.save.fx, [item.slot]: item.id };
+  emit(game, 'equip', { uid: item.uid });
+  return true;
+}
+
+/** 상점 목록 (그리는 쪽이 이걸 쓴다 — 여기 또 적으면 화면과 고르기가 어긋난다) */
+export const shopItems = () => SHOP_ITEMS;
+export const shopPoints = (game) => points(game.save);
+
+/**
  * 말을 걸 수 있는 거리.
  *
  * **바닥까지 내려와야 한다.** 예전엔 `TILE * 2` 라 상자 아래끝(178)이 바닥에 선
@@ -1434,6 +1499,9 @@ export function titleRows(game) {
   // 메뉴 없이 바로 시작하는데, 그게 이 게임의 첫인상이다. 오프닝을 본 뒤,
   // 즉 두 번째로 켰을 때부터 타이틀에 나온다. 해금이랄 것도 없이 바로 보인다.
   if (game.save?.seenOpening) rows.push({ label: '꾸미기', action: 'look' });
+  // 상점도 같이. **0점이어도 보여준다** — 점수가 있다는 것과 어떻게 버는지를
+  // 거기서 알게 된다. 숨겨두면 있는 줄도 모르는 기능이 된다
+  if (game.save?.seenOpening) rows.push({ label: '상점', action: 'shop' });
   if (canSelect(game)) rows.push({ label: '스테이지 선택', action: 'select' });
   // 2회차가 있다는 걸 **여기서 말해준다.** 예전에는 깨고 나면 말없이 스테이지 1 로
   // 되돌려놓는 게 전부라, NPC 를 지나치면 2회차가 있는 줄도 몰랐다.
@@ -1914,6 +1982,11 @@ export function updateGame(game, input, dt) {
           game.scene = 'look';
           game.sceneTime = 0;
           game.lookIndex = 0;
+        } else if (pick?.action === 'shop') {
+          game.scene = 'shop';
+          game.sceneTime = 0;
+          game.shopIndex = 0;
+          game.shopDenied = 0;
         } else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'gallery') openGallery(game, 'title');
         else if (pick?.action === 'resume') resumeRun(game, game.save.resume);
@@ -1942,6 +2015,28 @@ export function updateGame(game, input, dt) {
         game.sceneTime = 0;
       } else if (input.confirmPressed) {
         game.lookIndex = (game.lookIndex + 1) % LOOK_SLOTS.length;
+      }
+      break;
+    }
+
+    /**
+     * 상점. 컷신 보기와 **같은 목록 꼴**이다 — 꾸미기의 ◀▶ 꼴은 「사기」와
+     * 「끼우기」가 한 버튼에 겹쳐서 안 맞는다.
+     *
+     * 점프 하나가 둘을 다 한다: 안 샀으면 사서 바로 끼우고, 이미 샀으면 끼운다.
+     * 점수가 모자라면 아무 일도 안 일어나고 값만 한 번 흔들린다.
+     */
+    case 'shop': {
+      game.shopDenied = Math.max(0, game.shopDenied - dt);
+      const moved = (input.rightPressed ? 1 : 0) - (input.leftPressed ? 1 : 0);
+      if (moved) {
+        game.shopIndex = (game.shopIndex + moved + SHOP_ITEMS.length) % SHOP_ITEMS.length;
+      }
+      if (input.restartPressed) {
+        game.scene = 'title';
+        game.sceneTime = 0;
+      } else if (input.confirmPressed) {
+        buyOrEquip(game, game.shopIndex);
       }
       break;
     }

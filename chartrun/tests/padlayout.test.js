@@ -222,8 +222,13 @@ test('버튼은 처음부터 비쳐 보인다 — 불투명하면 게임 화면�
 
 test('고르는 목록이 두 칸 안에 들어간다', () => {
   const css = readFileSync(new URL('../assets/style.css', import.meta.url), 'utf8');
-  const rows = Number(css.match(/--slot-rows:\s*(\d+)/)?.[1]);
-  assert.ok(rows > 0, 'CSS 에 --slot-rows 가 없다');
+  // **기본 규칙을 콕 집어** 읽는다. 그냥 --slot-rows 를 찾으면 좁은 규칙
+  // (.cut-slots · .shop-slots)을 먼저 집어서, 화면을 새로 만들 때마다 여기가
+  // 엉뚱하게 깨진다 — 두 번 겪고 고쳤다.
+  // `^\.slots\s*\{` 라 좁은 규칙(.slots.cut-slots)은 안 걸린다 — 점 뒤에 바로
+  // 다른 이름이 붙기 때문이다
+  const rows = Number(css.match(/^\.slots\s*\{[^}]*--slot-rows:\s*(\d+)/m)?.[1]);
+  assert.ok(rows > 0, 'CSS 의 `.slots` 기본 규칙에 --slot-rows 가 없다');
   assert.ok(
     SELECT_ITEMS.length <= rows * 2,
     `고를 게 ${SELECT_ITEMS.length}개면 칸이 셋으로 늘어 패널이 화면보다 넓어진다`,

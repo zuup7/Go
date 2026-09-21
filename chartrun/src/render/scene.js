@@ -16,7 +16,10 @@ import { npcInReach, npcDancing, markKey, CEIL_BLADE, SLAB_HANG } from '../core/
 import { npcFrame, npcSpin, npcBob, NPC_OFFSET } from './npcSprites.js';
 import { talkTimeline } from '../data/npcTalk.js';
 import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
-import { playerFrame, setLook, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
+import { playerFrame, setLook, PLAYER_OFFSET, NOTE, HEART, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
+
+/** 알갱이가 네모 대신 쓸 그림 (data/effects.js 의 shape 이름) */
+const PARTICLE_SHAPES = { note: NOTE, heart: HEART };
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import {
@@ -1588,11 +1591,18 @@ export function drawScene(ctx, game, time) {
 
   drawPlayer(ctx, game.player, ox, oy, time);
 
-  // 알갱이와 숫자
+  // 알갱이와 숫자.
+  // 모양(shape)은 상점에서 산 이펙트만 붙는다 — 없으면 예전 그대로 네모다.
   for (const p of game.particles) {
     ctx.globalAlpha = Math.max(0, p.life / p.max);
-    ctx.fillStyle = p.color;
-    ctx.fillRect(Math.round(p.x - ox), Math.round(p.y - oy), p.size, p.size);
+    const px = Math.round(p.x - ox);
+    const py = Math.round(p.y - oy);
+    const spr = PARTICLE_SHAPES[p.shape];
+    if (spr) drawSprite(ctx, spr, px - (spr.w >> 1), py - (spr.h >> 1));
+    else {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(px, py, p.size, p.size);
+    }
   }
   ctx.globalAlpha = 1;
   for (const txt of game.texts) {

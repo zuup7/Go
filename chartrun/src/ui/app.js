@@ -397,6 +397,21 @@ function pressKey(key) {
     updateGame(game, { ...frame, ...dir, confirmPressed: false }, 0);
     return;
   }
+  // 상점도 같은 방식 — 줄만 옮겨두고 합성 입력 한 프레임을 흘린다.
+  if (key.startsWith('shop:')) {
+    if (game.scene !== 'shop') return;
+    const what = key.slice('shop:'.length);
+    const frame = { ...input, leftPressed: false, rightPressed: false };
+    if (what === 'back') {
+      updateGame(game, { ...frame, restartPressed: true, confirmPressed: false }, 0);
+    } else {
+      game.shopIndex = Number(what);
+      updateGame(game, { ...frame, restartPressed: false, confirmPressed: true }, 0);
+      // 산 건 바로 저장한다 — 여기서 안 찍으면 껐다 켰을 때 점수만 빠져 있다
+      persist();
+    }
+    return;
+  }
   // 컷신 보기도 같은 방식 (개발자 모드). 여기도 폰에는 R 키가 없다.
   if (key.startsWith('cut:')) {
     if (game.scene !== 'cutList') return;
