@@ -12,7 +12,8 @@ import { T } from '../core/world.js';
 import { cameraOffset } from '../core/camera.js';
 import { drawAlbum, drawCoverAt } from './albumArt.js';
 import { drawSprite, crisp, makeCanvas } from './pixel.js';
-import { npcInReach, markKey, CEIL_BLADE, SLAB_HANG } from '../core/game.js';
+import { npcInReach, npcDancing, markKey, CEIL_BLADE, SLAB_HANG } from '../core/game.js';
+import { npcFrame, npcSpin, npcBob, NPC_OFFSET } from './npcSprites.js';
 import { talkTimeline } from '../data/npcTalk.js';
 import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
 import { playerFrame, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
@@ -900,38 +901,39 @@ function drawNpc(ctx, game, ox, oy, time) {
   for (const npc of game.world.npcs) {
     const x = Math.round(npc.x - ox);
     const y = Math.round(npc.y - oy);
-    // 플레이어 쪽을 본다. 멀리 있으면 원래대로 오른쪽
-    const faceLeft = npc.near && game.player.x + game.player.w / 2 < npc.x + 5;
-    // 가까이 오면 지팡이를 든다 (한 번 들고 유지 — 계속 흔들면 산만하다)
-    const raise = npc.near ? 3 : 0;
-    const sway = npc.near ? Math.sin(time * 3) * 0.5 : 0;
+    const dancing = npcDancing(game, npc);
+    // 춤출 때는 스핀이 방향을 정한다. 평소엔 플레이어 쪽을 본다
+    const faceLeft = dancing
+      ? npcSpin(time)
+      : npc.near && game.player.x + game.player.w / 2 < npc.x + 5;
+    // 통통 뛴다. 프레임 자체의 위아래와 겹쳐 과장된다
+    const hop = dancing ? npcBob(time) : 0;
 
     ctx.save();
-    // 몸 — 두건을 쓴 작은 사람
-    ctx.fillStyle = '#241a33';
-    ctx.fillRect(x, y - 2, 10, 16);
-    ctx.fillStyle = '#7c5cff';
-    ctx.fillRect(x + 1, y - 1, 8, 6);
-    ctx.fillStyle = '#ffd9b3';
-    ctx.fillRect(x + 2, y + 5, 6, 3);
-    // 눈은 보는 쪽으로 몰린다 — 한 픽셀이지만 돌아본 게 읽힌다
-    ctx.fillStyle = '#241a33';
-    const eye = faceLeft ? -1 : 0;
-    ctx.fillRect(x + 3 + eye, y + 6, 1, 1);
-    ctx.fillRect(x + 6 + eye, y + 6, 1, 1);
-    // 지팡이 — 보는 쪽 손에 든다
-    const sx = faceLeft ? x - 1 : x + 10;
-    ctx.fillStyle = '#8a7fb8';
-    ctx.fillRect(sx, Math.round(y - 4 - raise + sway), 1, 18);
-    ctx.fillStyle = '#ffd166';
-    ctx.fillRect(sx - 1, Math.round(y - 6 - raise + sway), 3, 3);
+    drawSprite(
+      ctx,
+      npcFrame({ near: npc.near, dancing }, time),
+      x + NPC_OFFSET.x,
+      y + NPC_OFFSET.y - hop,
+      faceLeft,
+    );
+    // 신나서 음표가 튀어나온다. time 으로만 만드는 값이라 상태를 안 늘린다
+    if (dancing) {
+      for (let i = 0; i < 3; i++) {
+        const k = ((time * 0.9 + i * 0.34) % 1);
+        ctx.globalAlpha = Math.max(0, 1 - k) * 0.9;
+        const side = i % 2 ? 8 : -6;
+        drawSprite(ctx, NOTE, x + side + Math.sin(k * 6 + i) * 2, y - 10 - k * 16);
+      }
+      ctx.globalAlpha = 1;
+    }
     // 누를 수 있으면 머리 위에 꼭지가 뜬다 (대사는 없다 — 누를 수 있다는 신호뿐)
     if (npcInReach(game) === npc) {
       const bob = Math.sin(time * 5) * 1.5;
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 3, Math.round(y - 12 + bob), 4, 4);
+      ctx.fillRect(x + 3, Math.round(y - 14 + bob), 4, 4);
       ctx.fillStyle = '#241a33';
-      ctx.fillRect(x + 4, Math.round(y - 11 + bob), 2, 2);
+      ctx.fillRect(x + 4, Math.round(y - 13 + bob), 2, 2);
     }
     ctx.restore();
   }

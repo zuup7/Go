@@ -1088,6 +1088,15 @@ export function npcSays(game, npc) {
 }
 
 /**
+ * 문을 열어준 뒤로는 계속 춘다. 이야기가 도는 동안은 멈춘다 —
+ * 문이 열리는 건 그 이야기의 마지막 박이라, 그 전에 추면 김이 샌다.
+ *
+ * `npc.opened` 는 판을 새로 만들 때 false 로 돌아간다(createWorld). 즉
+ * **그 방문에서 직접 열어준 뒤에만** 춘다.
+ */
+export const npcDancing = (game, npc) => !!npc.opened && !game.npcTalk;
+
+/**
  * 지금 **눌러서** 말을 걸 수 있는 NPC. 없으면 null.
  *
  * 눌러서 거는 건 문을 열어주는 이야기 하나뿐이다. 나머지 둘은 지나가면 저절로 뜨므로

@@ -12,6 +12,7 @@ import {
   stageTable,
   npcInReach,
   npcSays,
+  npcDancing,
   startIntro,
   runSummary,
   SELECT_HARD,
@@ -33,6 +34,7 @@ import { HARD_PHASES, HARD_MAX_HP, phaseFor } from '../src/data/bossData.js';
 import { createBoss, syncPhase } from '../src/core/boss.js';
 import { HARD_OPEN_CUT, hardOpenLength, INTRO_CUT } from '../src/data/introCutscene.js';
 import { talkLength } from '../src/data/npcTalk.js';
+import { NPC_SPRITES, npcFrame, npcSpin } from '../src/render/npcSprites.js';
 import { HARD_END_CUT, ENDING_CUT, endingCut, isEndingCut, BOSS_CUTS, bossCutLength } from '../src/data/bossCutscenes.js';
 
 const DT = 1 / 60;
@@ -177,6 +179,68 @@ test('깬 사람에게는 말을 걸 수 있고, 말을 걸어야 문이 열린�
   step(game, idle(), 60 * 5);
   assert.equal(game.npcTalk, null, '대화가 안 끝난다');
   assert.equal(game.world.portals[0].open, true, '말을 걸었는데 문이 안 열렸다');
+});
+
+test('문을 열어주면 춤춘다 — 이야기가 도는 동안은 아니다', () => {
+  const game = inStage1({ clearedOnce: true });
+  const npc = game.world.npcs[0];
+  game.player.x = npc.x;
+  game.player.y = npc.y;
+
+  assert.equal(npcDancing(game, npc), false, '열어주기도 전에 춘다');
+  step(game, idle({ confirmPressed: true }), 1);
+  assert.ok(game.npcTalk, '말이 안 걸렸다');
+  // 문이 열리는 건 이 이야기의 마지막 박이다. 그 전에 추면 김이 샌다
+  assert.equal(npcDancing(game, npc), false, '이야기가 도는 중인데 벌써 춘다');
+
+  step(game, idle(), 60 * 5);
+  assert.equal(game.npcTalk, null, '이야기가 안 끝났다');
+  assert.equal(npcDancing(game, npc), true, '문을 열었는데 안 춘다');
+});
+
+test('춤은 그 방문에서 직접 열어준 사람만 춘다', () => {
+  // opened 는 판을 새로 만들면 풀린다 — 들어오자마자 춤추고 있으면 이상하다
+  const game = inStage1({ clearedOnce: true });
+  assert.equal(npcDancing(game, game.world.npcs[0]), false);
+});
+
+test('NPC 스프라이트는 전부 14×20 이고 춤 프레임이 여러 장이다', () => {
+  // build() 가 줄 수·칸 수를 검사하므로 **불러오기만 해도** 깨진 표는 던진다.
+  // 여기서는 크기와 장수를 못 박아둔다 — 한 장이 다른 크기가 되면 발이 뜬다
+  const names = Object.keys(NPC_SPRITES);
+  assert.ok(names.length >= 6, `프레임이 ${names.length}장뿐이다`);
+  for (const [name, spr] of Object.entries(NPC_SPRITES)) {
+    assert.equal(spr.w, 14, `${name} 의 너비가 다르다`);
+    assert.equal(spr.h, 20, `${name} 의 높이가 다르다`);
+  }
+  // 춤은 시간에 따라 **실제로 바뀌어야** 한다
+  const shots = new Set();
+  for (let i = 0; i < 16; i++) shots.add(npcFrame({ dancing: true }, i / 8));
+  assert.ok(shots.size >= 3, `춤이 ${shots.size}장에서 멈춘다 — 그건 춤이 아니라 정지 화면이다`);
+  // 가까이 가면 다른 자세여야 한다
+  assert.notEqual(npcFrame({ near: true }, 0), npcFrame({ near: false }, 0), '다가가도 자세가 그대로다');
+});
+
+test('춤 프레임에는 지팡이가 없다 — 놓고 춘다', () => {
+  // 기둥을 머리 조각에 그려뒀더니, 그 머리를 빌려 쓰는 웅크림 프레임에서
+  // **기둥 토막만 허공에** 떠 있었다. 구슬도 없고 바닥에도 안 닿은 채로.
+  for (const name of ['dance1', 'dance2', 'dance3', 'dance4']) {
+    const art = NPC_SPRITES[name].rows.join('');
+    assert.ok(!art.includes('w'), `${name} 에 지팡이 기둥이 남아 있다`);
+    assert.ok(!art.includes('g'), `${name} 에 지팡이 구슬이 남아 있다`);
+  }
+  // 반대로 서 있을 때는 기둥이 **바닥까지** 이어져야 한다
+  const stand = NPC_SPRITES.stand.rows;
+  assert.ok(stand[stand.length - 1].includes('w'), '짚고 선 지팡이가 바닥에 안 닿는다');
+  const gaps = stand.slice(1).filter((r) => !r.includes('w')).length;
+  assert.equal(gaps, 0, '지팡이 기둥이 중간에 끊긴다');
+});
+
+test('스핀은 가끔만 돈다 — 계속 뒤집으면 깜빡이는 걸로 보인다', () => {
+  let flips = 0;
+  for (let i = 0; i < 240; i++) if (npcSpin(i / 100)) flips++;
+  assert.ok(flips > 0, '한 번도 안 돈다');
+  assert.ok(flips < 60, `2.4초에 ${flips}프레임이나 뒤집힌다 — 춤이 아니라 발작이다`);
 });
 
 test('열린 문에 들어가면 2회차 시작 컷신을 거쳐 하드모드가 시작된다', () => {
