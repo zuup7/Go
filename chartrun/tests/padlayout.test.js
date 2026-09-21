@@ -287,3 +287,34 @@ test('「뒤로」는 어느 화면에서든 눌린다 — 폰에는 R 키가 �
   const rule = css.match(/(^|\})\s*\.back-btn\s*\{([^}]*)\}/m)?.[2] ?? '';
   assert.match(rule, /pointer-events:\s*auto/, '「뒤로」가 화면을 찍어 적혀 있다');
 });
+
+test('목록 화면은 틀보다 커지지 않는다 — 넘치면 「뒤로」가 잘려 나간다', () => {
+  // .panel.select-panel 에 max-height: 100% 는 오래 있었지만 **한 번도 안 먹었다.**
+  // 패널은 .center(grid) 의 칸이고 그리드 칸의 min-height 는 기본이 auto 인데,
+  // 자동 최소 크기(= 내용 높이)가 max-height 를 이긴다. 그래서 세로 390px 창에서
+  // 264px 칸 안에 300px 패널이 그려졌고, 밑에 달린 「뒤로」가
+  // screen-wrap(overflow: hidden) 에 통째로 잘렸다.
+  //
+  // 셋이 다 있어야 듣는다: 패널이 줄 수 있어야 하고(min-height: 0),
+  // 줄어드는 건 목록이어야 하고(min-height: 0 + overflow-y), 그래야 제목·밑줄·
+  // 「뒤로」가 제자리에 남는다.
+  const css = readFileSync(new URL('../assets/style.css', import.meta.url), 'utf8');
+  const block = (sel) =>
+    css.match(new RegExp(`(^|\\})[^{}]*${sel}[^{}]*\\{([^}]*)\\}`, 'm'))?.[2] ?? '';
+
+  const panel = block('\\.panel\\.select-panel,');
+  assert.match(panel, /min-height:\s*0/, '패널이 안 줄어들면 max-height 가 무시된다');
+
+  const list = block('\\.select-panel > \\.shop-cols,');
+  assert.match(list, /min-height:\s*0/, '목록이 안 줄어들면 패널도 못 줄어든다');
+  assert.match(list, /overflow-y:\s*auto/, '목록이 안 굴러가면 칸이 잘린 채로 안 보인다');
+
+  // 굴러가는 목록에서는 **고른 줄을 따라가야** 한다. 안 그러면 ◀▶ 로 옮긴 칸이
+  // 화면 밖으로 나가서, 무엇이 골라져 있는지 안 보인 채로 사게 된다.
+  const hud = readFileSync(new URL('../src/render/hud.js', import.meta.url), 'utf8');
+  const call = hud.match(/querySelector\(([^)]*li\.on[^)]*)\)\?\.scrollIntoView/)?.[1] ?? '';
+  assert.ok(call, '고른 줄을 화면 안으로 끌어오는 데가 없다');
+  for (const sel of ['.slots', '.looks']) {
+    assert.ok(call.includes(`${sel} li.on`), `${sel} 목록은 고른 줄을 안 따라간다`);
+  }
+});

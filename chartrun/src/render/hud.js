@@ -73,7 +73,10 @@ export function createHud(root) {
     el.center.hidden = !html;
     // 목록이 화면보다 길면 굴러간다. innerHTML 을 통째로 갈아끼우므로 굴린 자리는
     // 매번 처음으로 돌아간다 — 고른 줄을 다시 화면 안으로 끌어와야 한다.
-    el.center.querySelector('.slots li.on')?.scrollIntoView({ block: 'nearest' });
+    //
+    // **꾸미기(.looks)도 같이 본다.** 화면 이름을 하나만 적어두면 다음 화면을
+    // 만들 때 또 빠진다 — 「뒤로」가 죽은 채로 나갔던 것과 같은 실수다.
+    el.center.querySelector('.slots li.on, .looks li.on')?.scrollIntoView({ block: 'nearest' });
     startCountUp();
   };
 

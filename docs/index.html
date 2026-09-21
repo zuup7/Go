@@ -571,6 +571,46 @@ canvas#game {
   flex-direction: column;
 }
 
+/*
+ * 「뒤로」가 달린 화면은 **틀을 절대 안 넘는다.**
+ *
+ * 위의 max-height: 100% 는 오래 있었지만 **한 번도 안 먹었다.** 패널은
+ * .center(grid)의 칸이라 min-height 가 auto 이고, 그리드 칸의 자동 최소 크기는
+ * 내용 높이(300px)다 — 그게 max-height 를 이긴다. 그래서 세로 390px 창에서
+ * 264px 짜리 칸 안에 300px 짜리 패널이 그려졌고, 밑에 달린 「뒤로」가
+ * screen-wrap(overflow: hidden) 에 잘려 통째로 사라졌다.
+ *
+ * R 키가 있는 데스크톱에서만 그랬으니 갇히지는 않았지만, 폰이 조금만 더
+ * 납작해도 그대로 갇힌다. min-height: 0 하나면 max-height 가 제 일을 한다.
+ */
+.panel.select-panel,
+.panel.look-panel {
+  min-height: 0;
+}
+
+.panel.look-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+/**
+ * 줄어드는 건 **목록뿐이다.** 제목도 밑줄도 「뒤로」도 제 키를 지킨다 —
+ * 자리가 모자라면 목록이 굴러가고, 나가는 문은 언제나 보인다.
+ *
+ * flex 칸의 min-height 는 기본이 auto 라 내용보다 안 줄어든다. 여기서 0 으로
+ * 풀지 않으면 패널이 아무리 작아져도 목록이 버텨서 결국 같은 자리가 잘린다.
+ */
+.select-panel > .slots,
+.select-panel > .shop-cols,
+.look-panel > .looks {
+  min-height: 0;
+  overflow-y: auto;
+  /* 목록이 굴러갈 때 폰에서 손가락으로도 굴러가야 한다 */
+  pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* 숫자판 */
 .keypad-panel {
   min-width: min(260px, 86%);
@@ -15982,7 +16022,10 @@ function createHud(root) {
     el.center.hidden = !html;
     // 목록이 화면보다 길면 굴러간다. innerHTML 을 통째로 갈아끼우므로 굴린 자리는
     // 매번 처음으로 돌아간다 — 고른 줄을 다시 화면 안으로 끌어와야 한다.
-    el.center.querySelector('.slots li.on')?.scrollIntoView({ block: 'nearest' });
+    //
+    // **꾸미기(.looks)도 같이 본다.** 화면 이름을 하나만 적어두면 다음 화면을
+    // 만들 때 또 빠진다 — 「뒤로」가 죽은 채로 나갔던 것과 같은 실수다.
+    el.center.querySelector('.slots li.on, .looks li.on')?.scrollIntoView({ block: 'nearest' });
     startCountUp();
   };
 
