@@ -475,9 +475,40 @@ canvas#game {
   --slot-rows: 4;
 }
 
-/* 상점 — 컷신 목록과 같은 격자에 값·✓ 를 오른쪽에 붙인다 */
+/* 상점 — **킬과 데스를 머리말 붙은 두 묶음**으로 나란히 둔다.
+   한 목록을 칸으로 흘렸더니 둘째 칸에서 둘이 섞여서, 이름마다 「킬·」 을
+   붙여야 읽혔다. 나누고 나니 앞머리도 필요 없고 이름도 짧아졌다. */
+.shop-cols {
+  display: flex;
+  /* **묶음 사이가 묶음 안보다 넓어야 한다.** 칸 사이가 14px 인데 묶음 사이도
+     14px 였더니, 킬의 마지막 칸과 데스의 첫 칸이 한 덩어리로 보였다 */
+  gap: 26px;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 6px;
+  min-height: 0;
+}
+
+.shop-cols section + section {
+  /* 가른 자리에 선을 하나. 머리말만으로도 읽히지만, 훑어볼 때는 선이 먼저 보인다 */
+  border-left: 1px solid rgba(169, 140, 255, 0.28);
+  padding-left: 26px;
+}
+
+.shop-cols h3 {
+  margin: 0 0 4px;
+  font-size: 0.82em;
+  font-weight: normal;
+  color: var(--hot);
+  letter-spacing: 3px;
+  text-align: center;
+}
+
 .slots.shop-slots {
-  --slot-rows: 5;
+  /* 머리말이 한 줄 붙으므로 줄 수를 하나 줄인다 — 「뒤로」가 밀려나면
+     R 키 없는 폰에서는 그대로 갇힌다 */
+  --slot-rows: 4;
+  margin-top: 0;
 }
 
 .shop-slots li {
@@ -1750,6 +1781,7 @@ const T = {
   CEILSPIKE: 'T', // 천장에 붙어 있다 아래를 지나가면 내려온다
   ZONE_SURGE: '>', // 여기부터 쫓아오는 것이 확 빨라진다
   NPC: 'N', // 한 바퀴를 돈 뒤에만 나타나는 사람. 말을 걸면 포탈이 열린다
+  SHOPNPC: 'M', // 좌판을 깔고 앉은 상인. 말을 걸면 상점이 열린다
   PORTAL: 'P', // 하드모드로 가는 문. NPC 에게 말을 걸기 전에는 닫혀 있다
   ZONE_REVERSE: 'R', // 좌우가 뒤바뀌는 역재생 구간
   ZONE_BLACKOUT: '@', // 화면이 깜깜해지는 정전 구간
@@ -1873,7 +1905,33 @@ function createWorld(stage) {
           //   near    지금 플레이어가 옆에 있는가 (그리는 쪽이 이걸 보고 돌아본다)
           //   said    이번에 다가온 동안 이미 한 마디 했는가 —
           //           **멀어져야 풀린다.** 이게 없으면 서 있기만 해도 계속 말한다
-          world.npcs.push({ tx, ty, x: x + 2, y: y + 2, opened: false, near: false, said: false });
+          //   kind    무슨 사람인가. **이 한 글자가 둘을 가른다** —
+          //           'portal' 은 문을 열어주고, 'shop' 은 상점을 연다
+          world.npcs.push({
+            kind: 'portal',
+            tx,
+            ty,
+            x: x + 2,
+            y: y + 2,
+            opened: false,
+            near: false,
+            said: false,
+          });
+          grid[ty][tx] = T.EMPTY;
+          break;
+        case T.SHOPNPC:
+          // 노인과 **같은 판**을 탄다. 다가가면 반응하고, 눌러서 말을 건다.
+          // 다른 건 kind 하나뿐이고, 그 갈림길은 core/game.js 의 npcAction 에 있다
+          world.npcs.push({
+            kind: 'shop',
+            tx,
+            ty,
+            x: x + 2,
+            y: y + 2,
+            opened: false,
+            near: false,
+            said: false,
+          });
           grid[ty][tx] = T.EMPTY;
           break;
         case T.PORTAL:
@@ -2038,6 +2096,10 @@ const s1 = {
   // N(사람)과 P(2회차 문). 스테이지 1 사본을 따로 두지 않으려고 원래 판에 박아둔다 —
   // 한 바퀴 돌기 전에는 문이 안 열리고, 사람은 「아직 아니다」라고만 말한다 (npcSays).
   //
+  // M(상인)은 17칸에 둔다. **머리 위가 비어 있어야 한다** — 11~16칸은 바로 위
+  // 10행에 발판(======)이 있어서 앉은 사람의 머리가 발판에 파묻힌다.
+  // 첫 화면(24칸)에 들어오면서 노인·문과 안 겹치는 자리는 여기뿐이다.
+  //
   // **N 은 11행이어야 한다.** 10행에 두면 바닥(12행)에서 한 칸 뜨고, 그러면
   // 말 걸기 상자가 바닥에 선 플레이어를 못 덮어서 걸어가도 말이 안 걸린다.
   // 문 P 는 두 칸짜리라 10행에서도 바닥까지 닿는다 — 그래서 저것만 안 걸렸다.
@@ -2046,7 +2108,7 @@ const s1 = {
     '            *  *    ',
     '                    ',
     '         P ======   ',
-    '  S  N              ',
+    '  S  N           M  ',
     '####################',
     '####################',
   ]),
@@ -5361,15 +5423,29 @@ const NPC_AGAIN = [
   { at: 1.4, kind: 'end' },
 ];
 
+/**
+ * 좌판 아줌마가 지나가는 사람에게. **판을 안 멈춘다** — 스테이지 1 시작 줄이라
+ * 여기서 멈추면 매 판 첫 5초가 말풍선이 된다.
+ *
+ * 동전 → 보따리. 「돈을 내면 물건을 준다」 두 장이면 다 말한 것이고,
+ * 눌러서 열어보면 나머지는 상점 화면이 알아서 말한다.
+ */
+const NPC_SHOP = [
+  { at: 0.0, kind: 'coin' }, // 동전이 뒤집힌다
+  { at: 1.2, kind: 'goods' }, // 보따리가 열리고 반짝인다
+  { at: 2.4, kind: 'end' },
+];
+
 /** 이야기 id → 타임라인. 소리 표(CUT_SOUND)의 키와 **같은 이름**이어야 한다 */
 const TALKS = {
   talk: NPC_TALK,
   talkLocked: NPC_LOCKED,
   talkAgain: NPC_AGAIN,
+  talkShop: NPC_SHOP,
 };
 
 /** 저 혼자 떴다 지는 것들 — 판을 안 멈춘다 */
-const HINT_TALKS = ['talkLocked', 'talkAgain'];
+const HINT_TALKS = ['talkLocked', 'talkAgain', 'talkShop'];
 
 const talkTimeline = (id) => TALKS[id] ?? NPC_TALK;
 const talkLength = (id) => lengthOf(talkTimeline(id));
@@ -5378,7 +5454,7 @@ const npcTalkLength = () => talkLength('talk');
 /** 단계 이름 → 시작 시각. 그리는 쪽이 이걸 읽는다 */
 const TALK_AT = Object.fromEntries(NPC_TALK.map((s) => [s.kind, s.at]));
 
-return { NPC_TALK, NPC_LOCKED, NPC_AGAIN, TALKS, HINT_TALKS, talkTimeline, talkLength, npcTalkLength, TALK_AT };
+return { NPC_TALK, NPC_LOCKED, NPC_AGAIN, NPC_SHOP, TALKS, HINT_TALKS, talkTimeline, talkLength, npcTalkLength, TALK_AT };
 })();
 __m["chartrun/src/data/looks.js"] = (() => {
 // 주인공 꾸미기. 머리 한 벌 + 옷 색 + 바지 색.
@@ -5492,6 +5568,8 @@ const KILLS = [
     colors: ['#ff5d8f', '#ffd166', '#39ff9a', '#4ec3ff', '#ffffff'],
     count: 7,
     speed: 55,
+    // 알갱이마다 다른 꽃잎이 다른 색으로 날린다 (by: 'seed')
+    shape: 'petal',
     // 천천히 떠올랐다 나풀나풀 내려앉는다
     gravity: 90,
     lift: 55,
@@ -5520,7 +5598,8 @@ const KILLS = [
     speed: 130,
     gravity: 260,
     life: 0.5,
-    size: 2,
+    // 점 → 십자 → 큰 반짝 → 사라짐 (by: 'life')
+    shape: 'spark',
     // 여기만 사방이다 — 「터졌다」가 읽혀야 한다
     split: false,
   },
@@ -5532,6 +5611,8 @@ const KILLS = [
     count: 6,
     speed: 80,
     life: 0.7,
+    // 구멍 뚫린 필름 조각. 색이 정체성이라 모양은 담백하게
+    shape: 'film',
     split: true,
   },
   {
@@ -5569,11 +5650,12 @@ const KILLS = [
     colors: ['#b3aecd', '#8a7fb8', '#5a5766'],
     count: 8,
     speed: 30,
-    // 위로 느리게 흩어졌다 사라진다. 큰 알갱이라야 연기로 읽힌다
+    // 작게 → 부풀어 → 성글어짐 (by: 'life')
+    shape: 'puff',
+    // 위로 느리게 흩어졌다 사라진다
     gravity: -20,
     lift: 18,
     life: 1.6,
-    size: 3,
     split: true,
   },
 ];
@@ -5596,11 +5678,12 @@ const DEATHS = [
     colors: ['#ffffff', '#cfe6a6', '#a98cff'],
     count: 12,
     speed: 26,
+    // 작은 날개 좌·우가 섞인다
+    shape: 'wing',
     // 중력을 음수로 두면 **위로만** 천천히 오른다
     gravity: -40,
     lift: 30,
     life: 1.8,
-    size: 2,
   },
   {
     id: 'heart',
@@ -5623,7 +5706,8 @@ const DEATHS = [
     speed: 190,
     gravity: 380,
     life: 0.6,
-    size: 3,
+    // 불꽃이 사그라든다 (by: 'life')
+    shape: 'flame',
     /** 이것만 화면을 더 흔든다 (core 가 읽는다) */
     shake: 2.0,
   },
@@ -5659,19 +5743,18 @@ const DEATHS = [
     colors: ['#ffffff', '#cfe6ff', '#a9d8ff'],
     count: 14,
     speed: 22,
+    // 부풀다 **터진 링**으로 끝난다 (by: 'life') — 이게 「팝」으로 읽히는 핵심이다
+    shape: 'bubble',
     // 아주 느리게 위로, 오래 남는다 — 물속 같은 느낌
     gravity: -28,
     lift: 16,
     life: 2.4,
-    size: 2,
   },
 ];
 
 /** 상점 줄 한 벌. 고르는 쪽(core)과 그리는 쪽(hud)이 **이걸 같이 쓴다** */
 const FX_SLOTS = [
   { key: 'kill', label: '킬', items: KILLS },
-  // 「죽음」이 아니라 「데스」다. 열다섯 개가 되면서 칸이 셋으로 늘어나
-  // 이름이 한 글자만 길어도 화면 밖으로 나간다
   { key: 'death', label: '데스', items: DEATHS },
 ];
 
@@ -5681,15 +5764,14 @@ const SHOP_ITEMS = FX_SLOTS.flatMap((slot) =>
     ...item,
     slot: slot.key,
     uid: `${slot.key}:${item.id}`,
-    /** 짧은 이름 (꾸미기처럼 한 줄에 하나만 보일 때) */
-    name: item.label,
     /**
-     * 목록에 적히는 이름. **어느 쪽인지를 같이 적는다** — 킬과 죽음이 칸 둘로
-     * 나뉘어 보이긴 하는데, 「기본 / 기본」처럼 이름만 늘어놓으면 어느 칸이
-     * 무엇인지 알 길이 없다 (화면을 보고서야 알았다).
+     * 목록에 적히는 이름. **앞머리(킬·/데스·)를 안 붙인다.**
+     *
+     * 한때 붙여뒀었다 — 한 목록을 칸으로 흘리다 보니 둘째 칸에서 킬과 데스가
+     * 섞였고, 앞머리가 없으면 어느 쪽인지 알 길이 없었다. 이제 화면이 **머리말
+     * 붙은 두 묶음**으로 나뉘므로 그게 필요 없고, 그만큼 짧아져 칸이 더 들어간다.
      */
-    // 가운뎃점만, **공백은 뺀다** — 칸이 셋이라 한 글자가 아쉽다
-    label: `${slot.label}·${item.label}`,
+    label: item.label,
   })),
 );
 
@@ -6227,6 +6309,8 @@ function createGame(options = {}) {
     shopIndex: 0,
     /** 점수가 모자라 못 산 직후. 화면이 이걸 보고 값을 한 번 흔든다 */
     shopDenied: 0,
+    /** 상점에서 나가면 어디로 돌아갈지 ('title' | 'play'). openShop 이 세운다 */
+    shopBack: 'title',
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -6315,8 +6399,10 @@ function addParticles(game, x, y, count, colors, opts = {}) {
       size: opts.size ?? 2,
       color: colors[Math.floor(game.rng.float() * colors.length)],
       gravity: opts.gravity ?? 320,
-      // 네모 말고 다른 걸 그릴 때만 붙는다 (render/scene.js 가 읽는다)
+      // 네모 말고 다른 걸 그릴 때만 붙는다 (render/particleArt.js 가 읽는다)
       shape: opts.shape,
+      // 알갱이마다 다른 장을 고르게 하는 씨앗. 꽃잎 세 모양이 섞여 날리는 게 이것이다
+      seed: Math.floor(game.rng.float() * 64),
     });
   }
 }
@@ -7184,8 +7270,23 @@ const npcReach = (npc) => ({ x: npc.x - 14, y: npc.y - TILE, w: TILE + 28, h: TI
  *   'talkAgain'   이미 열어줬다 — 「저기다」
  */
 function npcSays(game, npc) {
+  // 상인은 한 바퀴를 돌았는지와 아무 상관이 없다 — 늘 같은 한 마디를 한다
+  if (npc.kind === 'shop') return 'talkShop';
   if (!hubOpen(game)) return 'talkLocked';
   return npc.opened ? 'talkAgain' : 'talk';
+}
+
+/**
+ * 눌렀을 때 **무슨 일이 일어나는가**. 없으면 null (눌러도 아무 일 없다).
+ *
+ * npcSays 는 「무슨 말을 하나」고 이건 「누르면 뭘 하나」다. 예전엔 둘이 한 몸이라
+ * (`npcSays(...) === 'talk'` 를 눌림 판정으로 썼다) 상인을 끼워넣을 자리가 없었다.
+ *   'portal'  문을 열어준다 — 깨고 왔는데 아직 안 열어준 노인만
+ *   'shop'    상점을 연다 — 상인은 **언제나**, 몇 번이고
+ */
+function npcAction(game, npc) {
+  if (npc.kind === 'shop') return 'shop';
+  return npcSays(game, npc) === 'talk' ? 'portal' : null;
 }
 
 /**
@@ -7207,16 +7308,25 @@ const npcDancing = (game, npc) => !!npc.opened && !game.npcTalk;
 function npcInReach(game) {
   if (game.player.dead || game.npcTalk) return null;
   for (const npc of game.world.npcs) {
-    if (npcSays(game, npc) !== 'talk') continue;
-    if (npc.said) continue;
+    if (!npcAction(game, npc)) continue;
+    // 문은 한 번 열면 끝이라 걸고 나면 잠긴다(said). **상인은 안 잠긴다** —
+    // 지나가며 한 마디 하는 것도 said 를 세우는데, 그걸로 막으면 스쳐 지나간
+    // 다음부터는 눌러도 상점이 안 열린다
+    if (npc.kind !== 'shop' && npc.said) continue;
     if (overlaps(game.player, npcReach(npc))) return npc;
   }
   return null;
 }
 
-/** 저 혼자 떴다 지는 한 마디. 판은 계속 돈다 */
-function startHint(game, id) {
-  game.npcHint = { id, t: 0, length: talkLength(id) };
+/**
+ * 저 혼자 떴다 지는 한 마디. 판은 계속 돈다.
+ *
+ * **누가 하는 말인지 같이 들고 다닌다.** 예전엔 그리는 쪽이 `npcs[0]` 위에
+ * 말풍선을 띄웠는데, 사람이 하나뿐일 때만 맞는 이야기였다 — 상인이 생긴 지금
+ * 그대로 두면 상인의 말이 노인 머리 위에 뜬다.
+ */
+function startHint(game, id, npc) {
+  game.npcHint = { id, t: 0, length: talkLength(id), npc };
 }
 
 /**
@@ -7247,22 +7357,31 @@ function handleNpc(game, input) {
     // 문을 열어주는 이야기만 버튼을 기다린다. 나머지는 지나가면 저절로
     if (HINT_TALKS.includes(id)) {
       npc.said = true;
-      startHint(game, id);
+      startHint(game, id, npc);
       emit(game, 'talk', {});
     }
   }
 
   const npc = npcInReach(game);
   if (npc && input.confirmPressed) {
-    npc.opened = true;
-    npc.said = true;
-    game.npcHint = null; // 진짜 이야기가 시작되면 스쳐가는 한 마디는 치운다
-    game.npcTalk = { id: 'talk', t: 0, length: talkLength('talk') };
-    game.player.vx = 0;
-    emit(game, 'talk', {});
+    if (npcAction(game, npc) === 'shop') {
+      // 상인은 **판을 안 건드린다.** 문도 안 열고 npcTalk 도 안 세운다 —
+      // 화면만 상점으로 바뀌고, 「뒤로」 하면 서 있던 자리로 돌아온다
+      game.npcHint = null;
+      game.player.vx = 0;
+      openShop(game, 'play');
+      emit(game, 'talk', {});
+    } else {
+      npc.opened = true;
+      npc.said = true;
+      game.npcHint = null; // 진짜 이야기가 시작되면 스쳐가는 한 마디는 치운다
+      game.npcTalk = { id: 'talk', t: 0, length: talkLength('talk'), npc };
+      game.player.vx = 0;
+      emit(game, 'talk', {});
+    }
   }
-  // 말을 걸어야 문이 열린다
-  const opened = npcs.some((n) => n.opened);
+  // 말을 걸어야 문이 열린다. **상인은 못 연다** — 이 한 줄이 둘을 갈라놓는다
+  const opened = npcs.some((n) => n.kind !== 'shop' && n.opened);
   for (const portal of game.world.portals) portal.open = opened && !game.npcTalk;
 }
 
@@ -7508,6 +7627,24 @@ function openGallery(game, from) {
   game.scene = 'gallery';
   game.sceneTime = 0;
   game.galleryBack = from;
+}
+
+/**
+ * 상점 열기. **들어오는 문이 둘이다** — 타이틀의 줄과 판 위의 상인.
+ *
+ * 그래서 「어디서 들어왔는지」를 들고 있어야 한다(shopBack). 상인에게 말을 걸고
+ * 나왔는데 타이틀로 떨어지면 달리던 판이 통째로 날아간다. 숨은 화면이 겪은
+ * 그 문제와 같은 것이라 같은 수법을 쓴다 (galleryBack).
+ *
+ * 자리(shopIndex)는 **판에서 들어올 때만** 되돌린다... 가 아니라 늘 되돌린다.
+ * 어디서 들어오든 목록 첫 칸부터 보는 게 덜 헷갈린다.
+ */
+function openShop(game, from) {
+  game.scene = 'shop';
+  game.sceneTime = 0;
+  game.shopIndex = 0;
+  game.shopDenied = 0;
+  game.shopBack = from;
 }
 
 /**
@@ -8025,10 +8162,7 @@ function updateGame(game, input, dt) {
           game.sceneTime = 0;
           game.lookIndex = 0;
         } else if (pick?.action === 'shop') {
-          game.scene = 'shop';
-          game.sceneTime = 0;
-          game.shopIndex = 0;
-          game.shopDenied = 0;
+          openShop(game, 'title');
         } else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'gallery') openGallery(game, 'title');
         else if (pick?.action === 'resume') resumeRun(game, game.save.resume);
@@ -8075,7 +8209,9 @@ function updateGame(game, input, dt) {
         game.shopIndex = (game.shopIndex + moved + SHOP_ITEMS.length) % SHOP_ITEMS.length;
       }
       if (input.restartPressed) {
-        game.scene = 'title';
+        // 들어온 문으로 되돌아간다. 판에서 들어왔으면 서 있던 그 자리다 —
+        // 'play' 로 돌아가도 world 와 player 는 그대로라 아무것도 안 잃는다
+        game.scene = game.shopBack === 'play' ? 'play' : 'title';
         game.sceneTime = 0;
       } else if (input.confirmPressed) {
         buyOrEquip(game, game.shopIndex);
@@ -8322,7 +8458,7 @@ function resumeLabel(resume) {
   return `이어하기 — ${resume.hard ? '하드 ' : ''}STAGE ${number}`;
 }
 
-return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, buyOrEquip, shopItems, shopPoints, shopPointsText, npcSays, npcDancing, npcInReach, openCutList, cutPreviews, previewCut, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_CUTS, SELECT_HUB, cutSlotOf, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary, resumeState, resumeRun, resumeLabel };
+return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, buyOrEquip, shopItems, shopPoints, shopPointsText, npcSays, npcAction, npcDancing, npcInReach, openCutList, cutPreviews, previewCut, openShop, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_CUTS, SELECT_HUB, cutSlotOf, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary, resumeState, resumeRun, resumeLabel };
 })();
 __m["chartrun/src/core/devmode.js"] = (() => {
 // 개발자 모드. 비밀번호를 넣으면 스테이지를 골라 들어갈 수 있다.
@@ -9661,6 +9797,127 @@ const NPC_SPRITES = {
   dance4: build(TOP.none, HEAD.yell, TORSO.leanR, LEGS.kickR), // 오른쪽
 };
 
+// ══════════════════════════════════════════════════════════════
+// 좌판 아줌마 · 16×20
+// ══════════════════════════════════════════════════════════════
+//
+// **실루엣이 노인과 한눈에 갈려야 한다.** 노인은 14칸에 꽉 찬 세로 기둥이고,
+// 이쪽은 앉아 있어서 위가 비고 아래가 넓다 — 낮은 좌판이 바닥을 가로로 깐다.
+// 같은 자리에 둘을 세워놓고 눈을 가늘게 떠도 어느 쪽인지 알 수 있어야 한다.
+//
+// 꽃무늬 옷과 뽀글머리로 「아줌마」를 읽힌다. 색도 노인(보라 로브·흰머리)과
+// 겹치지 않게 분홍·갈색으로 잡았다.
+
+const MPAL = {
+  k: '#241a33', // 윤곽
+  s: '#ffd9b3', // 살색 — 노인과 같은 색을 쓴다. 사람은 사람이다
+  h: '#8a5238', // 뽀글머리
+  c: '#ff8fb0', // 꽃무늬 상의
+  f: '#ffd166', // 꽃잎 점 · 동전
+  t: '#7a4a2a', // 좌판 나무
+  d: '#4a2c18', // 좌판 그늘
+  w: '#f2f0ff', // 좌판에 놓인 레코드
+  e: '#20182e', // 눈·입
+};
+
+const MW = 16;
+const MBLANK = '................';
+
+/** 머리 일곱 줄 (2~8행). 뽀글이 얼굴을 감싼다 */
+const MHEAD = {
+  base: [
+    '....kkkkkk......',
+    '...khhhhhhk.....',
+    '..khhhhhhhhk....',
+    '..khhssssshk....',
+    '..khsesseshk....',
+    '...kssssssk.....',
+    '....kseesk......',
+  ],
+  /**
+   * 고개를 든다 — 눈이 **웃는 호**(k)로 바뀌고 입이 벌어진다.
+   * 구멍(`.`)으로 눈을 그리면 얼굴에 뚫린 자국으로 보인다. 한 번 그래 봤다.
+   */
+  up: [
+    '....kkkkkk......',
+    '...khhhhhhk.....',
+    '..khhhhhhhhk....',
+    '..khhssssshk....',
+    '..khsksskshk....',
+    '...kssssssk.....',
+    '....keeeek......',
+  ],
+};
+
+/** 몸통 다섯 줄 (9~13행). 팔이 여기 붙는다 */
+const MTORSO = {
+  /** 무릎에 손을 얹고 앉았다 */
+  sit: [
+    '...kcccccck.....',
+    '..scffcccfcs....',
+    '..scccccccs.....',
+    '...cfcccccf.....',
+    '...kcccccck.....',
+  ],
+  /** 한 손을 들어 부른다 — 오른팔이 어깨 위로 */
+  wave: [
+    '...kcccccck.s...',
+    '..scffcccfcs....',
+    '..scccccccs.....',
+    '...cfcccccf.....',
+    '...kcccccck.....',
+  ],
+};
+
+/**
+ * 좌판 여섯 줄 (14~19행). **사람보다 넓다** — 그래야 앉은 것이 읽힌다.
+ * 물건은 좌판 위(14~15행)에 놓이고, 아줌마의 아랫도리는 그 뒤로 가려진다.
+ */
+const MSTALL = [
+  '.wwww......ffff.',
+  '.wkkw......fkkf.',
+  'tttttttttttttttt',
+  '.dddddddddddddd.',
+  '.dtttttttttttd..',
+  '..kkkkkkkkkkkk..',
+];
+
+const mbuild = (head, torso, { drop = 0 } = {}) => {
+  const body = drop > 0 ? torso.slice(0, torso.length - drop) : torso;
+  const rows = [...Array(2 + drop).fill(MBLANK), ...head, ...body, ...MSTALL];
+  if (rows.length !== 20) throw new Error(`상인 프레임이 ${rows.length}줄이다 — 20줄이어야 한다`);
+  for (const row of rows) {
+    if (row.length !== MW) {
+      throw new Error(`상인 프레임에 ${row.length}칸짜리 줄이 있다 — ${MW}칸이어야 한다`);
+    }
+  }
+  return sprite(rows, MPAL);
+};
+
+const SHOP_SPRITES = {
+  sit: mbuild(MHEAD.base, MTORSO.sit),
+  /** 숨 쉬듯 한 칸 내려앉은 장. 둘을 번갈아 쓰면 살아 있어 보인다 */
+  sit2: mbuild(MHEAD.base, MTORSO.sit, { drop: 1 }),
+  /** 가까이 오면 고개를 들고 손을 든다 */
+  wave: mbuild(MHEAD.up, MTORSO.wave),
+  wave2: mbuild(MHEAD.up, MTORSO.wave, { drop: 1 }),
+};
+
+/** 스프라이트를 npc 좌표에 놓을 때의 보정. 발밑은 노인과 같고 가로만 한 칸 넓다 */
+const SHOP_OFFSET = { x: -3, y: 14 - 20 };
+
+/**
+ * 지금 그릴 상인 프레임. 노인의 npcFrame 과 **같은 자리**다 —
+ * 상태를 보고 고르는 일은 그리는 쪽이 아니라 여기서 한다.
+ *
+ * 가까이 오면 손을 들어 부른다. 이게 「누를 수 있다」를 몸으로 먼저 알린다.
+ */
+function shopFrame({ near }, time) {
+  const beat = Math.floor(time * 2) % 2 === 1;
+  if (near) return beat ? SHOP_SPRITES.wave2 : SHOP_SPRITES.wave;
+  return beat ? SHOP_SPRITES.sit2 : SHOP_SPRITES.sit;
+}
+
 /** 춤 한 바퀴 (초당 8장) */
 const DANCE = [NPC_SPRITES.dance1, NPC_SPRITES.dance2, NPC_SPRITES.dance3, NPC_SPRITES.dance2, NPC_SPRITES.dance4];
 const DANCE_FPS = 8;
@@ -9691,7 +9948,7 @@ const npcSpin = (time) => {
 /** 춤출 때 몸이 통통 뜨는 높이 (픽셀) */
 const npcBob = (time) => Math.abs(Math.sin(time * DANCE_FPS * 0.5 * Math.PI)) * 2;
 
-return { NPC_SPRITES, NPC_OFFSET, npcFrame, npcSpin, npcBob };
+return { NPC_SPRITES, SHOP_SPRITES, SHOP_OFFSET, shopFrame, NPC_OFFSET, npcFrame, npcSpin, npcBob };
 })();
 __m["chartrun/src/render/sprites.js"] = (() => {
 // 주인공 스프라이트. 12×16 픽셀, 히트박스(10×14)보다 살짝 크다.
@@ -10140,6 +10397,144 @@ const RING = sprite(
 );
 
 return { spritesFor, setLook, PLAYER_SPRITES, playerFrame, PLAYER_OFFSET, NOTE, HEART, SHOT, SHOT_BOSS, DISC, BRIDE, RING };
+})();
+__m["chartrun/src/render/particleArt.js"] = (() => {
+// 알갱이 그림. 상점에서 산 이펙트가 네모 대신 이걸 쓴다.
+//
+// 예전에는 **모양당 그림이 한 장**이었고, 그림을 쓰면 알갱이 색(p.color)이 통째로
+// 무시됐다 — 꽃가루에 다섯 색을 적어둬도 한 색으로 나왔다. 그래서 꽃가루도
+// 폭죽도 흑백도 결국 「색만 다른 같은 네모」로 보였다.
+//
+// 이제 모양 하나가 **여러 장**을 갖고, 장 고르는 법이 둘이다:
+//   by: 'seed'  알갱이마다 다른 장 (꽃잎 세 모양이 섞여 날린다)
+//   by: 'life'  **수명에 따라 넘어간다** (거품이 터지고 불꽃이 사그라든다)
+//
+// 색은 `spriteFor` 가 입힌다. 그림은 한 글자('o')로만 그리고 색은 나중에 준다.
+const { sprite } = __m["chartrun/src/render/pixel.js"];
+
+/**
+ * 그림 한 장. 칸이 'o' 면 색이 칠해지고 '.' 면 비었다.
+ *
+ * **색을 여기 적지 않는다.** 이펙트가 정한 색(p.color)을 spriteFor 가 입힌다 —
+ * 그래야 같은 꽃잎이 분홍·노랑·초록으로 날린다.
+ */
+
+// ── 꽃잎 세 모양 (킬·꽃가루) ────────────────────────────────
+const PETAL_A = ['.oo.', 'oooo', 'oooo', '.oo.'];
+const PETAL_B = ['..o..', '.ooo.', 'ooooo', '.ooo.', '..o..'];
+const PETAL_C = ['oo..', 'oooo', '.ooo', '..o.'];
+
+// ── 음표 두 모양 (킬·데스·음표) ────────────────────────────
+/** 8분음표 — 기존 NOTE 와 같은 꼴이되 한 글자로 */
+const NOTE_A = ['...oo', '..ooo', '..o.o', '..o.o', 'ooo..', 'ooo..', '.oo..'];
+/** 붙은 음표 두 개 */
+const NOTE_B = ['..ooooo', '..o...o', '..o...o', 'ooo.ooo', 'ooo.ooo', '.o...o.'];
+
+// ── 반짝 네 장 (킬·폭죽) — 수명에 따라 커졌다 사라진다 ─────
+const SPARK_1 = ['.o.', 'ooo', '.o.'];
+const SPARK_2 = ['..o..', '..o..', 'ooooo', '..o..', '..o..'];
+const SPARK_3 = ['..o..', '.o.o.', 'o...o', '.o.o.', '..o..'];
+const SPARK_4 = ['o.o', '...', 'o.o'];
+
+// ── 필름 조각 두 모양 (킬·흑백) ────────────────────────────
+const FILM_A = ['ooooo', 'o.o.o', 'ooooo', 'o.o.o', 'ooooo'];
+const FILM_B = ['oooo', 'o..o', 'o..o', 'oooo'];
+
+// ── 하트 두 장 (킬·데스·하트) — 끝에 갈라진다 ──────────────
+const HEART_1 = ['.oo.oo.', 'ooooooo', 'ooooooo', '.ooooo.', '...o...'];
+const HEART_2 = ['.oo.oo.', 'oo.o.oo', 'oo...oo', '.o...o.', '.o...o.'];
+
+// ── 연기 세 장 (킬·연기) — 부풀다 성글어진다 ───────────────
+const PUFF_1 = ['.oo.', 'oooo', 'oooo', '.oo.'];
+const PUFF_2 = ['.oooo.', 'oooooo', 'oooooo', 'oooooo', '.oooo.'];
+const PUFF_3 = ['.o..o.', 'o.oo.o', '.o..o.', 'o.oo.o', '.o..o.'];
+
+// ── 날개 두 장 (데스·승천) ─────────────────────────────────
+const WING_L = ['ooo..', 'oooo.', '.oooo', '..ooo', '...o.'];
+const WING_R = ['..ooo', '.oooo', 'oooo.', 'ooo..', '.o...'];
+
+// ── 불꽃 세 장 (데스·폭발) — 사그라든다 ────────────────────
+const FLAME_1 = ['..o..', '.ooo.', 'ooooo', 'ooooo', '.ooo.'];
+const FLAME_2 = ['..o..', '.o.o.', 'oo.oo', '.ooo.'];
+const FLAME_3 = ['.o.', 'o.o', '.o.'];
+
+// ── 거품 세 장 (데스·거품) — 부풀다 **터진다** ─────────────
+const BUB_1 = ['.oo.', 'o..o', 'o..o', '.oo.'];
+const BUB_2 = ['.oooo.', 'oo..oo', 'o....o', 'o....o', 'oo..oo', '.oooo.'];
+/** 터진 링 — 조각만 남는다. 이게 「팝」으로 읽히는 핵심이다 */
+const BUB_POP = ['o.o.o.o', '.......', 'o.....o', '.......', 'o.o.o.o'];
+
+// ── 반지 (킬·반지) — 결혼식 컷신과 같은 꼴 ─────────────────
+const RING_A = ['.oo.', 'o..o', 'o..o', '.oo.'];
+
+// ── 레코드 (데스·레코드) ───────────────────────────────────
+const DISC_A = ['..oooo..', '.oooooo.', 'oo.oo.oo', 'oo.oo.oo', '.oooooo.', '..oooo..'];
+
+/**
+ * 모양 이름 → 그림들과 장 고르는 법.
+ *
+ * **이 표에 적은 이름과 data/effects.js 의 shape 이름이 서로 빠짐없이 맞아야 한다.**
+ * 한쪽만 고치면 모양 이름만 붙고 **아무것도 안 그려진다** — tests/shop.test.js 가
+ * 양방향으로 본다.
+ */
+const PARTICLE_ART = {
+  petal: { rows: [PETAL_A, PETAL_B, PETAL_C], by: 'seed' },
+  note: { rows: [NOTE_A, NOTE_B], by: 'seed' },
+  spark: { rows: [SPARK_1, SPARK_2, SPARK_3, SPARK_4], by: 'life' },
+  film: { rows: [FILM_A, FILM_B], by: 'seed' },
+  heart: { rows: [HEART_1, HEART_2], by: 'life' },
+  puff: { rows: [PUFF_1, PUFF_2, PUFF_3], by: 'life' },
+  wing: { rows: [WING_L, WING_R], by: 'seed' },
+  flame: { rows: [FLAME_1, FLAME_2, FLAME_3], by: 'life' },
+  bubble: { rows: [BUB_1, BUB_2, BUB_POP], by: 'life' },
+  ring: { rows: [RING_A], by: 'seed' },
+  disc: { rows: [DISC_A], by: 'seed' },
+};
+
+/**
+ * 알갱이 하나가 지금 쓸 장 번호.
+ *
+ * `life` 는 **닳은 만큼** 넘어간다 (1 → 0 이므로 뒤집어서 센다).
+ * 마지막 장에서 멈춰야 한다 — 안 그러면 다 닳는 순간 첫 장으로 되돌아가 깜빡인다.
+ */
+function frameOf(art, p) {
+  const n = art.rows.length;
+  if (n === 1) return 0;
+  if (art.by === 'life') {
+    const used = 1 - Math.max(0, Math.min(1, p.life / p.max));
+    return Math.min(n - 1, Math.floor(used * n));
+  }
+  return (p.seed ?? 0) % n;
+}
+
+/**
+ * 색을 입힌 스프라이트. **같은 (이름·장·색)이면 같은 객체**를 돌려준다.
+ *
+ * 이게 중요하다 — bake()(pixel.js)가 스프라이트 **객체를 열쇠로** 구운 캔버스를
+ * WeakMap 에 들고 있다. 매번 새로 만들면 알갱이마다 캔버스를 새로 굽는다.
+ * (꾸미기의 spritesFor 와 같은 수법이다)
+ */
+const CACHE = new Map();
+function spriteFor(name, frame, color) {
+  const art = PARTICLE_ART[name];
+  if (!art) return null;
+  const key = `${name}:${frame}:${color}`;
+  let spr = CACHE.get(key);
+  if (!spr) {
+    spr = sprite(art.rows[frame] ?? art.rows[0], { o: color });
+    CACHE.set(key, spr);
+  }
+  return spr;
+}
+
+/** 알갱이 하나가 지금 그릴 그림 (없으면 null — 그러면 예전처럼 네모다) */
+function particleSprite(p) {
+  const art = PARTICLE_ART[p.shape];
+  if (!art) return null;
+  return spriteFor(p.shape, frameOf(art, p), p.color);
+}
+
+return { PARTICLE_ART, frameOf, spriteFor, particleSprite };
 })();
 __m["chartrun/src/render/bigtext.js"] = (() => {
 // 컷신에 박히는 큰 글자(PHASE 2, #1 …). 캔버스 폰트를 쓰면 픽셀이 뭉개져서
@@ -13792,13 +14187,12 @@ const { cameraOffset } = __m["chartrun/src/core/camera.js"];
 const { drawAlbum, drawCoverAt } = __m["chartrun/src/render/albumArt.js"];
 const { drawSprite, crisp, makeCanvas } = __m["chartrun/src/render/pixel.js"];
 const { npcInReach, npcDancing, markKey, CEIL_BLADE, SLAB_HANG } = __m["chartrun/src/core/game.js"];
-const { npcFrame, npcSpin, npcBob, NPC_OFFSET } = __m["chartrun/src/render/npcSprites.js"];
+const { npcFrame, npcSpin, npcBob, NPC_OFFSET, shopFrame, SHOP_OFFSET } = __m["chartrun/src/render/npcSprites.js"];
 const { talkTimeline } = __m["chartrun/src/data/npcTalk.js"];
 const { CAUGHT_CUT, CAUGHT_AT } = __m["chartrun/src/data/caughtCut.js"];
-const { playerFrame, setLook, PLAYER_OFFSET, NOTE, HEART, SHOT, SHOT_BOSS, DISC, BRIDE, RING } = __m["chartrun/src/render/sprites.js"];
+const { playerFrame, setLook, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } = __m["chartrun/src/render/sprites.js"];
+const { particleSprite } = __m["chartrun/src/render/particleArt.js"];
 
-/** 알갱이가 네모 대신 쓸 그림 (data/effects.js 의 shape 이름) */
-const PARTICLE_SHAPES = { note: NOTE, heart: HEART, ring: RING, disc: DISC };
 const { ALBUMS } = __m["chartrun/src/data/albums.js"];
 const { VIEW } = __m["chartrun/src/core/game.js"];
 const { bossPhase, bossCombined, ceilingSlabs, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
@@ -14668,6 +15062,22 @@ function drawNpc(ctx, game, ox, oy, time) {
   for (const npc of game.world.npcs) {
     const x = Math.round(npc.x - ox);
     const y = Math.round(npc.y - oy);
+    // 상인은 앉아 있다 — 춤도 안 추고 돌지도 않는다. 그림만 다르고 나머지는 같다
+    if (npc.kind === 'shop') {
+      ctx.save();
+      drawSprite(
+        ctx,
+        shopFrame({ near: npc.near }, time),
+        x + SHOP_OFFSET.x,
+        y + SHOP_OFFSET.y,
+        // 좌판이 좌우 대칭이라 몸만 뒤집으면 어색하다. **플레이어가 왼쪽에 있어도
+        // 안 돌아본다** — 앉은 사람은 원래 그 자리를 보고 있다
+        false,
+      );
+      drawTalkTip(ctx, game, npc, x, y, time);
+      ctx.restore();
+      continue;
+    }
     const dancing = npcDancing(game, npc);
     // 춤출 때는 스핀이 방향을 정한다. 평소엔 플레이어 쪽을 본다
     const faceLeft = dancing
@@ -14694,16 +15104,24 @@ function drawNpc(ctx, game, ox, oy, time) {
       }
       ctx.globalAlpha = 1;
     }
-    // 누를 수 있으면 머리 위에 꼭지가 뜬다 (대사는 없다 — 누를 수 있다는 신호뿐)
-    if (npcInReach(game) === npc) {
-      const bob = Math.sin(time * 5) * 1.5;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 3, Math.round(y - 14 + bob), 4, 4);
-      ctx.fillStyle = '#241a33';
-      ctx.fillRect(x + 4, Math.round(y - 13 + bob), 2, 2);
-    }
+    drawTalkTip(ctx, game, npc, x, y, time);
     ctx.restore();
   }
+}
+
+/**
+ * 누를 수 있으면 머리 위에 꼭지가 뜬다 (대사는 없다 — 누를 수 있다는 신호뿐).
+ *
+ * 노인과 상인이 **같은 표시**를 쓴다. 뜻이 하나뿐이라 ("여기서 점프") 그림이
+ * 둘일 이유가 없고, 둘로 나누면 한쪽만 고치는 날이 온다.
+ */
+function drawTalkTip(ctx, game, npc, x, y, time) {
+  if (npcInReach(game) !== npc) return;
+  const bob = Math.sin(time * 5) * 1.5;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x + 3, Math.round(y - 14 + bob), 4, 4);
+  ctx.fillStyle = '#241a33';
+  ctx.fillRect(x + 4, Math.round(y - 13 + bob), 2, 2);
 }
 
 /**
@@ -14718,7 +15136,9 @@ function drawNpcTalk(ctx, game, ox, oy, time) {
   // 둘이 다른 건 판이 멈추느냐뿐이라, 그리는 건 한 군데서 한다.
   const talk = game.npcTalk ?? game.npcHint;
   if (!talk) return;
-  const npc = game.world.npcs[0];
+  // **말한 사람 위에 뜬다.** npcs[0] 을 쓰던 시절이 있었는데, 사람이 하나뿐일
+  // 때만 맞는 이야기였다 — 상인이 생기자 상인의 말이 노인 머리 위에 떴다
+  const npc = talk.npc ?? game.world.npcs[0];
   if (!npc) return;
   const kind = beatKind(talkTimeline(talk.id), talk.t);
   if (!kind || kind === 'end') return;
@@ -14803,6 +15223,46 @@ function drawNpcTalk(ctx, game, ox, oy, time) {
     ctx.fillRect(cx - 2 + jig, cy - 4, 1, 3);
     ctx.fillRect(cx + 1 + jig, cy - 4, 1, 3);
     ctx.fillRect(cx - 2 + jig, cy - 5, 4, 1);
+  } else if (kind === 'coin') {
+    // 동전이 돈다 — 가로폭만 줄였다 폈다 하면 뒤집히는 것으로 읽힌다
+    const spin = Math.abs(Math.cos(time * 4));
+    const w = Math.max(1, Math.round(9 * spin));
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(cx - (w >> 1), cy - 5, w, 11);
+    // 옆면. 납작해질 때만 보인다 — 이게 「판때기가 아니라 동전」을 만든다
+    ctx.fillStyle = '#b98a2a';
+    ctx.fillRect(cx - (w >> 1), cy - 5, Math.min(2, w), 11);
+    if (w >= 6) {
+      ctx.fillStyle = '#fff3c4';
+      ctx.fillRect(cx - 1, cy - 2, 3, 1);
+      ctx.fillRect(cx - 1, cy + 1, 3, 1);
+    }
+  } else if (kind === 'goods') {
+    // 보따리가 열린다 — 매듭 아래로 물건이 보이고 반짝인다
+    ctx.fillStyle = '#ff8fb0';
+    ctx.fillRect(cx - 8, cy - 2, 16, 9);
+    ctx.fillStyle = '#c95f83';
+    ctx.fillRect(cx - 8, cy + 5, 16, 2);
+    // 매듭
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(cx - 3, cy - 5, 6, 3);
+    ctx.fillRect(cx - 5, cy - 3, 10, 2);
+    // 안에 든 것 — 레코드 한 장
+    ctx.fillStyle = '#f2f0ff';
+    ctx.fillRect(cx - 5, cy + 1, 4, 4);
+    ctx.fillStyle = '#241a33';
+    ctx.fillRect(cx - 4, cy + 2, 2, 2);
+    // 반짝임이 돈다
+    for (let i = 0; i < 3; i++) {
+      const k = (time * 1.2 + i * 0.33) % 1;
+      ctx.globalAlpha = Math.max(0, 1 - k);
+      ctx.fillStyle = '#ffffff';
+      const sx = cx + 2 + i * 3;
+      const sy = Math.round(cy - 6 - k * 5);
+      ctx.fillRect(sx - 1, sy, 3, 1);
+      ctx.fillRect(sx, sy - 1, 1, 3);
+    }
+    ctx.globalAlpha = 1;
   } else if (kind === 'portal') {
     // 문 — 저기로 가라
     ctx.fillStyle = '#140828';
@@ -15356,12 +15816,15 @@ function drawScene(ctx, game, time) {
   drawPlayer(ctx, game.player, ox, oy, time);
 
   // 알갱이와 숫자.
+  //
   // 모양(shape)은 상점에서 산 이펙트만 붙는다 — 없으면 예전 그대로 네모다.
+  // particleSprite 가 **장과 색까지** 골라준다: 알갱이마다 다른 꽃잎이 날리고,
+  // 거품은 수명 끝에 터진다 (render/particleArt.js).
   for (const p of game.particles) {
     ctx.globalAlpha = Math.max(0, p.life / p.max);
     const px = Math.round(p.x - ox);
     const py = Math.round(p.y - oy);
-    const spr = PARTICLE_SHAPES[p.shape];
+    const spr = particleSprite(p);
     if (spr) drawSprite(ctx, spr, px - (spr.w >> 1), py - (spr.h >> 1));
     else {
       ctx.fillStyle = p.color;
@@ -15451,7 +15914,7 @@ function drawEffects(ctx, game, ox, oy, time) {
 }
 
 
-return { PARTICLE_SHAPES, drawTitle, drawLook, drawGallery, drawScene };
+return { drawTitle, drawLook, drawGallery, drawScene };
 })();
 __m["chartrun/src/render/hud.js"] = (() => {
 // 화면에 나오는 글자는 여기가 전부고, 전부 "정보"다 —
@@ -15461,7 +15924,7 @@ const { beatRecord } = __m["chartrun/src/core/save.js"];
 const { STAGES, NOTE_TOTAL } = __m["chartrun/src/data/stages.js"];
 const { KEYPAD } = __m["chartrun/src/core/devmode.js"];
 const { LOOK_SLOTS } = __m["chartrun/src/data/looks.js"];
-const { owns } = __m["chartrun/src/data/effects.js"];
+const { owns, FX_SLOTS } = __m["chartrun/src/data/effects.js"];
 const { ACTIONS } = __m["chartrun/src/core/input.js"];
 const { PAUSE_ROWS, stageTable, selectItems, cutPreviews, titleRows, inCutscene, notesFound, shopItems, shopPointsText } = __m["chartrun/src/core/game.js"];
 
@@ -15669,19 +16132,33 @@ function createHud(root) {
             <p class="shop-points ${game.shopDenied > 0 ? 'denied' : ''}">
               남은 점수 <b>${left}</b> · 완주 ${game.save.clears ?? 0}회
             </p>
-            <ul class="slots shop-slots">
-              ${shopItems()
-                .map((item, i) => {
-                  const has = owns(game.save, item.uid);
-                  const on = game.save.fx?.[item.slot] === item.id;
-                  const tag = on ? '★' : has ? '✓' : `${item.cost}`;
-                  const cls = [i === game.shopIndex ? 'on' : '', has ? 'has' : 'buy', on ? 'worn' : '']
-                    .filter(Boolean)
-                    .join(' ');
-                  return `<li class="${cls}" data-key="shop:${i}">${esc(item.label)}<i>${tag}</i></li>`;
-                })
-                .join('')}
-            </ul>
+            <div class="shop-cols">
+              ${FX_SLOTS.map(
+                (slot) => `
+                <section>
+                  <h3>${esc(slot.label)}</h3>
+                  <ul class="slots shop-slots">
+                    ${shopItems()
+                      .map((item, i) => [item, i])
+                      .filter(([item]) => item.slot === slot.key)
+                      .map(([item, i]) => {
+                        const has = owns(game.save, item.uid);
+                        const on = game.save.fx?.[item.slot] === item.id;
+                        const tag = on ? '★' : has ? '✓' : `${item.cost}`;
+                        const cls = [
+                          i === game.shopIndex ? 'on' : '',
+                          has ? 'has' : 'buy',
+                          on ? 'worn' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ');
+                        return `<li class="${cls}" data-key="shop:${i}">${esc(item.label)}<i>${tag}</i></li>`;
+                      })
+                      .join('')}
+                  </ul>
+                </section>`,
+              ).join('')}
+            </div>
             <p class="press">깨면 점수가 는다 · 점프로 사고 끼운다</p>
             <button type="button" class="back-btn" data-key="shop:back">뒤로</button>
           </div>`;
@@ -16022,6 +16499,16 @@ const CUT_SOUND = {
   /** 이미 열어준 뒤. 문을 가리키는 그림이 같으니 소리도 같다 */
   talkAgain: {
     portal: { sfx: 'swirl' },
+    end: {},
+  },
+
+  /**
+   * 좌판 아줌마. talkLocked 와 같은 이유로 **작은 소리만** 낸다 —
+   * 달리는 중에 저 혼자 뜨는 것이다.
+   */
+  talkShop: {
+    coin: { sfx: 'coin' }, // 동전 — 판에서 음표를 주울 때와 같은 소리다
+    goods: { sfx: 'chime' },
     end: {},
   },
 };

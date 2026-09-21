@@ -13,13 +13,19 @@ import { cameraOffset } from '../core/camera.js';
 import { drawAlbum, drawCoverAt } from './albumArt.js';
 import { drawSprite, crisp, makeCanvas } from './pixel.js';
 import { npcInReach, npcDancing, markKey, CEIL_BLADE, SLAB_HANG } from '../core/game.js';
-import { npcFrame, npcSpin, npcBob, NPC_OFFSET } from './npcSprites.js';
+import {
+  npcFrame,
+  npcSpin,
+  npcBob,
+  NPC_OFFSET,
+  shopFrame,
+  SHOP_OFFSET,
+} from './npcSprites.js';
 import { talkTimeline } from '../data/npcTalk.js';
 import { CAUGHT_CUT, CAUGHT_AT } from '../data/caughtCut.js';
-import { playerFrame, setLook, PLAYER_OFFSET, NOTE, HEART, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
+import { playerFrame, setLook, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE, RING } from './sprites.js';
+import { particleSprite } from './particleArt.js';
 
-/** 알갱이가 네모 대신 쓸 그림 (data/effects.js 의 shape 이름) */
-export const PARTICLE_SHAPES = { note: NOTE, heart: HEART, ring: RING, disc: DISC };
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import {
@@ -904,6 +910,22 @@ function drawNpc(ctx, game, ox, oy, time) {
   for (const npc of game.world.npcs) {
     const x = Math.round(npc.x - ox);
     const y = Math.round(npc.y - oy);
+    // 상인은 앉아 있다 — 춤도 안 추고 돌지도 않는다. 그림만 다르고 나머지는 같다
+    if (npc.kind === 'shop') {
+      ctx.save();
+      drawSprite(
+        ctx,
+        shopFrame({ near: npc.near }, time),
+        x + SHOP_OFFSET.x,
+        y + SHOP_OFFSET.y,
+        // 좌판이 좌우 대칭이라 몸만 뒤집으면 어색하다. **플레이어가 왼쪽에 있어도
+        // 안 돌아본다** — 앉은 사람은 원래 그 자리를 보고 있다
+        false,
+      );
+      drawTalkTip(ctx, game, npc, x, y, time);
+      ctx.restore();
+      continue;
+    }
     const dancing = npcDancing(game, npc);
     // 춤출 때는 스핀이 방향을 정한다. 평소엔 플레이어 쪽을 본다
     const faceLeft = dancing
@@ -930,16 +952,24 @@ function drawNpc(ctx, game, ox, oy, time) {
       }
       ctx.globalAlpha = 1;
     }
-    // 누를 수 있으면 머리 위에 꼭지가 뜬다 (대사는 없다 — 누를 수 있다는 신호뿐)
-    if (npcInReach(game) === npc) {
-      const bob = Math.sin(time * 5) * 1.5;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 3, Math.round(y - 14 + bob), 4, 4);
-      ctx.fillStyle = '#241a33';
-      ctx.fillRect(x + 4, Math.round(y - 13 + bob), 2, 2);
-    }
+    drawTalkTip(ctx, game, npc, x, y, time);
     ctx.restore();
   }
+}
+
+/**
+ * 누를 수 있으면 머리 위에 꼭지가 뜬다 (대사는 없다 — 누를 수 있다는 신호뿐).
+ *
+ * 노인과 상인이 **같은 표시**를 쓴다. 뜻이 하나뿐이라 ("여기서 점프") 그림이
+ * 둘일 이유가 없고, 둘로 나누면 한쪽만 고치는 날이 온다.
+ */
+function drawTalkTip(ctx, game, npc, x, y, time) {
+  if (npcInReach(game) !== npc) return;
+  const bob = Math.sin(time * 5) * 1.5;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x + 3, Math.round(y - 14 + bob), 4, 4);
+  ctx.fillStyle = '#241a33';
+  ctx.fillRect(x + 4, Math.round(y - 13 + bob), 2, 2);
 }
 
 /**
@@ -954,7 +984,9 @@ function drawNpcTalk(ctx, game, ox, oy, time) {
   // 둘이 다른 건 판이 멈추느냐뿐이라, 그리는 건 한 군데서 한다.
   const talk = game.npcTalk ?? game.npcHint;
   if (!talk) return;
-  const npc = game.world.npcs[0];
+  // **말한 사람 위에 뜬다.** npcs[0] 을 쓰던 시절이 있었는데, 사람이 하나뿐일
+  // 때만 맞는 이야기였다 — 상인이 생기자 상인의 말이 노인 머리 위에 떴다
+  const npc = talk.npc ?? game.world.npcs[0];
   if (!npc) return;
   const kind = beatKind(talkTimeline(talk.id), talk.t);
   if (!kind || kind === 'end') return;
@@ -1039,6 +1071,46 @@ function drawNpcTalk(ctx, game, ox, oy, time) {
     ctx.fillRect(cx - 2 + jig, cy - 4, 1, 3);
     ctx.fillRect(cx + 1 + jig, cy - 4, 1, 3);
     ctx.fillRect(cx - 2 + jig, cy - 5, 4, 1);
+  } else if (kind === 'coin') {
+    // 동전이 돈다 — 가로폭만 줄였다 폈다 하면 뒤집히는 것으로 읽힌다
+    const spin = Math.abs(Math.cos(time * 4));
+    const w = Math.max(1, Math.round(9 * spin));
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(cx - (w >> 1), cy - 5, w, 11);
+    // 옆면. 납작해질 때만 보인다 — 이게 「판때기가 아니라 동전」을 만든다
+    ctx.fillStyle = '#b98a2a';
+    ctx.fillRect(cx - (w >> 1), cy - 5, Math.min(2, w), 11);
+    if (w >= 6) {
+      ctx.fillStyle = '#fff3c4';
+      ctx.fillRect(cx - 1, cy - 2, 3, 1);
+      ctx.fillRect(cx - 1, cy + 1, 3, 1);
+    }
+  } else if (kind === 'goods') {
+    // 보따리가 열린다 — 매듭 아래로 물건이 보이고 반짝인다
+    ctx.fillStyle = '#ff8fb0';
+    ctx.fillRect(cx - 8, cy - 2, 16, 9);
+    ctx.fillStyle = '#c95f83';
+    ctx.fillRect(cx - 8, cy + 5, 16, 2);
+    // 매듭
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(cx - 3, cy - 5, 6, 3);
+    ctx.fillRect(cx - 5, cy - 3, 10, 2);
+    // 안에 든 것 — 레코드 한 장
+    ctx.fillStyle = '#f2f0ff';
+    ctx.fillRect(cx - 5, cy + 1, 4, 4);
+    ctx.fillStyle = '#241a33';
+    ctx.fillRect(cx - 4, cy + 2, 2, 2);
+    // 반짝임이 돈다
+    for (let i = 0; i < 3; i++) {
+      const k = (time * 1.2 + i * 0.33) % 1;
+      ctx.globalAlpha = Math.max(0, 1 - k);
+      ctx.fillStyle = '#ffffff';
+      const sx = cx + 2 + i * 3;
+      const sy = Math.round(cy - 6 - k * 5);
+      ctx.fillRect(sx - 1, sy, 3, 1);
+      ctx.fillRect(sx, sy - 1, 1, 3);
+    }
+    ctx.globalAlpha = 1;
   } else if (kind === 'portal') {
     // 문 — 저기로 가라
     ctx.fillStyle = '#140828';
@@ -1592,12 +1664,15 @@ export function drawScene(ctx, game, time) {
   drawPlayer(ctx, game.player, ox, oy, time);
 
   // 알갱이와 숫자.
+  //
   // 모양(shape)은 상점에서 산 이펙트만 붙는다 — 없으면 예전 그대로 네모다.
+  // particleSprite 가 **장과 색까지** 골라준다: 알갱이마다 다른 꽃잎이 날리고,
+  // 거품은 수명 끝에 터진다 (render/particleArt.js).
   for (const p of game.particles) {
     ctx.globalAlpha = Math.max(0, p.life / p.max);
     const px = Math.round(p.x - ox);
     const py = Math.round(p.y - oy);
-    const spr = PARTICLE_SHAPES[p.shape];
+    const spr = particleSprite(p);
     if (spr) drawSprite(ctx, spr, px - (spr.w >> 1), py - (spr.h >> 1));
     else {
       ctx.fillStyle = p.color;

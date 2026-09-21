@@ -15,6 +15,9 @@ import {
   shopPoints,
   shopPointsText,
   setDevMode,
+  npcSays,
+  npcAction,
+  npcInReach,
 } from '../src/core/game.js';
 import { emptySave, mergeRun, serialize, deserialize, SAVE_VERSION } from '../src/core/save.js';
 import {
@@ -29,8 +32,9 @@ import {
   canBuy,
   fxOf,
   sanitizeFx,
+  FX_SLOTS,
 } from '../src/data/effects.js';
-import { PARTICLE_SHAPES } from '../src/render/scene.js';
+import { PARTICLE_ART, frameOf, spriteFor } from '../src/render/particleArt.js';
 
 const DT = 1 / 60;
 const idle = (over = {}) => ({
@@ -214,12 +218,61 @@ test('모양 이름마다 진짜 그림이 있다 — 양쪽 다', () => {
   // data 에만 적고 그림을 안 이으면 **모양 이름만 붙고 아무것도 안 그려진다**.
   // 반대로 그림만 있고 쓰는 데가 없으면 죽은 코드다.
   const used = new Set(SHOP_ITEMS.map((i) => i.shape).filter(Boolean));
-  const drawn = new Set(Object.keys(PARTICLE_SHAPES));
+  const drawn = new Set(Object.keys(PARTICLE_ART));
   for (const name of used) assert.ok(drawn.has(name), `${name} 에 그림이 없다`);
   for (const name of drawn) assert.ok(used.has(name), `${name} 그림을 쓰는 이펙트가 없다`);
-  for (const [name, spr] of Object.entries(PARTICLE_SHAPES)) {
-    assert.ok(spr?.w > 0 && spr.w <= 10, `${name} 이 ${spr?.w}px — 알갱이로는 너무 크다`);
+});
+
+test('값을 낸 이펙트는 **제 그림**이 있다 — 색만 다른 네모가 아니다', () => {
+  // 「좀더 개성있게, 티나게」가 이 줄이다. 값을 받고 네모를 주면 안 된다.
+  for (const item of SHOP_ITEMS) {
+    if (item.cost === 0) continue; // 기본 둘은 네모 그대로가 맞다
+    assert.ok(item.shape, `${item.slot}·${item.label} 에 모양이 없다 — 색만 다른 네모다`);
   }
+});
+
+test('그림 한 장짜리로 퇴화하지 않았나 — 여러 장이라야 개성이 산다', () => {
+  const many = Object.entries(PARTICLE_ART).filter(([, a]) => a.rows.length > 1);
+  assert.ok(many.length >= 8, `여러 장짜리가 ${many.length}개뿐이다`);
+});
+
+test('모든 그림이 네모반듯하다 — 줄이 들쑥날쑥하면 그 장만 옆으로 밀린다', () => {
+  for (const [name, art] of Object.entries(PARTICLE_ART)) {
+    art.rows.forEach((rows, i) => {
+      const widths = new Set(rows.map((r) => r.length));
+      assert.equal(widths.size, 1, `${name} ${i}번 장의 줄 길이가 ${[...widths]} 로 다르다`);
+      assert.ok(rows[0].length <= 10, `${name} 이 ${rows[0].length}px — 알갱이로는 너무 크다`);
+    });
+  }
+});
+
+test("by: 'life' 는 닳으면서 장이 넘어가고, 끝에서 멈춘다", () => {
+  // 마지막 장에서 안 멈추면 다 닳는 순간 첫 장으로 되돌아가 깜빡인다
+  const art = PARTICLE_ART.bubble;
+  const at = (l) => frameOf(art, { life: l, max: 1 });
+  assert.equal(at(1), 0, '갓 나온 알갱이가 첫 장이 아니다');
+  assert.ok(at(0.5) > at(1), '중간인데 안 넘어갔다');
+  assert.equal(at(0.001), art.rows.length - 1, '끝에서 마지막 장이 아니다');
+  assert.equal(at(0), art.rows.length - 1, '다 닳으면 첫 장으로 되돌아간다');
+});
+
+test("by: 'seed' 는 알갱이마다 갈린다", () => {
+  const art = PARTICLE_ART.petal;
+  const picks = new Set([0, 1, 2, 3, 4, 5].map((seed) => frameOf(art, { seed })));
+  assert.equal(picks.size, art.rows.length, `${art.rows.length}장인데 ${picks.size}가지만 나온다`);
+});
+
+test('같은 (이름·장·색) 이면 **같은 객체**다', () => {
+  // bake() 가 스프라이트 객체를 열쇠로 캐시한다. 매번 새로 만들면
+  // 알갱이마다 캔버스를 새로 굽는다 (꾸미기의 spritesFor 와 같은 이유)
+  assert.equal(spriteFor('petal', 0, '#ff5d8f'), spriteFor('petal', 0, '#ff5d8f'));
+  assert.notEqual(spriteFor('petal', 0, '#ff5d8f'), spriteFor('petal', 0, '#ffd166'));
+  assert.notEqual(spriteFor('petal', 0, '#ff5d8f'), spriteFor('petal', 1, '#ff5d8f'));
+});
+
+test('그림에 **이펙트 색이 입혀진다** — 팔레트가 박혀 있으면 다섯 색이 한 색이 된다', () => {
+  const spr = spriteFor('petal', 0, '#39ff9a');
+  assert.equal(spr.palette.o, '#39ff9a');
 });
 
 // ── 저장값이 이상할 때 ──────────────────────────────────────
@@ -359,15 +412,29 @@ test('목록이 폰 화면 안에 들어간다 — 「뒤로」가 밀려나면 
   const css = readFileSync(new URL('../assets/style.css', import.meta.url), 'utf8');
   const rows = Number(css.match(/\.slots\.shop-slots\s*\{[^}]*--slot-rows:\s*(\d+)/)?.[1]);
   assert.ok(rows > 0, 'CSS 에 .slots.shop-slots 의 --slot-rows 가 없다');
-  // 칸 셋까지가 폰에 들어간다 (컷신 목록에서 확인한 것과 같은 한계)
-  assert.ok(
-    SHOP_ITEMS.length <= rows * 3,
-    `칸이 ${SHOP_ITEMS.length}개면 ${rows}줄로는 넷이 되어 화면 밖으로 나간다`,
-  );
-  // **세로가 더 아슬아슬하다.** 844×390 에서 패널이 이미 320px 를 쓴다
-  assert.ok(rows <= 5, `${rows}줄이면 「뒤로」가 화면 밖으로 밀린다`);
+
+  // **묶음마다 따로 흘러간다.** 한 목록이 아니라 킬·데스가 제 머리말 밑에서
+  // 각자 칸을 만든다 — 그래서 전체 개수가 아니라 **묶음별로** 재야 한다.
+  // 묶음당 두 칸까지 (둘이니 화면 전체로는 넉 칸, 컷신 목록에서 본 그 한계다).
+  let cols = 0;
+  for (const slot of FX_SLOTS) {
+    const need = Math.ceil(slot.items.length / rows);
+    assert.ok(
+      need <= 2,
+      `「${slot.label}」 이 ${slot.items.length}개면 ${rows}줄로 ${need}칸이 되어 넘친다`,
+    );
+    cols += need;
+  }
+  assert.ok(cols <= 4, `칸이 ${cols}개면 폰 가로폭을 넘는다`);
+
+  // **세로가 더 아슬아슬하다.** 844×390 에서 패널이 이미 320px 를 쓰는데
+  // 머리말 한 줄이 더 붙었다
+  assert.ok(rows <= 4, `${rows}줄에 머리말까지면 「뒤로」가 화면 밖으로 밀린다`);
+
+  // 앞머리(킬·/데스·)를 뗐으니 이름이 짧아졌다. 그만큼 기준도 조인다 —
+  // 느슨하게 두면 다시 길어져도 모른다
   for (const i of SHOP_ITEMS) {
-    assert.ok(i.label.length <= 8, `「${i.label}」 이 길어서 세 칸에 안 들어간다`);
+    assert.ok(i.label.length <= 4, `「${i.label}」 이 길어서 네 칸에 안 들어간다`);
   }
 });
 
@@ -377,4 +444,125 @@ test('상점 목록은 core 가 갖고 있다 — 화면이 따로 적으면 엉
     SHOP_ITEMS.map((i) => i.uid),
   );
   assert.equal(shopItems().length, KILLS.length + DEATHS.length);
+});
+
+
+// ── 좌판 아줌마 ─────────────────────────────────────────────
+//
+// 타이틀의 「상점」 줄은 빠른 길이고, 이 사람은 **세계 안의 입구**다.
+// 둘 다 같은 화면으로 가지만, 이쪽은 판 위에 있어서 틀어질 구석이 많다 —
+// 노인과 같은 판(npcs)을 타는데 하는 일이 정반대이기 때문이다.
+
+/** 스테이지 1 에서 굴러가는 상태로 (hard.test.js 의 inStage1 과 같은 수법) */
+function inStage1(over = {}) {
+  const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true, ...over } });
+  loadStage(game, 0);
+  step(game, idle(), 200);
+  assert.equal(game.scene, 'play');
+  return game;
+}
+
+const merchantOf = (game) => game.world.npcs.find((n) => n.kind === 'shop');
+const elderOf = (game) => game.world.npcs.find((n) => n.kind === 'portal');
+
+test('스테이지 1 에 상인이 앉아 있다 — 노인과 별개다', () => {
+  const game = inStage1();
+  const m = merchantOf(game);
+  const e = elderOf(game);
+  assert.ok(m, '판에 상인이 없다');
+  assert.ok(e, '판에 노인이 없다');
+  assert.notEqual(m, e, '둘이 같은 사람이다');
+  assert.equal(npcSays(game, m), 'talkShop');
+  assert.equal(npcAction(game, m), 'shop');
+});
+
+// 좌표를 꽂는 테스트만으로는 **진짜로 걸어가서 닿는지**를 못 본다.
+// 노인이 바로 그것 때문에 한 칸 떠 있었고, 걸어서는 영영 말이 안 걸렸다.
+test('스폰에서 걸어가기만 해도 상인에게 닿는다', () => {
+  const game = inStage1();
+  const m = merchantOf(game);
+  for (let i = 0; i < 600 && !m.near; i++) step(game, idle({ right: true }), 1);
+  assert.ok(
+    m.near,
+    `바닥으로 걸어가면 좌판에 안 닿는다 (플레이어 y ${Math.round(game.player.y)}, 상인 y ${m.y})`,
+  );
+});
+
+test('상인에게 말을 걸면 상점이 열린다', () => {
+  const game = inStage1();
+  const m = merchantOf(game);
+  game.player.x = m.x;
+  game.player.y = m.y;
+  step(game, idle(), 1);
+  assert.equal(npcInReach(game), m, '좌판 앞인데 말을 못 건다');
+
+  step(game, idle({ confirmPressed: true }), 1);
+  assert.equal(game.scene, 'shop', '말을 걸었는데 상점이 안 열렸다');
+  assert.equal(game.shopIndex, 0, '목록 첫 칸부터 안 보여준다');
+});
+
+// 이 하나가 「노인과 안 섞였나」를 본다. kind 를 빼면 여기가 빨개진다.
+test('상인은 하드모드 문을 못 연다', () => {
+  const game = inStage1({ clearedOnce: true });
+  const m = merchantOf(game);
+  game.player.x = m.x;
+  game.player.y = m.y;
+  step(game, idle({ confirmPressed: true }), 1);
+
+  assert.equal(m.opened, false, '상인이 문을 열어준 셈이 됐다');
+  // 화면은 상점으로 갔지만 판은 그대로 있다 — 문이 열렸는지 그 자리에서 본다
+  assert.equal(game.world.portals[0].open, false, '상인에게 말을 걸었는데 문이 열렸다');
+  assert.equal(game.npcTalk, null, '상인이 판을 멈추는 대화를 시작했다');
+});
+
+test('상점에서 나가면 서 있던 판으로 돌아온다 — 타이틀로 떨어지면 판이 날아간다', () => {
+  const game = inStage1();
+  const m = merchantOf(game);
+  game.player.x = m.x;
+  game.player.y = m.y;
+  step(game, idle({ confirmPressed: true }), 1);
+  assert.equal(game.scene, 'shop');
+
+  step(game, idle({ restartPressed: true }), 1);
+  assert.equal(game.scene, 'play', '상인에게 들렀다 나왔더니 타이틀이다');
+
+  // 타이틀에서 들어간 것은 타이틀로 — 같은 화면인데 나가는 문이 다르다
+  const t = rich();
+  t.scene = 'title';
+  t.titleIndex = titleRows(t).findIndex((r) => r.action === 'shop');
+  step(t, idle({ confirmPressed: true }), 1);
+  assert.equal(t.scene, 'shop');
+  step(t, idle({ restartPressed: true }), 1);
+  assert.equal(t.scene, 'title');
+});
+
+test('지나가면 저 혼자 한 마디 — 판은 안 멈춘다', () => {
+  const game = inStage1();
+  const m = merchantOf(game);
+  game.player.x = m.x;
+  game.player.y = m.y;
+  step(game, idle(), 2);
+  assert.ok(game.npcHint, '좌판을 지나는데 아무 말이 없다');
+  assert.equal(game.npcHint.id, 'talkShop');
+  assert.equal(game.npcTalk, null, '스쳐가는 한 마디가 판을 멈췄다');
+  // **누가 한 말인지 들고 있어야 한다** — 안 그러면 말풍선이 노인 머리 위에 뜬다
+  assert.equal(game.npcHint.npc, m, '말풍선이 누구 것인지 모른다');
+
+  const px = game.player.x;
+  step(game, idle({ right: true }), 12);
+  assert.ok(game.player.x > px, '말풍선이 떴다고 판이 멈췄다');
+});
+
+test('스쳐 지나간 뒤에도 눌러서 열 수 있다 — 한 마디 했다고 잠기면 안 된다', () => {
+  const game = inStage1();
+  const m = merchantOf(game);
+  game.player.x = m.x;
+  game.player.y = m.y;
+  step(game, idle(), 2);
+  assert.ok(m.said, '한 마디도 안 했다');
+
+  // said 가 선 채로도 말이 걸려야 한다 (노인은 여기서 잠긴다 — 문은 한 번뿐이므로)
+  assert.equal(npcInReach(game), m, '한 마디 하고 나니 좌판이 닫혔다');
+  step(game, idle({ confirmPressed: true }), 1);
+  assert.equal(game.scene, 'shop');
 });

@@ -199,6 +199,8 @@ export function createGame(options = {}) {
     shopIndex: 0,
     /** 점수가 모자라 못 산 직후. 화면이 이걸 보고 값을 한 번 흔든다 */
     shopDenied: 0,
+    /** 상점에서 나가면 어디로 돌아갈지 ('title' | 'play'). openShop 이 세운다 */
+    shopBack: 'title',
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -287,8 +289,10 @@ function addParticles(game, x, y, count, colors, opts = {}) {
       size: opts.size ?? 2,
       color: colors[Math.floor(game.rng.float() * colors.length)],
       gravity: opts.gravity ?? 320,
-      // 네모 말고 다른 걸 그릴 때만 붙는다 (render/scene.js 가 읽는다)
+      // 네모 말고 다른 걸 그릴 때만 붙는다 (render/particleArt.js 가 읽는다)
       shape: opts.shape,
+      // 알갱이마다 다른 장을 고르게 하는 씨앗. 꽃잎 세 모양이 섞여 날리는 게 이것이다
+      seed: Math.floor(game.rng.float() * 64),
     });
   }
 }
@@ -1156,8 +1160,23 @@ const npcReach = (npc) => ({ x: npc.x - 14, y: npc.y - TILE, w: TILE + 28, h: TI
  *   'talkAgain'   이미 열어줬다 — 「저기다」
  */
 export function npcSays(game, npc) {
+  // 상인은 한 바퀴를 돌았는지와 아무 상관이 없다 — 늘 같은 한 마디를 한다
+  if (npc.kind === 'shop') return 'talkShop';
   if (!hubOpen(game)) return 'talkLocked';
   return npc.opened ? 'talkAgain' : 'talk';
+}
+
+/**
+ * 눌렀을 때 **무슨 일이 일어나는가**. 없으면 null (눌러도 아무 일 없다).
+ *
+ * npcSays 는 「무슨 말을 하나」고 이건 「누르면 뭘 하나」다. 예전엔 둘이 한 몸이라
+ * (`npcSays(...) === 'talk'` 를 눌림 판정으로 썼다) 상인을 끼워넣을 자리가 없었다.
+ *   'portal'  문을 열어준다 — 깨고 왔는데 아직 안 열어준 노인만
+ *   'shop'    상점을 연다 — 상인은 **언제나**, 몇 번이고
+ */
+export function npcAction(game, npc) {
+  if (npc.kind === 'shop') return 'shop';
+  return npcSays(game, npc) === 'talk' ? 'portal' : null;
 }
 
 /**
@@ -1179,16 +1198,25 @@ export const npcDancing = (game, npc) => !!npc.opened && !game.npcTalk;
 export function npcInReach(game) {
   if (game.player.dead || game.npcTalk) return null;
   for (const npc of game.world.npcs) {
-    if (npcSays(game, npc) !== 'talk') continue;
-    if (npc.said) continue;
+    if (!npcAction(game, npc)) continue;
+    // 문은 한 번 열면 끝이라 걸고 나면 잠긴다(said). **상인은 안 잠긴다** —
+    // 지나가며 한 마디 하는 것도 said 를 세우는데, 그걸로 막으면 스쳐 지나간
+    // 다음부터는 눌러도 상점이 안 열린다
+    if (npc.kind !== 'shop' && npc.said) continue;
     if (overlaps(game.player, npcReach(npc))) return npc;
   }
   return null;
 }
 
-/** 저 혼자 떴다 지는 한 마디. 판은 계속 돈다 */
-function startHint(game, id) {
-  game.npcHint = { id, t: 0, length: talkLength(id) };
+/**
+ * 저 혼자 떴다 지는 한 마디. 판은 계속 돈다.
+ *
+ * **누가 하는 말인지 같이 들고 다닌다.** 예전엔 그리는 쪽이 `npcs[0]` 위에
+ * 말풍선을 띄웠는데, 사람이 하나뿐일 때만 맞는 이야기였다 — 상인이 생긴 지금
+ * 그대로 두면 상인의 말이 노인 머리 위에 뜬다.
+ */
+function startHint(game, id, npc) {
+  game.npcHint = { id, t: 0, length: talkLength(id), npc };
 }
 
 /**
@@ -1219,22 +1247,31 @@ function handleNpc(game, input) {
     // 문을 열어주는 이야기만 버튼을 기다린다. 나머지는 지나가면 저절로
     if (HINT_TALKS.includes(id)) {
       npc.said = true;
-      startHint(game, id);
+      startHint(game, id, npc);
       emit(game, 'talk', {});
     }
   }
 
   const npc = npcInReach(game);
   if (npc && input.confirmPressed) {
-    npc.opened = true;
-    npc.said = true;
-    game.npcHint = null; // 진짜 이야기가 시작되면 스쳐가는 한 마디는 치운다
-    game.npcTalk = { id: 'talk', t: 0, length: talkLength('talk') };
-    game.player.vx = 0;
-    emit(game, 'talk', {});
+    if (npcAction(game, npc) === 'shop') {
+      // 상인은 **판을 안 건드린다.** 문도 안 열고 npcTalk 도 안 세운다 —
+      // 화면만 상점으로 바뀌고, 「뒤로」 하면 서 있던 자리로 돌아온다
+      game.npcHint = null;
+      game.player.vx = 0;
+      openShop(game, 'play');
+      emit(game, 'talk', {});
+    } else {
+      npc.opened = true;
+      npc.said = true;
+      game.npcHint = null; // 진짜 이야기가 시작되면 스쳐가는 한 마디는 치운다
+      game.npcTalk = { id: 'talk', t: 0, length: talkLength('talk'), npc };
+      game.player.vx = 0;
+      emit(game, 'talk', {});
+    }
   }
-  // 말을 걸어야 문이 열린다
-  const opened = npcs.some((n) => n.opened);
+  // 말을 걸어야 문이 열린다. **상인은 못 연다** — 이 한 줄이 둘을 갈라놓는다
+  const opened = npcs.some((n) => n.kind !== 'shop' && n.opened);
   for (const portal of game.world.portals) portal.open = opened && !game.npcTalk;
 }
 
@@ -1480,6 +1517,24 @@ function openGallery(game, from) {
   game.scene = 'gallery';
   game.sceneTime = 0;
   game.galleryBack = from;
+}
+
+/**
+ * 상점 열기. **들어오는 문이 둘이다** — 타이틀의 줄과 판 위의 상인.
+ *
+ * 그래서 「어디서 들어왔는지」를 들고 있어야 한다(shopBack). 상인에게 말을 걸고
+ * 나왔는데 타이틀로 떨어지면 달리던 판이 통째로 날아간다. 숨은 화면이 겪은
+ * 그 문제와 같은 것이라 같은 수법을 쓴다 (galleryBack).
+ *
+ * 자리(shopIndex)는 **판에서 들어올 때만** 되돌린다... 가 아니라 늘 되돌린다.
+ * 어디서 들어오든 목록 첫 칸부터 보는 게 덜 헷갈린다.
+ */
+export function openShop(game, from) {
+  game.scene = 'shop';
+  game.sceneTime = 0;
+  game.shopIndex = 0;
+  game.shopDenied = 0;
+  game.shopBack = from;
 }
 
 /**
@@ -1997,10 +2052,7 @@ export function updateGame(game, input, dt) {
           game.sceneTime = 0;
           game.lookIndex = 0;
         } else if (pick?.action === 'shop') {
-          game.scene = 'shop';
-          game.sceneTime = 0;
-          game.shopIndex = 0;
-          game.shopDenied = 0;
+          openShop(game, 'title');
         } else if (pick?.action === 'hub') openHub(game);
         else if (pick?.action === 'gallery') openGallery(game, 'title');
         else if (pick?.action === 'resume') resumeRun(game, game.save.resume);
@@ -2047,7 +2099,9 @@ export function updateGame(game, input, dt) {
         game.shopIndex = (game.shopIndex + moved + SHOP_ITEMS.length) % SHOP_ITEMS.length;
       }
       if (input.restartPressed) {
-        game.scene = 'title';
+        // 들어온 문으로 되돌아간다. 판에서 들어왔으면 서 있던 그 자리다 —
+        // 'play' 로 돌아가도 world 와 player 는 그대로라 아무것도 안 잃는다
+        game.scene = game.shopBack === 'play' ? 'play' : 'title';
         game.sceneTime = 0;
       } else if (input.confirmPressed) {
         buyOrEquip(game, game.shopIndex);

@@ -209,6 +209,127 @@ export const NPC_SPRITES = {
   dance4: build(TOP.none, HEAD.yell, TORSO.leanR, LEGS.kickR), // 오른쪽
 };
 
+// ══════════════════════════════════════════════════════════════
+// 좌판 아줌마 · 16×20
+// ══════════════════════════════════════════════════════════════
+//
+// **실루엣이 노인과 한눈에 갈려야 한다.** 노인은 14칸에 꽉 찬 세로 기둥이고,
+// 이쪽은 앉아 있어서 위가 비고 아래가 넓다 — 낮은 좌판이 바닥을 가로로 깐다.
+// 같은 자리에 둘을 세워놓고 눈을 가늘게 떠도 어느 쪽인지 알 수 있어야 한다.
+//
+// 꽃무늬 옷과 뽀글머리로 「아줌마」를 읽힌다. 색도 노인(보라 로브·흰머리)과
+// 겹치지 않게 분홍·갈색으로 잡았다.
+
+const MPAL = {
+  k: '#241a33', // 윤곽
+  s: '#ffd9b3', // 살색 — 노인과 같은 색을 쓴다. 사람은 사람이다
+  h: '#8a5238', // 뽀글머리
+  c: '#ff8fb0', // 꽃무늬 상의
+  f: '#ffd166', // 꽃잎 점 · 동전
+  t: '#7a4a2a', // 좌판 나무
+  d: '#4a2c18', // 좌판 그늘
+  w: '#f2f0ff', // 좌판에 놓인 레코드
+  e: '#20182e', // 눈·입
+};
+
+const MW = 16;
+const MBLANK = '................';
+
+/** 머리 일곱 줄 (2~8행). 뽀글이 얼굴을 감싼다 */
+const MHEAD = {
+  base: [
+    '....kkkkkk......',
+    '...khhhhhhk.....',
+    '..khhhhhhhhk....',
+    '..khhssssshk....',
+    '..khsesseshk....',
+    '...kssssssk.....',
+    '....kseesk......',
+  ],
+  /**
+   * 고개를 든다 — 눈이 **웃는 호**(k)로 바뀌고 입이 벌어진다.
+   * 구멍(`.`)으로 눈을 그리면 얼굴에 뚫린 자국으로 보인다. 한 번 그래 봤다.
+   */
+  up: [
+    '....kkkkkk......',
+    '...khhhhhhk.....',
+    '..khhhhhhhhk....',
+    '..khhssssshk....',
+    '..khsksskshk....',
+    '...kssssssk.....',
+    '....keeeek......',
+  ],
+};
+
+/** 몸통 다섯 줄 (9~13행). 팔이 여기 붙는다 */
+const MTORSO = {
+  /** 무릎에 손을 얹고 앉았다 */
+  sit: [
+    '...kcccccck.....',
+    '..scffcccfcs....',
+    '..scccccccs.....',
+    '...cfcccccf.....',
+    '...kcccccck.....',
+  ],
+  /** 한 손을 들어 부른다 — 오른팔이 어깨 위로 */
+  wave: [
+    '...kcccccck.s...',
+    '..scffcccfcs....',
+    '..scccccccs.....',
+    '...cfcccccf.....',
+    '...kcccccck.....',
+  ],
+};
+
+/**
+ * 좌판 여섯 줄 (14~19행). **사람보다 넓다** — 그래야 앉은 것이 읽힌다.
+ * 물건은 좌판 위(14~15행)에 놓이고, 아줌마의 아랫도리는 그 뒤로 가려진다.
+ */
+const MSTALL = [
+  '.wwww......ffff.',
+  '.wkkw......fkkf.',
+  'tttttttttttttttt',
+  '.dddddddddddddd.',
+  '.dtttttttttttd..',
+  '..kkkkkkkkkkkk..',
+];
+
+const mbuild = (head, torso, { drop = 0 } = {}) => {
+  const body = drop > 0 ? torso.slice(0, torso.length - drop) : torso;
+  const rows = [...Array(2 + drop).fill(MBLANK), ...head, ...body, ...MSTALL];
+  if (rows.length !== 20) throw new Error(`상인 프레임이 ${rows.length}줄이다 — 20줄이어야 한다`);
+  for (const row of rows) {
+    if (row.length !== MW) {
+      throw new Error(`상인 프레임에 ${row.length}칸짜리 줄이 있다 — ${MW}칸이어야 한다`);
+    }
+  }
+  return sprite(rows, MPAL);
+};
+
+export const SHOP_SPRITES = {
+  sit: mbuild(MHEAD.base, MTORSO.sit),
+  /** 숨 쉬듯 한 칸 내려앉은 장. 둘을 번갈아 쓰면 살아 있어 보인다 */
+  sit2: mbuild(MHEAD.base, MTORSO.sit, { drop: 1 }),
+  /** 가까이 오면 고개를 들고 손을 든다 */
+  wave: mbuild(MHEAD.up, MTORSO.wave),
+  wave2: mbuild(MHEAD.up, MTORSO.wave, { drop: 1 }),
+};
+
+/** 스프라이트를 npc 좌표에 놓을 때의 보정. 발밑은 노인과 같고 가로만 한 칸 넓다 */
+export const SHOP_OFFSET = { x: -3, y: 14 - 20 };
+
+/**
+ * 지금 그릴 상인 프레임. 노인의 npcFrame 과 **같은 자리**다 —
+ * 상태를 보고 고르는 일은 그리는 쪽이 아니라 여기서 한다.
+ *
+ * 가까이 오면 손을 들어 부른다. 이게 「누를 수 있다」를 몸으로 먼저 알린다.
+ */
+export function shopFrame({ near }, time) {
+  const beat = Math.floor(time * 2) % 2 === 1;
+  if (near) return beat ? SHOP_SPRITES.wave2 : SHOP_SPRITES.wave;
+  return beat ? SHOP_SPRITES.sit2 : SHOP_SPRITES.sit;
+}
+
 /** 춤 한 바퀴 (초당 8장) */
 const DANCE = [NPC_SPRITES.dance1, NPC_SPRITES.dance2, NPC_SPRITES.dance3, NPC_SPRITES.dance2, NPC_SPRITES.dance4];
 const DANCE_FPS = 8;

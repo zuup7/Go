@@ -189,6 +189,16 @@ export const CUT_SOUND = {
     portal: { sfx: 'swirl' },
     end: {},
   },
+
+  /**
+   * 좌판 아줌마. talkLocked 와 같은 이유로 **작은 소리만** 낸다 —
+   * 달리는 중에 저 혼자 뜨는 것이다.
+   */
+  talkShop: {
+    coin: { sfx: 'coin' }, // 동전 — 판에서 음표를 주울 때와 같은 소리다
+    goods: { sfx: 'chime' },
+    end: {},
+  },
 };
 
 /** 이 단계에서 낼 소리 (없으면 undefined) */

@@ -30,6 +30,8 @@ export const KILLS = [
     colors: ['#ff5d8f', '#ffd166', '#39ff9a', '#4ec3ff', '#ffffff'],
     count: 7,
     speed: 55,
+    // 알갱이마다 다른 꽃잎이 다른 색으로 날린다 (by: 'seed')
+    shape: 'petal',
     // 천천히 떠올랐다 나풀나풀 내려앉는다
     gravity: 90,
     lift: 55,
@@ -58,7 +60,8 @@ export const KILLS = [
     speed: 130,
     gravity: 260,
     life: 0.5,
-    size: 2,
+    // 점 → 십자 → 큰 반짝 → 사라짐 (by: 'life')
+    shape: 'spark',
     // 여기만 사방이다 — 「터졌다」가 읽혀야 한다
     split: false,
   },
@@ -70,6 +73,8 @@ export const KILLS = [
     count: 6,
     speed: 80,
     life: 0.7,
+    // 구멍 뚫린 필름 조각. 색이 정체성이라 모양은 담백하게
+    shape: 'film',
     split: true,
   },
   {
@@ -107,11 +112,12 @@ export const KILLS = [
     colors: ['#b3aecd', '#8a7fb8', '#5a5766'],
     count: 8,
     speed: 30,
-    // 위로 느리게 흩어졌다 사라진다. 큰 알갱이라야 연기로 읽힌다
+    // 작게 → 부풀어 → 성글어짐 (by: 'life')
+    shape: 'puff',
+    // 위로 느리게 흩어졌다 사라진다
     gravity: -20,
     lift: 18,
     life: 1.6,
-    size: 3,
     split: true,
   },
 ];
@@ -134,11 +140,12 @@ export const DEATHS = [
     colors: ['#ffffff', '#cfe6a6', '#a98cff'],
     count: 12,
     speed: 26,
+    // 작은 날개 좌·우가 섞인다
+    shape: 'wing',
     // 중력을 음수로 두면 **위로만** 천천히 오른다
     gravity: -40,
     lift: 30,
     life: 1.8,
-    size: 2,
   },
   {
     id: 'heart',
@@ -161,7 +168,8 @@ export const DEATHS = [
     speed: 190,
     gravity: 380,
     life: 0.6,
-    size: 3,
+    // 불꽃이 사그라든다 (by: 'life')
+    shape: 'flame',
     /** 이것만 화면을 더 흔든다 (core 가 읽는다) */
     shake: 2.0,
   },
@@ -197,19 +205,18 @@ export const DEATHS = [
     colors: ['#ffffff', '#cfe6ff', '#a9d8ff'],
     count: 14,
     speed: 22,
+    // 부풀다 **터진 링**으로 끝난다 (by: 'life') — 이게 「팝」으로 읽히는 핵심이다
+    shape: 'bubble',
     // 아주 느리게 위로, 오래 남는다 — 물속 같은 느낌
     gravity: -28,
     lift: 16,
     life: 2.4,
-    size: 2,
   },
 ];
 
 /** 상점 줄 한 벌. 고르는 쪽(core)과 그리는 쪽(hud)이 **이걸 같이 쓴다** */
 export const FX_SLOTS = [
   { key: 'kill', label: '킬', items: KILLS },
-  // 「죽음」이 아니라 「데스」다. 열다섯 개가 되면서 칸이 셋으로 늘어나
-  // 이름이 한 글자만 길어도 화면 밖으로 나간다
   { key: 'death', label: '데스', items: DEATHS },
 ];
 
@@ -219,15 +226,14 @@ export const SHOP_ITEMS = FX_SLOTS.flatMap((slot) =>
     ...item,
     slot: slot.key,
     uid: `${slot.key}:${item.id}`,
-    /** 짧은 이름 (꾸미기처럼 한 줄에 하나만 보일 때) */
-    name: item.label,
     /**
-     * 목록에 적히는 이름. **어느 쪽인지를 같이 적는다** — 킬과 죽음이 칸 둘로
-     * 나뉘어 보이긴 하는데, 「기본 / 기본」처럼 이름만 늘어놓으면 어느 칸이
-     * 무엇인지 알 길이 없다 (화면을 보고서야 알았다).
+     * 목록에 적히는 이름. **앞머리(킬·/데스·)를 안 붙인다.**
+     *
+     * 한때 붙여뒀었다 — 한 목록을 칸으로 흘리다 보니 둘째 칸에서 킬과 데스가
+     * 섞였고, 앞머리가 없으면 어느 쪽인지 알 길이 없었다. 이제 화면이 **머리말
+     * 붙은 두 묶음**으로 나뉘므로 그게 필요 없고, 그만큼 짧아져 칸이 더 들어간다.
      */
-    // 가운뎃점만, **공백은 뺀다** — 칸이 셋이라 한 글자가 아쉽다
-    label: `${slot.label}·${item.label}`,
+    label: item.label,
   })),
 );
 

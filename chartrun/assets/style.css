@@ -440,9 +440,40 @@ canvas#game {
   --slot-rows: 4;
 }
 
-/* 상점 — 컷신 목록과 같은 격자에 값·✓ 를 오른쪽에 붙인다 */
+/* 상점 — **킬과 데스를 머리말 붙은 두 묶음**으로 나란히 둔다.
+   한 목록을 칸으로 흘렸더니 둘째 칸에서 둘이 섞여서, 이름마다 「킬·」 을
+   붙여야 읽혔다. 나누고 나니 앞머리도 필요 없고 이름도 짧아졌다. */
+.shop-cols {
+  display: flex;
+  /* **묶음 사이가 묶음 안보다 넓어야 한다.** 칸 사이가 14px 인데 묶음 사이도
+     14px 였더니, 킬의 마지막 칸과 데스의 첫 칸이 한 덩어리로 보였다 */
+  gap: 26px;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 6px;
+  min-height: 0;
+}
+
+.shop-cols section + section {
+  /* 가른 자리에 선을 하나. 머리말만으로도 읽히지만, 훑어볼 때는 선이 먼저 보인다 */
+  border-left: 1px solid rgba(169, 140, 255, 0.28);
+  padding-left: 26px;
+}
+
+.shop-cols h3 {
+  margin: 0 0 4px;
+  font-size: 0.82em;
+  font-weight: normal;
+  color: var(--hot);
+  letter-spacing: 3px;
+  text-align: center;
+}
+
 .slots.shop-slots {
-  --slot-rows: 5;
+  /* 머리말이 한 줄 붙으므로 줄 수를 하나 줄인다 — 「뒤로」가 밀려나면
+     R 키 없는 폰에서는 그대로 갇힌다 */
+  --slot-rows: 4;
+  margin-top: 0;
 }
 
 .shop-slots li {

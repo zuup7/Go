@@ -30,6 +30,7 @@ export const T = {
   CEILSPIKE: 'T', // 천장에 붙어 있다 아래를 지나가면 내려온다
   ZONE_SURGE: '>', // 여기부터 쫓아오는 것이 확 빨라진다
   NPC: 'N', // 한 바퀴를 돈 뒤에만 나타나는 사람. 말을 걸면 포탈이 열린다
+  SHOPNPC: 'M', // 좌판을 깔고 앉은 상인. 말을 걸면 상점이 열린다
   PORTAL: 'P', // 하드모드로 가는 문. NPC 에게 말을 걸기 전에는 닫혀 있다
   ZONE_REVERSE: 'R', // 좌우가 뒤바뀌는 역재생 구간
   ZONE_BLACKOUT: '@', // 화면이 깜깜해지는 정전 구간
@@ -153,7 +154,33 @@ export function createWorld(stage) {
           //   near    지금 플레이어가 옆에 있는가 (그리는 쪽이 이걸 보고 돌아본다)
           //   said    이번에 다가온 동안 이미 한 마디 했는가 —
           //           **멀어져야 풀린다.** 이게 없으면 서 있기만 해도 계속 말한다
-          world.npcs.push({ tx, ty, x: x + 2, y: y + 2, opened: false, near: false, said: false });
+          //   kind    무슨 사람인가. **이 한 글자가 둘을 가른다** —
+          //           'portal' 은 문을 열어주고, 'shop' 은 상점을 연다
+          world.npcs.push({
+            kind: 'portal',
+            tx,
+            ty,
+            x: x + 2,
+            y: y + 2,
+            opened: false,
+            near: false,
+            said: false,
+          });
+          grid[ty][tx] = T.EMPTY;
+          break;
+        case T.SHOPNPC:
+          // 노인과 **같은 판**을 탄다. 다가가면 반응하고, 눌러서 말을 건다.
+          // 다른 건 kind 하나뿐이고, 그 갈림길은 core/game.js 의 npcAction 에 있다
+          world.npcs.push({
+            kind: 'shop',
+            tx,
+            ty,
+            x: x + 2,
+            y: y + 2,
+            opened: false,
+            near: false,
+            said: false,
+          });
           grid[ty][tx] = T.EMPTY;
           break;
         case T.PORTAL:

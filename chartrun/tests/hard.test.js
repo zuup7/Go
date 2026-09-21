@@ -58,6 +58,20 @@ const step = (game, input = idle(), n = 1) => {
   for (let i = 0; i < n; i++) updateGame(game, input, DT);
 };
 
+/**
+ * 이 사람에게서 **확실히 떨어진** 자리.
+ *
+ * 예전엔 `npc.x + 200` 을 손으로 적었는데, 상인이 생기자 그 자리가 하필
+ * 상인 옆이었다 — 멀어진 게 아니라 옆사람 옆으로 간 것이라 엉뚱한 말이 떴다.
+ * 판에 있는 사람들을 다 보고 아무에게도 안 닿는 자리를 고른다.
+ */
+function away(game, from) {
+  for (let x = from.x + 200; x < game.world.pixelWidth - 32; x += 40) {
+    if (game.world.npcs.every((n) => Math.abs(n.x - x) > 80)) return x;
+  }
+  throw new Error('판에 떨어질 자리가 없다');
+}
+
 /** 스테이지 1 에서 굴러가는 상태로 */
 function inStage1(save) {
   const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true, ...save } });
@@ -127,12 +141,15 @@ test('지나갈 때마다 한 번씩 — 서 있는 동안 계속 말하지는 �
   step(game, idle(), 60 * 4);
   assert.equal(game.npcHint, null, '옆에 서 있다고 같은 말을 또 한다');
 
-  // 멀어졌다가 다시 오면 또 말해준다
-  game.player.x = npc.x + 200;
+  // 멀어졌다가 다시 오면 또 말해준다.
+  // **200 으로는 부족하다** — 상인이 274 에 앉아 있어서 그 자리는 상인의
+  // 말 걸기 상자 안이다. 멀어진 게 아니라 옆사람에게 간 것이 된다
+  game.player.x = away(game, npc);
   step(game, idle(), 2);
   game.player.x = npc.x;
   step(game, idle(), 2);
   assert.ok(game.npcHint, '갔다 왔는데 말을 안 건다');
+  assert.equal(game.npcHint.id, 'talkLocked', '엉뚱한 사람의 말이 떴다');
 });
 
 test('문을 열어준 뒤에도 지나가면 문을 가리킨다', () => {
@@ -148,7 +165,7 @@ test('문을 열어준 뒤에도 지나가면 문을 가리킨다', () => {
   assert.equal(npcSays(game, npc), 'talkAgain', '이미 아는 사람에게 할 말이 그대로다');
 
   // 멀어졌다 다시 오면 — 같은 4초짜리가 아니라 짧게 문만 가리킨다
-  game.player.x = npc.x + 200;
+  game.player.x = away(game, npc);
   step(game, idle(), 2);
   game.player.x = npc.x;
   step(game, idle(), 2);

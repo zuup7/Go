@@ -41,15 +41,29 @@ export const NPC_AGAIN = [
   { at: 1.4, kind: 'end' },
 ];
 
+/**
+ * 좌판 아줌마가 지나가는 사람에게. **판을 안 멈춘다** — 스테이지 1 시작 줄이라
+ * 여기서 멈추면 매 판 첫 5초가 말풍선이 된다.
+ *
+ * 동전 → 보따리. 「돈을 내면 물건을 준다」 두 장이면 다 말한 것이고,
+ * 눌러서 열어보면 나머지는 상점 화면이 알아서 말한다.
+ */
+export const NPC_SHOP = [
+  { at: 0.0, kind: 'coin' }, // 동전이 뒤집힌다
+  { at: 1.2, kind: 'goods' }, // 보따리가 열리고 반짝인다
+  { at: 2.4, kind: 'end' },
+];
+
 /** 이야기 id → 타임라인. 소리 표(CUT_SOUND)의 키와 **같은 이름**이어야 한다 */
 export const TALKS = {
   talk: NPC_TALK,
   talkLocked: NPC_LOCKED,
   talkAgain: NPC_AGAIN,
+  talkShop: NPC_SHOP,
 };
 
 /** 저 혼자 떴다 지는 것들 — 판을 안 멈춘다 */
-export const HINT_TALKS = ['talkLocked', 'talkAgain'];
+export const HINT_TALKS = ['talkLocked', 'talkAgain', 'talkShop'];
 
 export const talkTimeline = (id) => TALKS[id] ?? NPC_TALK;
 export const talkLength = (id) => lengthOf(talkTimeline(id));

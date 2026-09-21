@@ -5,7 +5,7 @@ import { beatRecord } from '../core/save.js';
 import { STAGES, NOTE_TOTAL } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
 import { LOOK_SLOTS } from '../data/looks.js';
-import { owns } from '../data/effects.js';
+import { owns, FX_SLOTS } from '../data/effects.js';
 import { ACTIONS } from '../core/input.js';
 import {
   PAUSE_ROWS,
@@ -223,19 +223,33 @@ export function createHud(root) {
             <p class="shop-points ${game.shopDenied > 0 ? 'denied' : ''}">
               남은 점수 <b>${left}</b> · 완주 ${game.save.clears ?? 0}회
             </p>
-            <ul class="slots shop-slots">
-              ${shopItems()
-                .map((item, i) => {
-                  const has = owns(game.save, item.uid);
-                  const on = game.save.fx?.[item.slot] === item.id;
-                  const tag = on ? '★' : has ? '✓' : `${item.cost}`;
-                  const cls = [i === game.shopIndex ? 'on' : '', has ? 'has' : 'buy', on ? 'worn' : '']
-                    .filter(Boolean)
-                    .join(' ');
-                  return `<li class="${cls}" data-key="shop:${i}">${esc(item.label)}<i>${tag}</i></li>`;
-                })
-                .join('')}
-            </ul>
+            <div class="shop-cols">
+              ${FX_SLOTS.map(
+                (slot) => `
+                <section>
+                  <h3>${esc(slot.label)}</h3>
+                  <ul class="slots shop-slots">
+                    ${shopItems()
+                      .map((item, i) => [item, i])
+                      .filter(([item]) => item.slot === slot.key)
+                      .map(([item, i]) => {
+                        const has = owns(game.save, item.uid);
+                        const on = game.save.fx?.[item.slot] === item.id;
+                        const tag = on ? '★' : has ? '✓' : `${item.cost}`;
+                        const cls = [
+                          i === game.shopIndex ? 'on' : '',
+                          has ? 'has' : 'buy',
+                          on ? 'worn' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ');
+                        return `<li class="${cls}" data-key="shop:${i}">${esc(item.label)}<i>${tag}</i></li>`;
+                      })
+                      .join('')}
+                  </ul>
+                </section>`,
+              ).join('')}
+            </div>
             <p class="press">깨면 점수가 는다 · 점프로 사고 끼운다</p>
             <button type="button" class="back-btn" data-key="shop:back">뒤로</button>
           </div>`;
