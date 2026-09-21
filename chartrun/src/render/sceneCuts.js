@@ -405,8 +405,14 @@ function drawBossDownCut(ctx, t, phase, time, body) {
   // 안에서 차오르는 열 0~1. seep 부터 seize 끝까지 꾸준히 오른다.
   const heat = clamp01((t - BOSS_DOWN_AT.seep) / (BOSS_DOWN_AT.still - BOSS_DOWN_AT.seep));
   // 제 안으로 무너지는 진행도 0~1
-  const fall = clamp01((t - BOSS_DOWN_AT.implode) / 1.1);
+  // **0.6초 안에** 한 점으로 짓눌린다. 느리게 사라지면 준비동작이 아니라 끝으로 보인다.
+  const fall = clamp01((t - BOSS_DOWN_AT.implode) / (BOSS_DOWN_AT.blast - BOSS_DOWN_AT.implode));
   const imploding = phase === 'implode';
+  const blasting = phase === 'blast';
+  if (blasting) {
+    drawDownBlast(ctx, t - BOSS_DOWN_AT.blast);
+    return;
+  }
 
   /**
    * 흔들림. **폭주는 휘청임이 아니라 떨림으로 끝난다** —
@@ -519,18 +525,136 @@ function drawBossDownCut(ctx, t, phase, time, body) {
   }
   ctx.restore();
 
-  // 다 빨려 든 순간 — 흰 점 하나. 그리고 어둠.
-  const pop = clamp01((since - 0.7) / 0.18);
-  if (pop > 0) {
-    ctx.save();
-    ctx.globalAlpha = 1 - pop;
+  /**
+   * 다 빨려 들면 **한 점이 남는다.** 꺼지는 게 아니라 **버티고 있는** 점이다 —
+   * 작아질수록 밝아져야 다음 비트에서 터질 것이 여기 모였다는 게 읽힌다.
+   */
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, fall * 1.2);
+  ctx.fillStyle = '#fff';
+  const core = 2 + (1 - fall) * 10;
+  ctx.beginPath();
+  ctx.arc(CUT_CX, CUT_CY, core, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * **터진다.** 이 컷신에서 유일하게 큰 그림이다.
+ *
+ * 앞의 implode 가 한 점으로 모으는 준비동작이고 여기가 그걸 놓는 자리다.
+ * 조용히 사라지기만 하면 최종보스를 이긴 맛이 없다 — 모았다가 놓아야 한 방이 된다.
+ *
+ * since 는 터진 뒤 흐른 초.
+ */
+function drawDownBlast(ctx, since) {
+  // 1) **정지 프레임.** 터진 순간 두세 프레임을 통째로 하얗게 덮는다.
+  //    화면이 한 번 멎어야 때린 맛이 난다 (싸움 화면의 히트스톱과 같은 생각).
+  if (since < 0.06) {
     ctx.fillStyle = '#fff';
-    const rad = 14 * (1 - pop) + 2;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    return;
+  }
+
+  // 2) 섬광이 빠진다
+  const flash = Math.max(0, 1 - (since - 0.06) / 0.3);
+  // 3) 화면이 흔들린다. 컷신에는 카메라가 없으니 그리는 쪽이 직접 민다.
+  const q = Math.max(0, 1 - since / 0.7);
+  const sx = Math.round(Math.sin(since * 71) * 7 * q * q);
+  const sy = Math.round(Math.cos(since * 59) * 5 * q * q);
+
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  // 4) 충격파 — 세 겹이 시차를 두고 **밖으로** 퍼진다. 앞에서 오므라들었기에
+  //    같은 링이라도 「되돌려준다」로 읽힌다.
+  for (const [lag, color] of [[0, '#ffffff'], [0.1, '#fff0c4'], [0.22, '#ff5d8f']]) {
+    const k = clamp01((since - lag) / 0.85);
+    if (k <= 0 || k >= 1) continue;
+    ctx.globalAlpha = (1 - k) * 0.95;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1, Math.round(5 * (1 - k)));
     ctx.beginPath();
-    ctx.arc(CUT_CX, CUT_CY, rad, 0, Math.PI * 2);
-    ctx.fill();
-    // 마지막 한 번의 섬광. 터지는 게 아니라 **꺼지는** 빛이다.
-    ctx.globalAlpha = Math.max(0, 0.7 - pop * 1.4);
+    ctx.arc(CUT_CX, CUT_CY, ease(k) * 300, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 5) 사방으로 뻗는 빛줄기. 정수 좌표 막대라야 이 게임의 다른 그림과 결이 같다.
+  const spoke = clamp01(since / 0.5);
+  if (spoke < 1) {
+    ctx.globalAlpha = (1 - spoke) * 0.9;
+    ctx.fillStyle = '#fff0c4';
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + 0.2;
+      const d0 = ease(spoke) * 90;
+      const len = 40 * (1 - spoke) + 10;
+      for (let k = 0; k < len; k += 2) {
+        ctx.fillRect(
+          Math.round(CUT_CX + Math.cos(a) * (d0 + k)),
+          Math.round(CUT_CY + Math.sin(a) * (d0 + k)),
+          2,
+          2,
+        );
+      }
+    }
+  }
+
+  // 6) 파편 — 몸이었던 것이 밖으로 날아간다. time 으로만 정해서 상태를 안 만든다.
+  ctx.fillStyle = '#d8dde8';
+  for (let i = 0; i < 22; i++) {
+    const k = clamp01((since - (i % 4) * 0.03) / 1.3);
+    if (k <= 0 || k >= 1) continue;
+    const a = i * 2.39 + 0.7;
+    const d = ease(k) * (110 + (i % 6) * 34);
+    ctx.globalAlpha = 1 - k;
+    ctx.fillStyle = i % 3 === 0 ? '#fff0c4' : '#d8dde8';
+    ctx.fillRect(
+      Math.round(CUT_CX + Math.cos(a) * d),
+      Math.round(CUT_CY + Math.sin(a) * d + k * k * 40),
+      i % 4 === 0 ? 3 : 2,
+      i % 4 === 0 ? 3 : 2,
+    );
+  }
+  ctx.restore();
+
+  // 7) 남는 불티 — 다 터지고 **화면이 텅 비면** 그것대로 허전하다. 천천히 흩어진다.
+  ctx.save();
+  for (let i = 0; i < 10; i++) {
+    const k = clamp01((since - 0.4 - i * 0.05) / 1.1);
+    if (k <= 0 || k >= 1) continue;
+    const a = i * 1.9;
+    ctx.globalAlpha = (1 - k) * 0.8;
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(
+      Math.round(CUT_CX + Math.cos(a) * (40 + k * 70)),
+      Math.round(CUT_CY + Math.sin(a) * (26 + k * 40) - k * 30),
+      1,
+      1,
+    );
+  }
+  ctx.restore();
+
+  if (flash > 0) {
+    ctx.save();
+    ctx.globalAlpha = flash;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    ctx.restore();
+  }
+
+  /**
+   * **어둠으로 닫는다.**
+   *
+   * 컷신은 보통 끝나면서 되밝아져 싸움 화면으로 돌아간다. 그런데 이 컷신은
+   * 엔딩으로 바로 이어지고, 게다가 방금 보스를 산산조각 냈다 — 걷히는 동안
+   * 아레나가 드러나면 **터뜨린 놈이 시체로 누워 있는 게 보인다.** 실제로 그랬다.
+   * 디스패처의 fade 를 덮어써서 검게 닫는다.
+   */
+  const close = clamp01((since - 0.9) / 0.6);
+  if (close > 0) {
+    ctx.save();
+    ctx.globalAlpha = close;
+    ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
     ctx.restore();
   }

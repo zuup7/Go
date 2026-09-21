@@ -156,6 +156,14 @@ export function createGame(options = {}) {
      */
     forceHub: false,
     /**
+     * 지금 있는 스테이지 1 이 **판이 아니라 둘러보기인가** (엔딩을 보고 나왔거나
+     * 개발자 모드로 포탈 판을 연 경우).
+     *
+     * 둘러보기는 「하던 판」이 아니므로 이어하기로 찍히면 안 된다 —
+     * returnToHub 의 주석에 무슨 일이 있었는지 적어뒀다.
+     */
+    hubVisit: false,
+    /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
      */
@@ -331,6 +339,8 @@ export function startRun(game, index = 0, { hard = false } = {}) {
   // 오프닝은 1회차에서만. 하드모드는 이미 다 본 사람이 들어오는 곳이다.
   // 개발자 모드로 열어둔 포탈 판에서 넘어왔을 수도 있다 — 새 판에서는 원래 규칙으로
   game.forceHub = false;
+  // 새 판이 시작되므로 「둘러보기」가 아니다
+  game.hubVisit = false;
   if (index === 0 && !hard && !game.save.seenOpening) startIntro(game);
   else if (index >= stageCount(game)) loadBoss(game);
   else loadStage(game, index);
@@ -1217,6 +1227,16 @@ function returnToHub(game) {
   game.hard = false;
   game.partial = true;
   game.ending = null;
+  /**
+   * **이건 판이 아니라 둘러보기다.**
+   *
+   * 여기로 오는 길은 둘뿐이다 — 엔딩을 다 보고 나온 사람, 개발자 모드로 연 사람.
+   * 둘 다 「하던 판」이 없다. 그런데 loadStage 가 'stage' 를 알리고 저장 쪽이
+   * 그걸 이어하기로 찍어버려서, 엔딩에서 일부러 지운 이어하기(app.js 의
+   * `resume: null`)가 **한 프레임 뒤에 STAGE 1 로 되살아났다.** 다 깬 사람의
+   * 타이틀에 「이어하기 — STAGE 1」이 영영 붙어 있던 게 이것이다.
+   */
+  game.hubVisit = true;
   loadStage(game, 0);
 }
 
@@ -1873,7 +1893,7 @@ export const runSummary = (game) => ({
 const RUN_SCENES = new Set(['stageIntro', 'play', 'death', 'stageClear', 'boss']);
 
 export const resumeState = (game) =>
-  RUN_SCENES.has(game.scene) && game.world
+  RUN_SCENES.has(game.scene) && game.world && !game.hubVisit
     ? {
         stage: game.stageIndex,
         hard: game.hard,
@@ -1903,6 +1923,7 @@ export function resumeRun(game, resume) {
   game.hard = !!resume.hard;
   game.partial = !!resume.partial;
   game.forceHub = !!resume.forceHub;
+  game.hubVisit = false;
   game.ending = null;
 
   if (resume.boss) loadBoss(game);

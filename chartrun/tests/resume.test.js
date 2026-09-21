@@ -16,7 +16,9 @@ import {
   resumeState,
   resumeRun,
   resumeLabel,
+  openHub,
 } from '../src/core/game.js';
+import { hitBoss } from '../src/core/boss.js';
 import { emptySave, mergeRun, deserialize, SAVE_VERSION } from '../src/core/save.js';
 import { STAGES, HARD_STAGES } from '../src/data/stages.js';
 
@@ -266,4 +268,73 @@ test('「처음부터」를 고르면 하던 판이 아니라 새 판이다', ()
   step(game, idle({ confirmPressed: true }));
   assert.equal(game.stageIndex, 0, '처음부터는 처음부터다');
   assert.equal(game.plays, 0);
+});
+
+// ── 다 깬 뒤에 「이어하기 — STAGE 1」이 영영 붙어 있던 것 ──────
+//
+// 「보스전에 죽을 때마다 스테이지1 계속 뜨는 버그」.
+//
+// app.js 는 엔딩에서 `resume: null` 로 **일부러 지운다**(주석까지 달려 있다).
+// 그런데 확인을 누르면 returnToHub 가 스테이지 1 을 열고, loadStage 가 'stage' 를
+// 알리고, 저장 쪽이 그걸 이어하기로 찍었다 — 지운 게 **한 프레임 뒤에 되살아났다.**
+// 그 판은 partial 이라 기록에도 안 올라가는 둘러보기인데 타이틀엔 판처럼 떴다.
+
+/** 엔딩 화면 앞까지 간다 (보스를 잡고 컷신을 다 흘려보낸다) */
+function playToEnding() {
+  const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true } });
+  startRun(game, STAGES.length); // 보스전으로 바로
+  for (let i = 0; i < 40 && game.boss; i++) {
+    hitBoss(game.boss, { ranged: true });
+    step(game, idle(), 4);
+  }
+  // 격파·엔딩 컷신을 건너뛴다
+  for (let i = 0; i < 60 * 60 && game.scene !== 'ending'; i++) {
+    step(game, idle({ anyPressed: true, confirmPressed: true }), 1);
+  }
+  return game;
+}
+
+test('엔딩을 보고 나오면 이어하기가 **안 생긴다**', () => {
+  const game = playToEnding();
+  assert.equal(game.scene, 'ending', '엔딩까지 못 갔다 — 이 테스트가 아무것도 안 지킨다');
+  // 한 바퀴 돈 사람으로 만들어야 returnToHub 를 탄다 (그게 이 버그의 자리다)
+  game.save.clearedOnce = true;
+
+  step(game, idle(), 120);
+  step(game, idle({ confirmPressed: true }), 1);
+  step(game, idle(), 2);
+
+  assert.equal(game.stageIndex, 0, '한 바퀴 돈 사람은 포탈이 있는 스테이지 1 로 나온다');
+  assert.equal(resumeState(game), null, '둘러보기가 「하던 판」으로 찍혔다');
+  assert.equal(resumeLabel(resumeState(game)), '', '타이틀에 이어하기 줄이 남았다');
+});
+
+test('개발자 모드로 포탈 판을 열어도 이어하기로 안 찍힌다', () => {
+  const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true } });
+  startRun(game, 0);
+  openHub(game);
+  assert.equal(resumeState(game), null, '포탈 판 둘러보기가 하던 판으로 찍혔다');
+});
+
+test('그래도 **진짜 판**은 여전히 이어진다 — 둘러보기만 거른 것이다', () => {
+  // 위 둘을 지키느라 이어하기를 통째로 죽이면 기능이 사라진 것이다
+  const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true } });
+  startRun(game, 0);
+  step(game, idle(), 30);
+  const r = resumeState(game);
+  assert.ok(r, '평범한 판인데 이어하기가 안 잡힌다');
+  assert.equal(r.boss, false);
+  assert.equal(resumeLabel(r), '이어하기 — STAGE 1');
+});
+
+test('둘러보다 2회차로 들어가면 그건 다시 진짜 판이다', () => {
+  const game = createGame({ seed: 5, save: { ...emptySave(), seenOpening: true, clearedOnce: true } });
+  startRun(game, 0);
+  openHub(game);
+  assert.equal(resumeState(game), null);
+  startRun(game, 0, { hard: true }); // 포탈로 들어간 것과 같다
+  step(game, idle(), 30);
+  const r = resumeState(game);
+  assert.ok(r, '2회차를 시작했는데 이어하기가 안 잡힌다');
+  assert.equal(r.hard, true);
 });

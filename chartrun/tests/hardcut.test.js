@@ -219,3 +219,39 @@ test('죽는 컷신이 한 박자 길어졌지만 여전히 볼 만하다', () =
   assert.ok(down > 6, `폭주를 담기엔 짧다 (${down}s)`);
   assert.ok(down <= 12, `${down}s 는 너무 길다`);
 });
+
+// ── 모았다가 **터뜨린다** ───────────────────────────────────
+//
+// 「끝이 허전하다 — 이긴 맛이 없다」.
+//
+// 안으로 빨려 들며 조용히 사라지는 걸로 끝냈더니 최종보스를 이긴 것 같지가 않았다.
+// 빨아들이는 건 **끝이 아니라 준비동작**이어야 한다 — 한 점으로 모았다가 놓는다.
+
+test('안으로 모은 다음 **터진다** — 빨아들이는 게 끝이 아니다', () => {
+  const kinds = BOSS_CUTS.bossdown.timeline.map((s) => s.kind);
+  assert.ok(kinds.includes('blast'), '터지는 비트가 없다 — 조용히 사라지고 만다');
+  const at = downAt();
+  assert.ok(at.implode < at.blast, '터진 다음에 모으면 순서가 거꾸로다');
+  // blast 가 **마지막 비트**여야 한다. 뒤에 뭘 더 붙이면 한 방이 묻힌다.
+  const last = BOSS_CUTS.bossdown.timeline.filter((s) => s.kind !== 'end').pop();
+  assert.equal(last.kind, 'blast', '터진 뒤에 다른 비트가 더 있다');
+});
+
+test('모으는 구간은 **짧다** — 준비동작이지 결말이 아니다', () => {
+  const at = downAt();
+  const windUp = at.blast - at.implode;
+  assert.ok(windUp > 0.2, `모으는 시간이 ${windUp.toFixed(2)}초뿐이라 모은 게 안 보인다`);
+  assert.ok(windUp <= 0.8, `${windUp.toFixed(2)}초는 너무 길다 — 사라지는 걸로 보인다`);
+});
+
+test('터지는 데 소리가 있다 — 이 컷신에서 유일하게 큰 소리다', () => {
+  assert.ok(CUT_SOUND.bossdown.blast?.sfx, '터지는데 소리가 없다');
+  // 앞의 정적이 이걸 받치는 구조다
+  assert.deepEqual(CUT_SOUND.bossdown.still, {}, '정적이 깨지면 터지는 맛이 반감된다');
+});
+
+test('터지고 나서 여운이 있다 — 바로 끊기면 그것대로 허전하다', () => {
+  const at = downAt();
+  const after = bossCutLength('bossdown') - at.blast;
+  assert.ok(after >= 1.2, `터진 뒤 ${after.toFixed(2)}초뿐이라 충격파가 다 퍼지기도 전에 끝난다`);
+});
