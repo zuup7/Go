@@ -123,11 +123,13 @@ export const CUT_SOUND = {
   /** 보스가 쓰러질 때 — 박혀 있던 앨범이 하나씩 떨어져 나간다 */
   bossdown: {
     stagger: { sfx: 'thud' },
+    seep: { sfx: 'swirl' }, // 에너지가 새어 나오는 소리
     shed: { sfx: 'scatter' },
-    kneel: { sfx: 'crack' },
+    seize: { sfx: 'crack' }, // 관절이 굳으며 뚝뚝
     // 무너지기 직전. 이 컷신은 무음 위에서 도니 여기는 정말로 아무 소리도 없다
     still: {},
-    burst: { sfx: 'burst' },
+    // **밖으로 터지는 burst 가 아니다.** 안으로 무너지는 소리라야 그림과 맞는다
+    implode: { sfx: 'crumble' },
     end: {},
   },
   /**

@@ -172,3 +172,50 @@ test('합체 앞에 정적이 있고, 그 뒤에 조립이 온다 (순서가 곧
   assert.ok(at.still < at.assemble, '정적이 조립 뒤로 가면 한 박자 쉬는 뜻이 없다');
   assert.ok(at.core < at.roar, '코어에 불이 들어오기 전에 포효하면 죽은 몸이 우는 것이다');
 });
+
+// ── 죽는 컷신은 **폭주**다 ──────────────────────────────────
+//
+// 예전에는 비틀거리다 무릎을 꿇고 펑 터졌다. 이 몸은 3페이즈에서 조립해서 만든
+// 기계인데 죽을 때만 생물처럼 무릎을 꿇었고, 마지막도 흰 원 하나에 별 몇 개라
+// 「터졌다」 말고는 남는 게 없었다. 이제 안에서 못 버티고 제 안으로 무너진다.
+
+const downAt = () => Object.fromEntries(BOSS_CUTS.bossdown.timeline.map((s) => [s.kind, s.at]));
+
+test('죽는 컷신에 폭주 비트가 있고, 무릎 꿇기와 폭발은 없어졌다', () => {
+  const kinds = BOSS_CUTS.bossdown.timeline.map((s) => s.kind);
+  for (const beat of ['seep', 'seize', 'implode']) {
+    assert.ok(kinds.includes(beat), `폭주에 ${beat} 이 없다`);
+  }
+  for (const gone of ['kneel', 'burst']) {
+    assert.ok(!kinds.includes(gone), `${gone} 이 남아 있다 — 조립한 기계는 무릎을 안 꿇는다`);
+  }
+});
+
+test('열이 차오르고 → 굳고 → 멈추고 → 무너진다 (순서가 곧 연출이다)', () => {
+  const at = downAt();
+  assert.ok(at.stagger < at.seep, '새기 전에 비틀거려야 한다');
+  assert.ok(at.seep < at.shed, '앨범은 **빛에 밀려** 나온다 — 새는 게 먼저다');
+  assert.ok(at.shed < at.seize, '다 빠져나온 뒤에 굳는다');
+  assert.ok(at.seize < at.still, '굳어야 멈출 것이 있다');
+  assert.ok(at.still < at.implode, '멈춘 뒤에 무너진다');
+});
+
+test('**정적이 한 박자는 된다** — 이 컷신은 무음 위에서 돈다', () => {
+  // 마지막 일격에 브금을 끊으므로 여기가 짧으면 폭주에서 무너짐으로 넘어가는
+  // 맛이 통째로 사라진다. 0.4초는 돼야 한 박자로 들린다.
+  const at = downAt();
+  assert.ok(at.implode - at.still >= 0.4, `정적이 ${(at.implode - at.still).toFixed(2)}초뿐이다`);
+  assert.deepEqual(CUT_SOUND.bossdown.still, {}, '정적은 **일부러** 조용하다');
+  assert.ok(CUT_SOUND.bossdown.implode.sfx, '무너지는데 소리가 없다');
+});
+
+test('무너지는 소리는 터지는 소리가 아니다', () => {
+  // 그림은 안으로 오므라드는데 소리가 밖으로 터지면 둘이 따로 논다
+  assert.notEqual(CUT_SOUND.bossdown.implode.sfx, 'burst', '안으로 무너지는데 폭발음이다');
+});
+
+test('죽는 컷신이 한 박자 길어졌지만 여전히 볼 만하다', () => {
+  const down = bossCutLength('bossdown');
+  assert.ok(down > 6, `폭주를 담기엔 짧다 (${down}s)`);
+  assert.ok(down <= 12, `${down}s 는 너무 길다`);
+});

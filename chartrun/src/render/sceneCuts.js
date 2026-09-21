@@ -402,31 +402,55 @@ function hard3Pose(t, phase, time) {
 /** body 는 dispatcher 가 bossBody 에게 물어온 값 ('dino' | 'robot' | …) */
 function drawBossDownCut(ctx, t, phase, time, body) {
   const r = 52;
-  // 직선으로 꺾이면 기계가 접히는 것 같다. ease 로 꺾여야 힘이 빠지는 것으로 보인다
-  const kneel = ease(clamp01((t - BOSS_DOWN_AT.kneel) / 1.2));
-  const gone = clamp01((t - BOSS_DOWN_AT.burst) / 0.8);
+  // 안에서 차오르는 열 0~1. seep 부터 seize 끝까지 꾸준히 오른다.
+  const heat = clamp01((t - BOSS_DOWN_AT.seep) / (BOSS_DOWN_AT.still - BOSS_DOWN_AT.seep));
+  // 제 안으로 무너지는 진행도 0~1
+  const fall = clamp01((t - BOSS_DOWN_AT.implode) / 1.1);
+  const imploding = phase === 'implode';
 
-  ctx.save();
-  // 비틀거리다 무릎이 꺾인다. 정적(still)에서는 **딱 멈춘다** — 다 꺾인 채로 버틴다
-  const wobble = phase === 'still' || phase === 'burst' ? 0 : Math.sin(time * 26) * (1 - kneel) * 5;
-  ctx.translate(CUT_CX + wobble, CUT_CY + kneel * 26);
-  ctx.rotate(kneel * 0.35);
-  ctx.globalAlpha = 1 - gone;
-  // hurt 는 **한 프레임짜리** 피격 번쩍임이다. 컷신 내내 켜두면 몸이 하얗게 날아가
-  // 무엇이 쓰러지는지가 안 보인다. 색이 식는 것으로 죽어가는 걸 보여준다.
-  // 쓰러지는 건 **방금까지 싸우던 그 몸**이다 — bossBody 가 정해서 넘겨준다.
-  const dying = mixHex('#ff3b3b', '#3a2a4e', kneel);
-  if (body === 'dino') drawDinoBody(ctx, r, time, dying, false, downPose(t, phase, time, kneel));
-  else drawRobotBody(ctx, r, time, dying, 1, false);
-  ctx.restore();
-
-  // 비틀거리는 동안 이음새에서 불꽃이 튄다
-  if (phase === 'stagger' || phase === 'shed') {
-    drawSparks(ctx, CUT_CX + wobble, CUT_CY - r * 0.3, r * 0.7, t, '#ffd166');
+  /**
+   * 흔들림. **폭주는 휘청임이 아니라 떨림으로 끝난다** —
+   * 비틀대던(느린 사인) 것이 관절이 굳으면서 고주파 덜덜로 바뀐다.
+   */
+  let shake = 0;
+  if (phase === 'stagger' || phase === 'seep' || phase === 'shed') {
+    shake = Math.sin(time * 26) * 5 * (1 - heat * 0.5);
+  } else if (phase === 'seize') {
+    shake = Math.sin(time * 97) * (1.5 + heat * 2.5);
   }
 
-  // 박혀 있던 앨범이 튕겨 나간다 — **하나씩 시차를 두고** (예전에는 열 장이 한
-  // 프레임에 일제히 날아가서 터진 게 아니라 흩어진 것처럼 보였다)
+  const pose = downPose(t, phase, time, heat);
+
+  ctx.save();
+  ctx.translate(CUT_CX + shake, CUT_CY + heat * 6);
+  if (imploding) {
+    // 코어 쪽으로 빨려 들며 줄어든다. 사라지는 게 아니라 **빨려 들어가는** 것이다.
+    const k = 1 - ease(fall) * 0.92;
+    ctx.scale(k, k);
+    ctx.globalAlpha = 1 - clamp01(fall * 1.3);
+  }
+  /**
+   * hurt 는 **한 프레임짜리** 피격 번쩍임이다. 컷신 내내 켜두면 몸이 하얗게 날아가
+   * 무엇이 쓰러지는지가 안 보인다. 색으로 달아오르는 걸 보여준다 —
+   * 식은 회색에서 시작해 안에서 타오르는 흰 열로 넘어간다.
+   */
+  const dying = mixHex('#3a2a4e', '#ffe6a8', heat * 0.75);
+  // 쓰러지는 건 **방금까지 싸우던 그 몸**이다 — bossBody 가 정해서 넘겨준다.
+  // 로봇도 자세를 받는다. 예전에는 안 넘겨줘서 팔이 가만히 있는 채로 죽었다.
+  if (body === 'dino') drawDinoBody(ctx, r, time, dying, false, pose);
+  else drawRobotBody(ctx, r, time, dying, 1, false, pose);
+  ctx.restore();
+
+  // 이음새에서 새는 빛 — 과열 컷신과 **같은 함수**다
+  if (heat > 0 && !imploding) drawSeams(ctx, CUT_CX + shake, CUT_CY + heat * 6, ...seamBox(body, r), heat, time);
+
+  // 비틀거리는 동안 이음새에서 불꽃이 튄다 (작은 점이라 별로 안 보인다)
+  if (phase === 'stagger' || phase === 'seep') {
+    drawSparks(ctx, CUT_CX + shake, CUT_CY - r * 0.3, r * 0.7, t, '#ffd166');
+  }
+
+  // 박혀 있던 앨범이 **안에서 부푼 빛에 밀려** 튀어나간다 — 하나씩 시차를 두고
+  // (예전에는 열 장이 한 프레임에 일제히 날아가 터진 게 아니라 흩어진 것처럼 보였다)
   if (t >= BOSS_DOWN_AT.shed) {
     for (let i = 0; i < 10; i++) {
       const k = t - BOSS_DOWN_AT.shed - i * 0.09;
@@ -437,7 +461,7 @@ function drawBossDownCut(ctx, t, phase, time, body) {
       const y = CUT_CY + Math.sin(a) * d + k * k * 30;
       ctx.save();
       ctx.globalAlpha = Math.max(0, 1 - k * 0.5);
-      // 떨어져 나가는 순간 한 번 번쩍
+      // 밀려 나오는 순간 한 번 번쩍
       if (k < 0.12) {
         ctx.fillStyle = '#fff';
         ctx.fillRect(Math.round(x) - 7, Math.round(y) - 7, 14, 14);
@@ -450,45 +474,102 @@ function drawBossDownCut(ctx, t, phase, time, body) {
     }
   }
 
-  // 코어가 터진다 — 흰 원 하나가 아니라 폭발 + 퍼지는 충격파 링
-  if (phase === 'burst') {
-    const since = t - BOSS_DOWN_AT.burst;
-    drawBlasts(ctx, since, CUT_CY);
+  /**
+   * 가운데에서 빛이 **차오른다.** seep 부터 끊기지 않고 자라야
+   「안에서 못 버티고 있다」가 한 줄로 읽힌다 — 굳을 때만 켜면 갑자기 켠 전구다.
+   * 정적(still)에서는 맥박이 느려진다. 숨을 참는 것처럼.
+   */
+  if (heat > 0 && !imploding) {
+    const beat = phase === 'still' ? 5 : 14 + heat * 12;
     ctx.save();
-    ctx.globalAlpha = Math.max(0, 1 - gone);
+    ctx.globalAlpha = heat * heat * (0.55 + Math.sin(time * beat) * 0.3);
     ctx.fillStyle = '#fff';
-    const rad = 8 + gone * 90;
+    ctx.beginPath();
+    ctx.arc(CUT_CX + shake, CUT_CY + heat * 6, 5 + heat * 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  if (!imploding) return;
+
+  // ── 제 안으로 무너진다 ──
+  // **링이 오므라든다.** 밖으로 퍼지면 여느 폭발과 같은 그림이다 —
+  // 안으로 빨려 들어가야 쏟아내던 힘이 어디로 갔는지가 보인다.
+  const since = t - BOSS_DOWN_AT.implode;
+  ctx.save();
+  ctx.strokeStyle = '#ffd166';
+  ctx.lineWidth = 2;
+  for (const lag of [0, 0.16, 0.32]) {
+    const q = clamp01((since - lag) / 0.75);
+    if (q <= 0 || q >= 1) continue;
+    ctx.globalAlpha = q * 0.9; // 가까워질수록 진해진다
+    ctx.beginPath();
+    ctx.arc(CUT_CX, CUT_CY, 150 * (1 - ease(q)), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // 흩어져 있던 빛 알갱이가 안쪽으로 빨려 든다. time 으로만 정해서 상태를 안 만든다.
+  ctx.fillStyle = '#fff0c4';
+  for (let i = 0; i < 14; i++) {
+    const q = clamp01((since - i * 0.025) / 0.7);
+    if (q <= 0 || q >= 1) continue;
+    const a = i * 2.39;
+    const d = (1 - ease(q)) * (70 + (i % 5) * 26);
+    ctx.globalAlpha = q;
+    ctx.fillRect(Math.round(CUT_CX + Math.cos(a) * d), Math.round(CUT_CY + Math.sin(a) * d), 2, 2);
+  }
+  ctx.restore();
+
+  // 다 빨려 든 순간 — 흰 점 하나. 그리고 어둠.
+  const pop = clamp01((since - 0.7) / 0.18);
+  if (pop > 0) {
+    ctx.save();
+    ctx.globalAlpha = 1 - pop;
+    ctx.fillStyle = '#fff';
+    const rad = 14 * (1 - pop) + 2;
     ctx.beginPath();
     ctx.arc(CUT_CX, CUT_CY, rad, 0, Math.PI * 2);
     ctx.fill();
-    // 바깥으로 퍼지는 링 두 겹 — 뒤엣것이 늦게 따라간다
-    ctx.strokeStyle = '#ffd166';
-    ctx.lineWidth = 2;
-    for (const lag of [0, 0.18]) {
-      const q = clamp01((since - lag) / 0.7);
-      if (q <= 0 || q >= 1) continue;
-      ctx.globalAlpha = (1 - q) * 0.9;
-      ctx.beginPath();
-      ctx.arc(CUT_CX, CUT_CY, 12 + q * 150, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+    // 마지막 한 번의 섬광. 터지는 게 아니라 **꺼지는** 빛이다.
+    ctx.globalAlpha = Math.max(0, 0.7 - pop * 1.4);
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
     ctx.restore();
   }
 }
 
-/** 쓰러지는 공룡의 자세 — 고개를 떨구고 꼬리가 힘없이 늘어진다 */
-function downPose(t, phase, time, kneel) {
-  if (phase === 'stagger' || phase === 'shed') {
-    // 아직 버틴다 — 휘청이며 입을 벌린 채 헐떡인다
+/**
+ * 폭주해서 죽는 자세. **한 포즈가 두 몸을 움직인다.**
+ *
+ * 공룡은 jaw·swing 을 읽고, 로봇은 spread·recoil 을 읽는다(sceneBoss 의 robotArms).
+ * 한 객체에 둘 다 담아두면 같은 순간에 「입을 벌린 채 굳는다」와
+ * 「팔이 활짝 벌어진 채 굳는다」가 같이 나온다 — 부위마다 따로 적으면
+ * 같은 자리에서 두 몸이 다르게 동작한다.
+ *
+ * heat 는 안에서 차오르는 열 0~1 이다.
+ */
+function downPose(t, phase, time, heat) {
+  if (phase === 'stagger' || phase === 'seep' || phase === 'shed') {
+    // 아직 버틴다 — 휘청이며 헐떡인다. 열이 오를수록 동작이 굳어간다.
+    const alive = 1 - heat * 0.6;
     return {
       ...NEUTRAL_POSE,
-      swing: Math.sin(time * 4) * 0.7,
-      jaw: 0.4 + Math.sin(time * 6) * 0.25,
-      paw: -0.3,
+      swing: Math.sin(time * 4) * 0.7 * alive,
+      jaw: (0.4 + Math.sin(time * 6) * 0.25) * alive + heat * 0.3,
+      paw: -0.3 * alive,
+      recoil: heat * 0.3,
+      spread: heat * 0.4,
     };
   }
-  // 무릎이 꺾인 뒤 — 힘이 빠진다
-  return { ...NEUTRAL_POSE, swing: -0.2 * (1 - kneel), jaw: 0.5 * (1 - kneel), paw: -kneel };
+  if (phase === 'seize' || phase === 'still') {
+    /**
+     * **굳는다.** 여기가 이 컷신의 정점이다 — 입을 크게 벌리고 팔을 활짝 벌린 채
+     * 그대로 멈춘다. 정적(still)에서는 떨림도 없어서 **완전히 정지한 그림**이 된다.
+     */
+    const grip = phase === 'still' ? 1 : clamp01((t - BOSS_DOWN_AT.seize) / 0.8);
+    return { ...NEUTRAL_POSE, jaw: grip, swing: -0.15 * grip, paw: 0.2 * grip, spread: grip, recoil: 0.6 * grip };
+  }
+  // 무너지는 중 — 힘이 빠진다. 벌어졌던 것이 도로 닫힌다.
+  const limp = 1 - clamp01((t - BOSS_DOWN_AT.implode) / 0.5);
+  return { ...NEUTRAL_POSE, jaw: limp, spread: limp, recoil: 0.6 * limp };
 }
 
 /**
@@ -538,16 +619,9 @@ function drawPhase4Cut(ctx, t, phase, time, body = 'dino') {
   drawBossCore(ctx, CUT_CX + jolt, CUT_CY, phase === 'core' || phase === 'title', time, 14);
 
   // 이음새에서 새는 빛
-  if (heat > 0) {
-    ctx.save();
-    ctx.globalAlpha = 0.35 + Math.sin(time * 18) * 0.2 * heat;
-    ctx.fillStyle = '#fff0c4';
-    for (let i = 0; i < 7; i++) {
-      const a = (i / 7) * Math.PI * 2 + time * 0.6;
-      ctx.fillRect(CUT_CX + Math.cos(a) * r * 0.7 - 2, CUT_CY + Math.sin(a) * r * 0.7 - 1, 5, 2);
-    }
-    ctx.restore();
-  }
+  // 몸마다 실루엣이 다르다 — 공룡은 가로로 길고 로봇은 세로로 길다.
+  // 원으로 두르면 몸 밖 허공에 빛이 뜬다.
+  if (heat > 0) drawSeams(ctx, CUT_CX + jolt, CUT_CY, ...seamBox(body, r), heat, time);
 
   if (phase === 'title') drawCutTitle(ctx, 'FINAL', t - PHASE4_AT.title, 4, 14);
 }
@@ -586,6 +660,45 @@ function drawPhase3Cut(ctx, t, phase, time) {
 }
 
 /** 한가운데서 뻗어나가는 집중선 */
+/**
+ * 몸마다 이음새가 퍼질 범위 (rx, ry).
+ *
+ * 공룡은 가로로 길고(꼬리~머리) 로봇은 세로로 길다(크레스트~발). 원으로 두르면
+ * 빛이 몸 밖 허공에 떠서 「이음새」로 안 읽힌다 — 실제로 그렇게 나왔다.
+ */
+const seamBox = (body, r) => (body === 'dino' ? [r * 0.95, r * 0.42] : [r * 0.6, r * 1.0]);
+
+/**
+ * **이음새로 새는 빛.** 기계가 안에서 견디지 못할 때 쓰는 그림이다.
+ *
+ * 과열(phase4)과 폭주해서 죽는 컷신(bossdown)이 **같이 쓴다** — 두 군데 적으면
+ * 한쪽만 고치는 날 같은 기계가 다른 식으로 달아오른다.
+ *
+ * heat 0~1 이 세기다. 깜빡이지 않으면 새는 게 아니라 칠해둔 무늬로 보인다.
+ */
+function drawSeams(ctx, cx, cy, rx, ry, heat, time, color = '#fff0c4') {
+  ctx.save();
+  ctx.fillStyle = color;
+  for (let i = 0; i < 11; i++) {
+    const a = (i / 11) * Math.PI * 2 + time * 0.6;
+    // 하나씩 따로 깜빡인다. 같이 깜빡이면 새는 게 아니라 **켜둔 전구**로 보인다
+    const flick = 0.55 + Math.sin(time * 17 + i * 1.7) * 0.45;
+    ctx.globalAlpha = Math.min(1, heat * (0.45 + flick * 0.55));
+    // 달아오를수록 틈이 벌어진다 — 길이가 자라야 「더 못 버틴다」가 읽힌다
+    const w = Math.round(4 + heat * 8 * flick);
+    const h = heat > 0.6 ? 3 : 2;
+    // 안쪽에도 한 겹 — 몸 한가운데에서 새어 나오는 것으로 보여야 한다
+    const d = 0.45 + (i % 3) * 0.22;
+    ctx.fillRect(
+      Math.round(cx + Math.cos(a) * rx * d) - (w >> 1),
+      Math.round(cy + Math.sin(a) * ry * d) - 1,
+      w,
+      h,
+    );
+  }
+  ctx.restore();
+}
+
 function drawRays(ctx, cx, cy, spin, color, alpha) {
   ctx.save();
   ctx.globalAlpha = alpha;
