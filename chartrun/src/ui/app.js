@@ -441,6 +441,14 @@ uiRoot.querySelector('#center').addEventListener('click', (e) => {
 
 // 키보드로도 넣을 수 있다. 숫자판이 열려 있을 때만 받는다.
 window.addEventListener('keydown', (e) => {
+  // 데스크톱에서는 구석을 겨냥할 것 없이 ` 로 연다. D 는 못 쓴다 —
+  // input.js 의 KEYMAP 에서 이미 오른쪽 이동(WASD)이라 타이틀 줄이 같이 움직인다.
+  // 타이틀로 못 박는 게 핵심이다: 판이 도는 중에 열리면 update() 가
+  // ui.keypad 를 보고 게임 입력을 통째로 끊는다.
+  if (!ui.keypad && game.scene === 'title' && e.code === 'Backquote') {
+    openKeypad();
+    return;
+  }
   if (!ui.keypad) return;
   if (/^[0-9]$/.test(e.key)) pressKey(e.key);
   else if (e.key === 'Backspace') pressKey('back');

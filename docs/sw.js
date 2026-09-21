@@ -3,7 +3,7 @@
 // 한 번 받아두면 그 뒤로는 네트워크를 안 탄다 (비행기 모드에서도 열린다).
 // 캐시 이름의 해시는 빌드 내용에서 나온다 — 게임이 바뀌면 이름이 달라지고,
 // 새 워커가 깔리면서 옛 캐시를 통째로 지운다.
-const CACHE = 'chartrun-3153e7c78908';
+const CACHE = 'chartrun-f016bb3a0596';
 const FILES = ["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","./icon-maskable.png"];
 
 self.addEventListener('install', (e) => {

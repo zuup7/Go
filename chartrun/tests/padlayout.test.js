@@ -249,3 +249,27 @@ test('버튼 이름은 HTML 과 JS 에 따로 적혀 있지 않다', () => {
     assert.ok(face && name, `"${action}" 에 face 나 name 이 없다`);
   }
 });
+
+// ── 개발자 모드 입구 ────────────────────────────────────────
+//
+// 「개발자모드 버튼 없는데?」 — 버튼은 있었다. 26×26px 에 투명도 0.5 라
+// 거의 검정인 패널 위에서 안 보였을 뿐이다. 숨기려고 만든 게 아니라
+// 실수로 안 눌리게 만든 것(암호 1234 가 그 역할)이므로 보여야 한다.
+
+test('개발자 모드 버튼은 폰에서 보이고 눌린다', () => {
+  const css = readFileSync(new URL('../assets/style.css', import.meta.url), 'utf8');
+  const rule = css.match(/\.dev-open\s*\{([^}]*)\}/)?.[1];
+  assert.ok(rule, 'CSS 에 .dev-open 이 없다');
+  const num = (k) => Number(rule.match(new RegExp(`\\b${k}:\\s*([\\d.]+)`))?.[1]);
+  assert.ok(num('width') >= 44, `폭이 ${num('width')}px — 폰 탭 기준(44px)보다 좁으면 손가락으로 못 맞춘다`);
+  assert.ok(num('opacity') >= 0.9, `투명도 ${num('opacity')} — 반투명하면 검정 패널 위에서 안 보인다`);
+});
+
+test('개발자 버튼은 글자체에 있는 글자로 찍는다', () => {
+  // ⚙(U+2699)은 DotGothic16 에 없다. 기기마다 시스템 폰트로 떨어져
+  // 컬러 이모지가 되거나 네모(두부)가 된다.
+  const hud = readFileSync(new URL('../src/render/hud.js', import.meta.url), 'utf8');
+  const btn = hud.match(/<button[^>]*data-key="open"[^>]*>([^<]*)</)?.[1];
+  assert.ok(btn != null, 'hud 에 개발자 모드 버튼이 없다');
+  assert.match(btn.trim(), /^[A-Za-z]+$/, `"${btn}" — 글자체에 없는 글자는 기기마다 다르게 나온다`);
+});

@@ -178,7 +178,7 @@ export function createHud(root) {
             }</p>
             ${game.save.seenHelp ? '' : firstHelp()}
             ${game.saveBroken ? '<p class="warn">이 기기에서는 기록이 안 남습니다</p>' : ''}
-            <button type="button" class="dev-open" data-key="open" aria-label="개발자 모드">⚙</button>
+            <button type="button" class="dev-open" data-key="open" aria-label="개발자 모드">DEV</button>
           </div>`;
       }
       case 'cutList': {
