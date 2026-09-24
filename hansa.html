@@ -593,6 +593,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .chip.k-rule.on{background:var(--red-l)}
 .a-learn .chip.k-resist.on{background:var(--teal-l)}
 .a-learn .chip.k-world.on{background:var(--blue-l)}
+.a-learn .chip.k-life.on{background:#FAE4C2}
+.a-learn .tlr.k-life .d{background:var(--org)}
+.a-learn .tlr.k-life{border-left:7px solid var(--org)}
+.a-learn .tlr.k-life .tg{background:#FAE4C2}
+.a-learn .tlr.nol{background:var(--panel);box-shadow:none;border-style:dashed}
+.a-learn .tlr.nol .d{background:var(--panel-d)}
+.a-learn .tlr.nol .src{font-style:italic}
+.a-learn .fc.nol{background:transparent;border-style:dotted;color:var(--ink-2)}
+.a-learn .fworld.flife{background:#FAE4C2}
 .a-learn .empty{text-align:center;padding:38px 16px;color:var(--ink-3)}
 .a-learn .empty p{font-size:14.5px;line-height:1.8;max-width:30ch;margin:14px auto 0}
 
@@ -1486,6 +1495,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-sprint .tag.cb{background:#DCE5F5}
 .a-sprint .tag.cc{background:#D6EDE7}
 .a-sprint .tag.cd{background:var(--cream)}
+.a-sprint .tag.ce{background:#FAE4C2}
+.a-sprint .tag.cf{background:#E8DDF3}
 .a-sprint .card-h .kind{margin-left:auto;font-family:var(--f-px);font-size:7.5px;color:var(--ink-2);line-height:1.7}
 .a-sprint .card-b{padding:17px 15px}
 
@@ -1531,6 +1542,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-sprint .rl.k-resist .dot{background:var(--grn)}
 .a-sprint .rl.k-world .dot{background:var(--brand)}
 .a-sprint .rl.k-other .dot{background:var(--line-2)}
+.a-sprint .rl.k-life .dot{background:var(--gold)}
+.a-sprint .rl.k-life .tg{background:var(--gold-soft)}
 .a-sprint .rl .tg{display:inline-block;margin-left:7px;vertical-align:2px;font-family:var(--f-px);
   font-size:7px;font-style:normal;padding:3px 4px;border:2px solid var(--ink);background:var(--panel)}
 .a-sprint .rl.k-rule .tg{background:var(--red-soft)}
@@ -1587,7 +1600,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-sprint .fb.no{background:var(--red-soft);color:var(--ink)}
 .a-sprint .fb .ic{font-family:var(--f-px);font-size:13px;line-height:1.4;flex-shrink:0;
   width:26px;height:26px;display:grid;place-items:center;border:2px solid var(--ink);color:#fff}
-.a-sprint .fb.ok .ic{background:#2F8C7E} .a-sprint .fb.no .ic{background:var(--red)}
+.a-sprint .fb.ok .ic{background:#257366} .a-sprint .fb.no .ic{background:#B0342C}
 .a-sprint .fb b{font-weight:800}
 
 /* 콤보 */
@@ -2382,7 +2395,17 @@ var UNITS=[
  {id:"s5",n:"1910년대 국내외 독립운동",bk:"20~21쪽"},
  {id:"s6",n:"3·1 운동",bk:"22~25쪽"},
  {id:"s7",n:"대한민국 임시 정부",bk:"26~29쪽"},
- {id:"s8",n:"무장 독립 전쟁",bk:"30~33쪽"}
+ {id:"s8",n:"무장 독립 전쟁",bk:"30~33쪽"},
+ {id:"s9",n:"의열 투쟁",bk:"34~35쪽"},
+ {id:"s10",n:"실력 양성 운동",bk:"36~37쪽"},
+ {id:"s11",n:"농민 운동과 노동 운동",bk:"38~39쪽"},
+ {id:"s12",n:"학생 항일 운동",bk:"40~41쪽"},
+ {id:"s13",n:"민족 유일당 운동과 신간회",bk:"42~43쪽"},
+ {id:"s14",n:"사회 구조와 생활의 변화",bk:"46~49쪽"},
+ {id:"s15",n:"사회적 차별 철폐 운동",bk:"50~51쪽"},
+ {id:"s16",n:"민족 문화 수호 운동",bk:"52~55쪽"},
+ {id:"s17",n:"항일 전선 통합과 무장 투쟁",bk:"56~57쪽"},
+ {id:"s18",n:"광복을 위한 노력과 건국 준비",bk:"58~61쪽"}
 ];
 var UMAP={};UNITS.forEach(function(u){UMAP[u.id]=u;});
 var LMAP={};LESSONS.forEach(function(l){LMAP[l.id]=l;});
@@ -2452,7 +2475,7 @@ function vHome(){
      '<div class="plant">'+plant(d,110)+'</div>'+
      '<h1>'+(d===0?"모르는 게 당연해.<br>여기서부터 같이 보자."
                   :(nx?"이어서 하자.<br>"+esc(nx.title):"스무 수업을 모두 마쳤어."))+'</h1>'+
-     '<p>'+(d===0?"교과서 Ⅰ단원을 스무 번에 나눠 담았어. 한 번에 10분이면 충분해."
+     '<p>'+(d===0?"교과서 Ⅰ단원 앞부분(8~33쪽)을 스무 번에 나눠 담았어. 한 번에 10분이면 충분해. 34~63쪽은 내신 실전과 연표로 먼저 볼 수 있어."
                  :"지금까지 "+d+"개 수업을 끝냈어. 남은 건 "+(tot-d)+"개야.")+'</p>'+
      '<div class="prog"><div class="ring">'+
        '<svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="var(--bg2)" stroke-width="6"/>'+
@@ -2740,20 +2763,22 @@ function paintCard(){
   }
 
   if(c.t==="pick"){
+    if(!L.pm||L.pmi!==L.i){ L.pm=mixQ(c); L.pmi=L.i; }
+    var pc=L.pm;
     h+='<div class="card"><div class="eyebrow">골라 보자</div><div class="h sm">'+esc(c.q)+'</div>'+
-       '<div class="two" id="two">'+c.c.map(function(x,i){
+       '<div class="two" id="two">'+pc.c.map(function(x,i){
          return '<button class="tw" data-i="'+i+'">'+esc(x)+'</button>';}).join("")+'</div>'+
        '<div id="fb"></div></div>';
     view.innerHTML=h+backOnly();
     Array.prototype.forEach.call(view.querySelectorAll("#two .tw"),function(b){
       b.onclick=function(){
         if(L.answered)return; L.answered=true;
-        var ok=+b.dataset.i===c.a;
+        var ok=+b.dataset.i===pc.a;
         Array.prototype.forEach.call(view.querySelectorAll("#two .tw"),function(x,i){
-          x.disabled=true; if(i===c.a)x.classList.add("ok"); else if(x===b)x.classList.add("no");
+          x.disabled=true; if(i===pc.a)x.classList.add("ok"); else if(x===b)x.classList.add("no");
         });
         buzz(ok?14:[20,40,20]); markDay();
-        if(ok)wClear(L.id,"p",L.i); else wAdd(L.id,"p",L.i,+b.dataset.i);
+        if(ok)wClear(L.id,"p",L.i); else wAdd(L.id,"p",L.i,unmix(pc,+b.dataset.i));
         document.getElementById("fb").innerHTML=
           '<div class="fb '+(ok?"ok":"no")+'"><span class="m">'+(ok?"맞아":"아냐")+'</span><span>'+c.e+'</span></div>';
         var sk0=view.querySelector(".sticky"); if(sk0)sk0.remove();
@@ -2769,7 +2794,9 @@ function paintCard(){
 
 /* ── 마무리 퀴즈 ── */
 function paintQuiz(){
-  var l=L.l,q=l.quiz[L.qi];
+  var l=L.l;
+  if(!L.mq||L.mqi!==L.qi){ L.mq=mixQ(l.quiz[L.qi]); L.mqi=L.qi; }
+  var q=L.mq;
   var h=hud()+'<div class="card"><div class="eyebrow">마무리 퀴즈 '+(L.qi+1)+' / '+l.quiz.length+'</div>'+
     '<div class="h sm">'+esc(q.q)+'</div></div>'+
     '<div style="margin-top:12px" id="opts">'+q.c.map(function(x,i){
@@ -2789,7 +2816,7 @@ function paintQuiz(){
         if(L.combo>=3&&L.combo%3===0)pop(L.combo+"연속!"); else pop("좋아!");
         wClear(L.id,"q",L.qi);
       }else{
-        L.combo=0; wAdd(L.id,"q",L.qi,+b.dataset.i);
+        L.combo=0; wAdd(L.id,"q",L.qi,unmix(q,+b.dataset.i));
       }
       L.qlog.push({q:q,ok:ok});
       buzz(ok?14:[20,40,20]); markDay();
@@ -2853,8 +2880,85 @@ function paintEnd(){
 /* ── 연표: 수업 속 사실 카드를 연도순으로 한 장에 모은다 ── */
 var TL=null;
 /* 단원을 세 갈래로 나눈다 — 일제가 한 일 / 우리가 한 일 / 바깥 세계 */
-var TRACK={s1:"world",s2:"rule",s3:"rule",s4:"rule",s5:"resist",s6:"resist",s7:"resist",s8:"resist"};
-var TRACKN={rule:"일제",resist:"우리",world:"세계"};
+var TRACK={s1:"world",s2:"rule",s3:"rule",s4:"rule",s5:"resist",s6:"resist",s7:"resist",s8:"resist",
+  s9:"resist",s10:"resist",s11:"resist",s12:"resist",s13:"resist",s14:"life",s15:"resist",s16:"resist",s17:"resist",s18:"resist"};
+var TRACKN={rule:"일제",resist:"우리",world:"세계",life:"삶"};
+/* 교과서 34~63쪽은 아직 수업 카드가 없다. 연표와 대조표가 Ⅰ단원 전체를 덮도록 사실만 먼저 넣어 둔다.
+   [단원, 연도, 이름, 설명, 갈래 덮어쓰기] — 「연표 스프린트」·「오답 몬스터」와 같은 원본에서 왔다 */
+const TL_EXTRA=[
+["s9", 1919, "의열단", "김원봉·윤세주 등이 만주 지린에서 조직한 비밀 단체로, 침략의 원흉과 친일 매국노를 암살하거나 식민 통치 기관을 파괴하였다."],
+["s9", 1919, "강우규의 의거", "강우규가 경성 남대문역에서 새로 부임하는 총독에게 폭탄을 던졌다. 의열단이 아닌 개인 의열 투쟁이다."],
+["s9", 1921, "김익상의 의거", "의열단원 김익상이 국내에 잠입하여 조선 총독부에 폭탄을 던졌다."],
+["s9", 1923, "조선 혁명 선언", "김원봉의 요청으로 신채호가 작성한 의열단의 활동 지침으로, 외교론과 실력 양성론을 비판하고 민중 직접 혁명을 주장하였다."],
+["s9", 1923, "김상옥의 의거", "의열단원 김상옥이 종로 경찰서에 폭탄을 던졌다."],
+["s9", 1926, "나석주의 의거", "의열단원 나석주가 동양 척식 주식회사에 폭탄을 던지고 권총을 쏘아 일본인을 살상하였다."],
+["s9", 1926, "황푸 군관 학교 입교", "개인 의열 투쟁의 한계를 느낀 의열단원들이 중국 국민당 정부가 운영하는 황푸 군관 학교에 들어가 정규 군사 훈련을 받았다."],
+["s9", 1931, "한인 애국단", "국민 대표 회의 결렬 뒤 침체된 대한민국 임시 정부에 활기를 불어넣으려고 김구가 조직하였다."],
+["s9", 1932, "이봉창의 의거", "한인 애국단의 첫 거사로 이봉창이 도쿄에서 일왕의 마차를 향해 폭탄을 던졌다. 실패하였지만 일본에 큰 충격을 주었다."],
+["s9", 1932, "상하이 사변", "일제가 이봉창 의거를 보도한 중국 언론의 반일적 태도 등을 구실로 상하이를 침략하였다."],
+["s9", 1932, "윤봉길의 의거", "한인 애국단원 윤봉길이 상하이 훙커우 공원 기념식 단상에 폭탄을 던져 일본군 장성과 고관을 처단하였다. 중국 국민당 정부가 한국 독립운동을 적극 지원하는 계기가 되었다."],
+["s9", 1932, "조선 혁명 간부 학교", "의열단이 중국 국민당 정부의 지원을 받아 세운 학교로, 독립군을 양성하였다."],
+["s10", 1920, "물산 장려 운동", "조만식의 주도로 평양에서 시작되어 전국으로 퍼졌다. '내 살림 내 것으로', '조선 사람 조선 것'을 내세워 토산품 애용과 근검저축, 금주·단연을 주장하였다."],
+["s10", 1923, "민립 대학 설립 운동", "이상재·이승훈 등이 조직한 조선 민립 대학 기성회가 1천만 원을 모으려 전국적인 모금 운동을 펼쳤으나, 자연재해와 일제의 탄압으로 성과를 거두지 못하였다."],
+["s10", 1923, "물산 장려 운동에 대한 비판", "토산품 값이 폭등하는 문제가 나타났고, 일부 사회주의자는 자본가 계급의 이익만을 도모하는 운동이라고 비판하였다."],
+["s10", 1924, "자치 운동", "이광수·최린·김성수 등이 일제의 식민 지배를 인정하고 그 안에서 자치권과 참정권을 얻으려 한 타협적 운동으로, 일제의 민족 분열 정책에 이용만 당하였다."],
+["s10", 1929, "문자 보급 운동", "『조선일보』가 '아는 것이 힘, 배워야 산다'를 구호로 한글 교재를 보급하고 전국 순회강연을 열었다."],
+["s10", 1931, "브나로드 운동", "『동아일보』가 벌인 농촌 계몽 운동으로, 학생과 청년이 농촌을 찾아가 글을 가르치고 미신 타파와 근검절약을 강조하였다."],
+["s11", 1923, "암태도 소작 쟁의", "고율의 소작료를 징수하는 지주의 횡포에 맞서 1년여 투쟁한 끝에 소작료 인하를 이끌어 낸 1920년대의 대표적 소작 쟁의이다."],
+["s11", 1927, "조선 농민 총동맹", "사회주의 운동의 영향으로 농민 조합이 활발히 조직되면서 결성된 전국적 농민 운동 단체이다."],
+["s11", 1927, "조선 노동 총동맹", "노동 쟁의 발생 건수와 참여 노동자가 크게 늘면서 결성된 전국 규모의 노동 운동 단체이다."],
+["s11", 1929, "원산 총파업", "일본인 감독이 한국인 노동자를 구타한 일을 계기로 시작되어 4개월여 이어진, 일제 강점기 최대 규모의 노동 운동이자 반제국주의 항일 운동이다."],
+["s11", 1931, "혁명적 농민·노동 조합", "대공황으로 생활이 더 어려워지자 농민과 노동자가 사회주의 세력과 연대해 혁명적 조합을 만들고 비합법적 폭력 투쟁으로 일제에 맞섰다."],
+["s12", 1924, "조선 청년 총동맹", "3·1 운동에서 항일 투쟁의 주체임을 자각한 청년들의 운동을 통일적으로 이끌려고 결성되었다."],
+["s12", 1926, "6·10 만세 운동", "순종의 장례일에 학생들이 서울 곳곳에서 격문을 뿌리고 만세를 외쳤다. 준비 과정에서 사회주의 계열과 천도교가 연대한 경험이 민족 협동 전선의 공감대를 만들었다."],
+["s12", 1926, "성진회", "광주에서 조직된 학생 비밀 결사로, 뒤에 학교별 독서회로 이어져 광주 학생 항일 운동을 이끌었다."],
+["s12", 1929, "광주 학생 항일 운동", "나주역에서 일어난 한·일 학생 충돌을 계기로 광주 학생들이 11월 3일 대규모 가두시위를 벌였고, 신간회 등의 노력으로 전국으로 퍼졌다. 3·1 운동 이후 최대 규모의 항일 민족 운동이다."],
+["s13", 1924, "제1차 국공 합작", "중국의 국민당과 공산당이 손잡은 일로, 민족 유일당 운동에 영향을 주었다."],
+["s13", 1926, "정우회 선언", "치안 유지법으로 탄압받던 사회주의 진영이 6·10 만세 운동 이후 민족주의 진영과 손잡고 합법적 활동 공간을 확보하자고 밝힌 선언이다."],
+["s13", 1927, "신간회", "비타협적 민족주의자와 사회주의자가 함께 만든 일제 강점기 최대 규모의 항일 단체로, 약 140개 지회와 4만여 명의 회원을 두었다."],
+["s13", 1929, "신간회의 진상 조사단 파견", "광주 학생 항일 운동이 일어나자 진상 조사단을 보내고 대규모 민중 대회를 추진하였으나, 일제의 탄압으로 집행부 대부분이 구속되었다."],
+["s13", 1931, "신간회 해소", "새 집행부의 타협적 태도와 국제 공산주의 운동의 노선 변화 속에서 사회주의자들이 전체 대회를 열어 해소를 결정하였다."],
+["s14", 1923, "관동 대지진 한국인 학살", "도쿄 부근 대지진 때 일본 당국과 언론이 유언비어를 퍼뜨려 사회 불안을 한국인 탓으로 돌렸고, 재일 한국인 6,000명 이상이 학살되었다."],
+["s14", 1924, "「운수 좋은 날」", "현진건의 소설로, 인력거꾼 김 첨지의 삶을 통해 일제 강점기 가난한 도시민의 모습을 보여 준다."],
+["s14", 1926, "영화 「아리랑」", "나운규가 각본·주연·감독을 맡아 흥행한 무성 영화로, 당시에는 장면을 해설하는 변사가 큰 인기를 누렸다."],
+["s14", 1932, "농촌 진흥 운동", "대공황으로 농민이 몰락하자 일제가 생활 개선을 내세워 벌였으나, 농촌 통제를 강화하고 빈곤의 책임을 농민에게 돌렸다.", "rule"],
+["s14", 1937, "연해주 한인 강제 이주", "소련이 일본에 협력할 것이라는 구실로 연해주 한국인 수십만 명을 중앙아시아로 강제 이주시켰다.", "world"],
+["s15", 1923, "조선 형평사", "백정에 대한 사회적 차별을 없애려고 진주에서 창립되었다. '저울처럼 평등(형평)'한 세상을 목표로 하였다."],
+["s15", 1923, "어린이날 제정", "방정환이 이끈 천도교 소년회가 어린이를 온전한 인격체로 존중하자며 어린이날 제정에 앞장서고 잡지 『어린이』를 펴냈다."],
+["s15", 1927, "근우회", "신간회 결성을 계기로 민족주의·사회주의 계열 여성 단체가 통합하여 만들었다. 기관지 『근우』를 펴내고 여성의 지위 향상에 힘썼다."],
+["s15", 1927, "조선 소년 연합회", "소년 운동이 퍼지면서 결성된 전국 조직이다. 일제는 1930년대에 소년 운동을 탄압하고 중일 전쟁 이후 모든 활동을 금지하였다."],
+["s16", 1911, "사찰령", "일제가 불교를 통제하려고 만든 법으로, 사찰 재산 처분과 주지 임명까지 조선 총독의 허가를 받게 하였다.", "rule"],
+["s16", 1915, "박은식", "'조선 국혼'을 강조하며 『한국통사』와 『한국독립운동지혈사』를 써서 일제의 침략과 민족의 독립운동사를 정리한 민족주의 사학자이다."],
+["s16", 1921, "조선어 연구회", "주시경의 제자들이 중심이 되어 조직하였고, '가갸날'을 정하고 잡지 『한글』을 간행하였다."],
+["s16", 1922, "천도교의 제2의 독립 선언 계획", "3·1 운동을 주도했던 천도교가 제2의 독립 선언 운동을 계획하였다. 『개벽』, 『신여성』 등의 잡지도 발간하였다."],
+["s16", 1925, "조선사 편수회", "조선 총독부 부설 기구로, 타율성론·정체성론·당파성론의 식민 사관에 따라 『조선사』를 편찬하였다.", "rule"],
+["s16", 1931, "조선어 학회", "조선어 연구회가 발전한 단체로, 한글 맞춤법 통일안을 제정하고 『조선말 큰사전』 편찬을 추진하였다."],
+["s16", 1931, "신채호의 고대사 연구", "고대사 연구에 주력하여 『조선상고사』, 『조선사연구초』 등을 저술한 민족주의 사학자이다."],
+["s16", 1933, "백남운의 사회 경제 사학", "마르크스의 유물 사관에 근거해 『조선사회경제사』를 쓰고, 한국사도 세계사의 보편적 발전 법칙에 따랐다며 식민 사관의 정체성론을 극복하려 하였다."],
+["s16", 1934, "진단 학회", "문헌 고증으로 객관적인 역사를 서술하려는 실증 사학자들이 조직하고 『진단학보』를 발행하였다."],
+["s16", 1934, "조선학 운동", "정인보 등이 '문화가 살면 민족은 죽지 않는다'는 신념으로 펼친 운동으로, 특히 조선 후기 실학 연구에 성과를 거두었다."],
+["s16", 1936, "전형필의 문화유산 수집", "간송 전형필이 재산을 들여 『훈민정음』 해례본 등 국외로 반출되던 문화유산을 지켰다."],
+["s17", 1935, "민족 혁명당", "여러 독립운동 단체가 난징에서 통합해 만든 중국 관내 최대 규모의 민족 통일 전선 정당이다. 김구 등 임시 정부 옹호 세력은 참여하지 않았다."],
+["s17", 1935, "한국 국민당", "민족 혁명당에 참여하지 않은 김구 등 임시 정부 옹호 세력이 별도로 창당하였다."],
+["s17", 1937, "한국 광복 운동 단체 연합회", "중일 전쟁 이후 김구의 한국 국민당을 중심으로 결성되었다."],
+["s17", 1937, "조선 민족 전선 연맹", "중일 전쟁 이후 김원봉이 이끄는 민족 혁명당을 중심으로 결성되었다."],
+["s17", 1938, "조선 의용대", "조선 민족 전선 연맹이 중국 국민당 정부의 지원으로 우한에서 창설한, 중국 관내 최초의 한인 부대이다. 심리전과 포로 심문, 후방 공작을 맡았다."],
+["s17", 1939, "김구·김원봉의 공개 통신", "김구와 김원봉이 함께 「동지 동포 제군에게 보내는 공개 통신」을 발표하여 항일 전선의 통합을 호소하였다."],
+["s17", 1941, "조선 의용대 화북 지대", "조선 의용대의 다수 병력이 화북 지방으로 이동해 결성하였고, 타이항산을 중심으로 호가장 전투와 반소탕전에서 큰 전과를 거두었다."],
+["s18", 1940, "임시 정부의 충칭 정착", "윤봉길 의거 뒤 여러 곳을 옮겨 다니던 대한민국 임시 정부가 충칭에 자리 잡고 중국 국민당 정부의 지원을 받아 체제를 개편하였다."],
+["s18", 1940, "한국 독립당", "민족주의 계열 정당들이 통합하여 만든 정당으로, 충칭 시기 대한민국 임시 정부 운영을 주도하였다."],
+["s18", 1940, "한국광복군", "충칭의 대한민국 임시 정부가 지청천을 총사령관으로 창설한 군대이다."],
+["s18", 1941, "건국 강령", "조소앙의 삼균주의(정치·경제·교육의 균등)를 바탕으로 대한민국 임시 정부가 발표한 민주 국가 건설의 방향이다."],
+["s18", 1941, "대일 선전 성명서", "아시아·태평양 전쟁이 일어나자 대한민국 임시 정부가 일본에 선전 포고하고 한국광복군을 연합군의 일원으로 참전시켰다."],
+["s18", 1942, "조선 의용대의 광복군 합류", "화북으로 이동하지 않은 조선 의용대 병력이 김원봉의 인솔로 한국광복군에 합류하고, 김규식 등도 임시 정부에 참여하여 좌우 합작의 형태를 이루었다."],
+["s18", 1942, "조선 독립 동맹", "화북 지방의 사회주의 세력이 김두봉을 위원장으로 결성하였고, 조선 의용대 화북 지대를 조선 의용군으로 재편하였다."],
+["s18", 1943, "미얀마·인도 전선 파견", "한국광복군이 영국군의 요청으로 공작대를 보내 심리전, 암호 해독, 포로 심문 등을 맡았다."],
+["s18", 1943, "카이로 선언", "미국·영국·중국 정상이 일본 세력을 몰아낸 뒤 적절한 시기에 한국을 독립시키겠다고 처음으로 약속하였다.", "world"],
+["s18", 1944, "조선 건국 동맹", "광복을 1년여 앞두고 여운형의 주도로 국내에서 결성된 비밀 결사로, 민족주의·사회주의 계열 인사가 함께 참여하였다."],
+["s18", 1945, "얄타 회담", "미국·영국·소련 정상이 독일과의 전쟁이 끝나면 소련이 대일전에 참전하기로 합의하였다.", "world"],
+["s18", 1945, "포츠담 선언", "미국·영국·중국 정상이 카이로 선언을 재확인하고 일본의 무조건 항복을 촉구하였다. 소련도 뒤늦게 참여하였다.", "world"],
+["s18", 1945, "국내 진공 작전", "한국광복군이 미국 전략 정보국(OSS)과 협약을 맺고 국내 정진군을 편성하였으나, 투입 직전 일제가 항복하여 취소되었다."]
+];
 /* 시기 구분 — 통치 방식이 바뀐 두 지점(3·1 운동, 만주 사변)에서 끊는다 */
 var ERAS=[
   {y:1919,n:"1910년대",t:"무단 통치",d:"헌병 경찰이 칼을 차고 다니고, 토지와 회사를 손에 넣던 때"},
@@ -2872,6 +2976,13 @@ function timeline(){
                  k:TRACK[l.u]||"world",
                  so:(c.so||"").replace(/<[^>]+>/g,"")});
     });
+  });
+  /* 수업이 아직 없는 단원은 사실만 — 누르면 갈 수업이 없으니 lid 를 비워 둔다 */
+  var has={}; LESSONS.forEach(function(l){has[l.u]=1;});
+  TL_EXTRA.forEach(function(r){
+    if(has[r[0]])return;
+    TL.push({y:r[1],n:r[2],u:r[0],lid:null,ci:null,lt:UMAP[r[0]].n+" · "+UMAP[r[0]].bk,
+             k:r[4]||TRACK[r[0]]||"world",so:r[3]});
   });
   /* 같은 해 안에서는 교과서 차례 그대로 둔다 (정렬이 안정적이라 그대로 남는다) */
   TL.sort(function(a,b){return a.y-b.y;});
@@ -2907,9 +3018,9 @@ function vTimeline(){
       '<span class="cnt">'+rows.length+' / '+all.length+'</span></div>'+
     '<div class="chips strip" id="tlu">'+
       '<button class="chip'+(TLU?"":" on")+'" data-u="">전체</button>'+
-      ["rule","resist","world"].filter(function(k){return all.some(function(r){return r.k===k;});})
+      ["rule","resist","life","world"].filter(function(k){return all.some(function(r){return r.k===k;});})
         .map(function(k){return '<button class="chip k-'+k+(TLU===k?" on":"")+'" data-u="'+k+'">'+
-          (k==="rule"?"일제의 통치":k==="resist"?"우리의 저항":"바깥 세계")+'</button>';}).join("")+
+          (k==="rule"?"일제의 통치":k==="resist"?"우리의 저항":k==="life"?"사회와 삶":"바깥 세계")+'</button>';}).join("")+
     '</div>';
   var cy=null,ce=-1;
   rows.forEach(function(r,i){
@@ -2919,15 +3030,15 @@ function vTimeline(){
             '<small>'+esc(ERAS[ei].d)+'</small></span></div>'; }
     if(r.y!==cy){ cy=r.y;
       html+='<div class="tly'+(hide?" hid":"")+'"><b data-y="'+r.y+'">'+(hide?"·····":r.y)+'</b><i></i></div>'; }
-    html+='<button class="tlr k-'+r.k+(S.done[r.lid]?"":" new")+'" data-i="'+i+'">'+
+    html+='<button class="tlr k-'+r.k+(r.lid?(S.done[r.lid]?"":" new"):" nol")+'" data-i="'+i+'">'+
       '<span class="d"></span><span class="x">'+
       '<b>'+esc(r.n)+'<em class="tg">'+TRACKN[r.k]+'</em></b>'+
       (desc&&r.so?'<small class="so">'+esc(r.so)+'</small>':'')+
-      '<small class="src">수업 · '+esc(r.lt)+'</small></span></button>';
+      '<small class="src">'+(r.lid?'수업 · '+esc(r.lt):esc(r.lt)+' · 수업 준비 중')+'</small></span></button>';
   });
   if(!rows.length)
     html+='<div class="empty">'+scene("paper",56)+'<p>이 갈래에는 연도가 붙은 사건이 없어.</p></div>';
-  html+='<p class="note" style="margin:18px 0 4px">여기까지가 Ⅰ단원 전체 흐름이야. '+
+  html+='<p class="note" style="margin:18px 0 4px">여기까지가 Ⅰ단원 전체(8~63쪽) 흐름이야. 34쪽 뒤로는 아직 수업이 없어서 줄을 눌러도 가지 않아. '+
         '「설명 접기」를 누르면 사건 이름만 남아 — 이름만 보고 무슨 일이었는지 떠올려 보면 훨씬 잘 외워져.</p>';
   view.innerHTML=html;
   tabsBind();
@@ -2939,7 +3050,7 @@ function vTimeline(){
   Array.prototype.forEach.call(view.querySelectorAll(".tly.hid b"),function(b){
     b.onclick=function(){b.textContent=b.dataset.y;b.parentNode.classList.remove("hid");};});
   Array.prototype.forEach.call(view.querySelectorAll(".tlr"),function(b){
-    b.onclick=function(){var r=rows[+b.dataset.i];jumpCard(r.lid,r.ci);};});
+    b.onclick=function(){var r=rows[+b.dataset.i]; if(!r.lid)return pop("수업은 아직이야 — 내신 실전에서 풀 수 있어"); jumpCard(r.lid,r.ci);};});
 }
 
 /* ══════════ 통치 ↔ 저항 대조표 ══════════
@@ -2960,8 +3071,8 @@ function vFacing(){
       '시험은 「1920년대에 일제는 ○○을 했고 우리는 △△로 맞섰다」처럼 이 둘을 겹쳐서 물어. '+
       '아무 칸이나 누르면 그 수업으로 가.</p>';
   ERAS.forEach(function(e,ei){
-    var ru=by[ei+"/rule"]||[], re=by[ei+"/resist"]||[], wo=by[ei+"/world"]||[];
-    if(!ru.length&&!re.length&&!wo.length)return;
+    var ru=by[ei+"/rule"]||[], re=by[ei+"/resist"]||[], wo=by[ei+"/world"]||[], li=by[ei+"/life"]||[];
+    if(!ru.length&&!re.length&&!wo.length&&!li.length)return;
     html+='<div class="tle"><b>'+e.n+'</b><span><b class="t">'+esc(e.t)+'</b>'+
           '<small>'+esc(e.d)+'</small></span></div>'+
       '<div class="face">'+
@@ -2970,18 +3081,20 @@ function vFacing(){
         '<div class="fcol resist"><h4>우리가 한 일 <i>'+re.length+'</i></h4>'+
           re.map(fchip).join("")+'</div>'+
       '</div>'+
+      (li.length?'<div class="fworld flife"><b>사회와 삶</b>'+li.map(fchip).join("")+'</div>':'')+
       (wo.length?'<div class="fworld"><b>바깥 세계</b>'+wo.map(fchip).join("")+'</div>':'');
   });
   html+='<p class="note" style="margin:18px 0 4px">한 칸이 비어 보이면 그 시기에 그쪽 사건이 적다는 뜻이야. '+
-        '1910년대 오른쪽이 유난히 긴 건 3·1 운동과 임시 정부가 다 여기 걸리기 때문이고.</p>';
+        '1910년대 오른쪽이 유난히 긴 건 3·1 운동과 임시 정부가 다 여기 걸리기 때문이고. '+
+        '점선 칸은 아직 안 배운 수업, 옅은 칸은 아직 수업이 없는 34쪽 뒤 내용이야.</p>';
   view.innerHTML=html;
   tabsBind();
   Array.prototype.forEach.call(view.querySelectorAll(".fc"),function(b){
-    b.onclick=function(){ var r=all[+b.dataset.i]; jumpCard(r.lid,r.ci); };
+    b.onclick=function(){ var r=all[+b.dataset.i]; if(!r.lid)return pop("수업은 아직이야 — 내신 실전에서 풀 수 있어"); jumpCard(r.lid,r.ci); };
   });
 }
 function fchip(r){
-  return '<button class="fc'+(S.done[r.lid]?"":" new")+'" data-i="'+r._i+'">'+esc(r.n)+'</button>';
+  return '<button class="fc'+(r.lid?(S.done[r.lid]?"":" new"):" nol")+'" data-i="'+r._i+'">'+esc(r.n)+'</button>';
 }
 function tabsBind(){
   Array.prototype.forEach.call(view.querySelectorAll(".tb"),function(b){
@@ -3170,6 +3283,10 @@ function vWQuiz(){
     return;
   }
   var x=W.q[W.i];
+  if(!x.mixed){
+    var mx=mixQ({q:x.q,c:x.c,a:x.a,e:x.e,type:x.type,boki:x.boki});
+    x.c=mx.c; x.a=mx.a; x.e=mx.e; x.boki=mx.boki; x.back=mx.back; x.mixed=true;
+  }
   view.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;padding:2px 0 16px">'+
       '<span class="track"><i style="width:'+(W.i/W.q.length*100)+'%"></i></span>'+
@@ -3189,7 +3306,7 @@ function vWQuiz(){
   var finish=function(ok,mine){
     W.answered=true;
     if(ok){W.ok++;wClear(x.lid,x.kind,x.idx);pop("지웠다!");}
-    else wAdd(x.lid,x.kind,x.idx,mine);
+    else wAdd(x.lid,x.kind,x.idx,unmix(x,mine));
     buzz(ok?14:[20,40,20]); markDay();
     document.getElementById("fb").innerHTML=
       '<div class="fb '+(ok?"ok":"no")+'"><span class="m">'+(ok?"○":"×")+'</span><span>'+
@@ -3216,6 +3333,42 @@ function vWQuiz(){
     };
   });
 }
+/* ── 선지 섞기 ──
+   원본 데이터는 정답이 대개 첫 칸에 적혀 있다(수업 퀴즈 80문항 · 2지선다 20장 전부, 내신 대부분).
+   그대로 내면 「무조건 첫 번째」로 다 맞힌다. 그래서 낼 때마다 섞은 사본을 만든다.
+   원본은 건드리지 않고, 고른 번호는 원본 번호로 되돌려 저장한다(오답 노트가 원본을 보므로).
+   <보기> 조합형은 선지 대신 ㄱ~ㄹ 진술의 자리를 섞고, 정답 조합과 해설 속 ㄱ~ㄹ 도 따라 바꾼다 */
+var BLBL=["ㄱ","ㄴ","ㄷ","ㄹ"];
+function lblSet(s){ var o=[]; String(s).replace(/[ㄱㄴㄷㄹ]/g,function(ch){o.push(BLBL.indexOf(ch));}); return o.sort().join(","); }
+function mixQ(q){
+  if(!q||!q.c||q.a==null||q.type==="short")return q;
+  var m={},k; for(k in q)m[k]=q[k];
+  if(q.boki){
+    var sets=q.c.map(lblSet), want=sets[q.a], n=q.boki.length;
+    for(var t=0;t<40;t++){
+      var P=shuffleArr(BLBL.slice(0,n).map(function(_,i){return i;}));   /* 새 자리 j 에 원래 P[j] */
+      var inv=[]; P.forEach(function(o,j){inv[o]=j;});
+      var ns=want.split(",").map(function(x){return inv[+x];}).sort().join(",");
+      var na=sets.indexOf(ns);
+      if(na<0)continue;                      /* 정답 조합이 선지에 없는 배치는 버린다 */
+      m.boki=P.map(function(o){return q.boki[o];});
+      m.a=na;
+      m.e=String(q.e).replace(/[ㄱㄴㄷㄹ]/g,function(ch){var o=BLBL.indexOf(ch);return inv[o]!=null?BLBL[inv[o]]:ch;});
+      m.back=sets.map(function(sk){
+        var orig=sk.split(",").map(function(x){return P[+x];}).sort().join(",");
+        var oi=sets.indexOf(orig); return oi<0?null:oi;
+      });
+      return m;
+    }
+    return q;
+  }
+  var idx=shuffleArr(q.c.map(function(_,i){return i;}));   /* 새 자리 j 에 원래 idx[j] */
+  m.c=idx.map(function(i){return q.c[i];});
+  m.a=idx.indexOf(q.a);
+  m.back=idx;
+  return m;
+}
+function unmix(m,i){ return (m&&m.back&&i!=null)?m.back[i]:i; }
 function shuffleArr(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 
 /* ── 복습 세션: 예정된 수업에서 문제만 뽑아 빠르게 확인 ── */
@@ -3263,27 +3416,29 @@ function vDue(){
     return;
   }
   var x=RV.q[RV.i];
+  if(!x.mq)x.mq=mixQ(x.q);
+  var xq=x.mq;
   view.innerHTML=
     '<div style="display:flex;align-items:center;gap:12px;padding:2px 0 14px">'+
       '<span class="track"><i style="width:'+(RV.i/RV.q.length*100)+'%"></i></span>'+
       '<span class="step">'+(RV.i+1)+' / '+RV.q.length+'</span></div>'+
     '<div class="card"><div class="eyebrow">'+esc(x.lesson.title)+'</div>'+
-      '<div class="h sm">'+qh(x.q.q)+'</div></div>'+
-    '<div style="margin-top:12px" id="opts">'+x.q.c.map(function(c,i){
+      '<div class="h sm">'+qh(xq.q)+'</div></div>'+
+    '<div style="margin-top:12px" id="opts">'+xq.c.map(function(c,i){
       return '<button class="qopt" data-i="'+i+'"><span class="kx">'+"ABCD".charAt(i)+'</span><span>'+esc(c)+'</span></button>';
     }).join("")+'</div><div id="fb"></div>';
   RV.answered=false;
   Array.prototype.forEach.call(view.querySelectorAll("#opts .qopt"),function(b){
     b.onclick=function(){
       if(RV.answered)return; RV.answered=true;
-      var ok=+b.dataset.i===x.q.a;
+      var ok=+b.dataset.i===xq.a;
       Array.prototype.forEach.call(view.querySelectorAll("#opts .qopt"),function(e,i){
         e.disabled=true;
-        if(i===x.q.a)e.classList.add("ok"); else if(e===b)e.classList.add("no"); else e.classList.add("dim");
+        if(i===xq.a)e.classList.add("ok"); else if(e===b)e.classList.add("no"); else e.classList.add("dim");
       });
       var r=RV.byL[x.lid]; r.n++;
       if(ok){RV.ok++;r.ok++;wClear(x.lid,"q",x.qi);pop("좋아!");}
-      else wAdd(x.lid,"q",x.qi,+b.dataset.i);
+      else wAdd(x.lid,"q",x.qi,unmix(xq,+b.dataset.i));
       buzz(ok?14:[20,40,20]); markDay();
       document.getElementById("fb").innerHTML=
         '<div class="fb '+(ok?"ok":"no")+'"><span class="m">'+(ok?"O":"X")+'</span><span>'+esc(x.q.e)+'</span></div>';
@@ -3768,7 +3923,45 @@ const EXAM=[
  e:"동북 인민 혁명군이 동북 항일 연군으로 발전한 뒤의 일이다."},
 {id:"x8n",u:"s8",type:"mc5",q:"뒷날 대한민국 임시 정부의 한국광복군 창설을 주도한 인물은?",
  c:["지청천","양세봉","김좌진","홍범도","최진동"],a:0,
- e:"한국 독립군 지도부가 중국 관내로 이동한 뒤의 일이다."}
+ e:"한국 독립군 지도부가 중국 관내로 이동한 뒤의 일이다."},
+/* ───────── 교과서 34~63쪽 (03-2 ~ 05-2) ───────── */
+{id:"x9a",u:"s9",type:"mc5",q:"다음 자료를 활동 지침으로 삼은 단체로 옳은 것은?\n\n우리는 '외교', '준비' 등의 미몽을 버리고 민중 직접 혁명의 수단을 취함을 선언하노라.",c:["의열단", "한인 애국단", "신간회", "대한 광복회", "조선 의용대"],a:0,e:"신채호의 「조선 혁명 선언」(1923)은 의열단의 활동 지침이다."},
+{id:"x9b",u:"s9",type:"boki",q:"한인 애국단에 대한 설명으로 옳은 것을 <보기>에서 고른 것은?",boki:["김구가 임시 정부의 침체를 극복하려고 조직하였다.", "이봉창이 도쿄에서 일왕의 마차에 폭탄을 던졌다.", "김원봉이 만주 지린에서 조직하였다.", "「조선 혁명 선언」을 활동 지침으로 삼았다."],c:["ㄱ, ㄴ", "ㄱ, ㄷ", "ㄴ, ㄷ", "ㄴ, ㄹ", "ㄷ, ㄹ"],a:0,e:"ㄷ·ㄹ은 의열단에 대한 설명이다."},
+{id:"x9c",u:"s9",type:"mc5",q:"윤봉길 의거의 결과로 옳은 것은?",c:["중국 국민당 정부가 한국 독립운동을 적극 지원하게 되었다.", "일제가 헌병 경찰제를 실시하였다.", "국민 대표 회의가 열렸다.", "신간회가 해소되었다.", "의열단이 조직되었다."],a:0,e:"한중 공동 항일 전선 구축에도 큰 영향을 주었다."},
+{id:"x9d",u:"s9",type:"neg",q:"의열단에 대한 설명으로 옳지 않은 것은?",c:["김원봉 등이 만주 지린에서 조직하였다.", "김상옥이 종로 경찰서에 폭탄을 던졌다.", "나석주가 동양 척식 주식회사에 폭탄을 던졌다.", "단원들이 황푸 군관 학교에서 군사 훈련을 받았다.", "윤봉길이 상하이 훙커우 공원에서 의거를 일으켰다."],a:4,e:"윤봉길은 한인 애국단원이다."},
+{id:"x9e",u:"s9",type:"short",q:"1932년 한인 애국단의 첫 거사로 도쿄에서 일왕의 마차에 폭탄을 던진 인물은?",c:["이봉창"],a:null,e:"이를 구실로 일제는 상하이를 침략하였다(상하이 사변)."},
+{id:"x10a",u:"s10",type:"mc5",q:"다음 구호를 내세운 운동으로 옳은 것은?\n\n내 살림 내 것으로 · 조선 사람 조선 것",c:["물산 장려 운동", "민립 대학 설립 운동", "브나로드 운동", "형평 운동", "자치 운동"],a:0,e:"조만식의 주도로 평양에서 시작되었다."},
+{id:"x10b",u:"s10",type:"neg",q:"실력 양성 운동에 대한 설명으로 옳지 않은 것은?",c:["물산 장려 운동은 토산품 애용과 근검저축을 주장하였다.", "민립 대학 설립 운동은 조선 민립 대학 기성회가 이끌었다.", "『조선일보』는 문자 보급 운동을 전개하였다.", "『동아일보』는 브나로드 운동을 전개하였다.", "민립 대학 설립 운동은 일제의 지원으로 대학 설립에 성공하였다."],a:4,e:"자연재해와 일제의 탄압으로 성과를 거두지 못하였다."},
+{id:"x10c",u:"s10",type:"mc5",q:"다음 주장이 담긴 운동으로 옳은 것은?\n\n조선 내에서는 허용되는 범위 내에서 일대 정치적 결사를 조직해야 한다.",c:["자치 운동", "물산 장려 운동", "6·10 만세 운동", "신간회 창립", "민족 유일당 운동"],a:0,e:"이광수의 「민족적 경륜」(1924). 일제의 지배를 인정한 타협적 운동이다."},
+{id:"x10d",u:"s10",type:"short",q:"러시아어로 '민중 속으로'라는 뜻으로, 1931년부터 『동아일보』가 전개한 농촌 계몽 운동은?",c:["브나로드 운동", "브나로드"],a:null,e:"학생과 청년이 농촌에서 글을 가르치고 미신 타파·근검절약을 강조하였다."},
+{id:"x11a",u:"s11",type:"mc5",q:"다음 자료의 쟁의로 옳은 것은?\n\n지주 문재철 씨는 소작인회의 요구인 4할을 승낙하는 동시에 이천 원을 소작인회에 기부하기로 되었더라.",c:["암태도 소작 쟁의", "원산 총파업", "형평 운동", "6·10 만세 운동", "물산 장려 운동"],a:0,e:"1년여의 투쟁 끝에 소작료 인하를 이끌어 낸 대표적 소작 쟁의이다."},
+{id:"x11b",u:"s11",type:"mc5",q:"원산 총파업에 대한 설명으로 옳은 것은?",c:["일본인 감독의 한국인 노동자 구타가 계기가 되었다.", "순종의 장례일에 일어났다.", "나주역의 한·일 학생 충돌이 계기가 되었다.", "백정에 대한 차별 철폐를 주장하였다.", "1년여의 투쟁 끝에 소작료 인하를 이끌어 냈다."],a:0,e:"4개월여 이어진 일제 강점기 최대 규모의 노동 운동이다."},
+{id:"x11c",u:"s11",type:"boki",q:"1930년대 농민·노동 운동에 대한 설명으로 옳은 것을 <보기>에서 고른 것은?",boki:["혁명적 농민 조합과 혁명적 노동조합을 결성하였다.", "비합법적인 폭력 투쟁의 형태로 바뀌었다.", "일제와 타협하여 자치권을 얻으려 하였다.", "중일 전쟁 이후 더욱 활발해졌다."],c:["ㄱ, ㄴ", "ㄱ, ㄷ", "ㄴ, ㄷ", "ㄴ, ㄹ", "ㄷ, ㄹ"],a:0,e:"중일 전쟁 이후에는 일제의 강력한 탄압으로 위축되었다."},
+{id:"x12a",u:"s12",type:"mc5",q:"다음 격문이 뿌려진 운동으로 옳은 것은?\n\n대한 독립 만세! 대한 독립운동가여 단결하라! 일체의 납세를 거부하자!",c:["6·10 만세 운동", "광주 학생 항일 운동", "3·1 운동", "원산 총파업", "물산 장려 운동"],a:0,e:"순종의 장례일(1926)에 일어났다."},
+{id:"x12b",u:"s12",type:"mc5",q:"광주 학생 항일 운동에 대한 설명으로 옳은 것은?",c:["신간회가 진상 조사단을 파견하였다.", "순종의 장례일에 일어났다.", "민족 대표 33인이 독립 선언서를 발표하였다.", "조만식이 평양에서 주도하였다.", "고종의 서거가 계기가 되었다."],a:0,e:"3·1 운동 이후 최대 규모의 항일 민족 운동이다(1929)."},
+{id:"x12c",u:"s12",type:"neg",q:"6·10 만세 운동에 대한 설명으로 옳지 않은 것은?",c:["순종의 장례일에 일어났다.", "사회주의 계열과 천도교가 준비하였다.", "준비 과정이 사전에 발각되었다.", "민족 협동 전선의 공감대 형성에 영향을 주었다.", "전국으로 확산되어 3·1 운동보다 큰 규모가 되었다."],a:4,e:"전국적 시위로 확대되지는 못하였다."},
+{id:"x13a",u:"s13",type:"mc5",q:"다음 강령을 내건 단체로 옳은 것은?\n\n• 우리는 정치적·경제적 각성을 촉진함.\n• 우리는 단결을 공고히 함.\n• 우리는 기회주의를 일체 부인함.",c:["신간회", "근우회", "의열단", "조선 형평사", "한인 애국단"],a:0,e:"'기회주의'는 자치 운동 같은 타협론을 가리킨다."},
+{id:"x13b",u:"s13",type:"boki",q:"신간회에 대한 설명으로 옳은 것을 <보기>에서 고른 것은?",boki:["비타협적 민족주의자와 사회주의자가 함께 창립하였다.", "광주 학생 항일 운동의 진상 조사단을 파견하였다.", "비밀 결사로 조직되어 105인 사건으로 해체되었다.", "자치 운동을 적극 지지하였다."],c:["ㄱ, ㄴ", "ㄱ, ㄷ", "ㄴ, ㄷ", "ㄴ, ㄹ", "ㄷ, ㄹ"],a:0,e:"ㄷ은 신민회. 신간회는 합법 단체이고 자치 운동을 배격했다."},
+{id:"x13c",u:"s13",type:"order",q:"다음 사건을 일어난 순서대로 바르게 나열한 것은?\n(가) 신간회 창립  (나) 정우회 선언  (다) 신간회 해소  (라) 제1차 국공 합작",c:["(라)-(나)-(가)-(다)", "(나)-(라)-(가)-(다)", "(라)-(가)-(나)-(다)", "(가)-(나)-(라)-(다)", "(나)-(가)-(라)-(다)"],a:0,e:"국공 합작(1924) → 정우회 선언(1926) → 신간회(1927) → 해소(1931)."},
+{id:"x13d",u:"s13",type:"short",q:"사회주의 진영이 민족주의 진영과 손잡자고 밝힌 1926년의 선언은?",c:["정우회 선언", "정우회선언"],a:null,e:"이듬해 신간회 창립으로 이어졌다."},
+{id:"x14a",u:"s14",type:"mc5",q:"일제 강점기 도시의 변화로 옳은 것은?",c:["한국인 거주지와 일본인 거주지가 구분되었다.", "도시 기반 시설이 한국인 거주지에 집중되었다.", "토막촌이 모두 사라졌다.", "서울의 집세가 일본 도시보다 쌌다.", "한국인 노동자 대부분이 고급 기술자였다."],a:0,e:"수도·전기·도로는 일본인 거주지에 잘 갖추어졌다."},
+{id:"x14b",u:"s14",type:"neg",q:"일제 강점기 국외 이주 동포의 고난으로 옳지 않은 것은?",c:["관동 대지진 때 재일 한국인이 학살되었다.", "간도 참변 때 한인 마을이 초토화되었다.", "연해주 한인이 중앙아시아로 강제 이주되었다.", "많은 한국인이 추위와 굶주림으로 강제 이주 중 숨졌다.", "연해주 한인의 강제 이주는 일제가 주도하였다."],a:4,e:"연해주 한인의 강제 이주(1937)는 소련이 주도하였다."},
+{id:"x14c",u:"s14",type:"mc5",q:"1930년대 일제가 농민 생활 개선을 내세워 벌였지만 농촌 통제 강화로 이어진 운동은?",c:["농촌 진흥 운동", "브나로드 운동", "물산 장려 운동", "문자 보급 운동", "산미 증식 계획"],a:0,e:"빈곤의 책임을 농민에게 돌리며 절약·저축·근면을 강조하였다."},
+{id:"x15a",u:"s15",type:"mc5",q:"다음 취지문을 발표한 단체로 옳은 것은?\n\n계급을 타파하고 모욕적 칭호를 폐지하며 교육을 장려하여 우리도 참다운 인간이 되고자 함이 우리의 주장이다.",c:["조선 형평사", "근우회", "천도교 소년회", "신간회", "조선어 학회"],a:0,e:"백정에 대한 차별 철폐를 위해 진주에서 창립되었다(1923)."},
+{id:"x15b",u:"s15",type:"mc5",q:"근우회에 대한 설명으로 옳은 것은?",c:["민족주의·사회주의 계열 여성 단체가 통합하여 창립하였다.", "방정환이 어린이날 제정을 주도하였다.", "백정에 대한 차별 철폐를 주장하였다.", "한글 맞춤법 통일안을 제정하였다.", "조만식이 평양에서 시작하였다."],a:0,e:"신간회 결성을 계기로 창립되었다(1927). 기관지 『근우』."},
+{id:"x15c",u:"s15",type:"short",q:"천도교 소년회를 이끌며 '어린이'라는 말을 보급하고 잡지 『어린이』를 펴낸 인물은?",c:["방정환"],a:null,e:"어린이날 제정에도 앞장섰다."},
+{id:"x16a",u:"s16",type:"mc5",q:"다음 주장을 편 역사학자로 옳은 것은?\n\n우리 조선의 역사적 발전의 전 과정은 …… 세계사적 일원론적 역사 법칙에 의해 다른 민족과 거의 같은 궤도로 발전 과정을 거쳐 왔다.",c:["백남운", "박은식", "신채호", "정인보", "주시경"],a:0,e:"사회 경제 사학 — 식민 사관의 정체성론을 반박하였다."},
+{id:"x16b",u:"s16",type:"boki",q:"조선어 학회에 대한 설명으로 옳은 것을 <보기>에서 고른 것은?",boki:["한글 맞춤법 통일안을 제정하였다.", "『조선말 큰사전』 편찬을 추진하였다.", "『진단학보』를 발행하였다.", "『한국통사』를 저술하였다."],c:["ㄱ, ㄴ", "ㄱ, ㄷ", "ㄴ, ㄷ", "ㄴ, ㄹ", "ㄷ, ㄹ"],a:0,e:"ㄷ은 진단 학회, ㄹ은 박은식."},
+{id:"x16c",u:"s16",type:"neg",q:"일제 강점기 민족 문화 수호 운동에 대한 설명으로 옳지 않은 것은?",c:["박은식은 '조선 국혼'을 강조하였다.", "신채호는 『조선상고사』를 저술하였다.", "정인보 등은 조선학 운동을 펼쳤다.", "실증 사학자들은 진단 학회를 조직하였다.", "백남운은 식민 사관의 타율성론을 계승하였다."],a:4,e:"백남운은 보편적 발전 법칙으로 정체성론을 반박하였다."},
+{id:"x16d",u:"s16",type:"mc5",q:"식민 사관 중 한국사가 사회적·경제적으로 발전 없이 정체되었다는 주장은?",c:["정체성론", "타율성론", "당파성론", "일선동조론", "내선일체론"],a:0,e:"타율성론 = 외세, 당파성론 = 단결 못 함."},
+{id:"x17a",u:"s17",type:"mc5",q:"1935년 난징에서 여러 독립운동 단체가 통합하여 결성한 중국 관내 최대 규모의 통일 전선 정당은?",c:["민족 혁명당", "한국 국민당", "한국 독립당", "신간회", "조선 독립 동맹"],a:0,e:"김구 등 임시 정부 옹호 세력은 참여하지 않았다."},
+{id:"x17b",u:"s17",type:"mc5",q:"조선 의용대에 대한 설명으로 옳은 것은?",c:["중국 관내에서 결성된 최초의 한인 부대이다.", "지청천을 총사령관으로 충칭에서 창설되었다.", "미국 OSS와 국내 진공 작전을 준비하였다.", "미얀마·인도 전선에 공작대를 파견하였다.", "여운형이 국내에서 조직하였다."],a:0,e:"조선 민족 전선 연맹이 우한에서 창설하였다(1938). ②~④는 한국광복군."},
+{id:"x17c",u:"s17",type:"order",q:"다음 사건을 일어난 순서대로 바르게 나열한 것은?\n(가) 조선 의용대 창설  (나) 민족 혁명당 결성  (다) 조선 의용대 화북 지대 결성  (라) 중일 전쟁 발발",c:["(나)-(라)-(가)-(다)", "(라)-(나)-(가)-(다)", "(나)-(가)-(라)-(다)", "(라)-(가)-(나)-(다)", "(가)-(나)-(라)-(다)"],a:0,e:"민족 혁명당(1935) → 중일 전쟁(1937) → 조선 의용대(1938) → 화북 지대(1941)."},
+{id:"x18a",u:"s18",type:"mc5",q:"다음 자료를 발표한 정부가 한 활동으로 옳은 것은?\n\n삼균 제도를 골자로 한 헌법을 실시하여 정치와 경제와 교육의 민주적 시설로 실제상 균형을 도모하며 ……",c:["한국광복군을 창설하였다.", "조선 의용군을 조직하였다.", "민족 혁명당을 결성하였다.", "6·10 만세 운동을 준비하였다.", "조선 건국 동맹을 조직하였다."],a:0,e:"대한민국 임시 정부의 건국 강령(1941) — 조소앙의 삼균주의."},
+{id:"x18b",u:"s18",type:"boki",q:"한국광복군에 대한 설명으로 옳은 것을 <보기>에서 고른 것은?",boki:["지청천을 총사령관으로 창설되었다.", "미얀마·인도 전선에 공작대를 파견하였다.", "김두봉을 위원장으로 하였다.", "중국 관내 최초의 한인 부대였다."],c:["ㄱ, ㄴ", "ㄱ, ㄷ", "ㄴ, ㄷ", "ㄴ, ㄹ", "ㄷ, ㄹ"],a:0,e:"ㄷ은 조선 독립 동맹, ㄹ은 조선 의용대."},
+{id:"x18c",u:"s18",type:"mc5",q:"광복 1년여 전 여운형의 주도로 국내에서 결성된 비밀 결사는?",c:["조선 건국 동맹", "조선 독립 동맹", "한국 독립당", "민족 혁명당", "신간회"],a:0,e:"민족주의·사회주의 계열 인사가 함께 참여하였다(1944)."},
+{id:"x18d",u:"s18",type:"order",q:"다음 사건을 일어난 순서대로 바르게 나열한 것은?\n(가) 포츠담 선언  (나) 카이로 선언  (다) 얄타 회담  (라) 한국광복군 창설",c:["(라)-(나)-(다)-(가)", "(나)-(라)-(다)-(가)", "(라)-(다)-(나)-(가)", "(나)-(다)-(라)-(가)", "(라)-(나)-(가)-(다)"],a:0,e:"광복군(1940) → 카이로(1943) → 얄타(1945. 2.) → 포츠담(1945. 7.)."},
+{id:"x18e",u:"s18",type:"short",q:"1943년 미국·영국·중국 정상이 처음으로 한국의 독립을 약속한 선언은?",c:["카이로 선언", "카이로선언"],a:null,e:"'적절한 시기에'라는 단서가 붙어 김구가 불만을 나타냈다."}
 ];
 
 
@@ -3921,7 +4114,7 @@ function vExamPick(){
     var pool=EXAM.filter(function(q){return !EP.units.length||EP.units.indexOf(q.u)>=0;});
     shuffleArr(pool);
     var n=EP.n||pool.length;
-    X={q:pool.slice(0,Math.min(n,pool.length)),i:0,ans:{},done:false};
+    X={q:pool.slice(0,Math.min(n,pool.length)).map(mixQ),i:0,ans:{},done:false};
     go("examRun");
   };
 }
@@ -4003,7 +4196,7 @@ function gradeExam(){
     var a=X.ans[q.id],good;
     if(q.type==="short")good=a!=null&&shortOk(a,q.c);
     else good=a===q.a;
-    if(good)ok++; else wAdd("EXAM","e",q.id,q.type==="short"?null:a);
+    if(good)ok++; else wAdd("EXAM","e",q.id,q.type==="short"?null:unmix(q,a));
     if(good)wClear("EXAM","e",q.id);
     var t=byType[q.type]||(byType[q.type]={n:0,ok:0});
     t.n++; if(good)t.ok++;
@@ -4351,7 +4544,17 @@ const UNITS=[
  {id:"s5",no:"02-1",name:"1910년대 국내외 독립운동",book:"20~21쪽",era:"국경을 넘은 사람들"},
  {id:"s6",no:"02-2",name:"3·1 운동",book:"22~25쪽",era:"만세의 봄"},
  {id:"s7",no:"02-3",name:"대한민국 임시 정부",book:"26~29쪽",era:"황제의 나라에서 국민의 나라로"},
- {id:"s8",no:"03-1",name:"무장 독립 전쟁",book:"30~33쪽",era:"봉오동에서 대전자령까지"}
+ {id:"s8",no:"03-1",name:"무장 독립 전쟁",book:"30~33쪽",era:"봉오동에서 대전자령까지"},
+ {id:"s9",no:"03-2",name:"의열 투쟁",book:"34~35쪽",era:"폭탄과 권총의 독립운동"},
+ {id:"s10",no:"03-3",name:"실력 양성 운동",book:"36~37쪽",era:"힘을 기르자는 사람들"},
+ {id:"s11",no:"03-4",name:"농민 운동과 노동 운동",book:"38~39쪽",era:"소작료와 총파업"},
+ {id:"s12",no:"03-5",name:"학생 항일 운동",book:"40~41쪽",era:"교실에서 거리로"},
+ {id:"s13",no:"03-6",name:"민족 유일당 운동과 신간회",book:"42~43쪽",era:"좌우가 손잡다"},
+ {id:"s14",no:"04-1",name:"사회 구조와 생활의 변화",book:"46~49쪽",era:"경성의 두 얼굴"},
+ {id:"s15",no:"04-2",name:"사회적 차별 철폐 운동",book:"50~51쪽",era:"저울처럼 평등하게"},
+ {id:"s16",no:"04-3",name:"민족 문화 수호 운동",book:"52~55쪽",era:"말과 글과 역사를 지키다"},
+ {id:"s17",no:"05-1",name:"항일 전선 통합과 무장 투쟁",book:"56~57쪽",era:"난징에서 타이항산까지"},
+ {id:"s18",no:"05-2",name:"광복을 위한 노력과 건국 준비",book:"58~61쪽",era:"충칭의 임시 정부"}
 ];
 
 /* 문제 데이터 — 이 배열만 갈아 끼우면 범위를 바꿀 수 있다 */
@@ -4744,7 +4947,204 @@ const QUESTIONS=[
 {id:"s8-kw4",unit:"s8",type:"keyword",question:"1920년대 중반 만주에 세워진 3부의 이름을 쓰세요.",choices:["참의부","정의부","신민부"],answer:null,explain:"남만주 참의부, 지린성 일대 정의부, 북만주 신민부. 사실상 공화주의 자치 정부였다.",era:"봉오동에서 대전자령까지"},
 {id:"s8-kw5",unit:"s8",type:"keyword",question:"1930년대 한중 연합 작전의 두 지휘관과 부대 하나를 쓰세요.",choices:["양세봉","지청천","조선 혁명군|한국 독립군|조선혁명군|한국독립군"],answer:null,explain:"양세봉의 조선 혁명군(영릉가·흥경성), 지청천의 한국 독립군(쌍성보·동경성·대전자령).",era:"봉오동에서 대전자령까지"},
 {id:"s1-kw1",unit:"s1",type:"keyword",question:"제1차 세계 대전 뒤 재편된 국제 질서와 관련된 낱말 셋을 쓰세요.",choices:["파리 강화 회의|파리강화회의|베르사유 조약|베르사유","민족 자결주의|민족자결|자결주의","워싱턴 회의|워싱턴회의|워싱턴"],answer:null,explain:"파리 강화 회의에서 베르사유 조약이 맺어지고, 윌슨의 민족 자결주의가 나왔으며, 워싱턴 회의로 동아시아 질서가 조정됐다.",era:"세계대전의 소용돌이"},
-{id:"s1-kw2",unit:"s1",type:"keyword",question:"일본이 침략 전쟁을 확대해 간 과정을 사건 셋으로 쓰세요.",choices:["만주 사변|만주사변","중일 전쟁|중일전쟁","아시아·태평양 전쟁|태평양 전쟁|진주만"],answer:null,explain:"만주 사변(1931) → 중일 전쟁(1937, 루거우차오) → 아시아·태평양 전쟁(1941, 진주만).",era:"세계대전의 소용돌이"}
+{id:"s1-kw2",unit:"s1",type:"keyword",question:"일본이 침략 전쟁을 확대해 간 과정을 사건 셋으로 쓰세요.",choices:["만주 사변|만주사변","중일 전쟁|중일전쟁","아시아·태평양 전쟁|태평양 전쟁|진주만"],answer:null,explain:"만주 사변(1931) → 중일 전쟁(1937, 루거우차오) → 아시아·태평양 전쟁(1941, 진주만).",era:"세계대전의 소용돌이"},
+/* ── 교과서 34~63쪽 (03-2 ~ 05-2) — 연표 스프린트와 같은 사실에서 뽑았다 ── */
+{id:"s9-00-ev",unit:"s9",type:"mc",question:"김원봉·윤세주 등이 만주 지린에서 조직한 비밀 단체로, 침략의 원흉과 친일 매국노를 암살하거나 식민 통치 기관을 파괴하였다.",choices:["의열단", "이봉창의 의거", "김익상의 의거", "황푸 군관 학교 입교"],answer:0,explain:"의열단 · 1919년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-00-bl",unit:"s9",type:"mc",question:"[의열단] 김원봉·윤세주 등이 만주 　____　에서 조직한 비밀 단체로, 침략의 원흉과 친일 매국노를 암살하거나 식민 통치 기관을 파괴하였다.",choices:["지린", "동양 척식 주식회사", "김구", "훙커우 공원"],answer:0,explain:"의열단 · 1919년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-01-ev",unit:"s9",type:"mc",question:"강우규가 경성 남대문역에서 새로 부임하는 총독에게 폭탄을 던졌다. 의열단이 아닌 개인 의열 투쟁이다.",choices:["한인 애국단", "강우규의 의거", "나석주의 의거", "상하이 사변"],answer:1,explain:"강우규의 의거 · 1919년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-01-bl",unit:"s9",type:"mc",question:"[강우규의 의거] 강우규가 경성 　____　에서 새로 부임하는 총독에게 폭탄을 던졌다. 의열단이 아닌 개인 의열 투쟁이다.",choices:["훙커우 공원", "신채호", "남대문역", "종로 경찰서"],answer:2,explain:"강우규의 의거 · 1919년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-02-ev",unit:"s9",type:"mc",question:"의열단원 김익상이 국내에 잠입하여 조선 총독부에 폭탄을 던졌다.",choices:["김익상의 의거", "강우규의 의거", "의열단", "조선 혁명 간부 학교"],answer:0,explain:"김익상의 의거 · 1921년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-02-bl",unit:"s9",type:"mc",question:"[김익상의 의거] 의열단원 김익상이 국내에 잠입하여 　____　에 폭탄을 던졌다.",choices:["훙커우 공원", "조선 총독부", "신채호", "개인 의열 투쟁"],answer:1,explain:"김익상의 의거 · 1921년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-03-ev",unit:"s9",type:"mc",question:"김원봉의 요청으로 신채호가 작성한 의열단의 활동 지침으로, 외교론과 실력 양성론을 비판하고 민중 직접 혁명을 주장하였다.",choices:["의열단", "강우규의 의거", "상하이 사변", "조선 혁명 선언"],answer:3,explain:"조선 혁명 선언 · 1923년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-03-bl",unit:"s9",type:"mc",question:"[조선 혁명 선언] 김원봉의 요청으로 　____　가 작성한 의열단의 활동 지침으로, 외교론과 실력 양성론을 비판하고 민중 직접 혁명을 주장하였다.",choices:["훙커우 공원", "신채호", "국민당", "남대문역"],answer:1,explain:"조선 혁명 선언 · 1923년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-04-ev",unit:"s9",type:"mc",question:"의열단원 김상옥이 종로 경찰서에 폭탄을 던졌다.",choices:["김상옥의 의거", "강우규의 의거", "의열단", "나석주의 의거"],answer:0,explain:"김상옥의 의거 · 1923년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-04-bl",unit:"s9",type:"mc",question:"[김상옥의 의거] 의열단원 김상옥이 　____　에 폭탄을 던졌다.",choices:["신채호", "조선 총독부", "김구", "종로 경찰서"],answer:3,explain:"김상옥의 의거 · 1923년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-05-ev",unit:"s9",type:"mc",question:"의열단원 나석주가 동양 척식 주식회사에 폭탄을 던지고 권총을 쏘아 일본인을 살상하였다.",choices:["한인 애국단", "나석주의 의거", "윤봉길의 의거", "조선 혁명 선언"],answer:1,explain:"나석주의 의거 · 1926년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-05-bl",unit:"s9",type:"mc",question:"[나석주의 의거] 의열단원 나석주가 　____　에 폭탄을 던지고 권총을 쏘아 일본인을 살상하였다.",choices:["동양 척식 주식회사", "개인 의열 투쟁", "국민당", "김구"],answer:0,explain:"나석주의 의거 · 1926년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-06-ev",unit:"s9",type:"mc",question:"개인 의열 투쟁의 한계를 느낀 의열단원들이 중국 국민당 정부가 운영하는 황푸 군관 학교에 들어가 정규 군사 훈련을 받았다.",choices:["김상옥의 의거", "김익상의 의거", "윤봉길의 의거", "황푸 군관 학교 입교"],answer:3,explain:"황푸 군관 학교 입교 · 1926년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-06-bl",unit:"s9",type:"mc",question:"[황푸 군관 학교 입교] 　____　의 한계를 느낀 의열단원들이 중국 국민당 정부가 운영하는 황푸 군관 학교에 들어가 정규 군사 훈련을 받았다.",choices:["훙커우 공원", "개인 의열 투쟁", "조선 총독부", "신채호"],answer:1,explain:"황푸 군관 학교 입교 · 1926년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-07-ev",unit:"s9",type:"mc",question:"국민 대표 회의 결렬 뒤 침체된 대한민국 임시 정부에 활기를 불어넣으려고 김구가 조직하였다.",choices:["한인 애국단", "이봉창의 의거", "나석주의 의거", "조선 혁명 간부 학교"],answer:0,explain:"한인 애국단 · 1931년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-07-bl",unit:"s9",type:"mc",question:"[한인 애국단] 국민 대표 회의 결렬 뒤 침체된 대한민국 임시 정부에 활기를 불어넣으려고 　____　가 조직하였다.",choices:["김구", "지린", "도쿄", "동양 척식 주식회사"],answer:0,explain:"한인 애국단 · 1931년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-08-ev",unit:"s9",type:"mc",question:"한인 애국단의 첫 거사로 이봉창이 도쿄에서 일왕의 마차를 향해 폭탄을 던졌다. 실패하였지만 일본에 큰 충격을 주었다.",choices:["이봉창의 의거", "나석주의 의거", "조선 혁명 간부 학교", "황푸 군관 학교 입교"],answer:0,explain:"이봉창의 의거 · 1932년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-08-bl",unit:"s9",type:"mc",question:"[이봉창의 의거] 한인 애국단의 첫 거사로 이봉창이 　____　에서 일왕의 마차를 향해 폭탄을 던졌다. 실패하였지만 일본에 큰 충격을 주었다.",choices:["훙커우 공원", "도쿄", "종로 경찰서", "국민당"],answer:1,explain:"이봉창의 의거 · 1932년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-09-ev",unit:"s9",type:"mc",question:"일제가 이봉창 의거를 보도한 중국 언론의 반일적 태도 등을 구실로 상하이를 침략하였다.",choices:["김상옥의 의거", "조선 혁명 선언", "상하이 사변", "김익상의 의거"],answer:2,explain:"상하이 사변 · 1932년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-09-bl",unit:"s9",type:"mc",question:"[상하이 사변] 일제가 이봉창 의거를 보도한 　____　의 반일적 태도 등을 구실로 상하이를 침략하였다.",choices:["김구", "중국 언론", "조선 총독부", "개인 의열 투쟁"],answer:1,explain:"상하이 사변 · 1932년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-10-ev",unit:"s9",type:"mc",question:"한인 애국단원 윤봉길이 상하이 훙커우 공원 기념식 단상에 폭탄을 던져 일본군 장성과 고관을 처단하였다. 중국 국민당 정부가 한국 독립운동을 적극 지원하는 계기가 되었다.",choices:["한인 애국단", "윤봉길의 의거", "강우규의 의거", "조선 혁명 선언"],answer:1,explain:"윤봉길의 의거 · 1932년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-10-bl",unit:"s9",type:"mc",question:"[윤봉길의 의거] 한인 애국단원 윤봉길이 상하이 　____　 기념식 단상에 폭탄을 던져 일본군 장성과 고관을 처단하였다. 중국 국민당 정부가 한국 독립운동을 적극 지원하는 계기가 되었다.",choices:["훙커우 공원", "김구", "지린", "동양 척식 주식회사"],answer:0,explain:"윤봉길의 의거 · 1932년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-11-ev",unit:"s9",type:"mc",question:"의열단이 중국 국민당 정부의 지원을 받아 세운 학교로, 독립군을 양성하였다.",choices:["조선 혁명 간부 학교", "조선 혁명 선언", "나석주의 의거", "김상옥의 의거"],answer:0,explain:"조선 혁명 간부 학교 · 1932년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-11-bl",unit:"s9",type:"mc",question:"[조선 혁명 간부 학교] 의열단이 중국 　____　 정부의 지원을 받아 세운 학교로, 독립군을 양성하였다.",choices:["남대문역", "국민당", "김구", "신채호"],answer:1,explain:"조선 혁명 간부 학교 · 1932년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-ox00",unit:"s9",type:"ox",question:"의열단은 김구가 상하이에서 조직하였다.",choices:["O", "X"],answer:1,explain:"의열단은 김원봉이 만주 지린에서(1919). 김구가 만든 건 한인 애국단(1931)이다.",era:"폭탄과 권총의 독립운동"},
+{id:"s9-ox01",unit:"s9",type:"ox",question:"「조선 혁명 선언」은 신채호가 작성한 의열단의 활동 지침이다.",choices:["O", "X"],answer:0,explain:"맞다. 외교론·실력 양성론을 비판하고 민중 직접 혁명을 주장했다.",era:"폭탄과 권총의 독립운동"},
+{id:"s9-ox02",unit:"s9",type:"ox",question:"이봉창은 상하이 훙커우 공원에서 폭탄을 던졌다.",choices:["O", "X"],answer:1,explain:"이봉창은 도쿄에서 일왕 마차에. 훙커우 공원은 윤봉길이다.",era:"폭탄과 권총의 독립운동"},
+{id:"s9-ox03",unit:"s9",type:"ox",question:"윤봉길 의거는 중국 국민당 정부가 한국 독립운동을 적극 지원하는 계기가 되었다.",choices:["O", "X"],answer:0,explain:"맞다. 한중 공동 항일 전선 구축에도 영향을 주었다.",era:"폭탄과 권총의 독립운동"},
+{id:"s9-ox04",unit:"s9",type:"ox",question:"강우규는 의열단원으로서 총독에게 폭탄을 던졌다.",choices:["O", "X"],answer:1,explain:"강우규의 남대문역 의거(1919)는 개인 의열 투쟁이다.",era:"폭탄과 권총의 독립운동"},
+{id:"s9-ox05",unit:"s9",type:"ox",question:"1920년대 후반 의열단원들은 황푸 군관 학교에서 정규 군사 훈련을 받았다.",choices:["O", "X"],answer:0,explain:"맞다. 개인 의열 투쟁의 한계를 느끼고 조직적 무장 투쟁으로 방향을 바꿨다.",era:"폭탄과 권총의 독립운동"},
+{id:"s9-od1",unit:"s9",type:"order",question:"일어난 순서대로 놓으세요",choices:["1919|의열단 조직", "1926|나석주의 동척 폭탄 투척", "1931|한인 애국단 조직", "1932|윤봉길의 훙커우 공원 의거"],answer:null,explain:"개인 의열 투쟁에서 한인 애국단, 그리고 중국의 지원으로 이어진다.",era:"폭탄과 권총의 독립운동"},
+{id:"s10-00-ev",unit:"s10",type:"mc",question:"조만식의 주도로 평양에서 시작되어 전국으로 퍼졌다. '내 살림 내 것으로', '조선 사람 조선 것'을 내세워 토산품 애용과 근검저축, 금주·단연을 주장하였다.",choices:["브나로드 운동", "물산 장려 운동", "자치 운동", "문자 보급 운동"],answer:1,explain:"물산 장려 운동 · 1920년",era:"힘을 기르자는 사람들"},
+{id:"s10-00-bl",unit:"s10",type:"mc",question:"[물산 장려 운동] 　____　의 주도로 평양에서 시작되어 전국으로 퍼졌다. '내 살림 내 것으로', '조선 사람 조선 것'을 내세워 토산품 애용과 근검저축, 금주·단연을 주장하였다.",choices:["동아일보", "조선일보", "조선 민립 대학 기성회", "조만식"],answer:3,explain:"물산 장려 운동 · 1920년",era:"힘을 기르자는 사람들"},
+{id:"s10-01-ev",unit:"s10",type:"mc",question:"이상재·이승훈 등이 조직한 조선 민립 대학 기성회가 1천만 원을 모으려 전국적인 모금 운동을 펼쳤으나, 자연재해와 일제의 탄압으로 성과를 거두지 못하였다.",choices:["민립 대학 설립 운동", "물산 장려 운동에 대한 비판", "브나로드 운동", "물산 장려 운동"],answer:0,explain:"민립 대학 설립 운동 · 1923년",era:"힘을 기르자는 사람들"},
+{id:"s10-01-bl",unit:"s10",type:"mc",question:"[민립 대학 설립 운동] 이상재·이승훈 등이 조직한 　____　가 1천만 원을 모으려 전국적인 모금 운동을 펼쳤으나, 자연재해와 일제의 탄압으로 성과를 거두지 못하였다.",choices:["동아일보", "이광수", "사회주의자", "조선 민립 대학 기성회"],answer:3,explain:"민립 대학 설립 운동 · 1923년",era:"힘을 기르자는 사람들"},
+{id:"s10-02-ev",unit:"s10",type:"mc",question:"토산품 값이 폭등하는 문제가 나타났고, 일부 사회주의자는 자본가 계급의 이익만을 도모하는 운동이라고 비판하였다.",choices:["브나로드 운동", "민립 대학 설립 운동", "물산 장려 운동", "물산 장려 운동에 대한 비판"],answer:3,explain:"물산 장려 운동에 대한 비판 · 1923년",era:"힘을 기르자는 사람들"},
+{id:"s10-02-bl",unit:"s10",type:"mc",question:"[물산 장려 운동에 대한 비판] 토산품 값이 폭등하는 문제가 나타났고, 일부 　____　는 자본가 계급의 이익만을 도모하는 운동이라고 비판하였다.",choices:["조선 민립 대학 기성회", "동아일보", "조선일보", "사회주의자"],answer:3,explain:"물산 장려 운동에 대한 비판 · 1923년",era:"힘을 기르자는 사람들"},
+{id:"s10-03-ev",unit:"s10",type:"mc",question:"이광수·최린·김성수 등이 일제의 식민 지배를 인정하고 그 안에서 자치권과 참정권을 얻으려 한 타협적 운동으로, 일제의 민족 분열 정책에 이용만 당하였다.",choices:["자치 운동", "브나로드 운동", "물산 장려 운동", "문자 보급 운동"],answer:0,explain:"자치 운동 · 1924년",era:"힘을 기르자는 사람들"},
+{id:"s10-03-bl",unit:"s10",type:"mc",question:"[자치 운동] 　____　·최린·김성수 등이 일제의 식민 지배를 인정하고 그 안에서 자치권과 참정권을 얻으려 한 타협적 운동으로, 일제의 민족 분열 정책에 이용만 당하였다.",choices:["이광수", "조선 민립 대학 기성회", "조만식", "동아일보"],answer:0,explain:"자치 운동 · 1924년",era:"힘을 기르자는 사람들"},
+{id:"s10-04-ev",unit:"s10",type:"mc",question:"『조선일보』가 '아는 것이 힘, 배워야 산다'를 구호로 한글 교재를 보급하고 전국 순회강연을 열었다.",choices:["문자 보급 운동", "자치 운동", "물산 장려 운동", "물산 장려 운동에 대한 비판"],answer:0,explain:"문자 보급 운동 · 1929년",era:"힘을 기르자는 사람들"},
+{id:"s10-04-bl",unit:"s10",type:"mc",question:"[문자 보급 운동] 『　____　』가 '아는 것이 힘, 배워야 산다'를 구호로 한글 교재를 보급하고 전국 순회강연을 열었다.",choices:["이광수", "조선 민립 대학 기성회", "조선일보", "조만식"],answer:2,explain:"문자 보급 운동 · 1929년",era:"힘을 기르자는 사람들"},
+{id:"s10-05-ev",unit:"s10",type:"mc",question:"『동아일보』가 벌인 농촌 계몽 운동으로, 학생과 청년이 농촌을 찾아가 글을 가르치고 미신 타파와 근검절약을 강조하였다.",choices:["물산 장려 운동", "자치 운동", "물산 장려 운동에 대한 비판", "브나로드 운동"],answer:3,explain:"브나로드 운동 · 1931년",era:"힘을 기르자는 사람들"},
+{id:"s10-05-bl",unit:"s10",type:"mc",question:"[브나로드 운동] 『　____　』가 벌인 농촌 계몽 운동으로, 학생과 청년이 농촌을 찾아가 글을 가르치고 미신 타파와 근검절약을 강조하였다.",choices:["조만식", "사회주의자", "조선 민립 대학 기성회", "동아일보"],answer:3,explain:"브나로드 운동 · 1931년",era:"힘을 기르자는 사람들"},
+{id:"s10-ox00",unit:"s10",type:"ox",question:"물산 장려 운동은 조만식의 주도로 평양에서 시작되었다.",choices:["O", "X"],answer:0,explain:"맞다. '내 살림 내 것으로', '조선 사람 조선 것'.",era:"힘을 기르자는 사람들"},
+{id:"s10-ox01",unit:"s10",type:"ox",question:"물산 장려 운동은 사회주의자들로부터 자본가 계급의 이익만 좇는다는 비판을 받았다.",choices:["O", "X"],answer:0,explain:"맞다. 토산품 값이 폭등하는 문제도 나타났다.",era:"힘을 기르자는 사람들"},
+{id:"s10-ox02",unit:"s10",type:"ox",question:"민립 대학 설립 운동은 목표한 1천만 원을 모아 대학 설립에 성공하였다.",choices:["O", "X"],answer:1,explain:"모금이 저조했고 일제가 정치 운동이라며 탄압해 성과를 거두지 못했다.",era:"힘을 기르자는 사람들"},
+{id:"s10-ox03",unit:"s10",type:"ox",question:"브나로드 운동은 『조선일보』가 주도하였다.",choices:["O", "X"],answer:1,explain:"브나로드는 『동아일보』(1931). 『조선일보』는 문자 보급 운동(1929)이다.",era:"힘을 기르자는 사람들"},
+{id:"s10-ox04",unit:"s10",type:"ox",question:"자치 운동은 일제의 지배를 인정하는 타협적 운동이었다.",choices:["O", "X"],answer:0,explain:"맞다. 이광수·최린·김성수 등. 일제의 민족 분열 정책에 이용만 당했다.",era:"힘을 기르자는 사람들"},
+{id:"s10-od1",unit:"s10",type:"order",question:"일어난 순서대로 놓으세요",choices:["1920|물산 장려 운동 시작", "1923|조선 민립 대학 기성회 조직", "1929|문자 보급 운동", "1931|브나로드 운동"],answer:null,explain:"물·민·문 — 산업, 교육, 문맹 퇴치 순서다.",era:"힘을 기르자는 사람들"},
+{id:"s11-00-ev",unit:"s11",type:"mc",question:"고율의 소작료를 징수하는 지주의 횡포에 맞서 1년여 투쟁한 끝에 소작료 인하를 이끌어 낸 1920년대의 대표적 소작 쟁의이다.",choices:["조선 노동 총동맹", "조선 농민 총동맹", "원산 총파업", "암태도 소작 쟁의"],answer:3,explain:"암태도 소작 쟁의 · 1923년",era:"소작료와 총파업"},
+{id:"s11-00-bl",unit:"s11",type:"mc",question:"[암태도 소작 쟁의] 고율의 소작료를 징수하는 　____　의 횡포에 맞서 1년여 투쟁한 끝에 소작료 인하를 이끌어 낸 1920년대의 대표적 소작 쟁의이다.",choices:["비합법적", "지주", "4개월", "농민 조합"],answer:1,explain:"암태도 소작 쟁의 · 1923년",era:"소작료와 총파업"},
+{id:"s11-01-ev",unit:"s11",type:"mc",question:"사회주의 운동의 영향으로 농민 조합이 활발히 조직되면서 결성된 전국적 농민 운동 단체이다.",choices:["암태도 소작 쟁의", "혁명적 농민·노동 조합", "조선 농민 총동맹", "원산 총파업"],answer:2,explain:"조선 농민 총동맹 · 1927년",era:"소작료와 총파업"},
+{id:"s11-01-bl",unit:"s11",type:"mc",question:"[조선 농민 총동맹] 사회주의 운동의 영향으로 　____　이 활발히 조직되면서 결성된 전국적 농민 운동 단체이다.",choices:["지주", "비합법적", "농민 조합", "노동 쟁의"],answer:2,explain:"조선 농민 총동맹 · 1927년",era:"소작료와 총파업"},
+{id:"s11-02-ev",unit:"s11",type:"mc",question:"노동 쟁의 발생 건수와 참여 노동자가 크게 늘면서 결성된 전국 규모의 노동 운동 단체이다.",choices:["조선 농민 총동맹", "혁명적 농민·노동 조합", "조선 노동 총동맹", "암태도 소작 쟁의"],answer:2,explain:"조선 노동 총동맹 · 1927년",era:"소작료와 총파업"},
+{id:"s11-02-bl",unit:"s11",type:"mc",question:"[조선 노동 총동맹] 　____　 발생 건수와 참여 노동자가 크게 늘면서 결성된 전국 규모의 노동 운동 단체이다.",choices:["노동 쟁의", "4개월", "농민 조합", "지주"],answer:0,explain:"조선 노동 총동맹 · 1927년",era:"소작료와 총파업"},
+{id:"s11-03-ev",unit:"s11",type:"mc",question:"일본인 감독이 한국인 노동자를 구타한 일을 계기로 시작되어 4개월여 이어진, 일제 강점기 최대 규모의 노동 운동이자 반제국주의 항일 운동이다.",choices:["혁명적 농민·노동 조합", "원산 총파업", "조선 농민 총동맹", "암태도 소작 쟁의"],answer:1,explain:"원산 총파업 · 1929년",era:"소작료와 총파업"},
+{id:"s11-03-bl",unit:"s11",type:"mc",question:"[원산 총파업] 일본인 감독이 한국인 노동자를 구타한 일을 계기로 시작되어 　____　여 이어진, 일제 강점기 최대 규모의 노동 운동이자 반제국주의 항일 운동이다.",choices:["농민 조합", "비합법적", "4개월", "지주"],answer:2,explain:"원산 총파업 · 1929년",era:"소작료와 총파업"},
+{id:"s11-04-ev",unit:"s11",type:"mc",question:"대공황으로 생활이 더 어려워지자 농민과 노동자가 사회주의 세력과 연대해 혁명적 조합을 만들고 비합법적 폭력 투쟁으로 일제에 맞섰다.",choices:["원산 총파업", "조선 농민 총동맹", "조선 노동 총동맹", "혁명적 농민·노동 조합"],answer:3,explain:"혁명적 농민·노동 조합 · 1931년",era:"소작료와 총파업"},
+{id:"s11-04-bl",unit:"s11",type:"mc",question:"[혁명적 농민·노동 조합] 대공황으로 생활이 더 어려워지자 농민과 노동자가 사회주의 세력과 연대해 혁명적 조합을 만들고 　____　 폭력 투쟁으로 일제에 맞섰다.",choices:["노동 쟁의", "지주", "비합법적", "농민 조합"],answer:2,explain:"혁명적 농민·노동 조합 · 1931년",era:"소작료와 총파업"},
+{id:"s11-ox00",unit:"s11",type:"ox",question:"암태도 소작 쟁의는 소작료 인하를 이끌어 냈다.",choices:["O", "X"],answer:0,explain:"맞다. 1년여 투쟁 끝에 지주가 소작인회의 요구를 받아들였다.",era:"소작료와 총파업"},
+{id:"s11-ox01",unit:"s11",type:"ox",question:"원산 총파업은 일제 강점기 최대 규모의 노동 운동이다.",choices:["O", "X"],answer:0,explain:"맞다. 4개월여 이어졌고 국내외 노동 단체가 지원했다.",era:"소작료와 총파업"},
+{id:"s11-ox02",unit:"s11",type:"ox",question:"1930년대 농민·노동 운동은 합법적인 온건 노선으로 바뀌었다.",choices:["O", "X"],answer:1,explain:"반대다. 혁명적 조합을 만들어 비합법적 폭력 투쟁으로 급진화했다.",era:"소작료와 총파업"},
+{id:"s11-ox03",unit:"s11",type:"ox",question:"한국인 노동자는 일본인 노동자보다 임금을 더 많이 받았다.",choices:["O", "X"],answer:1,explain:"장시간 노동에도 임금은 일본인의 절반에도 못 미쳤다.",era:"소작료와 총파업"},
+{id:"s12-00-ev",unit:"s12",type:"mc",question:"3·1 운동에서 항일 투쟁의 주체임을 자각한 청년들의 운동을 통일적으로 이끌려고 결성되었다.",choices:["성진회", "6·10 만세 운동", "광주 학생 항일 운동", "조선 청년 총동맹"],answer:3,explain:"조선 청년 총동맹 · 1924년",era:"교실에서 거리로"},
+{id:"s12-00-bl",unit:"s12",type:"mc",question:"[조선 청년 총동맹] 3·1 운동에서 항일 투쟁의 주체임을 자각한 청년들의 운동을 　____　으로 이끌려고 결성되었다.",choices:["통일적", "순종", "독서회", "나주역"],answer:0,explain:"조선 청년 총동맹 · 1924년",era:"교실에서 거리로"},
+{id:"s12-01-ev",unit:"s12",type:"mc",question:"순종의 장례일에 학생들이 서울 곳곳에서 격문을 뿌리고 만세를 외쳤다. 준비 과정에서 사회주의 계열과 천도교가 연대한 경험이 민족 협동 전선의 공감대를 만들었다.",choices:["광주 학생 항일 운동", "조선 청년 총동맹", "성진회", "6·10 만세 운동"],answer:3,explain:"6·10 만세 운동 · 1926년",era:"교실에서 거리로"},
+{id:"s12-01-bl",unit:"s12",type:"mc",question:"[6·10 만세 운동] 　____　의 장례일에 학생들이 서울 곳곳에서 격문을 뿌리고 만세를 외쳤다. 준비 과정에서 사회주의 계열과 천도교가 연대한 경험이 민족 협동 전선의 공감대를 만들었다.",choices:["순종", "통일적", "독서회", "나주역"],answer:0,explain:"6·10 만세 운동 · 1926년",era:"교실에서 거리로"},
+{id:"s12-02-ev",unit:"s12",type:"mc",question:"광주에서 조직된 학생 비밀 결사로, 뒤에 학교별 독서회로 이어져 광주 학생 항일 운동을 이끌었다.",choices:["조선 청년 총동맹", "성진회", "광주 학생 항일 운동", "6·10 만세 운동"],answer:1,explain:"성진회 · 1926년",era:"교실에서 거리로"},
+{id:"s12-02-bl",unit:"s12",type:"mc",question:"[성진회] 광주에서 조직된 학생 비밀 결사로, 뒤에 학교별 　____　로 이어져 광주 학생 항일 운동을 이끌었다.",choices:["나주역", "순종", "통일적", "독서회"],answer:3,explain:"성진회 · 1926년",era:"교실에서 거리로"},
+{id:"s12-03-ev",unit:"s12",type:"mc",question:"나주역에서 일어난 한·일 학생 충돌을 계기로 광주 학생들이 11월 3일 대규모 가두시위를 벌였고, 신간회 등의 노력으로 전국으로 퍼졌다. 3·1 운동 이후 최대 규모의 항일 민족 운동이다.",choices:["성진회", "6·10 만세 운동", "조선 청년 총동맹", "광주 학생 항일 운동"],answer:3,explain:"광주 학생 항일 운동 · 1929년",era:"교실에서 거리로"},
+{id:"s12-03-bl",unit:"s12",type:"mc",question:"[광주 학생 항일 운동] 　____　에서 일어난 한·일 학생 충돌을 계기로 광주 학생들이 11월 3일 대규모 가두시위를 벌였고, 신간회 등의 노력으로 전국으로 퍼졌다. 3·1 운동 이후 최대 규모의 항일 민족 운동이다.",choices:["순종", "통일적", "나주역", "독서회"],answer:2,explain:"광주 학생 항일 운동 · 1929년",era:"교실에서 거리로"},
+{id:"s12-ox00",unit:"s12",type:"ox",question:"6·10 만세 운동은 고종의 장례일을 계기로 일어났다.",choices:["O", "X"],answer:1,explain:"순종의 장례일(1926)이다. 고종의 장례는 3·1 운동의 계기.",era:"교실에서 거리로"},
+{id:"s12-ox01",unit:"s12",type:"ox",question:"6·10 만세 운동 준비 과정에서 사회주의 계열과 천도교가 연대하였다.",choices:["O", "X"],answer:0,explain:"맞다. 이 경험이 민족 협동 전선(신간회)의 공감대로 이어졌다.",era:"교실에서 거리로"},
+{id:"s12-ox02",unit:"s12",type:"ox",question:"광주 학생 항일 운동은 3·1 운동 이후 최대 규모의 항일 민족 운동이다.",choices:["O", "X"],answer:0,explain:"맞다(1929).",era:"교실에서 거리로"},
+{id:"s12-ox03",unit:"s12",type:"ox",question:"광주 학생 항일 운동은 광주 지역에만 머물렀다.",choices:["O", "X"],answer:1,explain:"신간회 등의 노력으로 전국으로, 만주 등 국외로도 퍼졌다.",era:"교실에서 거리로"},
+{id:"s12-od1",unit:"s12",type:"order",question:"일어난 순서대로 놓으세요",choices:["1924|조선 청년 총동맹 결성", "1926|6·10 만세 운동", "1927|신간회 창립", "1929|광주 학생 항일 운동"],answer:null,explain:"6·10 만세 운동의 연대 경험이 신간회를 낳고, 신간회가 광주 학생 운동을 지원한다.",era:"교실에서 거리로"},
+{id:"s13-00-ev",unit:"s13",type:"mc",question:"중국의 국민당과 공산당이 손잡은 일로, 민족 유일당 운동에 영향을 주었다.",choices:["제1차 국공 합작", "정우회 선언", "신간회의 진상 조사단 파견", "신간회 해소"],answer:0,explain:"제1차 국공 합작 · 1924년",era:"좌우가 손잡다"},
+{id:"s13-00-bl",unit:"s13",type:"mc",question:"[제1차 국공 합작] 중국의 국민당과 　____　이 손잡은 일로, 민족 유일당 운동에 영향을 주었다.",choices:["전체 대회", "합법적", "공산당", "민중 대회"],answer:2,explain:"제1차 국공 합작 · 1924년",era:"좌우가 손잡다"},
+{id:"s13-01-ev",unit:"s13",type:"mc",question:"치안 유지법으로 탄압받던 사회주의 진영이 6·10 만세 운동 이후 민족주의 진영과 손잡고 합법적 활동 공간을 확보하자고 밝힌 선언이다.",choices:["제1차 국공 합작", "신간회 해소", "정우회 선언", "신간회의 진상 조사단 파견"],answer:2,explain:"정우회 선언 · 1926년",era:"좌우가 손잡다"},
+{id:"s13-01-bl",unit:"s13",type:"mc",question:"[정우회 선언] 치안 유지법으로 탄압받던 사회주의 진영이 6·10 만세 운동 이후 민족주의 진영과 손잡고 　____　 활동 공간을 확보하자고 밝힌 선언이다.",choices:["공산당", "민중 대회", "합법적", "140개"],answer:2,explain:"정우회 선언 · 1926년",era:"좌우가 손잡다"},
+{id:"s13-02-ev",unit:"s13",type:"mc",question:"비타협적 민족주의자와 사회주의자가 함께 만든 일제 강점기 최대 규모의 항일 단체로, 약 140개 지회와 4만여 명의 회원을 두었다.",choices:["제1차 국공 합작", "신간회 해소", "정우회 선언", "신간회"],answer:3,explain:"신간회 · 1927년",era:"좌우가 손잡다"},
+{id:"s13-02-bl",unit:"s13",type:"mc",question:"[신간회] 비타협적 민족주의자와 사회주의자가 함께 만든 일제 강점기 최대 규모의 항일 단체로, 약 　____　 지회와 4만여 명의 회원을 두었다.",choices:["전체 대회", "합법적", "공산당", "140개"],answer:3,explain:"신간회 · 1927년",era:"좌우가 손잡다"},
+{id:"s13-03-ev",unit:"s13",type:"mc",question:"광주 학생 항일 운동이 일어나자 진상 조사단을 보내고 대규모 민중 대회를 추진하였으나, 일제의 탄압으로 집행부 대부분이 구속되었다.",choices:["신간회", "신간회 해소", "신간회의 진상 조사단 파견", "제1차 국공 합작"],answer:2,explain:"신간회의 진상 조사단 파견 · 1929년",era:"좌우가 손잡다"},
+{id:"s13-03-bl",unit:"s13",type:"mc",question:"[신간회의 진상 조사단 파견] 광주 학생 항일 운동이 일어나자 진상 조사단을 보내고 대규모 　____　를 추진하였으나, 일제의 탄압으로 집행부 대부분이 구속되었다.",choices:["민중 대회", "합법적", "전체 대회", "140개"],answer:0,explain:"신간회의 진상 조사단 파견 · 1929년",era:"좌우가 손잡다"},
+{id:"s13-04-ev",unit:"s13",type:"mc",question:"새 집행부의 타협적 태도와 국제 공산주의 운동의 노선 변화 속에서 사회주의자들이 전체 대회를 열어 해소를 결정하였다.",choices:["신간회 해소", "제1차 국공 합작", "신간회의 진상 조사단 파견", "정우회 선언"],answer:0,explain:"신간회 해소 · 1931년",era:"좌우가 손잡다"},
+{id:"s13-04-bl",unit:"s13",type:"mc",question:"[신간회 해소] 새 집행부의 타협적 태도와 국제 공산주의 운동의 노선 변화 속에서 사회주의자들이 　____　를 열어 해소를 결정하였다.",choices:["공산당", "전체 대회", "합법적", "민중 대회"],answer:1,explain:"신간회 해소 · 1931년",era:"좌우가 손잡다"},
+{id:"s13-ox00",unit:"s13",type:"ox",question:"신간회는 비밀 결사로 조직되었다.",choices:["O", "X"],answer:1,explain:"신간회는 합법 단체다.",era:"좌우가 손잡다"},
+{id:"s13-ox01",unit:"s13",type:"ox",question:"신간회는 비타협적 민족주의자와 사회주의자가 함께 만들었다.",choices:["O", "X"],answer:0,explain:"맞다. 강령에 '기회주의를 일체 부인함'.",era:"좌우가 손잡다"},
+{id:"s13-ox02",unit:"s13",type:"ox",question:"정우회 선언은 민족주의 진영이 사회주의 진영에 연대를 제안한 선언이다.",choices:["O", "X"],answer:1,explain:"거꾸로다. 사회주의 진영이 민족주의 진영과 손잡자고 한 선언이다.",era:"좌우가 손잡다"},
+{id:"s13-ox03",unit:"s13",type:"ox",question:"신간회는 일제의 강제 해산 명령으로 해체되었다.",choices:["O", "X"],answer:1,explain:"사회주의자들이 전체 대회에서 스스로 해소를 결정했다(1931).",era:"좌우가 손잡다"},
+{id:"s13-ox04",unit:"s13",type:"ox",question:"신간회는 광주 학생 항일 운동이 일어나자 진상 조사단을 파견하였다.",choices:["O", "X"],answer:0,explain:"맞다. 민중 대회도 추진했으나 탄압으로 무산됐다.",era:"좌우가 손잡다"},
+{id:"s13-od1",unit:"s13",type:"order",question:"일어난 순서대로 놓으세요",choices:["1924|제1차 국공 합작", "1926|정우회 선언", "1927|신간회 창립", "1931|신간회 해소"],answer:null,explain:"국공 합작 → 사회주의의 손 내밀기 → 좌우 합작 → 해소.",era:"좌우가 손잡다"},
+{id:"s14-00-ev",unit:"s14",type:"mc",question:"도쿄 부근 대지진 때 일본 당국과 언론이 유언비어를 퍼뜨려 사회 불안을 한국인 탓으로 돌렸고, 재일 한국인 6,000명 이상이 학살되었다.",choices:["관동 대지진 한국인 학살", "「운수 좋은 날」", "농촌 진흥 운동", "영화 「아리랑」"],answer:0,explain:"관동 대지진 한국인 학살 · 1923년",era:"경성의 두 얼굴"},
+{id:"s14-00-bl",unit:"s14",type:"mc",question:"[관동 대지진 한국인 학살] 도쿄 부근 대지진 때 일본 당국과 언론이 　____　를 퍼뜨려 사회 불안을 한국인 탓으로 돌렸고, 재일 한국인 6,000명 이상이 학살되었다.",choices:["중앙아시아", "인력거꾼", "유언비어", "통제"],answer:2,explain:"관동 대지진 한국인 학살 · 1923년",era:"경성의 두 얼굴"},
+{id:"s14-01-ev",unit:"s14",type:"mc",question:"현진건의 소설로, 인력거꾼 김 첨지의 삶을 통해 일제 강점기 가난한 도시민의 모습을 보여 준다.",choices:["「운수 좋은 날」", "영화 「아리랑」", "농촌 진흥 운동", "관동 대지진 한국인 학살"],answer:0,explain:"「운수 좋은 날」 · 1924년",era:"경성의 두 얼굴"},
+{id:"s14-01-bl",unit:"s14",type:"mc",question:"[「운수 좋은 날」] 현진건의 소설로, 　____　 김 첨지의 삶을 통해 일제 강점기 가난한 도시민의 모습을 보여 준다.",choices:["인력거꾼", "중앙아시아", "통제", "변사"],answer:0,explain:"「운수 좋은 날」 · 1924년",era:"경성의 두 얼굴"},
+{id:"s14-02-ev",unit:"s14",type:"mc",question:"나운규가 각본·주연·감독을 맡아 흥행한 무성 영화로, 당시에는 장면을 해설하는 변사가 큰 인기를 누렸다.",choices:["농촌 진흥 운동", "영화 「아리랑」", "「운수 좋은 날」", "연해주 한인 강제 이주"],answer:1,explain:"영화 「아리랑」 · 1926년",era:"경성의 두 얼굴"},
+{id:"s14-02-bl",unit:"s14",type:"mc",question:"[영화 「아리랑」] 나운규가 각본·주연·감독을 맡아 흥행한 무성 영화로, 당시에는 장면을 해설하는 　____　가 큰 인기를 누렸다.",choices:["유언비어", "통제", "인력거꾼", "변사"],answer:3,explain:"영화 「아리랑」 · 1926년",era:"경성의 두 얼굴"},
+{id:"s14-03-ev",unit:"s14",type:"mc",question:"대공황으로 농민이 몰락하자 일제가 생활 개선을 내세워 벌였으나, 농촌 통제를 강화하고 빈곤의 책임을 농민에게 돌렸다.",choices:["연해주 한인 강제 이주", "「운수 좋은 날」", "농촌 진흥 운동", "관동 대지진 한국인 학살"],answer:2,explain:"농촌 진흥 운동 · 1932년",era:"경성의 두 얼굴"},
+{id:"s14-03-bl",unit:"s14",type:"mc",question:"[농촌 진흥 운동] 대공황으로 농민이 몰락하자 일제가 생활 개선을 내세워 벌였으나, 농촌 　____　를 강화하고 빈곤의 책임을 농민에게 돌렸다.",choices:["유언비어", "인력거꾼", "변사", "통제"],answer:3,explain:"농촌 진흥 운동 · 1932년",era:"경성의 두 얼굴"},
+{id:"s14-04-ev",unit:"s14",type:"mc",question:"소련이 일본에 협력할 것이라는 구실로 연해주 한국인 수십만 명을 중앙아시아로 강제 이주시켰다.",choices:["영화 「아리랑」", "관동 대지진 한국인 학살", "연해주 한인 강제 이주", "농촌 진흥 운동"],answer:2,explain:"연해주 한인 강제 이주 · 1937년",era:"경성의 두 얼굴"},
+{id:"s14-04-bl",unit:"s14",type:"mc",question:"[연해주 한인 강제 이주] 소련이 일본에 협력할 것이라는 구실로 연해주 한국인 수십만 명을 　____　로 강제 이주시켰다.",choices:["유언비어", "인력거꾼", "중앙아시아", "변사"],answer:2,explain:"연해주 한인 강제 이주 · 1937년",era:"경성의 두 얼굴"},
+{id:"s14-ox00",unit:"s14",type:"ox",question:"일제 강점기 도시에서는 한국인 거주지와 일본인 거주지가 구분되었다.",choices:["O", "X"],answer:0,explain:"맞다. 수도·전기·도로는 일본인 거주지에 몰렸다.",era:"경성의 두 얼굴"},
+{id:"s14-ox01",unit:"s14",type:"ox",question:"농촌 진흥 운동은 농촌의 근본 문제를 해결해 농민의 삶을 크게 개선하였다.",choices:["O", "X"],answer:1,explain:"통제를 강화하고 빈곤의 책임을 농민에게 돌리는 방식이었다.",era:"경성의 두 얼굴"},
+{id:"s14-ox02",unit:"s14",type:"ox",question:"관동 대지진 때 일본 당국은 유언비어를 퍼뜨려 사회 불안을 한국인 탓으로 돌렸다.",choices:["O", "X"],answer:0,explain:"맞다(1923). 재일 한국인 6,000명 이상이 학살됐다.",era:"경성의 두 얼굴"},
+{id:"s14-ox03",unit:"s14",type:"ox",question:"연해주 한인을 중앙아시아로 강제 이주시킨 것은 일본이다.",choices:["O", "X"],answer:1,explain:"소련이다(1937).",era:"경성의 두 얼굴"},
+{id:"s14-ox04",unit:"s14",type:"ox",question:"군산·목포는 일본으로 쌀을 반출하던 창구로 항구 도시로 발달하였다.",choices:["O", "X"],answer:0,explain:"맞다. 대전·신의주는 철도역, 함흥·청진은 공업 도시.",era:"경성의 두 얼굴"},
+{id:"s15-00-ev",unit:"s15",type:"mc",question:"백정에 대한 사회적 차별을 없애려고 진주에서 창립되었다. '저울처럼 평등(형평)'한 세상을 목표로 하였다.",choices:["조선 소년 연합회", "어린이날 제정", "조선 형평사", "근우회"],answer:2,explain:"조선 형평사 · 1923년",era:"저울처럼 평등하게"},
+{id:"s15-00-bl",unit:"s15",type:"mc",question:"[조선 형평사] 백정에 대한 사회적 차별을 없애려고 　____　에서 창립되었다. '저울처럼 평등(형평)'한 세상을 목표로 하였다.",choices:["방정환", "진주", "신간회", "전국"],answer:1,explain:"조선 형평사 · 1923년",era:"저울처럼 평등하게"},
+{id:"s15-01-ev",unit:"s15",type:"mc",question:"방정환이 이끈 천도교 소년회가 어린이를 온전한 인격체로 존중하자며 어린이날 제정에 앞장서고 잡지 『어린이』를 펴냈다.",choices:["조선 형평사", "어린이날 제정", "조선 소년 연합회", "근우회"],answer:1,explain:"어린이날 제정 · 1923년",era:"저울처럼 평등하게"},
+{id:"s15-01-bl",unit:"s15",type:"mc",question:"[어린이날 제정] 　____　이 이끈 천도교 소년회가 어린이를 온전한 인격체로 존중하자며 어린이날 제정에 앞장서고 잡지 『어린이』를 펴냈다.",choices:["진주", "신간회", "전국", "방정환"],answer:3,explain:"어린이날 제정 · 1923년",era:"저울처럼 평등하게"},
+{id:"s15-02-ev",unit:"s15",type:"mc",question:"신간회 결성을 계기로 민족주의·사회주의 계열 여성 단체가 통합하여 만들었다. 기관지 『근우』를 펴내고 여성의 지위 향상에 힘썼다.",choices:["조선 형평사", "조선 소년 연합회", "근우회", "어린이날 제정"],answer:2,explain:"근우회 · 1927년",era:"저울처럼 평등하게"},
+{id:"s15-02-bl",unit:"s15",type:"mc",question:"[근우회] 　____　 결성을 계기로 민족주의·사회주의 계열 여성 단체가 통합하여 만들었다. 기관지 『근우』를 펴내고 여성의 지위 향상에 힘썼다.",choices:["전국", "진주", "신간회", "방정환"],answer:2,explain:"근우회 · 1927년",era:"저울처럼 평등하게"},
+{id:"s15-03-ev",unit:"s15",type:"mc",question:"소년 운동이 퍼지면서 결성된 전국 조직이다. 일제는 1930년대에 소년 운동을 탄압하고 중일 전쟁 이후 모든 활동을 금지하였다.",choices:["어린이날 제정", "근우회", "조선 소년 연합회", "조선 형평사"],answer:2,explain:"조선 소년 연합회 · 1927년",era:"저울처럼 평등하게"},
+{id:"s15-03-bl",unit:"s15",type:"mc",question:"[조선 소년 연합회] 소년 운동이 퍼지면서 결성된 　____　 조직이다. 일제는 1930년대에 소년 운동을 탄압하고 중일 전쟁 이후 모든 활동을 금지하였다.",choices:["진주", "방정환", "신간회", "전국"],answer:3,explain:"조선 소년 연합회 · 1927년",era:"저울처럼 평등하게"},
+{id:"s15-ox00",unit:"s15",type:"ox",question:"조선 형평사는 백정에 대한 차별 철폐를 위해 진주에서 창립되었다.",choices:["O", "X"],answer:0,explain:"맞다(1923). 형평 = 저울처럼 평등.",era:"저울처럼 평등하게"},
+{id:"s15-ox01",unit:"s15",type:"ox",question:"근우회는 사회주의 계열 여성들만으로 조직되었다.",choices:["O", "X"],answer:1,explain:"민족주의·사회주의 계열 여성 단체가 통합했다(1927).",era:"저울처럼 평등하게"},
+{id:"s15-ox02",unit:"s15",type:"ox",question:"방정환은 '어린이'라는 말을 널리 보급하고 잡지 『어린이』를 펴냈다.",choices:["O", "X"],answer:0,explain:"맞다. 천도교 소년회를 이끌고 어린이날 제정에 앞장섰다.",era:"저울처럼 평등하게"},
+{id:"s16-00-ev",unit:"s16",type:"mc",question:"일제가 불교를 통제하려고 만든 법으로, 사찰 재산 처분과 주지 임명까지 조선 총독의 허가를 받게 하였다.",choices:["조선어 연구회", "조선학 운동", "천도교의 제2의 독립 선언 계획", "사찰령"],answer:3,explain:"사찰령 · 1911년",era:"말과 글과 역사를 지키다"},
+{id:"s16-00-bl",unit:"s16",type:"mc",question:"[사찰령] 일제가 불교를 통제하려고 만든 법으로, 사찰 재산 처분과 　____　 임명까지 조선 총독의 허가를 받게 하였다.",choices:["주지", "진단학보", "조선상고사", "개벽"],answer:0,explain:"사찰령 · 1911년",era:"말과 글과 역사를 지키다"},
+{id:"s16-01-ev",unit:"s16",type:"mc",question:"'조선 국혼'을 강조하며 『한국통사』와 『한국독립운동지혈사』를 써서 일제의 침략과 민족의 독립운동사를 정리한 민족주의 사학자이다.",choices:["조선사 편수회", "천도교의 제2의 독립 선언 계획", "박은식", "백남운의 사회 경제 사학"],answer:2,explain:"박은식 · 1915년",era:"말과 글과 역사를 지키다"},
+{id:"s16-01-bl",unit:"s16",type:"mc",question:"[박은식] '조선 　____　'을 강조하며 『한국통사』와 『한국독립운동지혈사』를 써서 일제의 침략과 민족의 독립운동사를 정리한 민족주의 사학자이다.",choices:["국혼", "조선상고사", "가갸날", "진단학보"],answer:0,explain:"박은식 · 1915년",era:"말과 글과 역사를 지키다"},
+{id:"s16-02-ev",unit:"s16",type:"mc",question:"주시경의 제자들이 중심이 되어 조직하였고, '가갸날'을 정하고 잡지 『한글』을 간행하였다.",choices:["신채호의 고대사 연구", "천도교의 제2의 독립 선언 계획", "조선사 편수회", "조선어 연구회"],answer:3,explain:"조선어 연구회 · 1921년",era:"말과 글과 역사를 지키다"},
+{id:"s16-02-bl",unit:"s16",type:"mc",question:"[조선어 연구회] 주시경의 제자들이 중심이 되어 조직하였고, '　____　'을 정하고 잡지 『한글』을 간행하였다.",choices:["주지", "조선상고사", "가갸날", "정인보"],answer:2,explain:"조선어 연구회 · 1921년",era:"말과 글과 역사를 지키다"},
+{id:"s16-03-ev",unit:"s16",type:"mc",question:"3·1 운동을 주도했던 천도교가 제2의 독립 선언 운동을 계획하였다. 『개벽』, 『신여성』 등의 잡지도 발간하였다.",choices:["진단 학회", "조선어 연구회", "조선어 학회", "천도교의 제2의 독립 선언 계획"],answer:3,explain:"천도교의 제2의 독립 선언 계획 · 1922년",era:"말과 글과 역사를 지키다"},
+{id:"s16-03-bl",unit:"s16",type:"mc",question:"[천도교의 제2의 독립 선언 계획] 3·1 운동을 주도했던 천도교가 제2의 독립 선언 운동을 계획하였다. 『　____　』, 『신여성』 등의 잡지도 발간하였다.",choices:["개벽", "진단학보", "주지", "국혼"],answer:0,explain:"천도교의 제2의 독립 선언 계획 · 1922년",era:"말과 글과 역사를 지키다"},
+{id:"s16-04-ev",unit:"s16",type:"mc",question:"조선 총독부 부설 기구로, 타율성론·정체성론·당파성론의 식민 사관에 따라 『조선사』를 편찬하였다.",choices:["조선사 편수회", "백남운의 사회 경제 사학", "천도교의 제2의 독립 선언 계획", "조선어 학회"],answer:0,explain:"조선사 편수회 · 1925년",era:"말과 글과 역사를 지키다"},
+{id:"s16-04-bl",unit:"s16",type:"mc",question:"[조선사 편수회] 조선 총독부 부설 기구로, 타율성론·정체성론·당파성론의 　____　에 따라 『조선사』를 편찬하였다.",choices:["식민 사관", "훈민정음", "가갸날", "국혼"],answer:0,explain:"조선사 편수회 · 1925년",era:"말과 글과 역사를 지키다"},
+{id:"s16-05-ev",unit:"s16",type:"mc",question:"조선어 연구회가 발전한 단체로, 한글 맞춤법 통일안을 제정하고 『조선말 큰사전』 편찬을 추진하였다.",choices:["전형필의 문화유산 수집", "조선학 운동", "사찰령", "조선어 학회"],answer:3,explain:"조선어 학회 · 1931년",era:"말과 글과 역사를 지키다"},
+{id:"s16-05-bl",unit:"s16",type:"mc",question:"[조선어 학회] 조선어 연구회가 발전한 단체로, 한글 　____　 통일안을 제정하고 『조선말 큰사전』 편찬을 추진하였다.",choices:["정인보", "주지", "맞춤법", "훈민정음"],answer:2,explain:"조선어 학회 · 1931년",era:"말과 글과 역사를 지키다"},
+{id:"s16-06-ev",unit:"s16",type:"mc",question:"고대사 연구에 주력하여 『조선상고사』, 『조선사연구초』 등을 저술한 민족주의 사학자이다.",choices:["신채호의 고대사 연구", "사찰령", "박은식", "천도교의 제2의 독립 선언 계획"],answer:0,explain:"신채호의 고대사 연구 · 1931년",era:"말과 글과 역사를 지키다"},
+{id:"s16-06-bl",unit:"s16",type:"mc",question:"[신채호의 고대사 연구] 고대사 연구에 주력하여 『　____　』, 『조선사연구초』 등을 저술한 민족주의 사학자이다.",choices:["맞춤법", "주지", "정체성론", "조선상고사"],answer:3,explain:"신채호의 고대사 연구 · 1931년",era:"말과 글과 역사를 지키다"},
+{id:"s16-07-ev",unit:"s16",type:"mc",question:"마르크스의 유물 사관에 근거해 『조선사회경제사』를 쓰고, 한국사도 세계사의 보편적 발전 법칙에 따랐다며 식민 사관의 정체성론을 극복하려 하였다.",choices:["조선학 운동", "백남운의 사회 경제 사학", "사찰령", "천도교의 제2의 독립 선언 계획"],answer:1,explain:"백남운의 사회 경제 사학 · 1933년",era:"말과 글과 역사를 지키다"},
+{id:"s16-07-bl",unit:"s16",type:"mc",question:"[백남운의 사회 경제 사학] 마르크스의 유물 사관에 근거해 『조선사회경제사』를 쓰고, 한국사도 세계사의 보편적 발전 법칙에 따랐다며 식민 사관의 　____　을 극복하려 하였다.",choices:["조선상고사", "정체성론", "가갸날", "맞춤법"],answer:1,explain:"백남운의 사회 경제 사학 · 1933년",era:"말과 글과 역사를 지키다"},
+{id:"s16-08-ev",unit:"s16",type:"mc",question:"문헌 고증으로 객관적인 역사를 서술하려는 실증 사학자들이 조직하고 『진단학보』를 발행하였다.",choices:["조선어 연구회", "진단 학회", "전형필의 문화유산 수집", "천도교의 제2의 독립 선언 계획"],answer:1,explain:"진단 학회 · 1934년",era:"말과 글과 역사를 지키다"},
+{id:"s16-08-bl",unit:"s16",type:"mc",question:"[진단 학회] 문헌 고증으로 객관적인 역사를 서술하려는 실증 사학자들이 조직하고 『　____　』를 발행하였다.",choices:["조선상고사", "정체성론", "진단학보", "맞춤법"],answer:2,explain:"진단 학회 · 1934년",era:"말과 글과 역사를 지키다"},
+{id:"s16-09-ev",unit:"s16",type:"mc",question:"정인보 등이 '문화가 살면 민족은 죽지 않는다'는 신념으로 펼친 운동으로, 특히 조선 후기 실학 연구에 성과를 거두었다.",choices:["전형필의 문화유산 수집", "조선학 운동", "조선어 연구회", "박은식"],answer:1,explain:"조선학 운동 · 1934년",era:"말과 글과 역사를 지키다"},
+{id:"s16-09-bl",unit:"s16",type:"mc",question:"[조선학 운동] 　____　 등이 '문화가 살면 민족은 죽지 않는다'는 신념으로 펼친 운동으로, 특히 조선 후기 실학 연구에 성과를 거두었다.",choices:["조선상고사", "국혼", "정인보", "맞춤법"],answer:2,explain:"조선학 운동 · 1934년",era:"말과 글과 역사를 지키다"},
+{id:"s16-10-ev",unit:"s16",type:"mc",question:"간송 전형필이 재산을 들여 『훈민정음』 해례본 등 국외로 반출되던 문화유산을 지켰다.",choices:["사찰령", "박은식", "조선어 연구회", "전형필의 문화유산 수집"],answer:3,explain:"전형필의 문화유산 수집 · 1936년",era:"말과 글과 역사를 지키다"},
+{id:"s16-10-bl",unit:"s16",type:"mc",question:"[전형필의 문화유산 수집] 간송 전형필이 재산을 들여 『　____　』 해례본 등 국외로 반출되던 문화유산을 지켰다.",choices:["가갸날", "훈민정음", "국혼", "개벽"],answer:1,explain:"전형필의 문화유산 수집 · 1936년",era:"말과 글과 역사를 지키다"},
+{id:"s16-ox00",unit:"s16",type:"ox",question:"식민 사관의 정체성론은 한국사가 외세에 의해 타율적으로 전개되었다는 주장이다.",choices:["O", "X"],answer:1,explain:"그건 타율성론. 정체성론은 사회·경제가 발전 없이 정체됐다는 주장이다.",era:"말과 글과 역사를 지키다"},
+{id:"s16-ox01",unit:"s16",type:"ox",question:"백남운은 한국사도 세계사의 보편적 발전 법칙에 따라 발전하였다고 주장하였다.",choices:["O", "X"],answer:0,explain:"맞다. 사회 경제 사학으로 정체성론을 극복하려 했다.",era:"말과 글과 역사를 지키다"},
+{id:"s16-ox02",unit:"s16",type:"ox",question:"진단 학회는 민족정신을 강조한 민족주의 사학자들이 조직하였다.",choices:["O", "X"],answer:1,explain:"진단 학회는 실증 사학(문헌 고증, 1934)이다.",era:"말과 글과 역사를 지키다"},
+{id:"s16-ox03",unit:"s16",type:"ox",question:"신채호는 '조선 국혼'을 강조하며 『한국통사』를 저술하였다.",choices:["O", "X"],answer:1,explain:"국혼과 『한국통사』는 박은식. 신채호는 『조선상고사』.",era:"말과 글과 역사를 지키다"},
+{id:"s16-ox04",unit:"s16",type:"ox",question:"조선어 학회는 한글 맞춤법 통일안을 제정하였다.",choices:["O", "X"],answer:0,explain:"맞다. 『조선말 큰사전』 편찬도 추진했다.",era:"말과 글과 역사를 지키다"},
+{id:"s16-ox05",unit:"s16",type:"ox",question:"주기철 목사는 신사 참배를 거부하다 고문 끝에 순교하였다.",choices:["O", "X"],answer:0,explain:"맞다. 개신교 계통의 일부 학교는 신사 참배 거부로 폐교되었다.",era:"말과 글과 역사를 지키다"},
+{id:"s17-00-ev",unit:"s17",type:"mc",question:"여러 독립운동 단체가 난징에서 통합해 만든 중국 관내 최대 규모의 민족 통일 전선 정당이다. 김구 등 임시 정부 옹호 세력은 참여하지 않았다.",choices:["조선 의용대 화북 지대", "한국 국민당", "김구·김원봉의 공개 통신", "민족 혁명당"],answer:3,explain:"민족 혁명당 · 1935년",era:"난징에서 타이항산까지"},
+{id:"s17-00-bl",unit:"s17",type:"mc",question:"[민족 혁명당] 여러 독립운동 단체가 　____　에서 통합해 만든 중국 관내 최대 규모의 민족 통일 전선 정당이다. 김구 등 임시 정부 옹호 세력은 참여하지 않았다.",choices:["항일 전선의 통합", "김원봉", "우한", "난징"],answer:3,explain:"민족 혁명당 · 1935년",era:"난징에서 타이항산까지"},
+{id:"s17-01-ev",unit:"s17",type:"mc",question:"민족 혁명당에 참여하지 않은 김구 등 임시 정부 옹호 세력이 별도로 창당하였다.",choices:["한국 국민당", "민족 혁명당", "김구·김원봉의 공개 통신", "조선 의용대 화북 지대"],answer:0,explain:"한국 국민당 · 1935년",era:"난징에서 타이항산까지"},
+{id:"s17-01-bl",unit:"s17",type:"mc",question:"[한국 국민당] 민족 혁명당에 참여하지 않은 김구 등 　____　 세력이 별도로 창당하였다.",choices:["난징", "임시 정부 옹호", "김원봉", "우한"],answer:1,explain:"한국 국민당 · 1935년",era:"난징에서 타이항산까지"},
+{id:"s17-02-ev",unit:"s17",type:"mc",question:"중일 전쟁 이후 김구의 한국 국민당을 중심으로 결성되었다.",choices:["조선 민족 전선 연맹", "김구·김원봉의 공개 통신", "조선 의용대 화북 지대", "한국 광복 운동 단체 연합회"],answer:3,explain:"한국 광복 운동 단체 연합회 · 1937년",era:"난징에서 타이항산까지"},
+{id:"s17-02-bl",unit:"s17",type:"mc",question:"[한국 광복 운동 단체 연합회] 중일 전쟁 이후 김구의 　____　을 중심으로 결성되었다.",choices:["항일 전선의 통합", "한국 국민당", "김원봉", "난징"],answer:1,explain:"한국 광복 운동 단체 연합회 · 1937년",era:"난징에서 타이항산까지"},
+{id:"s17-03-ev",unit:"s17",type:"mc",question:"중일 전쟁 이후 김원봉이 이끄는 민족 혁명당을 중심으로 결성되었다.",choices:["한국 광복 운동 단체 연합회", "조선 민족 전선 연맹", "민족 혁명당", "한국 국민당"],answer:1,explain:"조선 민족 전선 연맹 · 1937년",era:"난징에서 타이항산까지"},
+{id:"s17-03-bl",unit:"s17",type:"mc",question:"[조선 민족 전선 연맹] 중일 전쟁 이후 　____　이 이끄는 민족 혁명당을 중심으로 결성되었다.",choices:["김원봉", "타이항산", "난징", "임시 정부 옹호"],answer:0,explain:"조선 민족 전선 연맹 · 1937년",era:"난징에서 타이항산까지"},
+{id:"s17-04-ev",unit:"s17",type:"mc",question:"조선 민족 전선 연맹이 중국 국민당 정부의 지원으로 우한에서 창설한, 중국 관내 최초의 한인 부대이다. 심리전과 포로 심문, 후방 공작을 맡았다.",choices:["김구·김원봉의 공개 통신", "조선 의용대", "한국 국민당", "조선 민족 전선 연맹"],answer:1,explain:"조선 의용대 · 1938년",era:"난징에서 타이항산까지"},
+{id:"s17-04-bl",unit:"s17",type:"mc",question:"[조선 의용대] 조선 민족 전선 연맹이 중국 국민당 정부의 지원으로 　____　에서 창설한, 중국 관내 최초의 한인 부대이다. 심리전과 포로 심문, 후방 공작을 맡았다.",choices:["항일 전선의 통합", "한국 국민당", "난징", "우한"],answer:3,explain:"조선 의용대 · 1938년",era:"난징에서 타이항산까지"},
+{id:"s17-05-ev",unit:"s17",type:"mc",question:"김구와 김원봉이 함께 「동지 동포 제군에게 보내는 공개 통신」을 발표하여 항일 전선의 통합을 호소하였다.",choices:["한국 광복 운동 단체 연합회", "김구·김원봉의 공개 통신", "조선 의용대", "조선 민족 전선 연맹"],answer:1,explain:"김구·김원봉의 공개 통신 · 1939년",era:"난징에서 타이항산까지"},
+{id:"s17-05-bl",unit:"s17",type:"mc",question:"[김구·김원봉의 공개 통신] 김구와 김원봉이 함께 「동지 동포 제군에게 보내는 공개 통신」을 발표하여 　____　을 호소하였다.",choices:["타이항산", "항일 전선의 통합", "우한", "난징"],answer:1,explain:"김구·김원봉의 공개 통신 · 1939년",era:"난징에서 타이항산까지"},
+{id:"s17-06-ev",unit:"s17",type:"mc",question:"조선 의용대의 다수 병력이 화북 지방으로 이동해 결성하였고, 타이항산을 중심으로 호가장 전투와 반소탕전에서 큰 전과를 거두었다.",choices:["한국 광복 운동 단체 연합회", "한국 국민당", "조선 의용대 화북 지대", "조선 의용대"],answer:2,explain:"조선 의용대 화북 지대 · 1941년",era:"난징에서 타이항산까지"},
+{id:"s17-06-bl",unit:"s17",type:"mc",question:"[조선 의용대 화북 지대] 조선 의용대의 다수 병력이 화북 지방으로 이동해 결성하였고, 　____　을 중심으로 호가장 전투와 반소탕전에서 큰 전과를 거두었다.",choices:["임시 정부 옹호", "한국 국민당", "타이항산", "난징"],answer:2,explain:"조선 의용대 화북 지대 · 1941년",era:"난징에서 타이항산까지"},
+{id:"s17-ox00",unit:"s17",type:"ox",question:"민족 혁명당에는 김구 등 임시 정부 옹호 세력도 참여하였다.",choices:["O", "X"],answer:1,explain:"김구 세력은 불참하고 한국 국민당을 따로 만들었다.",era:"난징에서 타이항산까지"},
+{id:"s17-ox01",unit:"s17",type:"ox",question:"조선 의용대는 중국 관내에서 결성된 최초의 한인 부대이다.",choices:["O", "X"],answer:0,explain:"맞다(1938, 우한).",era:"난징에서 타이항산까지"},
+{id:"s17-ox02",unit:"s17",type:"ox",question:"조선 의용대는 김구의 한국 광복 운동 단체 연합회가 창설하였다.",choices:["O", "X"],answer:1,explain:"조선 민족 전선 연맹(김원봉)이 창설했다.",era:"난징에서 타이항산까지"},
+{id:"s17-od1",unit:"s17",type:"order",question:"일어난 순서대로 놓으세요",choices:["1935|민족 혁명당 결성", "1937|중일 전쟁 발발", "1938|조선 의용대 창설", "1941|조선 의용대 화북 지대 결성"],answer:null,explain:"통일 전선 정당이 만들어지고, 중일 전쟁을 기회로 무장 부대가 나선다.",era:"난징에서 타이항산까지"},
+{id:"s18-00-ev",unit:"s18",type:"mc",question:"윤봉길 의거 뒤 여러 곳을 옮겨 다니던 대한민국 임시 정부가 충칭에 자리 잡고 중국 국민당 정부의 지원을 받아 체제를 개편하였다.",choices:["얄타 회담", "건국 강령", "임시 정부의 충칭 정착", "미얀마·인도 전선 파견"],answer:2,explain:"임시 정부의 충칭 정착 · 1940년",era:"충칭의 임시 정부"},
+{id:"s18-00-bl",unit:"s18",type:"mc",question:"[임시 정부의 충칭 정착] 　____　 뒤 여러 곳을 옮겨 다니던 대한민국 임시 정부가 충칭에 자리 잡고 중국 국민당 정부의 지원을 받아 체제를 개편하였다.",choices:["적절한 시기", "윤봉길 의거", "여운형", "민족주의 계열"],answer:1,explain:"임시 정부의 충칭 정착 · 1940년",era:"충칭의 임시 정부"},
+{id:"s18-01-ev",unit:"s18",type:"mc",question:"민족주의 계열 정당들이 통합하여 만든 정당으로, 충칭 시기 대한민국 임시 정부 운영을 주도하였다.",choices:["미얀마·인도 전선 파견", "국내 진공 작전", "조선 의용대의 광복군 합류", "한국 독립당"],answer:3,explain:"한국 독립당 · 1940년",era:"충칭의 임시 정부"},
+{id:"s18-01-bl",unit:"s18",type:"mc",question:"[한국 독립당] 　____　 정당들이 통합하여 만든 정당으로, 충칭 시기 대한민국 임시 정부 운영을 주도하였다.",choices:["선전 포고", "무조건 항복", "민족주의 계열", "윤봉길 의거"],answer:2,explain:"한국 독립당 · 1940년",era:"충칭의 임시 정부"},
+{id:"s18-02-ev",unit:"s18",type:"mc",question:"충칭의 대한민국 임시 정부가 지청천을 총사령관으로 창설한 군대이다.",choices:["조선 독립 동맹", "대일 선전 성명서", "한국광복군", "조선 의용대의 광복군 합류"],answer:2,explain:"한국광복군 · 1940년",era:"충칭의 임시 정부"},
+{id:"s18-02-bl",unit:"s18",type:"mc",question:"[한국광복군] 충칭의 대한민국 임시 정부가 　____　을 총사령관으로 창설한 군대이다.",choices:["지청천", "무조건 항복", "윤봉길 의거", "적절한 시기"],answer:0,explain:"한국광복군 · 1940년",era:"충칭의 임시 정부"},
+{id:"s18-03-ev",unit:"s18",type:"mc",question:"조소앙의 삼균주의(정치·경제·교육의 균등)를 바탕으로 대한민국 임시 정부가 발표한 민주 국가 건설의 방향이다.",choices:["건국 강령", "한국 독립당", "조선 건국 동맹", "조선 의용대의 광복군 합류"],answer:0,explain:"건국 강령 · 1941년",era:"충칭의 임시 정부"},
+{id:"s18-03-bl",unit:"s18",type:"mc",question:"[건국 강령] 조소앙의 　____　(정치·경제·교육의 균등)를 바탕으로 대한민국 임시 정부가 발표한 민주 국가 건설의 방향이다.",choices:["삼균주의", "여운형", "적절한 시기", "김두봉"],answer:0,explain:"건국 강령 · 1941년",era:"충칭의 임시 정부"},
+{id:"s18-04-ev",unit:"s18",type:"mc",question:"아시아·태평양 전쟁이 일어나자 대한민국 임시 정부가 일본에 선전 포고하고 한국광복군을 연합군의 일원으로 참전시켰다.",choices:["조선 의용대의 광복군 합류", "대일 선전 성명서", "포츠담 선언", "한국 독립당"],answer:1,explain:"대일 선전 성명서 · 1941년",era:"충칭의 임시 정부"},
+{id:"s18-04-bl",unit:"s18",type:"mc",question:"[대일 선전 성명서] 아시아·태평양 전쟁이 일어나자 대한민국 임시 정부가 일본에 　____　하고 한국광복군을 연합군의 일원으로 참전시켰다.",choices:["영국군", "김두봉", "국내 정진군", "선전 포고"],answer:3,explain:"대일 선전 성명서 · 1941년",era:"충칭의 임시 정부"},
+{id:"s18-05-ev",unit:"s18",type:"mc",question:"화북으로 이동하지 않은 조선 의용대 병력이 김원봉의 인솔로 한국광복군에 합류하고, 김규식 등도 임시 정부에 참여하여 좌우 합작의 형태를 이루었다.",choices:["카이로 선언", "미얀마·인도 전선 파견", "조선 건국 동맹", "조선 의용대의 광복군 합류"],answer:3,explain:"조선 의용대의 광복군 합류 · 1942년",era:"충칭의 임시 정부"},
+{id:"s18-05-bl",unit:"s18",type:"mc",question:"[조선 의용대의 광복군 합류] 화북으로 이동하지 않은 조선 의용대 병력이 김원봉의 인솔로 한국광복군에 합류하고, 김규식 등도 임시 정부에 참여하여 　____　의 형태를 이루었다.",choices:["좌우 합작", "선전 포고", "김두봉", "대일전"],answer:0,explain:"조선 의용대의 광복군 합류 · 1942년",era:"충칭의 임시 정부"},
+{id:"s18-06-ev",unit:"s18",type:"mc",question:"화북 지방의 사회주의 세력이 김두봉을 위원장으로 결성하였고, 조선 의용대 화북 지대를 조선 의용군으로 재편하였다.",choices:["포츠담 선언", "대일 선전 성명서", "카이로 선언", "조선 독립 동맹"],answer:3,explain:"조선 독립 동맹 · 1942년",era:"충칭의 임시 정부"},
+{id:"s18-06-bl",unit:"s18",type:"mc",question:"[조선 독립 동맹] 화북 지방의 사회주의 세력이 　____　을 위원장으로 결성하였고, 조선 의용대 화북 지대를 조선 의용군으로 재편하였다.",choices:["선전 포고", "김두봉", "적절한 시기", "민족주의 계열"],answer:1,explain:"조선 독립 동맹 · 1942년",era:"충칭의 임시 정부"},
+{id:"s18-07-ev",unit:"s18",type:"mc",question:"한국광복군이 영국군의 요청으로 공작대를 보내 심리전, 암호 해독, 포로 심문 등을 맡았다.",choices:["한국 독립당", "미얀마·인도 전선 파견", "조선 건국 동맹", "한국광복군"],answer:1,explain:"미얀마·인도 전선 파견 · 1943년",era:"충칭의 임시 정부"},
+{id:"s18-07-bl",unit:"s18",type:"mc",question:"[미얀마·인도 전선 파견] 한국광복군이 　____　의 요청으로 공작대를 보내 심리전, 암호 해독, 포로 심문 등을 맡았다.",choices:["민족주의 계열", "삼균주의", "무조건 항복", "영국군"],answer:3,explain:"미얀마·인도 전선 파견 · 1943년",era:"충칭의 임시 정부"},
+{id:"s18-08-ev",unit:"s18",type:"mc",question:"미국·영국·중국 정상이 일본 세력을 몰아낸 뒤 적절한 시기에 한국을 독립시키겠다고 처음으로 약속하였다.",choices:["미얀마·인도 전선 파견", "조선 독립 동맹", "한국광복군", "카이로 선언"],answer:3,explain:"카이로 선언 · 1943년",era:"충칭의 임시 정부"},
+{id:"s18-08-bl",unit:"s18",type:"mc",question:"[카이로 선언] 미국·영국·중국 정상이 일본 세력을 몰아낸 뒤 　____　에 한국을 독립시키겠다고 처음으로 약속하였다.",choices:["여운형", "무조건 항복", "적절한 시기", "국내 정진군"],answer:2,explain:"카이로 선언 · 1943년",era:"충칭의 임시 정부"},
+{id:"s18-09-ev",unit:"s18",type:"mc",question:"광복을 1년여 앞두고 여운형의 주도로 국내에서 결성된 비밀 결사로, 민족주의·사회주의 계열 인사가 함께 참여하였다.",choices:["임시 정부의 충칭 정착", "조선 건국 동맹", "포츠담 선언", "조선 독립 동맹"],answer:1,explain:"조선 건국 동맹 · 1944년",era:"충칭의 임시 정부"},
+{id:"s18-09-bl",unit:"s18",type:"mc",question:"[조선 건국 동맹] 광복을 1년여 앞두고 　____　의 주도로 국내에서 결성된 비밀 결사로, 민족주의·사회주의 계열 인사가 함께 참여하였다.",choices:["김두봉", "민족주의 계열", "여운형", "삼균주의"],answer:2,explain:"조선 건국 동맹 · 1944년",era:"충칭의 임시 정부"},
+{id:"s18-10-ev",unit:"s18",type:"mc",question:"미국·영국·소련 정상이 독일과의 전쟁이 끝나면 소련이 대일전에 참전하기로 합의하였다.",choices:["임시 정부의 충칭 정착", "얄타 회담", "미얀마·인도 전선 파견", "조선 의용대의 광복군 합류"],answer:1,explain:"얄타 회담 · 1945년",era:"충칭의 임시 정부"},
+{id:"s18-10-bl",unit:"s18",type:"mc",question:"[얄타 회담] 미국·영국·소련 정상이 독일과의 전쟁이 끝나면 소련이 　____　에 참전하기로 합의하였다.",choices:["좌우 합작", "선전 포고", "대일전", "적절한 시기"],answer:2,explain:"얄타 회담 · 1945년",era:"충칭의 임시 정부"},
+{id:"s18-11-ev",unit:"s18",type:"mc",question:"미국·영국·중국 정상이 카이로 선언을 재확인하고 일본의 무조건 항복을 촉구하였다. 소련도 뒤늦게 참여하였다.",choices:["미얀마·인도 전선 파견", "포츠담 선언", "대일 선전 성명서", "국내 진공 작전"],answer:1,explain:"포츠담 선언 · 1945년",era:"충칭의 임시 정부"},
+{id:"s18-11-bl",unit:"s18",type:"mc",question:"[포츠담 선언] 미국·영국·중국 정상이 카이로 선언을 재확인하고 일본의 　____　을 촉구하였다. 소련도 뒤늦게 참여하였다.",choices:["무조건 항복", "여운형", "김두봉", "대일전"],answer:0,explain:"포츠담 선언 · 1945년",era:"충칭의 임시 정부"},
+{id:"s18-12-ev",unit:"s18",type:"mc",question:"한국광복군이 미국 전략 정보국(OSS)과 협약을 맺고 국내 정진군을 편성하였으나, 투입 직전 일제가 항복하여 취소되었다.",choices:["조선 독립 동맹", "국내 진공 작전", "건국 강령", "포츠담 선언"],answer:1,explain:"국내 진공 작전 · 1945년",era:"충칭의 임시 정부"},
+{id:"s18-12-bl",unit:"s18",type:"mc",question:"[국내 진공 작전] 한국광복군이 미국 전략 정보국(OSS)과 협약을 맺고 　____　을 편성하였으나, 투입 직전 일제가 항복하여 취소되었다.",choices:["선전 포고", "영국군", "국내 정진군", "대일전"],answer:2,explain:"국내 진공 작전 · 1945년",era:"충칭의 임시 정부"},
+{id:"s18-ox00",unit:"s18",type:"ox",question:"한국광복군 창설 당시 총사령관은 김원봉이다.",choices:["O", "X"],answer:1,explain:"총사령관은 지청천. 김원봉은 1942년 조선 의용대를 이끌고 합류했다.",era:"충칭의 임시 정부"},
+{id:"s18-ox01",unit:"s18",type:"ox",question:"건국 강령은 조소앙의 삼균주의를 바탕으로 하였다.",choices:["O", "X"],answer:0,explain:"맞다. 정치·경제·교육의 균등(1941).",era:"충칭의 임시 정부"},
+{id:"s18-ox02",unit:"s18",type:"ox",question:"카이로 선언에서 처음으로 한국의 독립이 약속되었다.",choices:["O", "X"],answer:0,explain:"맞다(1943). '적절한 시기에'라는 단서가 붙었다.",era:"충칭의 임시 정부"},
+{id:"s18-ox03",unit:"s18",type:"ox",question:"조선 건국 동맹은 김두봉이 화북 지방에서 조직하였다.",choices:["O", "X"],answer:1,explain:"조선 건국 동맹은 여운형이 국내에서(1944). 김두봉은 화북의 조선 독립 동맹(1942).",era:"충칭의 임시 정부"},
+{id:"s18-ox04",unit:"s18",type:"ox",question:"한국광복군의 국내 진공 작전은 일제의 항복으로 실행되지 못하였다.",choices:["O", "X"],answer:0,explain:"맞다. 미국 OSS와 손잡고 국내 정진군을 편성했었다.",era:"충칭의 임시 정부"},
+{id:"s18-od1",unit:"s18",type:"order",question:"일어난 순서대로 놓으세요",choices:["1940|한국광복군 창설", "1941|건국 강령 발표", "1943|카이로 선언", "1944|조선 건국 동맹 결성", "1945|포츠담 선언"],answer:null,explain:"충칭 임시 정부의 준비와 연합국의 약속이 나란히 간다.",era:"충칭의 임시 정부"}
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -4780,7 +5180,9 @@ function monHit(id,ok){
 function hash(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 var MON_HUE=[268,196,338,32,152,218];
 function monsterSVG(id,size,mood){
-  var h=hash(id),hue=MON_HUE[h%MON_HUE.length],eyes=1+(h>>3)%3,shape=(h>>6)%3,spikes=(h>>9)%3;
+  /* 해시는 부호 없는 32비트다. >> 로 자르면 윗비트가 선 값은 음수가 되어 몸통 모양(shape)이
+     -1·-2 로 나와 몸 없이 눈만 그려졌다(전체의 약 3분의 1). >>> 로 자른다 */
+  var h=hash(id),hue=MON_HUE[h%MON_HUE.length],eyes=1+(h>>>3)%3,shape=(h>>>6)%3,spikes=(h>>>9)%3;
   var body=["M50 8c24 0 38 17 38 39 0 24-16 45-38 45S12 71 12 47C12 25 26 8 50 8z",
             "M50 10c26 0 40 20 36 44-3 21-14 38-36 38s-33-17-36-38C10 30 24 10 50 10z",
             "M50 9c22 0 40 15 40 36 0 27-18 47-40 47S10 72 10 45C10 24 28 9 50 9z"][shape];
@@ -4915,7 +5317,7 @@ function vHome(){
       mode("m4","listen",ICON.ear,"듣기 모드","화면을 안 봐도 진행돼요. 이어폰 끼고 이동 중에.","자동 넘김")+
     '</div>'+
     '<div class="sect">범위</div>'+
-    '<p class="note">2022 개정 한국사2 Ⅰ단원 「일제 식민 통치와 민족 운동」 01~03-1 (교과서 8~33쪽) · 소단원 '+
+    '<p class="note">2022 개정 한국사2 Ⅰ단원 「일제 식민 통치와 민족 운동」 전체 (교과서 8~63쪽) · 소단원 '+
       UNITS.length+'개 · 문제 '+QUESTIONS.length+'개</p>'+
     '<div class="sect">모르는 게 나오면</div>'+
     '<button class="mode" data-hansa-go="learn" style="width:100%"><span class="ic" style="background:rgba(245,198,60,.16);color:var(--amber)">'+ICON.mc+'</span>'+
@@ -5374,9 +5776,19 @@ const BOSSES={
  s5:{n:"국경의 어둠",d:"국내 활동을 막아선 감시망. 지사들은 국경 너머에 기지를 세웠다.",hp:270,hue:190,form:0},
  s6:{n:"침묵의 벽",d:"저항할 힘이 없다던 편견의 벽. 1919년 봄, 만세 함성이 그것을 깼다.",hp:280,hue:44,form:2},
  s7:{n:"분열의 안개",d:"노선을 둘러싼 갈등으로 임시 정부를 침체에 빠뜨린 안개.",hp:300,hue:250,form:3},
- s8:{n:"토벌대",d:"독립군의 근거지를 없애겠다며 만주를 짓밟은 토벌 작전.",hp:320,hue:20,form:1}
+ s8:{n:"토벌대",d:"독립군의 근거지를 없애겠다며 만주를 짓밟은 토벌 작전.",hp:320,hue:20,form:1},
+ s9:{n:"밀정의 그물",d:"침략의 원흉과 밀정이 짠 그물. 의열단과 한인 애국단은 폭탄과 권총으로 그것을 끊으려 했다.",hp:210,hue:196,form:1},
+ s10:{n:"빈 곳간",d:"민족 산업과 교육을 막아선 가난과 차별. 실력을 기르자는 운동이 맞섰다.",hp:120,hue:120,form:2},
+ s11:{n:"소작료의 굴레",d:"수확의 절반을 넘게 가져가던 소작료와 저임금. 쟁의와 파업이 그것을 흔들었다.",hp:100,hue:30,form:0},
+ s12:{n:"노예 교육",d:"학생에게 노예근성을 심으려던 식민지 교육. 교실의 함성이 거리로 번졌다.",hp:90,hue:300,form:3},
+ s13:{n:"어부의 이익",d:"민족주의와 사회주의가 다투는 사이 웃던 어부. 신간회가 그 다툼을 넘어섰다.",hp:100,hue:170,form:2},
+ s14:{n:"토막촌",d:"편리함은 일본인이, 비용은 한국인이. 도시 변두리로 밀려난 사람들의 움막.",hp:100,hue:36,form:1},
+ s15:{n:"천대의 저울",d:"백정과 여성과 어린이를 낮춰 보던 차별. 저울처럼 평등한 세상을 외쳤다.",hp:90,hue:330,form:0},
+ s16:{n:"식민 사관",d:"타율·정체·당파. 역사를 비틀어 독립 의지를 꺾으려 한 거짓말.",hp:200,hue:262,form:3},
+ s17:{n:"갈라진 전선",d:"흩어진 독립운동 세력. 난징에서, 우한에서 하나로 뭉치려 했다.",hp:120,hue:210,form:1},
+ s18:{n:"제국의 황혼",d:"무너져 가는 침략 전쟁. 광복군은 국내 진공을 준비하며 그날을 기다렸다.",hp:220,hue:48,form:2}
 };
-const ERA_ORDER=["s1","s2","s3","s4","s5","s6","s7","s8"];
+const ERA_ORDER=["s1","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","s12","s13","s14","s15","s16","s17","s18"];
 
 /* 인물 카드 — 초상은 사진이 아니라 특징만 살린 도식적 일러스트다 */
 const FIGURES=[
@@ -5414,7 +5826,27 @@ const FIGURES=[
  {id:"f_jeongjeonghwa",n:"정정화",u:"s7",g:"N",d:"여섯 차례 국내에 잠입해 임시 정부의 자금을 마련했다.",t:{hair:3,glasses:0,cloth:3,beard:0,hat:0}},
  {id:"f_hwanggihwan",n:"황기환",u:"s7",g:"N",d:"파리 위원부를 이끌며 유럽에서 외교 활동을 폈다.",t:{hair:0,glasses:0,cloth:1,beard:1,hat:0}},
  {id:"f_shaw",n:"조지 루이스 쇼",u:"s7",g:"N",d:"이륭 양행을 내주어 교통국 활동을 도운 아일랜드계 영국인.",t:{hair:0,glasses:1,cloth:1,beard:1,hat:3}},
- {id:"f_hanisun",n:"한이순",u:"s6",g:"N",d:"열세 살에 만세 시위에 나선 3·1 운동 최연소 수감자.",t:{hair:3,glasses:0,cloth:3,beard:0,hat:0}}
+ {id:"f_hanisun",n:"한이순",u:"s6",g:"N",d:"열세 살에 만세 시위에 나선 3·1 운동 최연소 수감자.",t:{hair:3,glasses:0,cloth:3,beard:0,hat:0}},
+ /* ── 교과서 34~63쪽 ── */
+ {id:"f_kimwonbong",n:"김원봉",u:"s9",g:"SR",d:"의열단을 조직하고 뒤에 조선 의용대를 이끌었다.",t:{hair:0,glasses:0,cloth:1,beard:1,hat:0}},
+ {id:"f_yunbonggil",n:"윤봉길",u:"s9",g:"SR",d:"훙커우 공원에서 폭탄을 던져 일본군 장성과 고관을 처단했다.",t:{hair:0,glasses:0,cloth:1,beard:0,hat:1}},
+ {id:"f_leebongchang",n:"이봉창",u:"s9",g:"R",d:"한인 애국단의 첫 거사로 도쿄에서 일왕의 마차에 폭탄을 던졌다.",t:{hair:1,glasses:0,cloth:1,beard:0,hat:0}},
+ {id:"f_naseokju",n:"나석주",u:"s9",g:"N",d:"동양 척식 주식회사에 폭탄을 던진 의열단원.",t:{hair:2,glasses:0,cloth:0,beard:0,hat:1}},
+ {id:"f_kangwoogyu",n:"강우규",u:"s9",g:"N",d:"남대문역에서 새로 부임하는 총독에게 폭탄을 던졌다.",t:{hair:0,glasses:0,cloth:0,beard:2,hat:1}},
+ {id:"f_kimiksang",n:"김익상",u:"s9",g:"N",d:"조선 총독부에 폭탄을 던진 의열단원.",t:{hair:1,glasses:0,cloth:0,beard:0,hat:0}},
+ {id:"f_kimsangok",n:"김상옥",u:"s9",g:"N",d:"종로 경찰서에 폭탄을 던진 의열단원.",t:{hair:2,glasses:0,cloth:1,beard:1,hat:0}},
+ {id:"f_jomansik",n:"조만식",u:"s10",g:"R",d:"평양에서 물산 장려 운동을 이끌었다.",t:{hair:0,glasses:1,cloth:0,beard:1,hat:0}},
+ {id:"f_leesangjae",n:"이상재",u:"s10",g:"N",d:"조선 민립 대학 기성회를 이끌었다.",t:{hair:0,glasses:1,cloth:0,beard:2,hat:1}},
+ {id:"f_jangjaeseong",n:"장재성",u:"s12",g:"N",d:"성진회 출신으로 광주 학생 항일 운동을 이끌었다.",t:{hair:1,glasses:0,cloth:1,beard:0,hat:0}},
+ {id:"f_bangjeonghwan",n:"방정환",u:"s15",g:"R",d:"'어린이'라는 말을 널리 보급하고 어린이날 제정에 앞장섰다.",t:{hair:1,glasses:1,cloth:1,beard:0,hat:0}},
+ {id:"f_baeknamun",n:"백남운",u:"s16",g:"N",d:"『조선사회경제사』로 식민 사관의 정체성론을 반박했다.",t:{hair:0,glasses:1,cloth:1,beard:0,hat:0}},
+ {id:"f_jeonginbo",n:"정인보",u:"s16",g:"N",d:"'문화가 살면 민족은 죽지 않는다'며 조선학 운동을 펼쳤다.",t:{hair:0,glasses:1,cloth:0,beard:1,hat:0}},
+ {id:"f_leeyuksa",n:"이육사",u:"s16",g:"R",d:"의열단원 출신 시인. 「광야」, 「청포도」를 남기고 옥중에서 순국했다.",t:{hair:1,glasses:0,cloth:1,beard:0,hat:0}},
+ {id:"f_yundongju",n:"윤동주",u:"s16",g:"R",d:"일본 유학 중 항일 운동 혐의로 수감되었다가 숨진 시인.",t:{hair:1,glasses:0,cloth:1,beard:0,hat:0}},
+ {id:"f_simhun",n:"심훈",u:"s16",g:"N",d:"「그날이 오면」에 조국 광복의 염원을 담았다.",t:{hair:2,glasses:0,cloth:1,beard:0,hat:0}},
+ {id:"f_jeonhyeongpil",n:"전형필",u:"s16",g:"N",d:"재산을 들여 『훈민정음』 해례본 등 문화유산을 지켰다.",t:{hair:0,glasses:1,cloth:1,beard:0,hat:0}},
+ {id:"f_jugicheol",n:"주기철",u:"s16",g:"N",d:"신사 참배를 거부하다 고문 끝에 순교한 목사.",t:{hair:0,glasses:0,cloth:0,beard:1,hat:0}},
+ {id:"f_kimdubong",n:"김두봉",u:"s18",g:"N",d:"화북에서 조선 독립 동맹의 위원장을 맡았다.",t:{hair:0,glasses:1,cloth:0,beard:1,hat:0}}
 ];
 const GRADE={N:{c:"#8E97AB",p:6,label:"N"},R:{c:"#5B9BE8",p:3,label:"R"},SR:{c:"#FFB443",p:1,label:"SR"}};
 
@@ -6314,7 +6746,7 @@ function vHall(){
     ["초성 사냥","최고 점수",S.best.cho?S.best.cho+"점":null],
     ["인물 짝 맞추기","최단 기록",p?p.t+"초 / "+p.m+"번":null],
     ["서바이벌","최다 문제",S.best.sv?S.best.sv+"문제":null],
-    ["스토리","격파한 시대",ERA_ORDER.filter(function(e){return S.cleared[e];}).length+" / 8"],
+    ["스토리","격파한 시대",ERA_ORDER.filter(function(e){return S.cleared[e];}).length+" / "+ERA_ORDER.length],
     ["인물 도감","모은 카드",Object.keys(S.dex).length+" / "+FIGURES.length]
   ];
   view.innerHTML=
@@ -6731,7 +7163,16 @@ const UNITS=[
  {id:"s6",g:1,c:"cb",name:"3·1 운동의 전개와 의의",short:"3·1 운동",bk:"02-2 · 22~25쪽"},
  {id:"s7",g:1,c:"cb",name:"대한민국 임시 정부의 수립과 활동",short:"임시 정부",bk:"02-3 · 26~29쪽"},
  {id:"s8",g:1,c:"cc",name:"무장 독립 전쟁",short:"무장 투쟁",bk:"03-1 · 30~33쪽"},
- {id:"x2",g:2,c:"cd",name:"일제 강점기 (범위 밖)",short:"일제 그 밖",bk:"의열단·신간회·광복군 등"},
+ {id:"s9",g:1,c:"cc",name:"의열 투쟁",short:"의열 투쟁",bk:"03-2 · 34~35쪽"},
+ {id:"s10",g:1,c:"cc",name:"실력 양성 운동",short:"실력 양성",bk:"03-3 · 36~37쪽"},
+ {id:"s11",g:1,c:"cc",name:"농민 운동과 노동 운동",short:"농민·노동",bk:"03-4 · 38~39쪽"},
+ {id:"s12",g:1,c:"cc",name:"학생 항일 운동",short:"학생 운동",bk:"03-5 · 40~41쪽"},
+ {id:"s13",g:1,c:"cc",name:"민족 유일당 운동과 신간회",short:"신간회",bk:"03-6 · 42~43쪽"},
+ {id:"s14",g:1,c:"ce",name:"사회 구조와 생활의 변화",short:"사회 변화",bk:"04-1 · 46~49쪽"},
+ {id:"s15",g:1,c:"ce",name:"사회적 차별 철폐 운동",short:"차별 철폐",bk:"04-2 · 50~51쪽"},
+ {id:"s16",g:1,c:"ce",name:"민족 문화 수호 운동",short:"민족 문화",bk:"04-3 · 52~55쪽"},
+ {id:"s17",g:1,c:"cf",name:"항일 전선 통합과 무장 투쟁",short:"전선 통합",bk:"05-1 · 56~57쪽"},
+ {id:"s18",g:1,c:"cf",name:"광복을 위한 노력과 건국 준비",short:"건국 준비",bk:"05-2 · 58~61쪽"},
  {id:"x1",g:2,c:"cd",name:"개항과 근대 국가 수립",short:"개항기",bk:"1863~1910"},
  {id:"x0",g:2,c:"cd",name:"전근대사",short:"전근대",bk:"고조선~1862"},
  {id:"x3",g:2,c:"cd",name:"대한민국의 발전",short:"현대",bk:"1945~현재"}
@@ -6943,23 +7384,23 @@ const RAW=[
 ["x1",1908,"서울 진공 작전","해산 군인이 합류한 정미의병이 13도 창의군을 꾸려 서울로 진격했으나 실패했다.","13도 창의군"],
 ["x1",1909,"안중근 의거","만주 하얼빈 역에서 초대 통감이었던 이토 히로부미를 사살했다.","하얼빈"],
 ["x1",1910,"국권 피탈","한일 병합 조약으로 국권을 빼앗기고 조선 총독부가 설치되었다.","조선 총독부"],
-["x2",1919,"의열단 조직","김원봉이 만주 지린에서 만든 단체로 신채호가 쓴 조선혁명선언을 활동 지침으로 삼았다.","조선혁명선언"],
-["x2",1922,"물산 장려 운동","조만식을 중심으로 평양에서 시작해 내 살림 내 것으로를 내걸고 국산품 애용을 외쳤다.","조만식"],
-["x2",1923,"민립 대학 설립 운동","이상재 등이 한민족 1천만이 한 사람 1원씩을 내걸었으나 총독부의 방해로 좌절되었다.","이상재"],
-["x2",1923,"암태도 소작 쟁의","전남 암태도 농민들이 높은 소작료에 맞서 1년 넘게 싸워 소작료를 낮추는 데 성공했다.","소작료"],
-["x2",1926,"6·10 만세 운동","순종의 장례일에 일어났으며 준비 과정에서 좌우가 힘을 합쳐 민족 유일당 운동의 계기가 되었다.","순종"],
-["x2",1926,"나석주 의거","의열단원 나석주가 식민지 수탈 기관인 동양 척식 주식회사에 폭탄을 던졌다.","동양 척식 주식회사"],
-["x2",1927,"신간회 창립","비타협적 민족주의 세력과 사회주의 세력이 손잡아 만든 일제 강점기 최대의 합법 단체다.","합법 단체"],
-["x2",1927,"근우회 창립","신간회의 자매 단체로 여성 운동 세력이 힘을 합쳐 여성의 지위 향상을 내걸었다.","자매 단체"],
-["x2",1929,"광주 학생 항일 운동","한일 학생의 충돌에서 시작해 3·1 운동 이후 최대 규모로 번졌고 신간회가 진상 조사단을 보냈다.","진상 조사단"],
-["x2",1929,"원산 총파업","일본인 감독이 한국인 노동자를 때린 일을 계기로 일어난 일제 강점기 최대의 노동 쟁의다.","노동 쟁의"],
-["x2",1931,"한인 애국단 조직","김구가 침체된 임시 정부에 활기를 불어넣으려 만든 의열 투쟁 단체다.","김구"],
-["x2",1932,"이봉창·윤봉길 의거","이봉창은 도쿄에서 일왕에게 폭탄을 던졌고 윤봉길은 상하이 훙커우 공원 의거로 중국의 지원을 이끌어냈다.","훙커우"],
-["x2",1933,"한글 맞춤법 통일안","조선어 학회가 우리말 표기의 기준을 세우고 우리말 큰사전 편찬에 나섰다.","조선어 학회"],
-["x2",1938,"조선 의용대 창설","김원봉이 중국 국민당의 지원을 받아 중국 관내에서 만든 최초의 한인 무장 부대다.","김원봉"],
-["x2",1940,"한국광복군 창설","충칭에서 대한민국 임시 정부의 정규군으로 만들어졌고 뒷날 국내 진공 작전을 준비했다.","충칭"],
-["x2",1941,"대한민국 건국 강령","조소앙의 삼균주의를 바탕으로 광복 이후 세울 나라의 방향을 밝혔다.","삼균주의"],
-["x2",1944,"조선 건국 동맹","여운형이 국내에서 비밀리에 만든 단체로 광복 뒤 건국 준비 위원회로 이어졌다.","여운형"],
+["s9", 1919, "의열단", "김원봉·윤세주 등이 만주 지린에서 조직한 비밀 단체로, 침략의 원흉과 친일 매국노를 암살하거나 식민 통치 기관을 파괴하였다.", "지린"],
+["s10", 1920, "물산 장려 운동", "조만식의 주도로 평양에서 시작되어 전국으로 퍼졌다. '내 살림 내 것으로', '조선 사람 조선 것'을 내세워 토산품 애용과 근검저축, 금주·단연을 주장하였다.", "조만식"],
+["s10", 1923, "민립 대학 설립 운동", "이상재·이승훈 등이 조직한 조선 민립 대학 기성회가 1천만 원을 모으려 전국적인 모금 운동을 펼쳤으나, 자연재해와 일제의 탄압으로 성과를 거두지 못하였다.", "조선 민립 대학 기성회"],
+["s11", 1923, "암태도 소작 쟁의", "고율의 소작료를 징수하는 지주의 횡포에 맞서 1년여 투쟁한 끝에 소작료 인하를 이끌어 낸 1920년대의 대표적 소작 쟁의이다.", "지주"],
+["s12", 1926, "6·10 만세 운동", "순종의 장례일에 학생들이 서울 곳곳에서 격문을 뿌리고 만세를 외쳤다. 준비 과정에서 사회주의 계열과 천도교가 연대한 경험이 민족 협동 전선의 공감대를 만들었다.", "순종"],
+["s9", 1926, "나석주의 의거", "의열단원 나석주가 동양 척식 주식회사에 폭탄을 던지고 권총을 쏘아 일본인을 살상하였다.", "동양 척식 주식회사"],
+["s13", 1927, "신간회", "비타협적 민족주의자와 사회주의자가 함께 만든 일제 강점기 최대 규모의 항일 단체로, 약 140개 지회와 4만여 명의 회원을 두었다.", "140개"],
+["s15", 1927, "근우회", "신간회 결성을 계기로 민족주의·사회주의 계열 여성 단체가 통합하여 만들었다. 기관지 『근우』를 펴내고 여성의 지위 향상에 힘썼다.", "신간회"],
+["s12", 1929, "광주 학생 항일 운동", "나주역에서 일어난 한·일 학생 충돌을 계기로 광주 학생들이 11월 3일 대규모 가두시위를 벌였고, 신간회 등의 노력으로 전국으로 퍼졌다. 3·1 운동 이후 최대 규모의 항일 민족 운동이다.", "나주역"],
+["s11", 1929, "원산 총파업", "일본인 감독이 한국인 노동자를 구타한 일을 계기로 시작되어 4개월여 이어진, 일제 강점기 최대 규모의 노동 운동이자 반제국주의 항일 운동이다.", "4개월"],
+["s9", 1931, "한인 애국단", "국민 대표 회의 결렬 뒤 침체된 대한민국 임시 정부에 활기를 불어넣으려고 김구가 조직하였다.", "김구"],
+["s9", 1932, "이봉창의 의거", "한인 애국단의 첫 거사로 이봉창이 도쿄에서 일왕의 마차를 향해 폭탄을 던졌다. 실패하였지만 일본에 큰 충격을 주었다.", "도쿄"],
+["s16", 1931, "조선어 학회", "조선어 연구회가 발전한 단체로, 한글 맞춤법 통일안을 제정하고 『조선말 큰사전』 편찬을 추진하였다.", "맞춤법"],
+["s17", 1938, "조선 의용대", "조선 민족 전선 연맹이 중국 국민당 정부의 지원으로 우한에서 창설한, 중국 관내 최초의 한인 부대이다. 심리전과 포로 심문, 후방 공작을 맡았다.", "우한"],
+["s18", 1940, "한국광복군", "충칭의 대한민국 임시 정부가 지청천을 총사령관으로 창설한 군대이다.", "지청천"],
+["s18", 1941, "건국 강령", "조소앙의 삼균주의(정치·경제·교육의 균등)를 바탕으로 대한민국 임시 정부가 발표한 민주 국가 건설의 방향이다.", "삼균주의"],
+["s18", 1944, "조선 건국 동맹", "광복을 1년여 앞두고 여운형의 주도로 국내에서 결성된 비밀 결사로, 민족주의·사회주의 계열 인사가 함께 참여하였다.", "여운형"],
 ["x3",1945,"8·15 광복","연합군의 승리와 우리 민족의 끈질긴 독립운동이 함께 만들어 낸 결과였다.","연합군"],
 ["x3",1945,"조선 건국 준비 위원회","여운형을 중심으로 광복 직후 치안과 행정을 맡아 새 나라를 준비했다.","여운형"],
 ["x3",1945,"모스크바 3국 외상 회의","임시 민주 정부 수립과 최고 5년의 신탁 통치를 결정하면서 좌우 대립이 격해졌다.","신탁 통치"],
@@ -7000,9 +7441,65 @@ const RAW=[
 ["x3",1997,"외환 위기","국제 통화 기금에 구제 금융을 요청했고 국민들은 금 모으기 운동으로 힘을 보탰다.","금 모으기 운동"],
 ["x3",2000,"6·15 남북 공동 선언","최초의 남북 정상 회담에서 발표되었으며 이후 개성 공단과 이산가족 상봉으로 이어졌다.","남북 정상 회담"],
 ["x3",2007,"10·4 남북 정상 선언","두 번째 남북 정상 회담에서 6·15 선언을 실천하기 위한 방안에 합의했다.","6·15 선언"],
-["x3",2018,"판문점 선언","한반도의 평화와 번영, 통일을 위한 선언이 판문점에서 발표되었다.","판문점"]
+["x3",2018,"판문점 선언","한반도의 평화와 번영, 통일을 위한 선언이 판문점에서 발표되었다.","판문점"],
+/* ============ 교과서 34~63쪽 (03-2 ~ 05-2) ============ */
+["s9", 1919, "강우규의 의거", "강우규가 경성 남대문역에서 새로 부임하는 총독에게 폭탄을 던졌다. 의열단이 아닌 개인 의열 투쟁이다.", "남대문역"],
+["s9", 1921, "김익상의 의거", "의열단원 김익상이 국내에 잠입하여 조선 총독부에 폭탄을 던졌다.", "조선 총독부"],
+["s9", 1923, "조선 혁명 선언", "김원봉의 요청으로 신채호가 작성한 의열단의 활동 지침으로, 외교론과 실력 양성론을 비판하고 민중 직접 혁명을 주장하였다.", "신채호"],
+["s9", 1923, "김상옥의 의거", "의열단원 김상옥이 종로 경찰서에 폭탄을 던졌다.", "종로 경찰서"],
+["s9", 1926, "황푸 군관 학교 입교", "개인 의열 투쟁의 한계를 느낀 의열단원들이 중국 국민당 정부가 운영하는 황푸 군관 학교에 들어가 정규 군사 훈련을 받았다.", "개인 의열 투쟁"],
+["s9", 1932, "상하이 사변", "일제가 이봉창 의거를 보도한 중국 언론의 반일적 태도 등을 구실로 상하이를 침략하였다.", "중국 언론"],
+["s9", 1932, "윤봉길의 의거", "한인 애국단원 윤봉길이 상하이 훙커우 공원 기념식 단상에 폭탄을 던져 일본군 장성과 고관을 처단하였다. 중국 국민당 정부가 한국 독립운동을 적극 지원하는 계기가 되었다.", "훙커우 공원"],
+["s9", 1932, "조선 혁명 간부 학교", "의열단이 중국 국민당 정부의 지원을 받아 세운 학교로, 독립군을 양성하였다.", "국민당"],
+["s10", 1923, "물산 장려 운동에 대한 비판", "토산품 값이 폭등하는 문제가 나타났고, 일부 사회주의자는 자본가 계급의 이익만을 도모하는 운동이라고 비판하였다.", "사회주의자"],
+["s10", 1924, "자치 운동", "이광수·최린·김성수 등이 일제의 식민 지배를 인정하고 그 안에서 자치권과 참정권을 얻으려 한 타협적 운동으로, 일제의 민족 분열 정책에 이용만 당하였다.", "이광수"],
+["s10", 1929, "문자 보급 운동", "『조선일보』가 '아는 것이 힘, 배워야 산다'를 구호로 한글 교재를 보급하고 전국 순회강연을 열었다.", "조선일보"],
+["s10", 1931, "브나로드 운동", "『동아일보』가 벌인 농촌 계몽 운동으로, 학생과 청년이 농촌을 찾아가 글을 가르치고 미신 타파와 근검절약을 강조하였다.", "동아일보"],
+["s11", 1927, "조선 농민 총동맹", "사회주의 운동의 영향으로 농민 조합이 활발히 조직되면서 결성된 전국적 농민 운동 단체이다.", "농민 조합"],
+["s11", 1927, "조선 노동 총동맹", "노동 쟁의 발생 건수와 참여 노동자가 크게 늘면서 결성된 전국 규모의 노동 운동 단체이다.", "노동 쟁의"],
+["s11", 1931, "혁명적 농민·노동 조합", "대공황으로 생활이 더 어려워지자 농민과 노동자가 사회주의 세력과 연대해 혁명적 조합을 만들고 비합법적 폭력 투쟁으로 일제에 맞섰다.", "비합법적"],
+["s12", 1924, "조선 청년 총동맹", "3·1 운동에서 항일 투쟁의 주체임을 자각한 청년들의 운동을 통일적으로 이끌려고 결성되었다.", "통일적"],
+["s12", 1926, "성진회", "광주에서 조직된 학생 비밀 결사로, 뒤에 학교별 독서회로 이어져 광주 학생 항일 운동을 이끌었다.", "독서회"],
+["s13", 1924, "제1차 국공 합작", "중국의 국민당과 공산당이 손잡은 일로, 민족 유일당 운동에 영향을 주었다.", "공산당"],
+["s13", 1926, "정우회 선언", "치안 유지법으로 탄압받던 사회주의 진영이 6·10 만세 운동 이후 민족주의 진영과 손잡고 합법적 활동 공간을 확보하자고 밝힌 선언이다.", "합법적"],
+["s13", 1929, "신간회의 진상 조사단 파견", "광주 학생 항일 운동이 일어나자 진상 조사단을 보내고 대규모 민중 대회를 추진하였으나, 일제의 탄압으로 집행부 대부분이 구속되었다.", "민중 대회"],
+["s13", 1931, "신간회 해소", "새 집행부의 타협적 태도와 국제 공산주의 운동의 노선 변화 속에서 사회주의자들이 전체 대회를 열어 해소를 결정하였다.", "전체 대회"],
+["s14", 1923, "관동 대지진 한국인 학살", "도쿄 부근 대지진 때 일본 당국과 언론이 유언비어를 퍼뜨려 사회 불안을 한국인 탓으로 돌렸고, 재일 한국인 6,000명 이상이 학살되었다.", "유언비어"],
+["s14", 1924, "「운수 좋은 날」", "현진건의 소설로, 인력거꾼 김 첨지의 삶을 통해 일제 강점기 가난한 도시민의 모습을 보여 준다.", "인력거꾼"],
+["s14", 1926, "영화 「아리랑」", "나운규가 각본·주연·감독을 맡아 흥행한 무성 영화로, 당시에는 장면을 해설하는 변사가 큰 인기를 누렸다.", "변사"],
+["s14", 1932, "농촌 진흥 운동", "대공황으로 농민이 몰락하자 일제가 생활 개선을 내세워 벌였으나, 농촌 통제를 강화하고 빈곤의 책임을 농민에게 돌렸다.", "통제", "rule"],
+["s14", 1937, "연해주 한인 강제 이주", "소련이 일본에 협력할 것이라는 구실로 연해주 한국인 수십만 명을 중앙아시아로 강제 이주시켰다.", "중앙아시아", "world"],
+["s15", 1923, "조선 형평사", "백정에 대한 사회적 차별을 없애려고 진주에서 창립되었다. '저울처럼 평등(형평)'한 세상을 목표로 하였다.", "진주"],
+["s15", 1923, "어린이날 제정", "방정환이 이끈 천도교 소년회가 어린이를 온전한 인격체로 존중하자며 어린이날 제정에 앞장서고 잡지 『어린이』를 펴냈다.", "방정환"],
+["s15", 1927, "조선 소년 연합회", "소년 운동이 퍼지면서 결성된 전국 조직이다. 일제는 1930년대에 소년 운동을 탄압하고 중일 전쟁 이후 모든 활동을 금지하였다.", "전국"],
+["s16", 1911, "사찰령", "일제가 불교를 통제하려고 만든 법으로, 사찰 재산 처분과 주지 임명까지 조선 총독의 허가를 받게 하였다.", "주지", "rule"],
+["s16", 1915, "박은식", "'조선 국혼'을 강조하며 『한국통사』와 『한국독립운동지혈사』를 써서 일제의 침략과 민족의 독립운동사를 정리한 민족주의 사학자이다.", "국혼"],
+["s16", 1921, "조선어 연구회", "주시경의 제자들이 중심이 되어 조직하였고, '가갸날'을 정하고 잡지 『한글』을 간행하였다.", "가갸날"],
+["s16", 1922, "천도교의 제2의 독립 선언 계획", "3·1 운동을 주도했던 천도교가 제2의 독립 선언 운동을 계획하였다. 『개벽』, 『신여성』 등의 잡지도 발간하였다.", "개벽"],
+["s16", 1925, "조선사 편수회", "조선 총독부 부설 기구로, 타율성론·정체성론·당파성론의 식민 사관에 따라 『조선사』를 편찬하였다.", "식민 사관", "rule"],
+["s16", 1931, "신채호의 고대사 연구", "고대사 연구에 주력하여 『조선상고사』, 『조선사연구초』 등을 저술한 민족주의 사학자이다.", "조선상고사"],
+["s16", 1933, "백남운의 사회 경제 사학", "마르크스의 유물 사관에 근거해 『조선사회경제사』를 쓰고, 한국사도 세계사의 보편적 발전 법칙에 따랐다며 식민 사관의 정체성론을 극복하려 하였다.", "정체성론"],
+["s16", 1934, "진단 학회", "문헌 고증으로 객관적인 역사를 서술하려는 실증 사학자들이 조직하고 『진단학보』를 발행하였다.", "진단학보"],
+["s16", 1934, "조선학 운동", "정인보 등이 '문화가 살면 민족은 죽지 않는다'는 신념으로 펼친 운동으로, 특히 조선 후기 실학 연구에 성과를 거두었다.", "정인보"],
+["s16", 1936, "전형필의 문화유산 수집", "간송 전형필이 재산을 들여 『훈민정음』 해례본 등 국외로 반출되던 문화유산을 지켰다.", "훈민정음"],
+["s17", 1935, "민족 혁명당", "여러 독립운동 단체가 난징에서 통합해 만든 중국 관내 최대 규모의 민족 통일 전선 정당이다. 김구 등 임시 정부 옹호 세력은 참여하지 않았다.", "난징"],
+["s17", 1935, "한국 국민당", "민족 혁명당에 참여하지 않은 김구 등 임시 정부 옹호 세력이 별도로 창당하였다.", "임시 정부 옹호"],
+["s17", 1937, "한국 광복 운동 단체 연합회", "중일 전쟁 이후 김구의 한국 국민당을 중심으로 결성되었다.", "한국 국민당"],
+["s17", 1937, "조선 민족 전선 연맹", "중일 전쟁 이후 김원봉이 이끄는 민족 혁명당을 중심으로 결성되었다.", "김원봉"],
+["s17", 1939, "김구·김원봉의 공개 통신", "김구와 김원봉이 함께 「동지 동포 제군에게 보내는 공개 통신」을 발표하여 항일 전선의 통합을 호소하였다.", "항일 전선의 통합"],
+["s17", 1941, "조선 의용대 화북 지대", "조선 의용대의 다수 병력이 화북 지방으로 이동해 결성하였고, 타이항산을 중심으로 호가장 전투와 반소탕전에서 큰 전과를 거두었다.", "타이항산"],
+["s18", 1940, "임시 정부의 충칭 정착", "윤봉길 의거 뒤 여러 곳을 옮겨 다니던 대한민국 임시 정부가 충칭에 자리 잡고 중국 국민당 정부의 지원을 받아 체제를 개편하였다.", "윤봉길 의거"],
+["s18", 1940, "한국 독립당", "민족주의 계열 정당들이 통합하여 만든 정당으로, 충칭 시기 대한민국 임시 정부 운영을 주도하였다.", "민족주의 계열"],
+["s18", 1941, "대일 선전 성명서", "아시아·태평양 전쟁이 일어나자 대한민국 임시 정부가 일본에 선전 포고하고 한국광복군을 연합군의 일원으로 참전시켰다.", "선전 포고"],
+["s18", 1942, "조선 의용대의 광복군 합류", "화북으로 이동하지 않은 조선 의용대 병력이 김원봉의 인솔로 한국광복군에 합류하고, 김규식 등도 임시 정부에 참여하여 좌우 합작의 형태를 이루었다.", "좌우 합작"],
+["s18", 1942, "조선 독립 동맹", "화북 지방의 사회주의 세력이 김두봉을 위원장으로 결성하였고, 조선 의용대 화북 지대를 조선 의용군으로 재편하였다.", "김두봉"],
+["s18", 1943, "미얀마·인도 전선 파견", "한국광복군이 영국군의 요청으로 공작대를 보내 심리전, 암호 해독, 포로 심문 등을 맡았다.", "영국군"],
+["s18", 1943, "카이로 선언", "미국·영국·중국 정상이 일본 세력을 몰아낸 뒤 적절한 시기에 한국을 독립시키겠다고 처음으로 약속하였다.", "적절한 시기", "world"],
+["s18", 1945, "얄타 회담", "미국·영국·소련 정상이 독일과의 전쟁이 끝나면 소련이 대일전에 참전하기로 합의하였다.", "대일전", "world"],
+["s18", 1945, "포츠담 선언", "미국·영국·중국 정상이 카이로 선언을 재확인하고 일본의 무조건 항복을 촉구하였다. 소련도 뒤늦게 참여하였다.", "무조건 항복", "world"],
+["s18", 1945, "국내 진공 작전", "한국광복군이 미국 전략 정보국(OSS)과 협약을 맺고 국내 정진군을 편성하였으나, 투입 직전 일제가 항복하여 취소되었다.", "국내 정진군"]
 ];
-const FACTS=RAW.map(function(r,i){return {id:"f"+i,u:r[0],y:r[1],t:r[2],d:r[3],k:r[4]};});
+const FACTS=RAW.map(function(r,i){return {id:"f"+i,u:r[0],y:r[1],t:r[2],d:r[3],k:r[4],tk:r[5]||null};});
 
 /* OX — 시험에서 실제로 헷갈리는 함정. [단원, 문장, 정답, 해설] */
 const OXRAW=[
@@ -7056,7 +7553,54 @@ const OXRAW=[
 ["s8","미쓰야 협정은 일제가 만주 군벌과 맺은 독립군 탄압 협정이다.",1,"맞다. 중국 관헌이 독립운동가를 잡아 일제에 넘기고 포상금을 받았다."],
 ["s8","3부 통합 운동의 결과 완전한 통합이 이루어졌다.",0,"<b>국민부</b>(남만주)와 <b>혁신 의회</b>(북만주)로 갈렸다. 각각 조선 혁명군, 한국 독립군으로 이어진다."],
 ["s8","영릉가 전투와 흥경성 전투는 지청천이 이끈 한국 독립군의 전투이다.",0,"그건 <b>양세봉의 조선 혁명군</b>이다. 지청천의 한국 독립군은 <b>쌍성보·동경성·대전자령</b>."],
-["s8","동북 항일 연군 소속 한인 유격대원들은 조국 광복회를 조직하였다.",1,"맞다. 중국 공산당의 동북 인민 혁명군 → 동북 항일 연군 순으로 발전했다."]
+["s8","동북 항일 연군 소속 한인 유격대원들은 조국 광복회를 조직하였다.",1,"맞다. 중국 공산당의 동북 인민 혁명군 → 동북 항일 연군 순으로 발전했다."],
+/* ── 교과서 34~63쪽 ── */
+["s9", "의열단은 김구가 상하이에서 조직하였다.", 0, "의열단은 <b>김원봉</b>이 만주 <b>지린</b>에서(1919). 김구가 만든 건 <b>한인 애국단</b>(1931)이다."],
+["s9", "「조선 혁명 선언」은 신채호가 작성한 의열단의 활동 지침이다.", 1, "맞다. 외교론·실력 양성론을 비판하고 <b>민중 직접 혁명</b>을 주장했다."],
+["s9", "이봉창은 상하이 훙커우 공원에서 폭탄을 던졌다.", 0, "이봉창은 <b>도쿄</b>에서 일왕 마차에. 훙커우 공원은 <b>윤봉길</b>이다."],
+["s9", "윤봉길 의거는 중국 국민당 정부가 한국 독립운동을 적극 지원하는 계기가 되었다.", 1, "맞다. 한중 공동 항일 전선 구축에도 영향을 주었다."],
+["s9", "강우규는 의열단원으로서 총독에게 폭탄을 던졌다.", 0, "강우규의 남대문역 의거(1919)는 <b>개인 의열 투쟁</b>이다."],
+["s9", "1920년대 후반 의열단원들은 황푸 군관 학교에서 정규 군사 훈련을 받았다.", 1, "맞다. 개인 의열 투쟁의 한계를 느끼고 조직적 무장 투쟁으로 방향을 바꿨다."],
+["s10", "물산 장려 운동은 조만식의 주도로 평양에서 시작되었다.", 1, "맞다. '내 살림 내 것으로', '조선 사람 조선 것'."],
+["s10", "물산 장려 운동은 사회주의자들로부터 자본가 계급의 이익만 좇는다는 비판을 받았다.", 1, "맞다. 토산품 값이 폭등하는 문제도 나타났다."],
+["s10", "민립 대학 설립 운동은 목표한 1천만 원을 모아 대학 설립에 성공하였다.", 0, "모금이 저조했고 일제가 <b>정치 운동</b>이라며 탄압해 성과를 거두지 못했다."],
+["s10", "브나로드 운동은 『조선일보』가 주도하였다.", 0, "브나로드는 <b>『동아일보』</b>(1931). 『조선일보』는 <b>문자 보급 운동</b>(1929)이다."],
+["s10", "자치 운동은 일제의 지배를 인정하는 타협적 운동이었다.", 1, "맞다. 이광수·최린·김성수 등. 일제의 민족 분열 정책에 이용만 당했다."],
+["s11", "암태도 소작 쟁의는 소작료 인하를 이끌어 냈다.", 1, "맞다. 1년여 투쟁 끝에 지주가 소작인회의 요구를 받아들였다."],
+["s11", "원산 총파업은 일제 강점기 최대 규모의 노동 운동이다.", 1, "맞다. 4개월여 이어졌고 국내외 노동 단체가 지원했다."],
+["s11", "1930년대 농민·노동 운동은 합법적인 온건 노선으로 바뀌었다.", 0, "반대다. 혁명적 조합을 만들어 <b>비합법적 폭력 투쟁</b>으로 급진화했다."],
+["s11", "한국인 노동자는 일본인 노동자보다 임금을 더 많이 받았다.", 0, "장시간 노동에도 임금은 일본인의 <b>절반에도 못 미쳤다</b>."],
+["s12", "6·10 만세 운동은 고종의 장례일을 계기로 일어났다.", 0, "<b>순종</b>의 장례일(1926)이다. 고종의 장례는 <b>3·1 운동</b>의 계기."],
+["s12", "6·10 만세 운동 준비 과정에서 사회주의 계열과 천도교가 연대하였다.", 1, "맞다. 이 경험이 민족 협동 전선(신간회)의 공감대로 이어졌다."],
+["s12", "광주 학생 항일 운동은 3·1 운동 이후 최대 규모의 항일 민족 운동이다.", 1, "맞다(1929)."],
+["s12", "광주 학생 항일 운동은 광주 지역에만 머물렀다.", 0, "신간회 등의 노력으로 <b>전국</b>으로, 만주 등 국외로도 퍼졌다."],
+["s13", "신간회는 비밀 결사로 조직되었다.", 0, "신간회는 <b>합법</b> 단체다."],
+["s13", "신간회는 비타협적 민족주의자와 사회주의자가 함께 만들었다.", 1, "맞다. 강령에 '기회주의를 일체 부인함'."],
+["s13", "정우회 선언은 민족주의 진영이 사회주의 진영에 연대를 제안한 선언이다.", 0, "거꾸로다. <b>사회주의</b> 진영이 민족주의 진영과 손잡자고 한 선언이다."],
+["s13", "신간회는 일제의 강제 해산 명령으로 해체되었다.", 0, "사회주의자들이 전체 대회에서 스스로 <b>해소</b>를 결정했다(1931)."],
+["s13", "신간회는 광주 학생 항일 운동이 일어나자 진상 조사단을 파견하였다.", 1, "맞다. 민중 대회도 추진했으나 탄압으로 무산됐다."],
+["s14", "일제 강점기 도시에서는 한국인 거주지와 일본인 거주지가 구분되었다.", 1, "맞다. 수도·전기·도로는 일본인 거주지에 몰렸다."],
+["s14", "농촌 진흥 운동은 농촌의 근본 문제를 해결해 농민의 삶을 크게 개선하였다.", 0, "통제를 강화하고 빈곤의 책임을 <b>농민에게 돌리는</b> 방식이었다."],
+["s14", "관동 대지진 때 일본 당국은 유언비어를 퍼뜨려 사회 불안을 한국인 탓으로 돌렸다.", 1, "맞다(1923). 재일 한국인 6,000명 이상이 학살됐다."],
+["s14", "연해주 한인을 중앙아시아로 강제 이주시킨 것은 일본이다.", 0, "<b>소련</b>이다(1937)."],
+["s14", "군산·목포는 일본으로 쌀을 반출하던 창구로 항구 도시로 발달하였다.", 1, "맞다. 대전·신의주는 철도역, 함흥·청진은 공업 도시."],
+["s15", "조선 형평사는 백정에 대한 차별 철폐를 위해 진주에서 창립되었다.", 1, "맞다(1923). 형평 = 저울처럼 평등."],
+["s15", "근우회는 사회주의 계열 여성들만으로 조직되었다.", 0, "<b>민족주의·사회주의</b> 계열 여성 단체가 통합했다(1927)."],
+["s15", "방정환은 '어린이'라는 말을 널리 보급하고 잡지 『어린이』를 펴냈다.", 1, "맞다. 천도교 소년회를 이끌고 어린이날 제정에 앞장섰다."],
+["s16", "식민 사관의 정체성론은 한국사가 외세에 의해 타율적으로 전개되었다는 주장이다.", 0, "그건 <b>타율성론</b>. 정체성론은 사회·경제가 <b>발전 없이 정체</b>됐다는 주장이다."],
+["s16", "백남운은 한국사도 세계사의 보편적 발전 법칙에 따라 발전하였다고 주장하였다.", 1, "맞다. 사회 경제 사학으로 정체성론을 극복하려 했다."],
+["s16", "진단 학회는 민족정신을 강조한 민족주의 사학자들이 조직하였다.", 0, "진단 학회는 <b>실증 사학</b>(문헌 고증, 1934)이다."],
+["s16", "신채호는 '조선 국혼'을 강조하며 『한국통사』를 저술하였다.", 0, "국혼과 『한국통사』는 <b>박은식</b>. 신채호는 『조선상고사』."],
+["s16", "조선어 학회는 한글 맞춤법 통일안을 제정하였다.", 1, "맞다. 『조선말 큰사전』 편찬도 추진했다."],
+["s16", "주기철 목사는 신사 참배를 거부하다 고문 끝에 순교하였다.", 1, "맞다. 개신교 계통의 일부 학교는 신사 참배 거부로 폐교되었다."],
+["s17", "민족 혁명당에는 김구 등 임시 정부 옹호 세력도 참여하였다.", 0, "김구 세력은 불참하고 <b>한국 국민당</b>을 따로 만들었다."],
+["s17", "조선 의용대는 중국 관내에서 결성된 최초의 한인 부대이다.", 1, "맞다(1938, 우한)."],
+["s17", "조선 의용대는 김구의 한국 광복 운동 단체 연합회가 창설하였다.", 0, "<b>조선 민족 전선 연맹</b>(김원봉)이 창설했다."],
+["s18", "한국광복군 창설 당시 총사령관은 김원봉이다.", 0, "총사령관은 <b>지청천</b>. 김원봉은 1942년 조선 의용대를 이끌고 합류했다."],
+["s18", "건국 강령은 조소앙의 삼균주의를 바탕으로 하였다.", 1, "맞다. 정치·경제·교육의 균등(1941)."],
+["s18", "카이로 선언에서 처음으로 한국의 독립이 약속되었다.", 1, "맞다(1943). '적절한 시기에'라는 단서가 붙었다."],
+["s18", "조선 건국 동맹은 김두봉이 화북 지방에서 조직하였다.", 0, "조선 건국 동맹은 <b>여운형</b>이 <b>국내</b>에서(1944). 김두봉은 화북의 <b>조선 독립 동맹</b>(1942)."],
+["s18", "한국광복군의 국내 진공 작전은 일제의 항복으로 실행되지 못하였다.", 1, "맞다. 미국 OSS와 손잡고 국내 정진군을 편성했었다."]
 ];
 const OX=OXRAW.map(function(r,i){return {id:"o"+i,u:r[0],q:r[1],a:!!r[2],e:r[3]};});
 
@@ -7075,9 +7619,19 @@ const COMPARE=[
 {u:"x1",t:"병인양요 vs 신미양요",a:{n:"병인양요 (1866)",p:["<b>프랑스</b>가 침입","구실: 병인박해(천주교 탄압)","한성근·양헌수가 항전","<b>외규장각 도서</b> 약탈당함"]},b:{n:"신미양요 (1871)",p:["<b>미국</b>이 침입","구실: 제너럴셔먼호 사건","<b>어재연</b>이 광성보에서 항전","이후 전국에 <b>척화비</b> 건립"]}},
 {u:"x1",t:"갑신정변 vs 갑오개혁",a:{n:"갑신정변 (1884)",p:["주체: <b>급진 개화파</b>","문벌 폐지·인민 평등권 (14개조)","<b>지조법</b> 개혁 주장","청군 개입으로 <b>3일</b> 만에 실패"]},b:{n:"갑오개혁 (1894)",p:["주체: <b>군국기무처</b>","<b>신분제·과거제 폐지</b> 실제 시행","재정 <b>탁지아문</b>으로 일원화","군사 개혁이 빠져 한계"]}},
 {u:"x1",t:"을사늑약 vs 정미 7조약",a:{n:"을사늑약 (1905)",p:["= 제2차 한일 협약","<b>외교권</b> 박탈","<b>통감부</b> 설치","을사의병, 시일야방성대곡"]},b:{n:"한일 신협약 (1907)",p:["= 정미 7조약","<b>차관 정치</b>","부수 각서로 <b>군대 해산</b>","정미의병 → 13도 창의군"]}},
-{u:"x2",t:"의열단 vs 한인 애국단",a:{n:"의열단 (1919)",p:["조직: <b>김원봉</b>, 만주 지린","지침: 신채호 <b>조선혁명선언</b>","박재혁·김익상·김상옥·나석주","뒤에 조선 의용대(1938) 창설"]},b:{n:"한인 애국단 (1931)",p:["조직: <b>김구</b>, 상하이","목적: 침체된 임시 정부에 활력","<b>이봉창</b>(도쿄)·<b>윤봉길</b>(훙커우)","중국의 지원 → 한국광복군(1940)"]}},
-{u:"x2",t:"신민회 vs 신간회",a:{n:"신민회 (1907)",p:["안창호·양기탁, <b>비밀 결사</b>","대성 학교·오산 학교","국외 <b>독립운동 기지</b> (삼원보)","<b>105인 사건</b>으로 해체(1911)"]},b:{n:"신간회 (1927)",p:["<b>합법</b> 단체, 최대 규모","비타협 민족주의 + 사회주의","<b>광주 학생 항일 운동</b> 진상 조사단","자매 단체: <b>근우회</b>"]}},
-{u:"x3",t:"4·19 혁명 vs 6월 민주 항쟁",a:{n:"4·19 혁명 (1960)",p:["원인: <b>3·15 부정 선거</b>","도화선: <b>김주열</b>","결과: 이승만 하야","→ <b>내각 책임제</b> 개헌"]},b:{n:"6월 민주 항쟁 (1987)",p:["원인: <b>박종철</b> 고문치사, 4·13 호헌","도화선: <b>이한열</b>","결과: <b>6·29 민주화 선언</b>","→ <b>5년 단임 직선제</b> 개헌"]}}
+{u:"x3",t:"4·19 혁명 vs 6월 민주 항쟁",a:{n:"4·19 혁명 (1960)",p:["원인: <b>3·15 부정 선거</b>","도화선: <b>김주열</b>","결과: 이승만 하야","→ <b>내각 책임제</b> 개헌"]},b:{n:"6월 민주 항쟁 (1987)",p:["원인: <b>박종철</b> 고문치사, 4·13 호헌","도화선: <b>이한열</b>","결과: <b>6·29 민주화 선언</b>","→ <b>5년 단임 직선제</b> 개헌"]}},
+{u:"s9",t:"의열단 vs 한인 애국단",a:{n:"의열단 (1919)",p:["조직: <b>김원봉</b>·윤세주, 만주 <b>지린</b>", "지침: 신채호의 <b>「조선 혁명 선언」</b>", "김익상(총독부)·김상옥(종로 경찰서)·나석주(동척)", "뒤에 <b>황푸 군관 학교</b> 입교 → 조직적 무장 투쟁"]},b:{n:"한인 애국단 (1931)",p:["조직: <b>김구</b>, 상하이", "목적: 침체된 <b>임시 정부</b>에 활기", "<b>이봉창</b>(도쿄 일왕 마차)", "<b>윤봉길</b>(훙커우 공원) → 중국 국민당의 지원"]}},
+{u:"s10",t:"물산 장려 운동 vs 민립 대학 설립 운동",a:{n:"물산 장려 운동",p:["<b>조만식</b>, 평양에서 시작", "'내 살림 내 것으로', '조선 사람 조선 것'", "토산품 애용·근검저축·<b>금주·단연</b>", "한계: 값 폭등, <b>자본가 계급</b>의 이익만 좇는다는 비판"]},b:{n:"민립 대학 설립 운동",p:["<b>이상재</b>·이승훈 — 조선 민립 대학 기성회", "'교육이 아니면 아니 된다' — 대학을 세우자", "<b>1천만 원</b> 전국 모금", "한계: 자연재해, 일제가 <b>정치 운동</b>이라며 탄압"]}},
+{u:"s10",t:"문자 보급 운동 vs 브나로드 운동",a:{n:"문자 보급 운동 (1929)",p:["<b>『조선일보』</b>", "구호: '아는 것이 힘, 배워야 산다'", "한글 교재 보급", "전국 순회강연"]},b:{n:"브나로드 운동 (1931)",p:["<b>『동아일보』</b>", "뜻: 러시아어로 '<b>민중 속으로</b>'", "학생·청년이 농촌을 찾아감", "미신 타파·근검절약 계몽"]}},
+{u:"s11",t:"암태도 소작 쟁의 vs 원산 총파업",a:{n:"암태도 소작 쟁의 (1923)",p:["<b>농민</b>의 싸움", "고율 <b>소작료</b>를 걷는 지주에 맞섬", "1년여 투쟁 — 목포 법원까지", "결과: <b>소작료 인하</b>"]},b:{n:"원산 총파업 (1929)",p:["<b>노동자</b>의 싸움", "계기: 일본인 감독의 한국인 노동자 <b>구타</b>", "<b>4개월여</b> 지속, 국내외 단체 지원", "일제 강점기 <b>최대 규모</b> 노동 운동"]}},
+{u:"s12",t:"6·10 만세 운동 vs 광주 학생 항일 운동",a:{n:"6·10 만세 운동 (1926)",p:["계기: <b>순종</b>의 장례일", "사회주의 계열·천도교가 준비 → 사전 발각", "학생들이 격문·만세", "의의: 민족 협동 전선의 <b>공감대</b>"]},b:{n:"광주 학생 항일 운동 (1929)",p:["계기: <b>나주역</b> 한·일 학생 충돌", "<b>독서회</b>를 통해 확산", "<b>신간회</b>가 진상 조사단 파견", "3·1 운동 이후 <b>최대 규모</b> 항일 운동"]}},
+{u:"s13",t:"신민회 vs 신간회",a:{n:"신민회 (1907)",p:["안창호·양기탁, <b>비밀 결사</b>", "대성 학교·오산 학교", "국외 <b>독립운동 기지</b> (삼원보)", "105인 사건으로 해체"]},b:{n:"신간회 (1927)",p:["<b>합법</b> 단체, 일제 강점기 최대 규모", "비타협적 민족주의 + 사회주의", "약 <b>140개</b> 지회, 4만여 명", "<b>광주 학생</b> 항일 운동 진상 조사단"]}},
+{u:"s16",t:"민족주의 사학 vs 사회 경제 사학",a:{n:"민족주의 사학",p:["<b>박은식</b>·<b>신채호</b>", "<b>민족정신</b>을 바로 세우면 독립할 수 있다", "『한국통사』, 『조선상고사』", "정인보의 <b>조선학 운동</b>으로 이어짐"]},b:{n:"사회 경제 사학",p:["<b>백남운</b>", "마르크스의 <b>유물 사관</b>", "『조선사회경제사』", "한국사도 <b>보편적인 발전 법칙</b> → 정체성론 반박"]}},
+{u:"s16",t:"박은식 vs 신채호",a:{n:"박은식",p:["'조선 <b>국혼</b>' 강조", "<b>『한국통사』</b> — 일제의 침략 과정", "<b>『한국독립운동지혈사』</b>", "민족주의 사학"]},b:{n:"신채호",p:["<b>고대사</b> 연구에 주력", "<b>『조선상고사』</b>, 『조선사연구초』", "의열단 <b>「조선 혁명 선언」</b> 작성", "민족주의 사학"]}},
+{u:"s17",t:"민족 혁명당 vs 한국 국민당",a:{n:"민족 혁명당 (1935)",p:["<b>난징</b>, 여러 단체 통합", "중국 관내 최대 <b>통일 전선 정당</b>", "의열단 계열(<b>김원봉</b>)이 당권 장악", "조소앙·지청천 탈당 → 통일 전선 약화"]},b:{n:"한국 국민당 (1935)",p:["<b>김구</b> 등 임시 정부 옹호 세력", "민족 혁명당에 참여하지 않음", "중일 전쟁 뒤 <b>한국 광복 운동 단체 연합회</b>의 중심", "→ 1940 한국 독립당으로"]}},
+{u:"s17",t:"조선 의용대 vs 한국광복군",a:{n:"조선 의용대 (1938)",p:["<b>조선 민족 전선 연맹</b>(김원봉)", "<b>우한</b>에서 창설, 중국 관내 최초 한인 부대", "심리전·포로 심문·후방 공작", "다수는 <b>화북</b>(타이항산)으로 이동"]},b:{n:"한국광복군 (1940)",p:["<b>대한민국 임시 정부</b>", "<b>충칭</b>, 총사령관 <b>지청천</b>", "미얀마·인도 전선 파견 (영국군 요청)", "미국 OSS와 <b>국내 진공 작전</b> 준비"]}},
+{u:"s18",t:"조선 독립 동맹 vs 조선 건국 동맹",a:{n:"조선 독립 동맹 (1942)",p:["<b>화북</b> 지방(옌안)", "위원장 <b>김두봉</b>, 사회주의 세력 중심", "조선 의용대 화북 지대 → <b>조선 의용군</b>", "항일 무장 투쟁"]},b:{n:"조선 건국 동맹 (1944)",p:["<b>국내</b>, 광복 1년여 앞두고", "<b>여운형</b> 주도", "민족주의·사회주의 계열 함께 참여한 <b>비밀 결사</b>", "중앙과 지방 조직, 일제 패망에 대비"]}},
+{u:"s18",t:"카이로 선언 vs 포츠담 선언",a:{n:"카이로 선언 (1943. 12.)",p:["<b>미국·영국·중국</b>", "한국 독립을 <b>처음으로</b> 약속", "'<b>적절한 시기</b>에' 독립", "김구: 그 표현을 좋아하지 않는다"]},b:{n:"포츠담 선언 (1945. 7.)",p:["미국·영국·중국 (+ 뒤에 <b>소련</b>)", "카이로 선언을 <b>재확인</b>", "일본의 <b>무조건 항복</b> 촉구", "미·영·중·소 4개국이 한국 독립을 재확인"]}}
 ];
 
 /* 두문자 · 흐름 암기법 */
@@ -7099,8 +7653,16 @@ const MNEMO=[
 {u:"s8",t:"3부의 위치",k:"참(남) · 정(지린) · 신(북)",e:"<em>참</em>의부 = 남만주 ‖ <em>정</em>의부 = 지린성 일대 ‖ <em>신</em>민부 = 북만주(자유시에서 돌아온 독립군). 셋 다 <b>민정 + 군정</b>을 갖춘 자치 정부."},
 {u:"s8",t:"한중 연합 작전 — 사람과 전투",k:"양세봉 = 영·흥 / 지청천 = 쌍·동·대",e:"<em>양세봉</em> · 조선 혁명군 · 남만주 → <b>영</b>릉가(32) · <b>흥</b>경성(33) ‖ <em>지청천</em> · 한국 독립군 · 북만주 → <b>쌍</b>성보(32) · <b>동</b>경성(33) · <b>대</b>전자령(33). 지청천은 뒤에 <b>한국광복군</b> 창설을 주도한다."},
 {u:"x1",t:"근대 조약 체결 순서",k:"강 · 조 · 제 · 한 → 을 · 정 · 기 · 병",e:"<em>강</em>화도(1876) → <em>조</em>미(1882) → <em>제</em>물포(1882) → <em>한</em>성(1884) ‖ <em>을</em>사(1905) → <em>정</em>미(1907) → <em>기</em>유각서(1909) → <em>병</em>합(1910)."},
-{u:"x2",t:"실력 양성 운동",k:"물 · 민 · 문",e:"<em>물</em>산 장려 운동(1922, 조만식·평양) · <em>민</em>립 대학 설립 운동(1923, 이상재) · <em>문</em>맹 퇴치 운동(브나로드, 1931)."},
-{u:"x3",t:"민주화 운동 3대 사건",k:"4 · 5 · 6 = 60 · 80 · 87",e:"<em>4</em>·19 혁명(1960) → <em>5</em>·18 민주화 운동(1980) → <em>6</em>월 민주 항쟁(1987). 앞 숫자가 커질수록 연도도 뒤로 간다."}
+{u:"x3",t:"민주화 운동 3대 사건",k:"4 · 5 · 6 = 60 · 80 · 87",e:"<em>4</em>·19 혁명(1960) → <em>5</em>·18 민주화 운동(1980) → <em>6</em>월 민주 항쟁(1987). 앞 숫자가 커질수록 연도도 뒤로 간다."},
+{u:"s9",t:"의열 투쟁 두 줄기",k:"의 = 김·지 · 애 = 김·상",e:"<em>의</em>열단 = <em>김</em>원봉·<em>지</em>린(1919). 한인 <em>애</em>국단 = <em>김</em>구·<em>상</em>하이(1931). 둘 다 '김'이라 헷갈리니 <b>도시</b>로 가른다."},
+{u:"s10",t:"실력 양성 운동 삼총사",k:"물 · 민 · 문",e:"<em>물</em>산 장려 운동(1920, 조만식·평양) · <em>민</em>립 대학 설립 운동(1923, 이상재) · <em>문</em>맹 퇴치 — 문자 보급(1929, 조선일보)·브나로드(1931, 동아일보)."},
+{u:"s10",t:"신문사 짝",k:"조 = 문자, 동 = 브",e:"<em>조</em>선일보는 <b>문자</b> 보급 운동(1929), <em>동</em>아일보는 <b>브</b>나로드 운동(1931). '조문동브'."},
+{u:"s13",t:"1920년대 국내 민족 운동의 갈래",k:"타협 → 자치 / 비타협 + 사회주의 → 신간회",e:"실력 양성 운동이 막히자 민족주의가 <b>타협</b>(자치 운동)과 <b>비타협</b>으로 갈렸고, 비타협 쪽이 정우회 선언(1926)을 낸 <b>사회주의</b>와 손잡아 <em>신간회</em>(1927)가 됐다. 해소는 1931."},
+{u:"s15",t:"대중 운동 세 갈래",k:"여 근 · 소 방 · 형 진",e:"<em>여</em>성 운동 = <b>근</b>우회(1927) · <em>소</em>년 운동 = <b>방</b>정환(어린이날) · <em>형</em>평 운동 = <b>진</b>주 조선 형평사(1923)."},
+{u:"s16",t:"식민 사관 세 가지",k:"타 · 정 · 당",e:"<em>타</em>율성론(외세에 휘둘렸다) · <em>정</em>체성론(발전이 없었다) · <em>당</em>파성론(단결 못 한다). 정체성론을 정면으로 반박한 게 <b>백남운</b>."},
+{u:"s16",t:"역사학 세 갈래",k:"민 박신 · 사 백 · 실 진",e:"<em>민</em>족주의 사학 = <b>박</b>은식·<b>신</b>채호 · <em>사</em>회 경제 사학 = <b>백</b>남운 · <em>실</em>증 사학 = <b>진</b>단 학회."},
+{u:"s18",t:"광복 직전 세 단체",k:"충 김구 · 옌 김두봉 · 국 여운형",e:"<em>충</em>칭 = 대한민국 임시 정부(<b>김구</b>, 한국광복군) · <em>옌</em>안(화북) = 조선 독립 동맹(<b>김두봉</b>, 조선 의용군) · <em>국</em>내 = 조선 건국 동맹(<b>여운형</b>)."},
+{u:"s18",t:"연합국의 약속 순서",k:"카 → 얄 → 포",e:"<em>카</em>이로 선언(1943. 12., 독립 첫 약속) → <em>얄</em>타 회담(1945. 2., 소련 참전 합의) → <em>포</em>츠담 선언(1945. 7., 카이로 재확인·무조건 항복)."}
 ];
 
 
@@ -7133,6 +7695,12 @@ function load(){
   try{var r=localStorage.getItem(KEY);S=r?Object.assign(blank(),JSON.parse(r)):blank();}
   catch(e){S=blank();}
   if(!S.units||!S.units.length)S.units=IN_RANGE.slice();
+  /* 범위가 8~63쪽으로 늘었다 — 예전 저장본에도 새 소단원을 한 번 켜 준다 */
+  if((S.rangeV||1)<2){
+    IN_RANGE.forEach(function(u){ if(S.units.indexOf(u)<0)S.units.push(u); });
+    S.units=S.units.filter(function(u){return !!UMAP[u];});
+    S.rangeV=2;
+  }
   var t=dayNo();
   if(!S.today||S.today.day!==t)S.today={day:t,n:0,ok:0};
   if(S.last&&S.last<t-1)S.streak=0;      /* 하루라도 건너뛰면 연속 끊김 */
@@ -7438,9 +8006,11 @@ var ERAS=[
   {max:9999,n:"1945년 이후",t:"광복 이후"}
 ];
 function eraOf(y){for(var i=0;i<ERAS.length;i++)if(y<=ERAS[i].max)return i;return ERAS.length-1;}
-var TRACK={s1:"world",s2:"rule",s3:"rule",s4:"rule",s5:"resist",s6:"resist",s7:"resist",s8:"resist"};
-var TRACKN={rule:"일제",resist:"우리",world:"세계",other:"그 밖"};
-function trackOf(u){return TRACK[u]||"other";}
+var TRACK={s1:"world",s2:"rule",s3:"rule",s4:"rule",s5:"resist",s6:"resist",s7:"resist",s8:"resist",
+  s9:"resist",s10:"resist",s11:"resist",s12:"resist",s13:"resist",s14:"life",s15:"resist",s16:"resist",s17:"resist",s18:"resist"};
+var TRACKN={rule:"일제",resist:"우리",world:"세계",life:"삶",other:"그 밖"};
+/* 단원 갈래를 따르되, 사실 하나가 따로 적어 두면 그걸 쓴다 (예: 민족 문화 단원 안의 「조선사 편수회」는 일제가 한 일) */
+function trackOf(u,f){return (f&&f.tk)||TRACK[u]||"other";}
 /* 기본은 「전체 순서」 — 단원 경계를 지우고 처음부터 끝까지 한 줄로 세운다 */
 var TLFLOW=true;
 function viewTimeline(){
@@ -7453,7 +8023,7 @@ function viewTimeline(){
       var ei=eraOf(f.y);
       if(ei!==ce){ ce=ei;
         body+='<div class="era"><b>'+ERAS[ei].n+'</b><span>'+esc(ERAS[ei].t)+'</span></div>'; }
-      var k=trackOf(f.u);
+      var k=trackOf(f.u,f);
       body+='<div class="rl k-'+k+'"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
         '<div><div class="t">'+esc(f.t)+'<em class="tg">'+TRACKN[k]+'</em></div>'+
         '<div class="s">'+f.d+'</div></div></div>';
