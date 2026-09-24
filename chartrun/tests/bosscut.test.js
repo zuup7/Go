@@ -1,7 +1,7 @@
 // 보스전 컷신 — 여기서 막히면 게임이 영영 안 끝나므로 제일 빡빡하게 본다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, loadBoss, updateGame, BOSS_CUT_GAP } from '../src/core/game.js';
+import { createGame, loadBoss, updateGame, BOSS_CUT_GAP, PHASE1_CARD } from '../src/core/game.js';
 import { hitBoss, syncPhase, bossCombined } from '../src/core/boss.js';
 import {
   BOSS_CUTS,
@@ -231,4 +231,55 @@ test('엔딩 컷신도 건너뛰면 바로 통계로 간다', () => {
   run(game, 0.4, { confirmPressed: true });
   assert.equal(game.scene, 'ending');
   assert.ok(game.ending, '통계가 만들어져야 한다');
+});
+
+
+// ── 「PHASE 1」 카드 ─────────────────────────────────────────
+//
+// 예전엔 그리는 쪽이 「보스 장면 시계가 1.4초 전이면」 카드를 띄웠다. 부활도
+// 그 시계를 0 으로 돌리므로 **죽을 때마다** 떴고, 3페이즈에서 죽어도 「PHASE 1」
+// 이라고 했다. 이제 core 가 카드를 들고 있으니 여기서 잰다.
+
+/** R 로 죽고, 부활해서 보스 장면으로 돌아올 때까지 */
+function dieAndRevive(game) {
+  assert.equal(game.bossCut, null, '컷신 중에는 R 이 안 먹는다 — 테스트를 잘못 세웠다');
+  updateGame(game, idle({ restartPressed: true }), DT);
+  assert.equal(game.scene, 'death', '안 죽었다');
+  for (let i = 0; i < 600 && game.scene !== 'boss'; i++) updateGame(game, idle(), DT);
+  assert.equal(game.scene, 'boss', '부활을 안 했다');
+}
+
+test('보스전이 시작되면 PHASE 1 카드가 뜨고, 잠시 뒤 걷힌다', () => {
+  const game = bossGame();
+  assert.ok(game.phaseCard, '싸움이 시작됐는데 카드가 없다');
+  run(game, PHASE1_CARD + 0.1);
+  assert.equal(game.phaseCard, null, '시간이 다 됐는데 카드가 안 걷힌다');
+});
+
+test('보스전에서 죽었다 살아나도 PHASE 1 카드는 다시 안 뜬다', () => {
+  const game = bossGame();
+  run(game, PHASE1_CARD + 0.1);
+  dieAndRevive(game);
+  assert.equal(game.phaseCard, null, '부활했더니 PHASE 1 카드가 또 떴다');
+});
+
+test('카드가 떠 있는 동안 죽어도 부활한 뒤엔 없다', () => {
+  // 카드가 남아 있다가 부활한 화면에서 이어서 뜨면 같은 버그다
+  const game = bossGame();
+  run(game, 0.3);
+  assert.ok(game.phaseCard);
+  dieAndRevive(game);
+  assert.equal(game.phaseCard, null, '죽기 전 카드가 부활 뒤까지 따라왔다');
+});
+
+test('2페이즈에서 죽어도 「PHASE 1」 이라고 하지 않는다', () => {
+  const game = bossGame();
+  run(game, PHASE1_CARD + 0.1);
+  // 페이즈가 바뀔 때까지 때린다. (이 파일의 hit 은 전환 컷신을 안 띄운다 —
+  // 여기서 보는 건 컷신이 아니라 「넘어간 뒤 죽었을 때」다)
+  for (let i = 0; i < 50 && !hit(game).changed; i++);
+  assert.ok(game.boss.phaseId >= 2, `아직 ${game.boss.phaseId}페이즈다`);
+
+  dieAndRevive(game);
+  assert.equal(game.phaseCard, null, `${game.boss.phaseId}페이즈에서 죽었는데 PHASE 1 카드가 떴다`);
 });

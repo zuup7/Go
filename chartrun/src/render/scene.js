@@ -27,7 +27,7 @@ import { playerFrame, setLook, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE
 import { particleSprite } from './particleArt.js';
 
 import { ALBUMS } from '../data/albums.js';
-import { VIEW } from '../core/game.js';
+import { VIEW, PHASE1_CARD } from '../core/game.js';
 import {
   bossPhase,
   bossCombined,
@@ -1705,11 +1705,15 @@ export function drawScene(ctx, game, time) {
   // 싸움이 시작될 때 PHASE 1 카드. 2·3·4페이즈는 전환 컷신이 이름을 박아주는데
   // 1페이즈만 아무것도 없이 불쑥 시작했다. **컷신은 안 만든다** — 시작은 전환이 아니라
   // 시작이고, 보스전에 들어갈 때마다 4초씩 붙잡히면 성가시다. 카드만 얹고 안 멈춘다.
-  if (game.scene === 'boss' && !game.bossCut && game.sceneTime < PHASE1_CARD) {
+  //
+  // **언제 띄울지는 core 가 정한다**(game.phaseCard). 여기서 sceneTime 을 보고
+  // 정했더니 부활할 때마다 다시 떴다 — core/game.js 의 PHASE1_CARD 주석 참고.
+  const card = game.phaseCard;
+  if (game.scene === 'boss' && card && !game.bossCut) {
     ctx.save();
     // 끝에서 스르륵 걷힌다 — 툭 사라지면 깜빡인 것처럼 보인다
-    ctx.globalAlpha = Math.min(1, (PHASE1_CARD - game.sceneTime) / 0.35);
-    drawCutTitle(ctx, 'PHASE 1', game.sceneTime, 4, 92);
+    ctx.globalAlpha = Math.min(1, (PHASE1_CARD - card.t) / 0.35);
+    drawCutTitle(ctx, 'PHASE 1', card.t, 4, 92);
     ctx.restore();
   }
 
@@ -1722,9 +1726,6 @@ export function drawScene(ctx, game, time) {
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   }
 }
-
-/** PHASE 1 카드가 떠 있는 시간 */
-const PHASE1_CARD = 1.4;
 
 /** 구간 효과 연출 — 정전은 내 주변만 남기고, 역재생은 화면을 물들인다 */
 function drawEffects(ctx, game, ox, oy, time) {

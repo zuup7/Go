@@ -6351,6 +6351,8 @@ function createGame(options = {}) {
     shopDenied: 0,
     /** 상점에서 나가면 어디로 돌아갈지 ('title' | 'play'). openShop 이 세운다 */
     shopBack: 'title',
+    /** 보스전 시작의 「PHASE 1」 카드 { t }. loadBoss 만 세운다 — PHASE1_CARD 참고 */
+    phaseCard: null,
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -6533,6 +6535,16 @@ function loadStage(game, index) {
   emit(game, 'stage', { index });
 }
 
+/**
+ * 보스전이 시작될 때 뜨는 「PHASE 1」 카드의 길이(초).
+ *
+ * **카드는 시계가 아니라 상태다.** 예전엔 그리는 쪽이 「보스 장면의 시계가 1.4초
+ * 전이면 띄운다」고 봤는데, 부활(reviveAtCheckpoint)도 그 시계를 0 으로 되돌린다 —
+ * 그래서 **죽을 때마다** 카드가 다시 떴고, 글자가 박혀 있어서 3페이즈에서 죽어도
+ * 「PHASE 1」 이라고 했다. 이제 loadBoss 가 세우고, 시간이 다 되거나 죽으면 걷힌다.
+ */
+const PHASE1_CARD = 1.4;
+
 function loadBoss(game) {
   game.npcTalk = null;
   game.npcHint = null;
@@ -6545,6 +6557,8 @@ function loadBoss(game) {
   game.camera = createCamera(VIEW.w, VIEW.h);
   game.scene = 'boss';
   game.sceneTime = 0;
+  // 카드가 서는 **유일한 자리.** 부활은 여기를 안 지나므로 카드도 안 선다
+  game.phaseCard = { t: 0 };
   game.rank = 2;
   emit(game, 'boss', {});
 }
@@ -6594,6 +6608,8 @@ function killPlayer(game) {
   game.chartOuts += 1;
   game.scene = 'death';
   game.sceneTime = 0;
+  // 싸움 시작 1.4초 안에 죽으면 카드가 남아 있다가 부활한 뒤에 이어서 뜬다
+  game.phaseCard = null;
   freezeGame(game, FREEZE.death);
   const fx = fxOf(game.save, 'death');
   shakeCamera(game.camera, fx.shake ?? 1.2);
@@ -7975,6 +7991,11 @@ function handleThrown(game, dt, onHit) {
 function updateBossScene(game, input, dt) {
   const boss = game.boss;
 
+  if (game.phaseCard) {
+    game.phaseCard.t += dt;
+    if (game.phaseCard.t >= PHASE1_CARD) game.phaseCard = null;
+  }
+
   // 컷신이 도는 동안에는 아무것도 움직이지 않는다 — 연출 보다가 죽으면 안 된다
   // 쓰러지는 컷신과 엔딩 사이의 숨. 화면은 이미 검다.
   if (game.bossCutGap > 0) {
@@ -8498,7 +8519,7 @@ function resumeLabel(resume) {
   return `이어하기 — ${resume.hard ? '하드 ' : ''}STAGE ${number}`;
 }
 
-return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, buyOrEquip, shopItems, shopPoints, shopPointsText, npcSays, npcAction, npcDancing, npcInReach, openCutList, cutPreviews, previewCut, openShop, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_CUTS, SELECT_HUB, cutSlotOf, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary, resumeState, resumeRun, resumeLabel };
+return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, PHASE1_CARD, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, buyOrEquip, shopItems, shopPoints, shopPointsText, npcSays, npcAction, npcDancing, npcInReach, openCutList, cutPreviews, previewCut, openShop, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_CUTS, SELECT_HUB, cutSlotOf, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary, resumeState, resumeRun, resumeLabel };
 })();
 __m["chartrun/src/core/devmode.js"] = (() => {
 // 개발자 모드. 비밀번호를 넣으면 스테이지를 골라 들어갈 수 있다.
@@ -14234,7 +14255,7 @@ const { playerFrame, setLook, PLAYER_OFFSET, NOTE, SHOT, SHOT_BOSS, DISC, BRIDE,
 const { particleSprite } = __m["chartrun/src/render/particleArt.js"];
 
 const { ALBUMS } = __m["chartrun/src/data/albums.js"];
-const { VIEW } = __m["chartrun/src/core/game.js"];
+const { VIEW, PHASE1_CARD } = __m["chartrun/src/core/game.js"];
 const { bossPhase, bossCombined, ceilingSlabs, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
 const { clamp01, ease, noise, band, beatKind, mixHex } = __m["chartrun/src/render/sceneParts.js"];
 const { drawBoss, drawGiantRobot, drawMics, drawBossHealth, giantSize, giantCanvas } = __m["chartrun/src/render/sceneBoss.js"];
@@ -15897,11 +15918,15 @@ function drawScene(ctx, game, time) {
   // 싸움이 시작될 때 PHASE 1 카드. 2·3·4페이즈는 전환 컷신이 이름을 박아주는데
   // 1페이즈만 아무것도 없이 불쑥 시작했다. **컷신은 안 만든다** — 시작은 전환이 아니라
   // 시작이고, 보스전에 들어갈 때마다 4초씩 붙잡히면 성가시다. 카드만 얹고 안 멈춘다.
-  if (game.scene === 'boss' && !game.bossCut && game.sceneTime < PHASE1_CARD) {
+  //
+  // **언제 띄울지는 core 가 정한다**(game.phaseCard). 여기서 sceneTime 을 보고
+  // 정했더니 부활할 때마다 다시 떴다 — core/game.js 의 PHASE1_CARD 주석 참고.
+  const card = game.phaseCard;
+  if (game.scene === 'boss' && card && !game.bossCut) {
     ctx.save();
     // 끝에서 스르륵 걷힌다 — 툭 사라지면 깜빡인 것처럼 보인다
-    ctx.globalAlpha = Math.min(1, (PHASE1_CARD - game.sceneTime) / 0.35);
-    drawCutTitle(ctx, 'PHASE 1', game.sceneTime, 4, 92);
+    ctx.globalAlpha = Math.min(1, (PHASE1_CARD - card.t) / 0.35);
+    drawCutTitle(ctx, 'PHASE 1', card.t, 4, 92);
     ctx.restore();
   }
 
@@ -15914,9 +15939,6 @@ function drawScene(ctx, game, time) {
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   }
 }
-
-/** PHASE 1 카드가 떠 있는 시간 */
-const PHASE1_CARD = 1.4;
 
 /** 구간 효과 연출 — 정전은 내 주변만 남기고, 역재생은 화면을 물들인다 */
 function drawEffects(ctx, game, ox, oy, time) {

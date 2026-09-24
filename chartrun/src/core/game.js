@@ -201,6 +201,8 @@ export function createGame(options = {}) {
     shopDenied: 0,
     /** 상점에서 나가면 어디로 돌아갈지 ('title' | 'play'). openShop 이 세운다 */
     shopBack: 'title',
+    /** 보스전 시작의 「PHASE 1」 카드 { t }. loadBoss 만 세운다 — PHASE1_CARD 참고 */
+    phaseCard: null,
     /**
      * 2회차(하드모드)를 도는 중인가. 스테이지 표와 보스 페이즈가 여기서 갈린다.
      * 판 하나가 아니라 **한 바퀴 전체**의 성질이라 startRun 에서만 정한다.
@@ -383,6 +385,16 @@ export function loadStage(game, index) {
   emit(game, 'stage', { index });
 }
 
+/**
+ * 보스전이 시작될 때 뜨는 「PHASE 1」 카드의 길이(초).
+ *
+ * **카드는 시계가 아니라 상태다.** 예전엔 그리는 쪽이 「보스 장면의 시계가 1.4초
+ * 전이면 띄운다」고 봤는데, 부활(reviveAtCheckpoint)도 그 시계를 0 으로 되돌린다 —
+ * 그래서 **죽을 때마다** 카드가 다시 떴고, 글자가 박혀 있어서 3페이즈에서 죽어도
+ * 「PHASE 1」 이라고 했다. 이제 loadBoss 가 세우고, 시간이 다 되거나 죽으면 걷힌다.
+ */
+export const PHASE1_CARD = 1.4;
+
 export function loadBoss(game) {
   game.npcTalk = null;
   game.npcHint = null;
@@ -395,6 +407,8 @@ export function loadBoss(game) {
   game.camera = createCamera(VIEW.w, VIEW.h);
   game.scene = 'boss';
   game.sceneTime = 0;
+  // 카드가 서는 **유일한 자리.** 부활은 여기를 안 지나므로 카드도 안 선다
+  game.phaseCard = { t: 0 };
   game.rank = 2;
   emit(game, 'boss', {});
 }
@@ -444,6 +458,8 @@ function killPlayer(game) {
   game.chartOuts += 1;
   game.scene = 'death';
   game.sceneTime = 0;
+  // 싸움 시작 1.4초 안에 죽으면 카드가 남아 있다가 부활한 뒤에 이어서 뜬다
+  game.phaseCard = null;
   freezeGame(game, FREEZE.death);
   const fx = fxOf(game.save, 'death');
   shakeCamera(game.camera, fx.shake ?? 1.2);
@@ -1824,6 +1840,11 @@ function handleThrown(game, dt, onHit) {
 
 function updateBossScene(game, input, dt) {
   const boss = game.boss;
+
+  if (game.phaseCard) {
+    game.phaseCard.t += dt;
+    if (game.phaseCard.t >= PHASE1_CARD) game.phaseCard = null;
+  }
 
   // 컷신이 도는 동안에는 아무것도 움직이지 않는다 — 연출 보다가 죽으면 안 된다
   // 쓰러지는 컷신과 엔딩 사이의 숨. 화면은 이미 검다.
