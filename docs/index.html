@@ -18083,6 +18083,27 @@ padsRef = pads;
 return {  };
 })();
 </script>
-<script>navigator.serviceWorker?.register('sw.js').then((r) => r.update()).catch(() => {});</script>
+<script>(() => {
+  const sw = navigator.serviceWorker;
+  if (!sw) return;
+  let had = !!sw.controller;
+  let reloaded = false;
+  sw.addEventListener('controllerchange', () => {
+    // 처음 깔린 것 — 이제부터 워커가 있다고만 적어둔다. 그다음 바뀜부터가 새 판이다
+    if (!had) {
+      had = true;
+      return;
+    }
+    if (reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+  sw.register('sw.js').then((r) => {
+    r.update();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') r.update().catch(() => {});
+    });
+  }).catch(() => {});
+})();</script>
 </body>
 </html>

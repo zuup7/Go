@@ -214,14 +214,42 @@ const pwaHead = PWA
  *
  * `update()` 는 보험이다. 크롬은 페이지를 열 때 알아서 새 sw.js 를 확인하므로
  * 이 줄이 없어도 돌아가는 걸 확인했다. 다만 그 확인을 언제 할지는 브라우저 마음이라
- * (하루에 한 번만 보는 경우도 있다) 우리가 열 때마다 직접 시킨다 — sw.js 는 1KB 라 공짜다.
+ * (하루에 한 번만 보는 경우도 있다) 우리가 직접 시킨다 — sw.js 는 1KB 라 공짜다.
  *
- * 새 판은 **다음에 열 때** 보인다. 지금 열기는 이미 옛 판으로 그려진 뒤이고,
- * 새 판은 그 사이에 뒤에서 받아져 캐시에 들어간다.
+ * **새 판이 깔리면 그 자리에서 한 번 새로고침한다.** 예전엔 「다음에 열 때 보인다」
+ * 였는데, 홈 화면 앱은 다시 열어도 새로 여는 게 아니라 **멈춰둔 걸 이어서** 보여준다 —
+ * 그 「다음」이 한참 안 와서, 배포해도 폰에서는 「전부 그대로」였다.
+ *
+ * - 앞으로 다시 올 때마다(visibilitychange) update() — 이어서 열리기만 하는 앱은
+ *   처음 열 때 한 번 보는 걸로는 새 판을 영영 못 만난다
+ * - controllerchange 는 **원래 워커가 있었을 때만** 새로고침한다. 처음 깔 때도 이
+ *   이벤트가 나는데(clients.claim), 그걸 안 거르면 첫 방문에 괜히 한 번 깜빡인다
+ * - 한 번만(reloaded). 새로고침 사이에 또 바뀌어도 무한히 돌지 않게
  */
 const pwaTail = PWA
   ? `
-<script>navigator.serviceWorker?.register('sw.js').then((r) => r.update()).catch(() => {});</script>`
+<script>(() => {
+  const sw = navigator.serviceWorker;
+  if (!sw) return;
+  let had = !!sw.controller;
+  let reloaded = false;
+  sw.addEventListener('controllerchange', () => {
+    // 처음 깔린 것 — 이제부터 워커가 있다고만 적어둔다. 그다음 바뀜부터가 새 판이다
+    if (!had) {
+      had = true;
+      return;
+    }
+    if (reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+  sw.register('sw.js').then((r) => {
+    r.update();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') r.update().catch(() => {});
+    });
+  }).catch(() => {});
+})();</script>`
   : '';
 // <body> 안쪽을 그대로 쓰되, 모듈 진입 <script src> 만 걷어낸다 (아래에서 번들로 대체)
 const body = (html.match(/<body[^>]*>([\s\S]*)<\/body>/)?.[1] ?? '')
@@ -311,7 +339,8 @@ async function writePwaFiles(html) {
   const hash = createHash('sha256').update(html).digest('hex').slice(0, 12);
   const sw = `// 자동 생성 — build.mjs --pwa 가 굽는다. 고치지 말 것.
 //
-// 한 번 받아두면 그 뒤로는 네트워크를 안 탄다 (비행기 모드에서도 열린다).
+// 게임 화면(index.html)은 **네트워크 먼저**, 나머지(아이콘·manifest)는 캐시 먼저.
+// 네트워크가 없으면 캐시로 연다 — 비행기 모드에서도 열린다.
 // 캐시 이름의 해시는 빌드 내용에서 나온다 — 게임이 바뀌면 이름이 달라지고,
 // 새 워커가 깔리면서 옛 캐시를 통째로 지운다.
 const CACHE = 'chartrun-${hash}';
@@ -332,7 +361,25 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  // 캐시부터. 없으면 네트워크로 — 어차피 게임은 파일 하나라 캐시에 다 있다.
+  // 게임 화면은 네트워크 먼저. 예전엔 여기도 캐시부터라, 배포해도 폰은 옛 판을 계속
+  // 보여줬다. no-cache 는 GitHub Pages 의 10분짜리 HTTP 캐시도 건너뛰고 서버에
+  // 「바뀌었나」만 묻는다 (안 바뀌었으면 304 라 가볍다). 받은 건 캐시에 새로 넣어서,
+  // 네트워크가 끊기면 **마지막으로 본 판**으로 연다.
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request, { cache: 'no-cache' })
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put('./index.html', copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match('./index.html').then((hit) => hit ?? caches.match('./'))),
+    );
+    return;
+  }
+  // 나머지는 캐시부터. 아이콘·manifest 는 판이 바뀔 때 캐시 이름째 갈린다
   e.respondWith(caches.match(e.request).then((hit) => hit ?? fetch(e.request)));
 });
 `;
