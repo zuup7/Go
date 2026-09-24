@@ -184,6 +184,7 @@ mark{background:var(--yel);color:var(--ink);padding:1px 4px;font-weight:700}
 .rl .tg{display:inline-block;margin-left:7px;vertical-align:2px;font-family:var(--f-px);
   font-size:7px;font-style:normal;padding:3px 4px;border:2px solid var(--ink);background:var(--panel)}
 .rl.k-rule .tg{background:var(--red-soft)}
+.rl .tg.tg.pr{background:var(--yel)}
 .rl.k-resist .tg{background:var(--grn-soft)}
 .rl.k-world .tg{background:var(--brand-soft)}
 
@@ -762,9 +763,15 @@ const RAW=[
 ["s18", 1943, "카이로 선언", "미국·영국·중국 정상이 일본 세력을 몰아낸 뒤 적절한 시기에 한국을 독립시키겠다고 처음으로 약속하였다.", "적절한 시기", "world"],
 ["s18", 1945, "얄타 회담", "미국·영국·소련 정상이 독일과의 전쟁이 끝나면 소련이 대일전에 참전하기로 합의하였다.", "대일전", "world"],
 ["s18", 1945, "포츠담 선언", "미국·영국·중국 정상이 카이로 선언을 재확인하고 일본의 무조건 항복을 촉구하였다. 소련도 뒤늦게 참여하였다.", "무조건 항복", "world"],
-["s18", 1945, "국내 진공 작전", "한국광복군이 미국 전략 정보국(OSS)과 협약을 맺고 국내 정진군을 편성하였으나, 투입 직전 일제가 항복하여 취소되었다.", "국내 정진군"]
+["s18", 1945, "국내 진공 작전", "한국광복군이 미국 전략 정보국(OSS)과 협약을 맺고 국내 정진군을 편성하였으나, 투입 직전 일제가 항복하여 취소되었다.", "국내 정진군"],
+/* ── 학교 프린트(광문고 학습지)에서 더한 사실 — 사실 id 가 순번이라 반드시 맨 끝에만 붙인다 ── */
+["s1", 1917, "미국의 참전", "독일의 무제한 잠수함 작전과 치머만 전보 사건을 계기로 미국이 연합국 편으로 참전하였다.", "무제한 잠수함 작전", "world", "pr"],
+["s1", 1938, "독일의 오스트리아·체코 병합", "독일이 오스트리아와 체코슬로바키아를 병합하였으나, 베르사유 체제가 가혹했다고 여긴 영국과 프랑스는 관망하였다.", "관망", "world", "pr"],
+["s9", 1920, "박재혁·최수봉의 의거", "의열단원들이 부산 경찰서와 밀양 경찰서에 각각 폭탄을 던졌다.", "밀양 경찰서", null, "pr"],
+["s9", 1924, "김지섭의 의거", "의열단원이 도쿄의 일본 왕궁에 폭탄을 던졌다. 한인 애국단의 이봉창 의거(1932)와 구별해야 한다.", "일본 왕궁", null, "pr"],
+["s9", 1928, "조명하의 의거", "타이완(타이중)에서 일본 왕족을 처단한 개인 의열 투쟁이다.", "타이완", null, "pr"]
 ];
-const FACTS=RAW.map(function(r,i){return {id:"f"+i,u:r[0],y:r[1],t:r[2],d:r[3],k:r[4],tk:r[5]||null};});
+const FACTS=RAW.map(function(r,i){return {id:"f"+i,u:r[0],y:r[1],t:r[2],d:r[3],k:r[4],tk:r[5]||null,pr:r[6]||null};});
 
 /* OX — 시험에서 실제로 헷갈리는 함정. [단원, 문장, 정답, 해설] */
 const OXRAW=[
@@ -1291,7 +1298,7 @@ function viewTimeline(){
         body+='<div class="era"><b>'+ERAS[ei].n+'</b><span>'+esc(ERAS[ei].t)+'</span></div>'; }
       var k=trackOf(f.u,f);
       body+='<div class="rl k-'+k+'"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
-        '<div><div class="t">'+esc(f.t)+'<em class="tg">'+TRACKN[k]+'</em></div>'+
+        '<div><div class="t">'+esc(f.t)+'<em class="tg">'+TRACKN[k]+'</em>'+(f.pr?'<em class="tg pr">프린트</em>':'')+'</div>'+
         '<div class="s">'+f.d+'</div></div></div>';
     });
     body+='</div>';
