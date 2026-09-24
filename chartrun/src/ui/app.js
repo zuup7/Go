@@ -22,6 +22,7 @@ import { crisp } from '../render/pixel.js';
 import { preloadAlbumArt } from '../render/albumArt.js';
 import { ALBUMS } from '../data/albums.js';
 import { soundFor } from '../data/cutSound.js';
+import { isEndingCut } from '../data/bossCutscenes.js';
 import { createTouchLayout } from './touchLayout.js';
 
 const canvas = document.getElementById('game');
@@ -295,12 +296,17 @@ function handleEvent(name, data) {
       break;
     case 'cutdone':
       // 페이즈 전환 컷신이 끝나면 싸움이 이어진다 — 브금을 되돌린다.
-      // (엔딩은 곧 통계 화면이 stopBgm 을 부르므로 건드리지 않는다)
-      if (data.cut !== 'ending') audio.bgm('boss');
+      //
+      // **엔딩 둘 다** 건드리지 않는다. 예전엔 'ending' 만 적혀 있어서 2회차
+      // 엔딩(hardEnd)이 끝나면 보스 곡이 도로 켜졌는데, 곧바로 통계 화면이 꺼줘서
+      // 아무도 몰랐다. 이제 그 뒤에 크레딧이 20초 돌므로 그대로 두면 2회차
+      // 크레딧에 보스 곡이 깔린다.
+      if (!isEndingCut(data.cut)) audio.bgm('boss');
       break;
     case 'ending':
-      audio.stopBgm();
-      audio.play('ending');
+      // 결혼식 곡은 **끄지 않는다** — 바로 크레딧이 이어지고, 그 곡이 크레딧의
+      // 배경이다. 끄고 팡파르를 트는 건 통계 화면이 뜰 때('stats')다.
+      //
       // 한 바퀴를 돌았다고 남긴다 — 이걸로 NPC 와 하드모드가 열린다.
       // resume: null 은 **판이 끝났다**는 뜻이다. 안 지우면 다 깬 뒤에도 타이틀에
       // 「이어하기」가 남아서, 끝난 판으로 되돌아가게 된다.
@@ -312,8 +318,22 @@ function handleEvent(name, data) {
         resume: null,
       });
       break;
+    case 'credits':
+      // 엔딩 컷신의 곡을 그대로 잇는다 (같은 곡이면 bgm 이 아무것도 안 한다).
+      // 컷신 보기로 크레딧만 틀면 앞에 흐르던 곡이 없어서 여기서 켠다.
+      audio.bgm(data.hard ? 'victory' : 'wedding');
+      break;
+    case 'stats':
+      // 크레딧이 끝나고(또는 건너뛰고) 통계 화면이 떴다
+      audio.stopBgm();
+      audio.play('ending');
+      break;
     case 'talk':
       audio.play('blip');
+      break;
+    case 'cheer':
+      // 상인이 좋아한다 — 동전 소리. 판에서 음표를 주울 때와 같은 소리라 「돈」으로 읽힌다
+      audio.play('coin');
       break;
     case 'portal':
       audio.play('swirl');

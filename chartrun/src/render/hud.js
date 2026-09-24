@@ -1,7 +1,6 @@
 // 화면에 나오는 글자는 여기가 전부고, 전부 "정보"다 —
 // 순위, 재생수, 차트아웃 횟수, 시간, 스테이지 번호. 대사나 농담은 두지 않는다.
 import { timeText } from '../core/util.js';
-import { beatRecord } from '../core/save.js';
 import { STAGES, NOTE_TOTAL } from '../data/stages.js';
 import { KEYPAD } from '../core/devmode.js';
 import { LOOK_SLOTS } from '../data/looks.js';
@@ -325,9 +324,10 @@ export function createHud(root) {
       }
       case 'ending': {
         const e = game.ending ?? {};
-        // 기록은 저장하기 전에 판정해야 한다 — 저장하고 나면 항상 "안 깼다" 가 된다.
-        // (game.save 는 아직 이번 판이 반영되기 전 상태다)
-        const fresh = beatRecord(game.save, e.timeMs, e.hard);
+        // 신기록인지는 **core 가 저장 전에 정해둔 값**을 읽는다 (finishRun 의 fresh).
+        // 여기서 game.save 와 견주면 안 된다 — 저장이 이 화면보다 먼저 끝나서
+        // 방금 세운 기록을 자기 자신과 견주게 된다. 예전엔 그래서 한 번도 안 떴다.
+        const fresh = !!e.fresh;
         return `
           <div class="panel ending">
             <h1>${e.hard ? '#1 ★' : '#1'}</h1>

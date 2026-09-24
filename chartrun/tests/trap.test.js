@@ -214,7 +214,8 @@ test('보스를 잡으면 1위 엔딩', () => {
   step(game, idle, Math.ceil((game.bossCut.length + BOSS_CUT_GAP) * 60) + 2);
   assert.equal(game.bossCut?.id, 'ending', '쓰러진 뒤 엔딩 컷신');
   step(game, idle, Math.ceil(game.bossCut.length * 60) + 2);
-  assert.equal(game.scene, 'ending');
+  // 결혼식 뒤에는 크레딧이 먼저 돈다. 기록(game.ending)은 이미 만들어져 있다
+  assert.equal(game.scene, 'credits');
   assert.equal(game.rank, 1);
   assert.equal(game.ending.rank, 1);
 });

@@ -230,4 +230,6 @@ export const CUT_PREVIEWS = [
   { id: 'bossdown', label: '격파 공룡', hard: true, phaseId: 3 },
   { id: 'ending', label: '엔딩', hard: false, phaseId: 3 },
   { id: 'hardEnd', label: '2회차 엔딩', hard: true, phaseId: 4 },
+  // 결혼식 뒤에 앨범들이 지나간다. 보스를 세 번 잡아야 볼 수 있어서 여기 둔다
+  { id: 'credits', label: '엔딩 크레딧', credits: true },
 ];

@@ -132,7 +132,8 @@ function walkThrough({ hard = false, save = {} } = {}) {
     assert.ok((guard += 1) < 3000, `보스전이 안 끝난다 (hp ${game.boss?.hp}, 컷신 ${seen.join(' → ')})`);
   }
 
-  assert.equal(game.scene, 'ending', '보스를 잡았는데 통계 화면이 아니다');
+  // 결혼식 뒤에는 크레딧이 먼저 돈다 (그 뒤가 통계 화면)
+  assert.equal(game.scene, 'credits', '보스를 잡았는데 엔딩으로 안 넘어갔다');
   return seen;
 }
 

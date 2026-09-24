@@ -673,7 +673,7 @@ test('하드 보스를 쓰러뜨리면 2회차 엔딩이, 보통이면 결혼식
     assert.equal(game.bossCut?.id, endingCut(hard), `${hard ? '하드' : '보통'}에서 엉뚱한 엔딩이 떴다`);
 
     step(game, idle(), Math.round((bossCutLength(endingCut(hard)) + 0.5) / DT));
-    assert.equal(game.scene, 'ending', '엔딩 컷신이 안 끝난다');
+    assert.equal(game.scene, 'credits', '엔딩 컷신이 안 끝난다');
     assert.equal(game.ending.hard, hard, '기록에 남는 회차가 어긋났다');
   }
 });

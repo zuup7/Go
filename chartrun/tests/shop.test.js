@@ -18,6 +18,7 @@ import {
   npcSays,
   npcAction,
   npcInReach,
+  MERCHANT_CHEER,
 } from '../src/core/game.js';
 import { emptySave, mergeRun, serialize, deserialize, SAVE_VERSION } from '../src/core/save.js';
 import {
@@ -565,4 +566,72 @@ test('스쳐 지나간 뒤에도 눌러서 열 수 있다 — 한 마디 했다�
   assert.equal(npcInReach(game), m, '한 마디 하고 나니 좌판이 닫혔다');
   step(game, idle({ confirmPressed: true }), 1);
   assert.equal(game.scene, 'shop');
+});
+
+
+// ── 골라 가면 좋아한다 ──────────────────────────────────────
+//
+// 「샀나」가 아니라 **「끼운 게 바뀌었나」**로 본다 — 개발자 모드에서는 사는 일이
+// 없고 끼우기만 하므로, 샀는지로 보면 만든 사람은 이 반응을 영영 못 본다.
+
+/** 상인에게 말을 걸어 상점을 연다. 이벤트는 받아 적는다 */
+function atMerchant(over = {}) {
+  const game = inStage1({ clears: 9, ...over });
+  const events = [];
+  const was = game.onEvent;
+  game.onEvent = (name, data) => {
+    events.push(name);
+    was(name, data);
+  };
+  const m = merchantOf(game);
+  game.player.x = m.x;
+  game.player.y = m.y;
+  step(game, idle({ confirmPressed: true }), 1);
+  assert.equal(game.scene, 'shop');
+  return { game, m, events };
+}
+
+const leave = (game) => step(game, idle({ restartPressed: true }), 1);
+
+test('상인에게서 뭔가 골라 나오면 좋아한다', () => {
+  const { game, m, events } = atMerchant();
+  buyOrEquip(game, SHOP_ITEMS.findIndex((i) => i.id === 'confetti'));
+  leave(game);
+  assert.equal(game.scene, 'play');
+  assert.ok(m.cheer, '골라 나왔는데 반응이 없다');
+  assert.ok(events.includes('cheer'), '좋아하는 소리가 안 난다');
+});
+
+test('구경만 하고 나오면 가만히 있다', () => {
+  const { game, m, events } = atMerchant();
+  leave(game);
+  assert.equal(m.cheer ?? null, null, '아무것도 안 골랐는데 좋아한다');
+  assert.ok(!events.includes('cheer'));
+});
+
+test('개발자 모드에서도 본다 — 사지 않고 끼우기만 해도', () => {
+  const { game, m } = atMerchant({ dev: true, clears: 0 });
+  buyOrEquip(game, SHOP_ITEMS.findIndex((i) => i.id === 'bubble'));
+  assert.deepEqual(game.save.owned, [], '개발자 모드인데 샀다 — 테스트 전제가 깨졌다');
+  leave(game);
+  assert.ok(m.cheer, '개발자 모드로 끼웠더니 반응이 없다');
+});
+
+test('타이틀에서 연 상점은 아무도 안 좋아한다 — 상인이 없다', () => {
+  const game = rich();
+  game.scene = 'title';
+  game.titleIndex = titleRows(game).findIndex((r) => r.action === 'shop');
+  step(game, idle({ confirmPressed: true }));
+  buyOrEquip(game, SHOP_ITEMS.findIndex((i) => i.id === 'note'));
+  step(game, idle({ restartPressed: true }));
+  assert.equal(game.scene, 'title');
+  assert.equal(game.shopVisit, null);
+});
+
+test('좋아하는 건 잠깐이다', () => {
+  const { game, m } = atMerchant();
+  buyOrEquip(game, SHOP_ITEMS.findIndex((i) => i.id === 'confetti'));
+  leave(game);
+  step(game, idle(), Math.ceil((MERCHANT_CHEER + 0.1) * 60));
+  assert.equal(m.cheer, null, '계속 좋아하고 있다');
 });

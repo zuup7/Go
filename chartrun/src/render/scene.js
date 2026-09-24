@@ -46,7 +46,7 @@ import {
   giantSize,
   giantCanvas,
 } from './sceneBoss.js';
-import { drawBossCut, drawCutTitle, drawCutscene, drawHardOpenCut, drawIntroCut } from './sceneCuts.js';
+import { drawBossCut, drawCutTitle, drawCutscene, drawHardOpenCut, drawIntroCut, drawCredits } from './sceneCuts.js';
 import { PLAYER } from '../core/player.js';
 
 // ── 배경 ────────────────────────────────────────────────────
@@ -915,13 +915,14 @@ function drawNpc(ctx, game, ox, oy, time) {
       ctx.save();
       drawSprite(
         ctx,
-        shopFrame({ near: npc.near }, time),
+        shopFrame({ near: npc.near, cheer: npc.cheer }, time),
         x + SHOP_OFFSET.x,
         y + SHOP_OFFSET.y,
         // 좌판이 좌우 대칭이라 몸만 뒤집으면 어색하다. **플레이어가 왼쪽에 있어도
         // 안 돌아본다** — 앉은 사람은 원래 그 자리를 보고 있다
         false,
       );
+      if (npc.cheer) drawCoinToss(ctx, npc.cheer.t, x, y);
       drawTalkTip(ctx, game, npc, x, y, time);
       ctx.restore();
       continue;
@@ -954,6 +955,34 @@ function drawNpc(ctx, game, ox, oy, time) {
     }
     drawTalkTip(ctx, game, npc, x, y, time);
     ctx.restore();
+  }
+}
+
+/**
+ * 골라 간 손님에게 상인이 동전을 튕겨 올린다. 둘이 엇갈려 올라갔다 좌판에 떨어진다.
+ *
+ * 시간(cheer.t)으로만 그린다 — 동전마다 상태를 두면 판을 떠났다 돌아왔을 때
+ * 공중에 멈춘 동전이 남는다. 언제 끝나는지는 core 가 정한다 (MERCHANT_CHEER).
+ */
+function drawCoinToss(ctx, t, x, y) {
+  for (let i = 0; i < 2; i++) {
+    const k = (t - i * 0.45) / 1.1; // 한 번 튀는 데 1.1초
+    if (k < 0 || k > 1) continue;
+    const cx = x + 4 + i * 6 + Math.round(k * (i ? 5 : -4));
+    const cy = y - 2 - Math.round(Math.sin(k * Math.PI) * 26);
+    // 돌면서 난다 — 가로폭만 줄였다 폈다
+    const w = Math.max(1, Math.round(4 * Math.abs(Math.cos(t * 14 + i))));
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(cx - (w >> 1), cy, w, 5);
+    ctx.fillStyle = '#b98a2a';
+    ctx.fillRect(cx - (w >> 1), cy + 4, w, 1);
+    // 꼭대기에서 반짝
+    if (k > 0.42 && k < 0.58) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 3, cy + 2, 1, 1);
+      ctx.fillRect(cx + 3, cy + 2, 1, 1);
+      ctx.fillRect(cx, cy - 3, 1, 1);
+    }
   }
 }
 
@@ -1589,6 +1618,11 @@ export function drawScene(ctx, game, time) {
   }
   if (game.scene === 'gallery') {
     drawGallery(ctx, time);
+    return;
+  }
+  // 결혼식 뒤의 크레딧. 판도 보스도 없다 — 통째로 제 화면이다
+  if (game.scene === 'credits') {
+    drawCredits(ctx, game.sceneTime, time);
     return;
   }
   if (game.scene === 'intro') {

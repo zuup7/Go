@@ -55,7 +55,8 @@ test('**고른 컷신마다 보스 몸이 맞게 선다**', () => {
   // 이게 이 기능의 요점이다. 몸이 틀리면 있지도 않은 놈이 컷신에 나온다.
   const want = { phase2: 'disc', phase3: 'robot', hard3: 'dino', phase4: 'dino' };
   for (const [i, p] of CUT_PREVIEWS.entries()) {
-    if (p.intro) continue;
+    // 오프닝·크레딧은 보스가 없는 장면이다 — 몸을 볼 것도 없다
+    if (p.intro || p.credits) continue;
     const game = dev();
     assert.ok(previewCut(game, i), `${p.label} 을 못 틀었다`);
     assert.equal(game.bossCut?.id, p.id, `${p.label}: 다른 컷신이 돌고 있다`);

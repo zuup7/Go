@@ -5330,6 +5330,8 @@ const CUT_PREVIEWS = [
   { id: 'bossdown', label: '격파 공룡', hard: true, phaseId: 3 },
   { id: 'ending', label: '엔딩', hard: false, phaseId: 3 },
   { id: 'hardEnd', label: '2회차 엔딩', hard: true, phaseId: 4 },
+  // 결혼식 뒤에 앨범들이 지나간다. 보스를 세 번 잡아야 볼 수 있어서 여기 둔다
+  { id: 'credits', label: '엔딩 크레딧', credits: true },
 ];
 
 return { PHASE2_CUT, PHASE3_CUT, HARD3_CUT, BOSS_DOWN_CUT, PHASE4_CUT, ENDING_CUT, HARD_END_CUT, BOSS_CUTS, bossCutLength, PHASE2_AT, HARD3_AT, BOSS_DOWN_AT, PHASE3_AT, PHASE4_AT, ENDING_AT, HARD_END_AT, endingCut, isEndingCut, cutForPhase, CUT_PREVIEWS };
@@ -6116,6 +6118,67 @@ function mergeRun(save, run) {
 
 return { SAVE_KEY, SAVE_VERSION, emptySave, serialize, deserialize, loadSave, writeSave, clearSave, beatRecord, mergeRun };
 })();
+__m["chartrun/src/data/credits.js"] = (() => {
+// 엔딩 크레딧 — 결혼식이 끝나면 지나온 앨범 열일곱 장이 한 장씩 크게 지나간다.
+//
+// **글자는 없다.** 이 게임은 오프닝부터 엔딩까지 글자 한 줄 없이 굴러왔다.
+// 앨범 이름을 띄우지 않고 커버만 보여준다 — 누가 봐도 「아 이거」 하는 건 커버다.
+//
+// 앨범은 ALBUMS 순서 그대로다. 그게 **판에서 만난 순서**라, 크레딧이
+// 1스테이지 신인부터 마지막 판까지 지나온 길을 거꾸로 짚지 않고 그대로 되짚는다.
+//
+// 시각은 여기에만 적는다. 고르는 쪽(core)도 그리는 쪽(render)도 creditAt 을 탄다 —
+// 둘이 따로 계산하면 「장면은 끝났는데 그림은 한 장 남은」 날이 온다.
+const { ALBUMS } = __m["chartrun/src/data/albums.js"];
+
+/** 처음 검은 화면에서 밝아지는 시간. 결혼식이 검게 닫고 끝나므로 이어서 밝힌다 */
+const CREDIT_IN = 0.8;
+
+/** 한 장이 머무는 시간 (넘어가는 시간을 포함한다) */
+const CREDIT_HOLD = 1.25;
+
+/** 다음 장으로 넘어가는 데 드는 시간. 한 장의 머묾 **앞머리**에 들어간다 */
+const CREDIT_SLIDE = 0.35;
+
+/** 마지막 장이 빠진 뒤 두 사람만 남는 시간 */
+const CREDIT_OUT = 1.6;
+
+const CREDIT_COUNT = ALBUMS.length;
+
+const CREDITS_LENGTH = CREDIT_IN + CREDIT_COUNT * CREDIT_HOLD + CREDIT_OUT;
+
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+
+/**
+ * 크레딧 t 초의 모습.
+ *
+ *   index   지금 가운데 있는 앨범 (ALBUMS 자리). 아직/이미 없으면 -1
+ *   slide   그 장이 들어오는 중인 정도 0→1. 1 이면 자리를 잡았다
+ *   fade    화면 밝기 0→1. 처음에 밝아지고 끝에 어두워진다
+ *   walk    두 사람이 화면을 가로지른 정도 0→1 (전체 길이에 걸쳐 한 번)
+ *   out     마지막 장이 빠지는 정도 0→1 (OUT 구간에서만 0 이 아니다)
+ */
+function creditAt(t) {
+  const walk = clamp01(t / CREDITS_LENGTH);
+  const fadeIn = clamp01(t / CREDIT_IN);
+  const fadeOut = clamp01((CREDITS_LENGTH - t) / 0.6);
+  const fade = Math.min(fadeIn, fadeOut);
+
+  const inAlbums = t - CREDIT_IN;
+  if (inAlbums < 0) return { index: -1, slide: 0, fade, walk, out: 0 };
+
+  const index = Math.floor(inAlbums / CREDIT_HOLD);
+  if (index >= CREDIT_COUNT) {
+    // 마지막 장이 옆으로 빠져나간다 — 툭 사라지면 필름이 끊긴 것처럼 보인다
+    const out = clamp01((inAlbums - CREDIT_COUNT * CREDIT_HOLD) / CREDIT_SLIDE);
+    return { index: CREDIT_COUNT - 1, slide: 1, fade, walk, out };
+  }
+  const slide = clamp01((inAlbums - index * CREDIT_HOLD) / CREDIT_SLIDE);
+  return { index, slide, fade, walk, out: 0 };
+}
+
+return { CREDIT_IN, CREDIT_HOLD, CREDIT_SLIDE, CREDIT_OUT, CREDIT_COUNT, CREDITS_LENGTH, creditAt };
+})();
 __m["chartrun/src/core/rng.js"] = (() => {
 // 결정론적 난수 생성기 (mulberry32). 시드를 저장/복원하면 같은 흐름이 재현된다.
 function createRng(seed = Date.now()) {
@@ -6186,7 +6249,8 @@ const { talkTimeline, talkLength, HINT_TALKS } = __m["chartrun/src/data/npcTalk.
 const { LOOK_SLOTS, sanitizeLook, cycleLook } = __m["chartrun/src/data/looks.js"];
 const { FX_SLOTS, SHOP_ITEMS, fxOf, owns, canBuy, points, pointsText, sanitizeFx, sanitizeOwned } = __m["chartrun/src/data/effects.js"];
 const { CAUGHT_CUT, caughtLength } = __m["chartrun/src/data/caughtCut.js"];
-const { emptySave } = __m["chartrun/src/core/save.js"];
+const { emptySave, beatRecord } = __m["chartrun/src/core/save.js"];
+const { CREDITS_LENGTH } = __m["chartrun/src/data/credits.js"];
 const { createRng } = __m["chartrun/src/core/rng.js"];
 const { clamp, overlaps } = __m["chartrun/src/core/util.js"];
 const { TILE, SOLID } = __m["chartrun/src/core/physics.js"];
@@ -6351,6 +6415,11 @@ function createGame(options = {}) {
     shopDenied: 0,
     /** 상점에서 나가면 어디로 돌아갈지 ('title' | 'play'). openShop 이 세운다 */
     shopBack: 'title',
+    /**
+     * 판 위의 상인에게서 연 상점이면 그 사람과, 들어갈 때 끼고 있던 이펙트.
+     * 나올 때 이펙트가 바뀌었으면 그 사람이 좋아한다 (merchantCheers).
+     */
+    shopVisit: null,
     /** 보스전 시작의 「PHASE 1」 카드 { t }. loadBoss 만 세운다 — PHASE1_CARD 참고 */
     phaseCard: null,
     /**
@@ -7396,11 +7465,15 @@ function startHint(game, id, npc) {
  * 판에 박힌 장식처럼 보였고, 그래서 2회차가 있는 줄도 몰랐다. 이제 지나가면
  * 아직 아니라고 말해주고, 깨고 오면 열어주고, 열어준 뒤에도 문을 가리킨다.
  */
-function handleNpc(game, input) {
+function handleNpc(game, input, dt) {
   const npcs = game.world?.npcs;
   if (!npcs?.length || game.hard) return;
 
   for (const npc of npcs) {
+    if (npc.cheer) {
+      npc.cheer.t += dt;
+      if (npc.cheer.t >= MERCHANT_CHEER) npc.cheer = null;
+    }
     const near = !game.player.dead && overlaps(game.player, npcReach(npc));
     npc.near = near;
     // **멀어지면 풀린다.** 이게 다시 말을 걸 수 있게 하는 전부다
@@ -7425,7 +7498,7 @@ function handleNpc(game, input) {
       // 화면만 상점으로 바뀌고, 「뒤로」 하면 서 있던 자리로 돌아온다
       game.npcHint = null;
       game.player.vx = 0;
-      openShop(game, 'play');
+      openShop(game, 'play', npc);
       emit(game, 'talk', {});
     } else {
       npc.opened = true;
@@ -7565,7 +7638,7 @@ function updatePlay(game, input, dt) {
   handleShots(game, dt);
   handlePickups(game);
   handleCheckpoints(game);
-  handleNpc(game, input);
+  handleNpc(game, input, dt);
   handlePortal(game);
   handleFakeGoal(game, dt);
   handleGoal(game);
@@ -7580,7 +7653,12 @@ function updatePlay(game, input, dt) {
   updateCamera(game.camera, game.player, game.world, dt, isChase(game) ? CHASE_BACK : 0);
 }
 
-/** 엔딩 컷신이 끝나면 통계 화면으로 */
+/**
+ * 엔딩 컷신이 끝나면 **크레딧**으로, 크레딧이 끝나면 통계 화면으로 (endCredits).
+ *
+ * 저장('ending' 이벤트)은 **여기서** 한다 — 크레딧 도중에 앱을 닫아도 한 바퀴를
+ * 돈 게 남아야 한다. 20초짜리 크레딧 뒤로 미루면 거기서 끄는 사람은 다 잃는다.
+ */
 function finishRun(game) {
   game.rank = TOP_RANK;
   game.ending = {
@@ -7591,10 +7669,32 @@ function finishRun(game) {
     defeated: game.defeated,
     timeMs: game.elapsedMs,
     hard: game.hard,
+    /**
+     * 신기록인가. **저장하기 전에, 여기서 한 번** 정한다.
+     *
+     * 예전엔 통계 화면이 그릴 때마다 game.save 와 견줘서 정했는데, 저장은 바로
+     * 아래 'ending' 이벤트에서 (동기로) 먼저 끝난다 — 그러면 방금 세운 기록을
+     * 자기 자신과 견주게 되어 **신기록이 한 번도 안 떴다.** 골라 들어간 판은
+     * 기록을 안 건드리므로(mergeRun) 신기록도 아니다.
+     */
+    fresh: !game.partial && beatRecord(game.save, game.elapsedMs, game.hard),
   };
-  game.scene = 'ending';
+  game.scene = 'credits';
   game.sceneTime = 0;
   emit(game, 'ending', game.ending);
+  emit(game, 'credits', { hard: game.hard });
+}
+
+/**
+ * 크레딧이 끝났다(또는 건너뛰었다) — 통계 화면으로.
+ *
+ * 'stats' 를 따로 알린다. 브금을 끄고 팡파르를 트는 건 **여기**다 — 'ending' 에서
+ * 끄면 결혼식 곡이 크레딧 시작과 함께 뚝 끊겨서 20초를 무음으로 본다.
+ */
+function endCredits(game) {
+  game.scene = 'ending';
+  game.sceneTime = 0;
+  emit(game, 'stats', game.ending ?? {});
 }
 
 /**
@@ -7657,6 +7757,13 @@ function previewCut(game, index) {
   const p = CUT_PREVIEWS[index];
   if (!p) return false;
   game.cutPreview = index;
+  // 크레딧은 보스도 판도 없다 — 장면만 바꾼다
+  if (p.credits) {
+    game.scene = 'credits';
+    game.sceneTime = 0;
+    emit(game, 'credits', { hard: false });
+    return true;
+  }
   // 오프닝·2회차 시작은 보스가 없는 컷신이다 — 같은 목록에 있지만 트는 길이 다르다
   if (p.intro) {
     startIntro(game, p.intro);
@@ -7695,12 +7802,34 @@ function openGallery(game, from) {
  * 자리(shopIndex)는 **판에서 들어올 때만** 되돌린다... 가 아니라 늘 되돌린다.
  * 어디서 들어오든 목록 첫 칸부터 보는 게 덜 헷갈린다.
  */
-function openShop(game, from) {
+function openShop(game, from, npc = null) {
   game.scene = 'shop';
   game.sceneTime = 0;
   game.shopIndex = 0;
   game.shopDenied = 0;
   game.shopBack = from;
+  game.shopVisit = npc ? { npc, fx: { ...game.save.fx } } : null;
+}
+
+/** 상인이 좋아하는 시간(초). 그리는 쪽이 동전을 이 안에서 튕긴다 */
+const MERCHANT_CHEER = 2.4;
+
+/**
+ * 상점에서 나왔다. 상인에게서 **뭔가를 골라 나왔으면** 그 사람이 좋아한다.
+ *
+ * 「샀나」가 아니라 **「끼운 게 바뀌었나」**로 본다. 개발자 모드에서는 사는 일이
+ * 없고 끼우기만 하므로, 샀는지로 보면 만든 사람은 이 반응을 영영 못 본다.
+ * 이미 산 걸 다시 끼워 바꿔도 좋아한다 — 손님이 뭘 골라 갔다는 건 같다.
+ */
+function leaveShop(game) {
+  const visit = game.shopVisit;
+  game.shopVisit = null;
+  if (!visit) return;
+  const fx = game.save.fx ?? {};
+  const changed = FX_SLOTS.some((slot) => fx[slot.key] !== visit.fx[slot.key]);
+  if (!changed) return;
+  visit.npc.cheer = { t: 0 };
+  emit(game, 'cheer', {});
 }
 
 /**
@@ -7833,6 +7962,8 @@ const SELECT_SLOTS = SELECT_ITEMS.length;
 const inCutscene = (game) =>
   game.scene === 'intro' ||
   game.scene === 'cutscene' ||
+  // 크레딧도 컷신이다 — HUD 를 치우고, 폰에는 「건너뛰기」가 떠야 한다
+  game.scene === 'credits' ||
   !!game.bossCut ||
   // 컷신 사이의 암전도 컷신이다 — 여기서 HUD 가 0.3초 돌아왔다 사라지면 깜빡인다
   game.bossCutGap > 0 ||
@@ -8274,6 +8405,7 @@ function updateGame(game, input, dt) {
         // 'play' 로 돌아가도 world 와 player 는 그대로라 아무것도 안 잃는다
         game.scene = game.shopBack === 'play' ? 'play' : 'title';
         game.sceneTime = 0;
+        leaveShop(game);
       } else if (input.confirmPressed) {
         buyOrEquip(game, game.shopIndex);
       }
@@ -8407,6 +8539,19 @@ function updateGame(game, input, dt) {
       else updateBossScene(game, input, dt);
       break;
 
+    /**
+     * 엔딩 크레딧. 앨범 열일곱 장이 지나가고 두 사람이 걸어간다 (data/credits.js).
+     * 컷신과 같은 규칙으로 건너뛴다 — 결혼식에서 눌린 점프가 그대로 먹으면
+     * 크레딧이 뜨자마자 사라진다.
+     */
+    case 'credits':
+      if (skipping(input, game.sceneTime) || game.sceneTime >= CREDITS_LENGTH) {
+        // 컷신 보기로 틀었으면 목록으로 — 판이 끝난 게 아니다
+        if (game.cutPreview != null) openCutList(game);
+        else endCredits(game);
+      }
+      break;
+
     case 'ending':
       if (game.sceneTime > ENDING_LOCK && input.confirmPressed) {
         // 한 바퀴를 돈 사람은 타이틀이 아니라 **판으로 돌아온다** — 거기 NPC 가 서 있다
@@ -8519,7 +8664,7 @@ function resumeLabel(resume) {
   return `이어하기 — ${resume.hard ? '하드 ' : ''}STAGE ${number}`;
 }
 
-return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, PHASE1_CARD, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, buyOrEquip, shopItems, shopPoints, shopPointsText, npcSays, npcAction, npcDancing, npcInReach, openCutList, cutPreviews, previewCut, openShop, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_CUTS, SELECT_HUB, cutSlotOf, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary, resumeState, resumeRun, resumeLabel };
+return { VIEW, stageTable, stageCount, BOSS_CUT_GAP, createGame, markKey, FREEZE, freezeGame, noteKey, notesFound, allNotes, loadStage, PHASE1_CARD, loadBoss, startRun, startIntro, WALL_HEIGHT, SLAB_HANG, CEIL_BLADE, BOMB_WARN, BOMB_GAP, FIRE_TIME, CHASE_SPEED, SURGE_SPEED, CHASE_LEAD, CHASE_START_LEAD, CHASE_BACK, isChase, openHub, buyOrEquip, shopItems, shopPoints, shopPointsText, npcSays, npcAction, npcDancing, npcInReach, openCutList, cutPreviews, previewCut, openShop, MERCHANT_CHEER, titleRows, SELECT_ITEMS, selectItems, canSelect, SELECT_HARD, SELECT_HARD_BOSS, SELECT_CUTS, SELECT_HUB, cutSlotOf, SELECT_DEV_OFF, SELECT_SLOTS, inCutscene, SKIP_AFTER, ENDING_LOCK, setDevMode, PAUSE_ROWS, pausable, updateGame, runSummary, resumeState, resumeRun, resumeLabel };
 })();
 __m["chartrun/src/core/devmode.js"] = (() => {
 // 개발자 모드. 비밀번호를 넣으면 스테이지를 골라 들어갈 수 있다.
@@ -9920,6 +10065,22 @@ const MTORSO = {
     '...cfcccccf.....',
     '...kcccccck.....',
   ],
+  /** 만세 — 두 팔이 어깨 위로. 손은 머리 옆까지 올라간다 (mbuild 의 hands) */
+  hooray: [
+    '.s.kcccccck.s...',
+    '..scffcccfcs....',
+    '...cccccccc.....',
+    '...cfcccccf.....',
+    '...kcccccck.....',
+  ],
+  /** 손뼉 — 두 손이 가슴 앞에서 만난다 */
+  clap: [
+    '...kcccccck.....',
+    '..kcffcccfck....',
+    '...cccsscc......',
+    '...cfcccccf.....',
+    '...kcccccck.....',
+  ],
   /** 한 손을 들어 부른다 — 오른팔이 어깨 위로 */
   wave: [
     '...kcccccck.s...',
@@ -9943,9 +10104,17 @@ const MSTALL = [
   '..kkkkkkkkkkkk..',
 ];
 
-const mbuild = (head, torso, { drop = 0 } = {}) => {
+const mpoke = (row, i, ch) => row.slice(0, i) + ch + row.slice(i + 1);
+
+/**
+ * hands 는 [줄, 칸] 목록 — 조각 경계를 넘어 머리 옆까지 올라간 손을 **한 칸씩** 꽂는다.
+ * 노인의 지팡이 기둥과 같은 수법이다: 조각에 그려 넣으면 그 조각을 빌려 쓰는
+ * 다른 장에서 손 토막만 허공에 뜬다.
+ */
+const mbuild = (head, torso, { drop = 0, hands = [] } = {}) => {
   const body = drop > 0 ? torso.slice(0, torso.length - drop) : torso;
-  const rows = [...Array(2 + drop).fill(MBLANK), ...head, ...body, ...MSTALL];
+  let rows = [...Array(2 + drop).fill(MBLANK), ...head, ...body, ...MSTALL];
+  for (const [r, c] of hands) rows[r] = mpoke(rows[r], c, 's');
   if (rows.length !== 20) throw new Error(`상인 프레임이 ${rows.length}줄이다 — 20줄이어야 한다`);
   for (const row of rows) {
     if (row.length !== MW) {
@@ -9962,6 +10131,9 @@ const SHOP_SPRITES = {
   /** 가까이 오면 고개를 들고 손을 든다 */
   wave: mbuild(MHEAD.up, MTORSO.wave),
   wave2: mbuild(MHEAD.up, MTORSO.wave, { drop: 1 }),
+  /** 골라 가면 좋아한다 — 만세와 손뼉을 번갈아. 손뼉은 한 칸 주저앉아 들썩인다 */
+  hooray: mbuild(MHEAD.up, MTORSO.hooray, { hands: [[8, 0], [8, 13]] }),
+  clap: mbuild(MHEAD.up, MTORSO.clap, { drop: 1 }),
 };
 
 /** 스프라이트를 npc 좌표에 놓을 때의 보정. 발밑은 노인과 같고 가로만 한 칸 넓다 */
@@ -9973,7 +10145,9 @@ const SHOP_OFFSET = { x: -3, y: 14 - 20 };
  *
  * 가까이 오면 손을 들어 부른다. 이게 「누를 수 있다」를 몸으로 먼저 알린다.
  */
-function shopFrame({ near }, time) {
+function shopFrame({ near, cheer }, time) {
+  // 좋아할 때는 빠르게 — 느리게 번갈면 박수가 아니라 체조가 된다
+  if (cheer) return Math.floor(cheer.t * 6) % 2 === 0 ? SHOP_SPRITES.hooray : SHOP_SPRITES.clap;
   const beat = Math.floor(time * 2) % 2 === 1;
   if (near) return beat ? SHOP_SPRITES.wave2 : SHOP_SPRITES.wave;
   return beat ? SHOP_SPRITES.sit2 : SHOP_SPRITES.sit;
@@ -12183,7 +12357,8 @@ __m["chartrun/src/render/sceneCuts.js"] = (() => {
 
 const { drawCoverAt } = __m["chartrun/src/render/albumArt.js"];
 const { drawSprite } = __m["chartrun/src/render/pixel.js"];
-const { playerFrame, NOTE, DISC, BRIDE, RING } = __m["chartrun/src/render/sprites.js"];
+const { playerFrame, NOTE, DISC, BRIDE, RING, HEART } = __m["chartrun/src/render/sprites.js"];
+const { creditAt } = __m["chartrun/src/data/credits.js"];
 const { ALBUMS } = __m["chartrun/src/data/albums.js"];
 const { VIEW } = __m["chartrun/src/core/game.js"];
 const { bossBody, NEUTRAL_POSE } = __m["chartrun/src/core/boss.js"];
@@ -14230,7 +14405,142 @@ function drawHardEndCut(ctx, t, phase, time) {
 }
 
 
-return { drawCutscene, drawBossCut, drawCutTitle, drawWatchingEyes, drawIntroCut, drawHardOpenCut };
+
+// ── 엔딩 크레딧 ─────────────────────────────────────────────
+//
+// 결혼식이 끝나면 지나온 앨범 열일곱 장이 한 장씩 크게 지나가고, 그 아래로
+// 두 사람이 손을 잡고 화면을 가로지른다. **글자는 없다** — 커버가 곧 이름이다.
+// 언제 무엇이 보일지는 data/credits.js 의 creditAt 이 정하고 여기서는 그리기만 한다.
+
+/** 커버 한 변. 48px 사진을 **정수배**(3배)로 키운다 — 2.75배 같은 걸로 키우면 픽셀이 들쭉날쭉해진다 */
+const CREDIT_COVER = 144;
+const CREDIT_TOP = 14;
+/** 커버 뒤로 삐져나오는 레코드판. 커버 오른쪽으로 이만큼 나온다 */
+const CREDIT_PEEK = 44;
+/** 두 사람이 딛는 줄 */
+const CREDIT_FLOOR = 212;
+
+/** 레코드판 한 장 — 슬리브에서 반쯤 빠져나와 돈다. 라벨 색은 그 앨범 색이다 */
+function drawCreditVinyl(ctx, cx, cy, r, label, time) {
+  ctx.save();
+  ctx.translate(Math.round(cx), Math.round(cy));
+  ctx.fillStyle = VINYL;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  // 홈. 밝게 두면 과녁이 되므로 아주 옅게
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let k = r - 6; k > r * 0.36; k -= 5) {
+    ctx.beginPath();
+    ctx.arc(0, 0, k, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // 돌아가는 빛 한 줄기 — 이게 없으면 원이 멈춰 있는지 도는지 안 보인다
+  const a = time * 1.6;
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.72, a, a + 0.5);
+  ctx.stroke();
+  ctx.fillStyle = label;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = VINYL;
+  ctx.fillRect(-1, -1, 3, 3);
+  ctx.restore();
+}
+
+/** 앨범 한 장 (레코드판 + 커버). x 는 **커버의** 왼쪽 */
+function drawCreditAlbum(ctx, album, x, y, time) {
+  const size = CREDIT_COVER;
+  const r = size / 2 - 6;
+  drawCreditVinyl(ctx, x + size - r + CREDIT_PEEK, y + size / 2, r, album.palette?.[1] ?? '#ff5d8f', time);
+  // 그림자 — 레코드판 위로 커버가 떠 보이게
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(Math.round(x) + 4, Math.round(y) + 5, size, size);
+  drawCoverAt(ctx, album, Math.round(x), Math.round(y), size);
+  // 슬리브 테두리 — 어두운 사진이 배경에 녹아버리지 않게
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, size - 1, size - 1);
+}
+
+/** 손 잡고 걷는 두 사람. walk 0→1 로 화면 왼쪽 밖에서 오른쪽 밖까지 */
+function drawCreditCouple(ctx, walk, time) {
+  const span = VIEW.w + 60;
+  const groomX = -24 + walk * span;
+  const brideX = groomX - 17;
+  const floor = CREDIT_FLOOR;
+  // 발걸음은 **간 거리**로 돈다 — playerFrame 이 판에서 하는 것과 같다.
+  // 좌표를 그대로 넘기면 안 된다: 화면 왼쪽 밖(음수)에서 출발하므로 프레임 번호가
+  // 음수가 되어 **없는 장**을 집는다 (그래서 한 번 그림이 통째로 멈췄다)
+  const frame = playerFrame({ onGround: true, vx: 40, stride: walk * span });
+  const bob = Math.round(Math.abs(Math.sin(time * 7)));
+
+  drawSprite(ctx, BRIDE, Math.round(brideX), floor - BRIDE.h - bob);
+  drawSprite(ctx, frame, Math.round(groomX), floor - frame.h);
+  drawCrown(ctx, Math.round(groomX) + 1, floor - frame.h - 9, time);
+  // 맞잡은 손
+  ctx.fillStyle = '#ffd9b3';
+  ctx.fillRect(Math.round(groomX) - 2, floor - 8, 3, 2);
+
+  // 둘 사이에서 하트가 이따금 떠오른다. 시간으로만 만드는 값이라 상태를 안 늘린다
+  for (let i = 0; i < 2; i++) {
+    const k = (time * 0.45 + i * 0.5) % 1;
+    if (k > 0.8) continue;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, (0.8 - k) * 3);
+    const hx = Math.round(groomX - 8 + Math.sin(k * 9 + i) * 3);
+    const hy = Math.round(floor - 26 - k * 26);
+    drawSprite(ctx, HEART, hx, hy);
+    ctx.restore();
+  }
+}
+
+function drawCredits(ctx, t, time) {
+  const { index, slide, fade, walk, out } = creditAt(t);
+
+  const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
+  grad.addColorStop(0, '#0b0514');
+  grad.addColorStop(1, '#241033');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  // 별. 결혼식이 끝난 밤이다
+  for (let i = 0; i < 34; i++) {
+    const x = (i * 131 + 17) % VIEW.w;
+    const y = (i * 53) % (CREDIT_FLOOR - 20);
+    ctx.fillStyle = Math.sin(time * 1.4 + i * 1.9) > 0.3 ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.14)';
+    ctx.fillRect(x, y, 1, 1);
+  }
+  // 두 사람이 걷는 길
+  ctx.fillStyle = 'rgba(255,209,102,0.16)';
+  ctx.fillRect(0, CREDIT_FLOOR, VIEW.w, 1);
+
+  // 앨범. 새 장이 오른쪽에서 들어오면서 앞 장을 왼쪽으로 밀어낸다
+  const home = Math.round((VIEW.w - CREDIT_COVER - CREDIT_PEEK) / 2);
+  const away = VIEW.w; // 이만큼 가면 완전히 화면 밖이다
+  if (index >= 0) {
+    const e = ease(slide);
+    const o = ease(out);
+    if (index > 0 && slide < 1) {
+      drawCreditAlbum(ctx, ALBUMS[index - 1], home - e * away, CREDIT_TOP, time);
+    }
+    const bob = Math.sin(time * 1.2) * 1.5;
+    drawCreditAlbum(ctx, ALBUMS[index], home + (1 - e) * away - o * away, CREDIT_TOP + bob, time);
+  }
+
+  drawCreditCouple(ctx, walk, time);
+
+  if (fade < 1) {
+    ctx.fillStyle = `rgba(0,0,0,${1 - fade})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
+}
+
+return { drawCutscene, drawBossCut, drawCutTitle, drawWatchingEyes, drawIntroCut, drawHardOpenCut, drawCredits };
 })();
 __m["chartrun/src/render/scene.js"] = (() => {
 // 픽셀 월드를 캔버스에 그린다. 글자는 여기서 그리지 않는다 (한글은 DOM 이 맡는다).
@@ -14259,7 +14569,7 @@ const { VIEW, PHASE1_CARD } = __m["chartrun/src/core/game.js"];
 const { bossPhase, bossCombined, ceilingSlabs, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
 const { clamp01, ease, noise, band, beatKind, mixHex } = __m["chartrun/src/render/sceneParts.js"];
 const { drawBoss, drawGiantRobot, drawMics, drawBossHealth, giantSize, giantCanvas } = __m["chartrun/src/render/sceneBoss.js"];
-const { drawBossCut, drawCutTitle, drawCutscene, drawHardOpenCut, drawIntroCut } = __m["chartrun/src/render/sceneCuts.js"];
+const { drawBossCut, drawCutTitle, drawCutscene, drawHardOpenCut, drawIntroCut, drawCredits } = __m["chartrun/src/render/sceneCuts.js"];
 const { PLAYER } = __m["chartrun/src/core/player.js"];
 
 // ── 배경 ────────────────────────────────────────────────────
@@ -15128,13 +15438,14 @@ function drawNpc(ctx, game, ox, oy, time) {
       ctx.save();
       drawSprite(
         ctx,
-        shopFrame({ near: npc.near }, time),
+        shopFrame({ near: npc.near, cheer: npc.cheer }, time),
         x + SHOP_OFFSET.x,
         y + SHOP_OFFSET.y,
         // 좌판이 좌우 대칭이라 몸만 뒤집으면 어색하다. **플레이어가 왼쪽에 있어도
         // 안 돌아본다** — 앉은 사람은 원래 그 자리를 보고 있다
         false,
       );
+      if (npc.cheer) drawCoinToss(ctx, npc.cheer.t, x, y);
       drawTalkTip(ctx, game, npc, x, y, time);
       ctx.restore();
       continue;
@@ -15167,6 +15478,34 @@ function drawNpc(ctx, game, ox, oy, time) {
     }
     drawTalkTip(ctx, game, npc, x, y, time);
     ctx.restore();
+  }
+}
+
+/**
+ * 골라 간 손님에게 상인이 동전을 튕겨 올린다. 둘이 엇갈려 올라갔다 좌판에 떨어진다.
+ *
+ * 시간(cheer.t)으로만 그린다 — 동전마다 상태를 두면 판을 떠났다 돌아왔을 때
+ * 공중에 멈춘 동전이 남는다. 언제 끝나는지는 core 가 정한다 (MERCHANT_CHEER).
+ */
+function drawCoinToss(ctx, t, x, y) {
+  for (let i = 0; i < 2; i++) {
+    const k = (t - i * 0.45) / 1.1; // 한 번 튀는 데 1.1초
+    if (k < 0 || k > 1) continue;
+    const cx = x + 4 + i * 6 + Math.round(k * (i ? 5 : -4));
+    const cy = y - 2 - Math.round(Math.sin(k * Math.PI) * 26);
+    // 돌면서 난다 — 가로폭만 줄였다 폈다
+    const w = Math.max(1, Math.round(4 * Math.abs(Math.cos(t * 14 + i))));
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(cx - (w >> 1), cy, w, 5);
+    ctx.fillStyle = '#b98a2a';
+    ctx.fillRect(cx - (w >> 1), cy + 4, w, 1);
+    // 꼭대기에서 반짝
+    if (k > 0.42 && k < 0.58) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 3, cy + 2, 1, 1);
+      ctx.fillRect(cx + 3, cy + 2, 1, 1);
+      ctx.fillRect(cx, cy - 3, 1, 1);
+    }
   }
 }
 
@@ -15804,6 +16143,11 @@ function drawScene(ctx, game, time) {
     drawGallery(ctx, time);
     return;
   }
+  // 결혼식 뒤의 크레딧. 판도 보스도 없다 — 통째로 제 화면이다
+  if (game.scene === 'credits') {
+    drawCredits(ctx, game.sceneTime, time);
+    return;
+  }
   if (game.scene === 'intro') {
     // 1회차 오프닝과 2회차 시작은 같은 장면을 타고 그림만 다르다
     if (game.introCut === 'hardopen') drawHardOpenCut(ctx, game.cutsceneTime);
@@ -15982,7 +16326,6 @@ __m["chartrun/src/render/hud.js"] = (() => {
 // 화면에 나오는 글자는 여기가 전부고, 전부 "정보"다 —
 // 순위, 재생수, 차트아웃 횟수, 시간, 스테이지 번호. 대사나 농담은 두지 않는다.
 const { timeText } = __m["chartrun/src/core/util.js"];
-const { beatRecord } = __m["chartrun/src/core/save.js"];
 const { STAGES, NOTE_TOTAL } = __m["chartrun/src/data/stages.js"];
 const { KEYPAD } = __m["chartrun/src/core/devmode.js"];
 const { LOOK_SLOTS } = __m["chartrun/src/data/looks.js"];
@@ -16296,9 +16639,10 @@ function createHud(root) {
       }
       case 'ending': {
         const e = game.ending ?? {};
-        // 기록은 저장하기 전에 판정해야 한다 — 저장하고 나면 항상 "안 깼다" 가 된다.
-        // (game.save 는 아직 이번 판이 반영되기 전 상태다)
-        const fresh = beatRecord(game.save, e.timeMs, e.hard);
+        // 신기록인지는 **core 가 저장 전에 정해둔 값**을 읽는다 (finishRun 의 fresh).
+        // 여기서 game.save 와 견주면 안 된다 — 저장이 이 화면보다 먼저 끝나서
+        // 방금 세운 기록을 자기 자신과 견주게 된다. 예전엔 그래서 한 번도 안 떴다.
+        const fresh = !!e.fresh;
         return `
           <div class="panel ending">
             <h1>${e.hard ? '#1 ★' : '#1'}</h1>
@@ -17105,6 +17449,7 @@ const { crisp } = __m["chartrun/src/render/pixel.js"];
 const { preloadAlbumArt } = __m["chartrun/src/render/albumArt.js"];
 const { ALBUMS } = __m["chartrun/src/data/albums.js"];
 const { soundFor } = __m["chartrun/src/data/cutSound.js"];
+const { isEndingCut } = __m["chartrun/src/data/bossCutscenes.js"];
 const { createTouchLayout } = __m["chartrun/src/ui/touchLayout.js"];
 
 const canvas = document.getElementById('game');
@@ -17378,12 +17723,17 @@ function handleEvent(name, data) {
       break;
     case 'cutdone':
       // 페이즈 전환 컷신이 끝나면 싸움이 이어진다 — 브금을 되돌린다.
-      // (엔딩은 곧 통계 화면이 stopBgm 을 부르므로 건드리지 않는다)
-      if (data.cut !== 'ending') audio.bgm('boss');
+      //
+      // **엔딩 둘 다** 건드리지 않는다. 예전엔 'ending' 만 적혀 있어서 2회차
+      // 엔딩(hardEnd)이 끝나면 보스 곡이 도로 켜졌는데, 곧바로 통계 화면이 꺼줘서
+      // 아무도 몰랐다. 이제 그 뒤에 크레딧이 20초 돌므로 그대로 두면 2회차
+      // 크레딧에 보스 곡이 깔린다.
+      if (!isEndingCut(data.cut)) audio.bgm('boss');
       break;
     case 'ending':
-      audio.stopBgm();
-      audio.play('ending');
+      // 결혼식 곡은 **끄지 않는다** — 바로 크레딧이 이어지고, 그 곡이 크레딧의
+      // 배경이다. 끄고 팡파르를 트는 건 통계 화면이 뜰 때('stats')다.
+      //
       // 한 바퀴를 돌았다고 남긴다 — 이걸로 NPC 와 하드모드가 열린다.
       // resume: null 은 **판이 끝났다**는 뜻이다. 안 지우면 다 깬 뒤에도 타이틀에
       // 「이어하기」가 남아서, 끝난 판으로 되돌아가게 된다.
@@ -17395,8 +17745,22 @@ function handleEvent(name, data) {
         resume: null,
       });
       break;
+    case 'credits':
+      // 엔딩 컷신의 곡을 그대로 잇는다 (같은 곡이면 bgm 이 아무것도 안 한다).
+      // 컷신 보기로 크레딧만 틀면 앞에 흐르던 곡이 없어서 여기서 켠다.
+      audio.bgm(data.hard ? 'victory' : 'wedding');
+      break;
+    case 'stats':
+      // 크레딧이 끝나고(또는 건너뛰고) 통계 화면이 떴다
+      audio.stopBgm();
+      audio.play('ending');
+      break;
     case 'talk':
       audio.play('blip');
+      break;
+    case 'cheer':
+      // 상인이 좋아한다 — 동전 소리. 판에서 음표를 주울 때와 같은 소리라 「돈」으로 읽힌다
+      audio.play('coin');
       break;
     case 'portal':
       audio.play('swirl');

@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, loadBoss, updateGame, BOSS_CUT_GAP, PHASE1_CARD } from '../src/core/game.js';
 import { hitBoss, syncPhase, bossCombined } from '../src/core/boss.js';
+import { CREDITS_LENGTH } from '../src/data/credits.js';
 import {
   BOSS_CUTS,
   PHASE2_CUT,
@@ -217,20 +218,28 @@ test('보스를 쓰러뜨리면 엔딩 컷신을 거쳐 통계 화면으로 간�
   assert.equal(game.scene, 'boss', '컷신 도는 동안은 아직 보스 씬');
 
   run(game, bossCutLength('ending') + 0.5);
-  assert.equal(game.scene, 'ending', '컷신이 끝나면 통계 화면');
+  // 결혼식 뒤에는 크레딧이 먼저 돈다. 기록은 **이미** 만들어져 있어야 한다 —
+  // 저장이 여기서 되므로, 크레딧 도중에 앱을 닫아도 한 바퀴가 남는다
+  assert.equal(game.scene, 'credits', '컷신이 끝나면 크레딧');
   assert.equal(game.rank, 1, '1위가 됐다');
   assert.equal(game.ending.plays, 42, '통계가 그대로 넘어와야 한다');
   assert.equal(game.ending.chartOuts, 3);
   assert.equal(game.ending.timeMs, game.elapsedMs);
+
+  run(game, CREDITS_LENGTH + 0.2);
+  assert.equal(game.scene, 'ending', '크레딧이 끝나면 통계 화면');
 });
 
-test('엔딩 컷신도 건너뛰면 바로 통계로 간다', () => {
+test('엔딩 컷신과 크레딧을 건너뛰면 통계로 간다', () => {
   const game = bossGame();
   game.bossCut = { id: 'ending', t: 0, length: bossCutLength('ending') };
   run(game, 0.4, { confirmPressed: true });
   run(game, 0.4, { confirmPressed: true });
-  assert.equal(game.scene, 'ending');
+  assert.equal(game.scene, 'credits', '결혼식을 건너뛰면 크레딧');
   assert.ok(game.ending, '통계가 만들어져야 한다');
+  run(game, 0.4, { confirmPressed: true });
+  run(game, 0.4, { confirmPressed: true });
+  assert.equal(game.scene, 'ending', '크레딧도 건너뛸 수 있어야 한다');
 });
 
 

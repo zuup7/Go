@@ -36,7 +36,8 @@ import { talkTimeline, talkLength, HINT_TALKS } from '../data/npcTalk.js';
 import { LOOK_SLOTS, sanitizeLook, cycleLook } from '../data/looks.js';
 import { FX_SLOTS, SHOP_ITEMS, fxOf, owns, canBuy, points, pointsText, sanitizeFx, sanitizeOwned } from '../data/effects.js';
 import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
-import { emptySave } from './save.js';
+import { emptySave, beatRecord } from './save.js';
+import { CREDITS_LENGTH } from '../data/credits.js';
 import { createRng } from './rng.js';
 import { clamp, overlaps } from './util.js';
 import { TILE, SOLID } from './physics.js';
@@ -201,6 +202,11 @@ export function createGame(options = {}) {
     shopDenied: 0,
     /** 상점에서 나가면 어디로 돌아갈지 ('title' | 'play'). openShop 이 세운다 */
     shopBack: 'title',
+    /**
+     * 판 위의 상인에게서 연 상점이면 그 사람과, 들어갈 때 끼고 있던 이펙트.
+     * 나올 때 이펙트가 바뀌었으면 그 사람이 좋아한다 (merchantCheers).
+     */
+    shopVisit: null,
     /** 보스전 시작의 「PHASE 1」 카드 { t }. loadBoss 만 세운다 — PHASE1_CARD 참고 */
     phaseCard: null,
     /**
@@ -1246,11 +1252,15 @@ function startHint(game, id, npc) {
  * 판에 박힌 장식처럼 보였고, 그래서 2회차가 있는 줄도 몰랐다. 이제 지나가면
  * 아직 아니라고 말해주고, 깨고 오면 열어주고, 열어준 뒤에도 문을 가리킨다.
  */
-function handleNpc(game, input) {
+function handleNpc(game, input, dt) {
   const npcs = game.world?.npcs;
   if (!npcs?.length || game.hard) return;
 
   for (const npc of npcs) {
+    if (npc.cheer) {
+      npc.cheer.t += dt;
+      if (npc.cheer.t >= MERCHANT_CHEER) npc.cheer = null;
+    }
     const near = !game.player.dead && overlaps(game.player, npcReach(npc));
     npc.near = near;
     // **멀어지면 풀린다.** 이게 다시 말을 걸 수 있게 하는 전부다
@@ -1275,7 +1285,7 @@ function handleNpc(game, input) {
       // 화면만 상점으로 바뀌고, 「뒤로」 하면 서 있던 자리로 돌아온다
       game.npcHint = null;
       game.player.vx = 0;
-      openShop(game, 'play');
+      openShop(game, 'play', npc);
       emit(game, 'talk', {});
     } else {
       npc.opened = true;
@@ -1415,7 +1425,7 @@ function updatePlay(game, input, dt) {
   handleShots(game, dt);
   handlePickups(game);
   handleCheckpoints(game);
-  handleNpc(game, input);
+  handleNpc(game, input, dt);
   handlePortal(game);
   handleFakeGoal(game, dt);
   handleGoal(game);
@@ -1430,7 +1440,12 @@ function updatePlay(game, input, dt) {
   updateCamera(game.camera, game.player, game.world, dt, isChase(game) ? CHASE_BACK : 0);
 }
 
-/** 엔딩 컷신이 끝나면 통계 화면으로 */
+/**
+ * 엔딩 컷신이 끝나면 **크레딧**으로, 크레딧이 끝나면 통계 화면으로 (endCredits).
+ *
+ * 저장('ending' 이벤트)은 **여기서** 한다 — 크레딧 도중에 앱을 닫아도 한 바퀴를
+ * 돈 게 남아야 한다. 20초짜리 크레딧 뒤로 미루면 거기서 끄는 사람은 다 잃는다.
+ */
 function finishRun(game) {
   game.rank = TOP_RANK;
   game.ending = {
@@ -1441,10 +1456,32 @@ function finishRun(game) {
     defeated: game.defeated,
     timeMs: game.elapsedMs,
     hard: game.hard,
+    /**
+     * 신기록인가. **저장하기 전에, 여기서 한 번** 정한다.
+     *
+     * 예전엔 통계 화면이 그릴 때마다 game.save 와 견줘서 정했는데, 저장은 바로
+     * 아래 'ending' 이벤트에서 (동기로) 먼저 끝난다 — 그러면 방금 세운 기록을
+     * 자기 자신과 견주게 되어 **신기록이 한 번도 안 떴다.** 골라 들어간 판은
+     * 기록을 안 건드리므로(mergeRun) 신기록도 아니다.
+     */
+    fresh: !game.partial && beatRecord(game.save, game.elapsedMs, game.hard),
   };
-  game.scene = 'ending';
+  game.scene = 'credits';
   game.sceneTime = 0;
   emit(game, 'ending', game.ending);
+  emit(game, 'credits', { hard: game.hard });
+}
+
+/**
+ * 크레딧이 끝났다(또는 건너뛰었다) — 통계 화면으로.
+ *
+ * 'stats' 를 따로 알린다. 브금을 끄고 팡파르를 트는 건 **여기**다 — 'ending' 에서
+ * 끄면 결혼식 곡이 크레딧 시작과 함께 뚝 끊겨서 20초를 무음으로 본다.
+ */
+function endCredits(game) {
+  game.scene = 'ending';
+  game.sceneTime = 0;
+  emit(game, 'stats', game.ending ?? {});
 }
 
 /**
@@ -1507,6 +1544,13 @@ export function previewCut(game, index) {
   const p = CUT_PREVIEWS[index];
   if (!p) return false;
   game.cutPreview = index;
+  // 크레딧은 보스도 판도 없다 — 장면만 바꾼다
+  if (p.credits) {
+    game.scene = 'credits';
+    game.sceneTime = 0;
+    emit(game, 'credits', { hard: false });
+    return true;
+  }
   // 오프닝·2회차 시작은 보스가 없는 컷신이다 — 같은 목록에 있지만 트는 길이 다르다
   if (p.intro) {
     startIntro(game, p.intro);
@@ -1545,12 +1589,34 @@ function openGallery(game, from) {
  * 자리(shopIndex)는 **판에서 들어올 때만** 되돌린다... 가 아니라 늘 되돌린다.
  * 어디서 들어오든 목록 첫 칸부터 보는 게 덜 헷갈린다.
  */
-export function openShop(game, from) {
+export function openShop(game, from, npc = null) {
   game.scene = 'shop';
   game.sceneTime = 0;
   game.shopIndex = 0;
   game.shopDenied = 0;
   game.shopBack = from;
+  game.shopVisit = npc ? { npc, fx: { ...game.save.fx } } : null;
+}
+
+/** 상인이 좋아하는 시간(초). 그리는 쪽이 동전을 이 안에서 튕긴다 */
+export const MERCHANT_CHEER = 2.4;
+
+/**
+ * 상점에서 나왔다. 상인에게서 **뭔가를 골라 나왔으면** 그 사람이 좋아한다.
+ *
+ * 「샀나」가 아니라 **「끼운 게 바뀌었나」**로 본다. 개발자 모드에서는 사는 일이
+ * 없고 끼우기만 하므로, 샀는지로 보면 만든 사람은 이 반응을 영영 못 본다.
+ * 이미 산 걸 다시 끼워 바꿔도 좋아한다 — 손님이 뭘 골라 갔다는 건 같다.
+ */
+function leaveShop(game) {
+  const visit = game.shopVisit;
+  game.shopVisit = null;
+  if (!visit) return;
+  const fx = game.save.fx ?? {};
+  const changed = FX_SLOTS.some((slot) => fx[slot.key] !== visit.fx[slot.key]);
+  if (!changed) return;
+  visit.npc.cheer = { t: 0 };
+  emit(game, 'cheer', {});
 }
 
 /**
@@ -1683,6 +1749,8 @@ export const SELECT_SLOTS = SELECT_ITEMS.length;
 export const inCutscene = (game) =>
   game.scene === 'intro' ||
   game.scene === 'cutscene' ||
+  // 크레딧도 컷신이다 — HUD 를 치우고, 폰에는 「건너뛰기」가 떠야 한다
+  game.scene === 'credits' ||
   !!game.bossCut ||
   // 컷신 사이의 암전도 컷신이다 — 여기서 HUD 가 0.3초 돌아왔다 사라지면 깜빡인다
   game.bossCutGap > 0 ||
@@ -2124,6 +2192,7 @@ export function updateGame(game, input, dt) {
         // 'play' 로 돌아가도 world 와 player 는 그대로라 아무것도 안 잃는다
         game.scene = game.shopBack === 'play' ? 'play' : 'title';
         game.sceneTime = 0;
+        leaveShop(game);
       } else if (input.confirmPressed) {
         buyOrEquip(game, game.shopIndex);
       }
@@ -2255,6 +2324,19 @@ export function updateGame(game, input, dt) {
       // 컷신 중에는 R 도 안 먹는다 — 연출 도중에 죽는 건 사고다
       if (input.restartPressed && !game.bossCut) killPlayer(game);
       else updateBossScene(game, input, dt);
+      break;
+
+    /**
+     * 엔딩 크레딧. 앨범 열일곱 장이 지나가고 두 사람이 걸어간다 (data/credits.js).
+     * 컷신과 같은 규칙으로 건너뛴다 — 결혼식에서 눌린 점프가 그대로 먹으면
+     * 크레딧이 뜨자마자 사라진다.
+     */
+    case 'credits':
+      if (skipping(input, game.sceneTime) || game.sceneTime >= CREDITS_LENGTH) {
+        // 컷신 보기로 틀었으면 목록으로 — 판이 끝난 게 아니다
+        if (game.cutPreview != null) openCutList(game);
+        else endCredits(game);
+      }
       break;
 
     case 'ending':

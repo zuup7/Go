@@ -6,7 +6,8 @@
 
 import { drawCoverAt } from './albumArt.js';
 import { drawSprite } from './pixel.js';
-import { playerFrame, NOTE, DISC, BRIDE, RING } from './sprites.js';
+import { playerFrame, NOTE, DISC, BRIDE, RING, HEART } from './sprites.js';
+import { creditAt } from '../data/credits.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import { bossBody, NEUTRAL_POSE } from '../core/boss.js';
@@ -2071,3 +2072,138 @@ function drawHardEndCut(ctx, t, phase, time) {
   drawCutTitle(ctx, '#1', t - HARD_END_AT.star - 0.3, 4, 46);
 }
 
+
+
+// ── 엔딩 크레딧 ─────────────────────────────────────────────
+//
+// 결혼식이 끝나면 지나온 앨범 열일곱 장이 한 장씩 크게 지나가고, 그 아래로
+// 두 사람이 손을 잡고 화면을 가로지른다. **글자는 없다** — 커버가 곧 이름이다.
+// 언제 무엇이 보일지는 data/credits.js 의 creditAt 이 정하고 여기서는 그리기만 한다.
+
+/** 커버 한 변. 48px 사진을 **정수배**(3배)로 키운다 — 2.75배 같은 걸로 키우면 픽셀이 들쭉날쭉해진다 */
+const CREDIT_COVER = 144;
+const CREDIT_TOP = 14;
+/** 커버 뒤로 삐져나오는 레코드판. 커버 오른쪽으로 이만큼 나온다 */
+const CREDIT_PEEK = 44;
+/** 두 사람이 딛는 줄 */
+const CREDIT_FLOOR = 212;
+
+/** 레코드판 한 장 — 슬리브에서 반쯤 빠져나와 돈다. 라벨 색은 그 앨범 색이다 */
+function drawCreditVinyl(ctx, cx, cy, r, label, time) {
+  ctx.save();
+  ctx.translate(Math.round(cx), Math.round(cy));
+  ctx.fillStyle = VINYL;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  // 홈. 밝게 두면 과녁이 되므로 아주 옅게
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let k = r - 6; k > r * 0.36; k -= 5) {
+    ctx.beginPath();
+    ctx.arc(0, 0, k, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // 돌아가는 빛 한 줄기 — 이게 없으면 원이 멈춰 있는지 도는지 안 보인다
+  const a = time * 1.6;
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.72, a, a + 0.5);
+  ctx.stroke();
+  ctx.fillStyle = label;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = VINYL;
+  ctx.fillRect(-1, -1, 3, 3);
+  ctx.restore();
+}
+
+/** 앨범 한 장 (레코드판 + 커버). x 는 **커버의** 왼쪽 */
+function drawCreditAlbum(ctx, album, x, y, time) {
+  const size = CREDIT_COVER;
+  const r = size / 2 - 6;
+  drawCreditVinyl(ctx, x + size - r + CREDIT_PEEK, y + size / 2, r, album.palette?.[1] ?? '#ff5d8f', time);
+  // 그림자 — 레코드판 위로 커버가 떠 보이게
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(Math.round(x) + 4, Math.round(y) + 5, size, size);
+  drawCoverAt(ctx, album, Math.round(x), Math.round(y), size);
+  // 슬리브 테두리 — 어두운 사진이 배경에 녹아버리지 않게
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, size - 1, size - 1);
+}
+
+/** 손 잡고 걷는 두 사람. walk 0→1 로 화면 왼쪽 밖에서 오른쪽 밖까지 */
+function drawCreditCouple(ctx, walk, time) {
+  const span = VIEW.w + 60;
+  const groomX = -24 + walk * span;
+  const brideX = groomX - 17;
+  const floor = CREDIT_FLOOR;
+  // 발걸음은 **간 거리**로 돈다 — playerFrame 이 판에서 하는 것과 같다.
+  // 좌표를 그대로 넘기면 안 된다: 화면 왼쪽 밖(음수)에서 출발하므로 프레임 번호가
+  // 음수가 되어 **없는 장**을 집는다 (그래서 한 번 그림이 통째로 멈췄다)
+  const frame = playerFrame({ onGround: true, vx: 40, stride: walk * span });
+  const bob = Math.round(Math.abs(Math.sin(time * 7)));
+
+  drawSprite(ctx, BRIDE, Math.round(brideX), floor - BRIDE.h - bob);
+  drawSprite(ctx, frame, Math.round(groomX), floor - frame.h);
+  drawCrown(ctx, Math.round(groomX) + 1, floor - frame.h - 9, time);
+  // 맞잡은 손
+  ctx.fillStyle = '#ffd9b3';
+  ctx.fillRect(Math.round(groomX) - 2, floor - 8, 3, 2);
+
+  // 둘 사이에서 하트가 이따금 떠오른다. 시간으로만 만드는 값이라 상태를 안 늘린다
+  for (let i = 0; i < 2; i++) {
+    const k = (time * 0.45 + i * 0.5) % 1;
+    if (k > 0.8) continue;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, (0.8 - k) * 3);
+    const hx = Math.round(groomX - 8 + Math.sin(k * 9 + i) * 3);
+    const hy = Math.round(floor - 26 - k * 26);
+    drawSprite(ctx, HEART, hx, hy);
+    ctx.restore();
+  }
+}
+
+export function drawCredits(ctx, t, time) {
+  const { index, slide, fade, walk, out } = creditAt(t);
+
+  const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
+  grad.addColorStop(0, '#0b0514');
+  grad.addColorStop(1, '#241033');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  // 별. 결혼식이 끝난 밤이다
+  for (let i = 0; i < 34; i++) {
+    const x = (i * 131 + 17) % VIEW.w;
+    const y = (i * 53) % (CREDIT_FLOOR - 20);
+    ctx.fillStyle = Math.sin(time * 1.4 + i * 1.9) > 0.3 ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.14)';
+    ctx.fillRect(x, y, 1, 1);
+  }
+  // 두 사람이 걷는 길
+  ctx.fillStyle = 'rgba(255,209,102,0.16)';
+  ctx.fillRect(0, CREDIT_FLOOR, VIEW.w, 1);
+
+  // 앨범. 새 장이 오른쪽에서 들어오면서 앞 장을 왼쪽으로 밀어낸다
+  const home = Math.round((VIEW.w - CREDIT_COVER - CREDIT_PEEK) / 2);
+  const away = VIEW.w; // 이만큼 가면 완전히 화면 밖이다
+  if (index >= 0) {
+    const e = ease(slide);
+    const o = ease(out);
+    if (index > 0 && slide < 1) {
+      drawCreditAlbum(ctx, ALBUMS[index - 1], home - e * away, CREDIT_TOP, time);
+    }
+    const bob = Math.sin(time * 1.2) * 1.5;
+    drawCreditAlbum(ctx, ALBUMS[index], home + (1 - e) * away - o * away, CREDIT_TOP + bob, time);
+  }
+
+  drawCreditCouple(ctx, walk, time);
+
+  if (fade < 1) {
+    ctx.fillStyle = `rgba(0,0,0,${1 - fade})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
+}

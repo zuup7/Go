@@ -271,6 +271,22 @@ const MTORSO = {
     '...cfcccccf.....',
     '...kcccccck.....',
   ],
+  /** 만세 — 두 팔이 어깨 위로. 손은 머리 옆까지 올라간다 (mbuild 의 hands) */
+  hooray: [
+    '.s.kcccccck.s...',
+    '..scffcccfcs....',
+    '...cccccccc.....',
+    '...cfcccccf.....',
+    '...kcccccck.....',
+  ],
+  /** 손뼉 — 두 손이 가슴 앞에서 만난다 */
+  clap: [
+    '...kcccccck.....',
+    '..kcffcccfck....',
+    '...cccsscc......',
+    '...cfcccccf.....',
+    '...kcccccck.....',
+  ],
   /** 한 손을 들어 부른다 — 오른팔이 어깨 위로 */
   wave: [
     '...kcccccck.s...',
@@ -294,9 +310,17 @@ const MSTALL = [
   '..kkkkkkkkkkkk..',
 ];
 
-const mbuild = (head, torso, { drop = 0 } = {}) => {
+const mpoke = (row, i, ch) => row.slice(0, i) + ch + row.slice(i + 1);
+
+/**
+ * hands 는 [줄, 칸] 목록 — 조각 경계를 넘어 머리 옆까지 올라간 손을 **한 칸씩** 꽂는다.
+ * 노인의 지팡이 기둥과 같은 수법이다: 조각에 그려 넣으면 그 조각을 빌려 쓰는
+ * 다른 장에서 손 토막만 허공에 뜬다.
+ */
+const mbuild = (head, torso, { drop = 0, hands = [] } = {}) => {
   const body = drop > 0 ? torso.slice(0, torso.length - drop) : torso;
-  const rows = [...Array(2 + drop).fill(MBLANK), ...head, ...body, ...MSTALL];
+  let rows = [...Array(2 + drop).fill(MBLANK), ...head, ...body, ...MSTALL];
+  for (const [r, c] of hands) rows[r] = mpoke(rows[r], c, 's');
   if (rows.length !== 20) throw new Error(`상인 프레임이 ${rows.length}줄이다 — 20줄이어야 한다`);
   for (const row of rows) {
     if (row.length !== MW) {
@@ -313,6 +337,9 @@ export const SHOP_SPRITES = {
   /** 가까이 오면 고개를 들고 손을 든다 */
   wave: mbuild(MHEAD.up, MTORSO.wave),
   wave2: mbuild(MHEAD.up, MTORSO.wave, { drop: 1 }),
+  /** 골라 가면 좋아한다 — 만세와 손뼉을 번갈아. 손뼉은 한 칸 주저앉아 들썩인다 */
+  hooray: mbuild(MHEAD.up, MTORSO.hooray, { hands: [[8, 0], [8, 13]] }),
+  clap: mbuild(MHEAD.up, MTORSO.clap, { drop: 1 }),
 };
 
 /** 스프라이트를 npc 좌표에 놓을 때의 보정. 발밑은 노인과 같고 가로만 한 칸 넓다 */
@@ -324,7 +351,9 @@ export const SHOP_OFFSET = { x: -3, y: 14 - 20 };
  *
  * 가까이 오면 손을 들어 부른다. 이게 「누를 수 있다」를 몸으로 먼저 알린다.
  */
-export function shopFrame({ near }, time) {
+export function shopFrame({ near, cheer }, time) {
+  // 좋아할 때는 빠르게 — 느리게 번갈면 박수가 아니라 체조가 된다
+  if (cheer) return Math.floor(cheer.t * 6) % 2 === 0 ? SHOP_SPRITES.hooray : SHOP_SPRITES.clap;
   const beat = Math.floor(time * 2) % 2 === 1;
   if (near) return beat ? SHOP_SPRITES.wave2 : SHOP_SPRITES.wave;
   return beat ? SHOP_SPRITES.sit2 : SHOP_SPRITES.sit;
