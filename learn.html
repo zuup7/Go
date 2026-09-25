@@ -630,6 +630,62 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .kitem .kb em{font-style:normal;font-weight:800}
 .kitem .kso{margin-top:6px;color:var(--ink-2)}
 .kitem .peekbtn{margin-top:4px}
+.kfl{margin:4px 0 0 20px}
+.kfl li{margin-bottom:5px}
+.kfl small{font-family:var(--f-px);font-size:8.5px;background:var(--yel);padding:1px 4px}
+/* 흐름 맞추기 */
+.exbar.obar{background:var(--teal-l);border-color:var(--teal)}
+.exbar.obar .ic{font-family:var(--f-px);font-size:13px;color:var(--jade-d)}
+.ohead{margin-bottom:12px}
+.ohead .note{margin-top:6px}
+.obd{display:flex;flex-direction:column;gap:9px}
+.oslot{display:flex;align-items:stretch;gap:8px;border-radius:0}
+.oslot.over .ocard,.ocard.sel{outline:3px dashed var(--blue);outline-offset:2px}
+.onum{flex-shrink:0;width:28px;display:grid;place-items:center;font-family:var(--f-px);font-size:10px;color:var(--ink-2)}
+.ocard,.ochip{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;text-align:left;
+  background:var(--cream);border:var(--bd) solid var(--ink);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28);color:var(--ink)}
+.ocard{flex:1;min-width:0;min-height:56px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.ocard .ot{font-family:var(--f-h);font-size:17px;line-height:1.4}
+.ocard .oh{font-size:12px;color:var(--ink-2);line-height:1.5}
+.ocard .oy,.ochip small{font-family:var(--f-px);font-size:9px;color:var(--ink);background:var(--yel);padding:2px 5px;align-self:flex-start;margin-top:3px}
+.ocard.ok,.ochip.ok{background:var(--teal-l);border-color:var(--jade-d);cursor:default}
+.ocard.no,.ochip.no{background:var(--red-l);border-color:var(--red-d)}
+.ocard.lift,.ochip.lift{opacity:.35}
+.oghost{position:fixed;z-index:60;pointer-events:none;opacity:.95;transform:rotate(-1.5deg);box-shadow:6px 8px 0 rgba(43,31,51,.35)}
+.ozs{display:flex;flex-direction:column;gap:10px}
+.ozone{background:var(--panel);border:var(--bd) dashed var(--ink-3);padding:9px 10px;min-height:74px}
+.ozone.over{border-style:solid;border-color:var(--blue);background:var(--blue-l)}
+.ozh{font-size:13.5px;color:var(--ink);line-height:1.5}
+.ozh b{font-family:var(--f-px);font-size:9px;background:var(--ink);color:var(--cream);padding:3px 6px;margin-right:4px}
+.oza{font-size:12px;color:var(--red-d);margin-top:4px;line-height:1.5}
+.ozc{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.ozp{font-size:12.5px;color:var(--ink-2)}
+.ochip{min-height:44px;padding:8px 11px;font-size:14.5px;font-weight:700;line-height:1.35}
+.ochip.sel{outline:3px dashed var(--blue);outline-offset:2px}
+.otray{margin-top:14px;padding:10px;background:var(--cream);border:var(--bd) solid var(--ink);display:flex;flex-wrap:wrap;gap:8px;min-height:70px}
+.otray .eyebrow{width:100%;margin-bottom:0}
+.otray.over{background:var(--blue-l)}
+.oflow{background:var(--cream);border:var(--bd) solid var(--ink);padding:10px 12px}
+.ofl b{font-family:var(--f-h);font-size:16px;font-weight:400}
+.ofl small{font-family:var(--f-px);font-size:9px;color:var(--ink);background:var(--yel);padding:1px 5px;margin-left:4px}
+.ofl p{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin-top:2px}
+.ofl.no b{background:var(--red-l);box-shadow:inset 0 -2px 0 var(--red);padding:0 3px}
+.oarr{font-size:16px;color:var(--ink-3);line-height:1.2;padding:2px 0 2px 6px}
+.ofrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;min-height:56px;padding:9px 12px;margin-bottom:8px;
+  background:var(--cream);border:var(--bd) solid var(--ink);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28)}
+.ofrow .oft{flex:1;min-width:0}
+.ofrow .oft b{display:block;font-family:var(--f-h);font-size:15.5px;font-weight:400;line-height:1.4}
+.ofrow .oft small{font-size:12px;color:var(--ink-2)}
+.obg{flex-shrink:0;font-size:12px;font-weight:700;padding:3px 7px;border:2px solid var(--ink);background:var(--panel);color:var(--ink)}
+.obg.no{background:var(--red-l);color:var(--red-d)}
+.obg.ok{background:var(--yel)}
+.oblk{background:var(--cream);border:var(--bd) solid var(--ink);padding:10px 12px;margin-bottom:10px}
+.obh{display:flex;align-items:center;gap:10px}
+.obh b{display:block;font-family:var(--f-h);font-size:15.5px;font-weight:400;line-height:1.4}
+.obh small{font-size:12px;color:var(--ink-2)}
+.obn{flex-shrink:0;width:30px;height:30px;display:grid;place-items:center;background:var(--ink);color:var(--cream);font-family:var(--f-px);font-size:10px}
+.obl{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.obl span{font-size:12px;padding:2px 6px;background:var(--teal-l);border:1px solid var(--jade-d);color:var(--ink)}
 .exbar.nbar{background:#FAE4C2;border-color:var(--org-d)}
 .exbar.nbar .ic{color:var(--org-d)}
 .ncard .nname{font-family:var(--f-h);font-size:30px;line-height:1.3;margin:4px 0 6px;color:var(--ink)}
@@ -2045,6 +2101,9 @@ function vHome(){
     '<span class="tx"><b>학교 프린트 정리</b><small>선생님 밑줄 '+PRINT.under.length+'곳 · 빈칸 '+(PBLANK.length+PCHK.length)+'문장 · 다른 점 '+PRINT.diff.length+'곳 · O·X '+PRINT.ox.length+'문항</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<div class="part">복습</div>'+
+    '<button class="exbar obar" id="goOrd" style="margin-bottom:9px"><span class="ic">↕</span>'+
+    '<span class="tx"><b>흐름 맞추기</b><small>카드를 끌어서 순서대로 · 흐름 세트 '+FLOWS.length+'개 · 시대 섞기 · 통치↔저항 · 쌓아 가기</small></span>'+
+    '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="cta ghost" id="goRev2">'+IC.book+' 암기 장치와 인과 사슬 모아 보기</button>'+
     '<button class="cta ghost" id="goTL" style="margin-top:9px">&#9202; 연표 한 장으로 쭉 보기 ('+timeline().length+'개 사건)</button>'+
     '<p class="note" style="margin-top:14px">배운 내용을 문제로 확인하고 싶으면 「오답 몬스터」로 넘어가면 돼. 여긴 처음 배우는 곳이야.</p>';
@@ -2055,6 +2114,8 @@ function vHome(){
   if(gw)gw.onclick=function(){go("wrong");};
   var gd=document.getElementById("goDue");
   if(gd)gd.onclick=function(){RV=null;go("due");};
+  var go2=document.getElementById("goOrd");
+  if(go2)go2.onclick=function(){go("ord");};
   var gk=document.getElementById("goKeep");
   if(gk)gk.onclick=function(){go("keep");};
   var gm=document.getElementById("goMem");
@@ -4680,18 +4741,21 @@ function kList(){
   NAMES.forEach(function(x){ var k="N:"+x.id;
     if(S.keep[k])out.push({g:"name",k:k,sub:x.k+" · "+UMAP[x.u].n,h:x.n,
       b:'<ul class="nclue">'+x.cl.map(function(c){return "<li>"+c+"</li>";}).join("")+'</ul><p class="kso">→ '+esc(x.e)+'</p>',x:x}); });
+  FLOWS.forEach(function(f){ var k="O:"+f.id;
+    if(S.keep[k])out.push({g:"flow",k:k,fid:f.id,sub:"흐름 · "+UMAP[f.u].n,h:f.t,
+      b:'<ol class="kfl">'+f.s.map(function(x){return '<li><b>'+esc(x.n)+'</b> <small>'+esc(x.y)+'</small><br>'+esc(x.w)+'</li>';}).join("")+'</ol>'}); });
   PBLANK.concat(PCHK).forEach(function(r){ if(S.pmark[r.id])out.push({g:"blank",k:r.id,sub:"프린트 "+r[0]+"쪽 · "+UMAP[r[1]].n,r:r}); });
   return out;
 }
 function kCount(){return kList().length;}
 function vKeep(){
   titleEl.textContent="킵한 것";
-  var all=kList(), n={card:0,name:0,blank:0};
+  var all=kList(), n={card:0,name:0,flow:0,blank:0};
   all.forEach(function(x){n[x.g]++;});
   var list=KPTAB==="all"?all:all.filter(function(x){return x.g===KPTAB;});
   var hide=S.kpHide==null?true:!!S.kpHide;
-  var T=[["all","전체 "+all.length],["card","수업 "+n.card],["name","인물·단체 "+n.name],["blank","빈칸 "+n.blank]];
-  var h='<p class="note" style="margin-bottom:12px">수업 카드와 인물·단체 카드에서 <b>☆ 킵</b>을 누른 것, 프린트 빈칸에서 '+
+  var T=[["all","전체 "+all.length],["card","수업 "+n.card],["name","인물·단체 "+n.name],["flow","흐름 "+n.flow],["blank","빈칸 "+n.blank]];
+  var h='<p class="note" style="margin-bottom:12px">수업 카드와 인물·단체 카드에서 <b>☆ 킵</b>을 누른 것(흐름 맞추기 결과 포함), 프린트 빈칸에서 '+
       '<b>헷갈림</b>을 누른 것이 여기 모여. 다 외웠으면 <b>★ 킵함</b>을 한 번 더 눌러 빼면 돼.</p>'+
     '<div class="chips" style="margin-bottom:10px">'+T.map(function(t){
       return '<button class="chip'+(KPTAB===t[0]?" on":"")+'" data-kt="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>'+
@@ -4713,7 +4777,8 @@ function vKeep(){
     h+='<div class="kitem"><div class="kt">'+esc(x.sub)+kBtn(x.k)+'</div>'+
       '<div class="kh">'+(x.g==="card"?x.h:esc(x.h))+'</div>'+
       (open?'<div class="kb">'+x.b+'</div>':'<button class="peekbtn" data-kk="'+esc(x.k)+'"><span>속으로 떠올린 다음 눌러 봐</span></button>')+
-      (x.g==="card"?'<button class="prgo" data-l="'+x.lid+'" data-ci="'+x.ci+'">수업에서 보기 '+IC.chev+'</button>':
+      (x.g==="flow"?'<button class="prgo" data-of="'+x.fid+'">이 흐름 다시 맞추기 '+IC.chev+'</button>':
+       x.g==="card"?'<button class="prgo" data-l="'+x.lid+'" data-ci="'+x.ci+'">수업에서 보기 '+IC.chev+'</button>':
         (LMAP[x.x.l]?'<button class="prgo" data-l="'+x.x.l+'" data-nk="'+esc(x.x.n)+'">'+esc(LMAP[x.x.l].title)+' 수업에서 보기 '+IC.chev+'</button>':''))+
       '</div>';
   });
@@ -4724,7 +4789,359 @@ function vKeep(){
   Array.prototype.forEach.call(view.querySelectorAll(".kitem .pbs"),function(b){b.onclick=function(){PBO[b.dataset.id]=!PBO[b.dataset.id];buzz(10);vKeep();};});
   Array.prototype.forEach.call(view.querySelectorAll(".kitem .pbm"),function(b){b.onclick=function(){delete S.pmark[b.dataset.id];save();vKeep();};});
   Array.prototype.forEach.call(view.querySelectorAll(".kitem .prgo"),function(b){b.onclick=function(){
+    if(b.dataset.of){ oStartFlow(b.dataset.of); return; }
     jumpCard(b.dataset.l, b.dataset.ci!=null?+b.dataset.ci:prFind(b.dataset.l,b.dataset.nk)); };});
+}
+
+/* ── 흐름 세트: 드래그로 순서 맞추기 ──
+   [id, 단원, 수업, 제목, [[사건, 때, 다음으로 이어지는 까닭], …]]
+   풀 때는 '때'를 가린다. 확인한 뒤에 때와 까닭을 화살표로 이어 보여 준다 */
+var FLOWRAW=[
+ ["f01","s1","L1","1차 대전에서 파리까지",[["제1차 세계 대전","1914","사라예보 사건이 불씨가 됐어"],["러시아 혁명","1917","레닌이 약소민족 해방을 지원하겠다고 선언"],["파리 강화 회의","1919","윌슨의 민족 자결주의 → 약소민족이 희망을 품음"],["워싱턴 회의","1921","열강은 군비 축소만 합의, 한국 문제는 외면"]]],
+ ["f02","s1","L2","침략이 커져 간 순서",[["대공황","1929","공황을 침략 전쟁으로 벗어나려 함"],["만주 사변","1931","일본이 만주를 차지하고 만주국을 세움"],["중일 전쟁","1937","루거우차오 사건을 빌미로 중국 본토로"],["제2차 세계 대전","1939","독일의 폴란드 침공"],["아시아·태평양 전쟁","1941","진주만 기습"]]],
+ ["f03","s2","L4","무단 통치에서 3·1 운동까지",[["조선 총독부 설치","1910","총독이 입법·사법·행정·군사권을 쥠"],["조선 태형령","1912","한국인에게만 매질 — 공포 통치"],["토지 조사 사업 마무리","1918","신고 못 한 땅을 빼앗아 동척·일본인에게"],["3·1 운동","1919","쌓인 분노가 전 민족의 만세로 터짐"]]],
+ ["f04","s3","L7","1920년대 수탈과 탄압",[["산미 증식 계획 시작","1920","일본의 쌀 부족을 한국 쌀로 메우려고"],["일본 상품 관세 철폐","1923","값싼 일본 상품이 밀려와 → 물산 장려 운동"],["치안 유지법 제정","1925","사회주의 · 독립운동을 옥죔"],["산미 증식 계획 중단","1934","일본 쌀값이 떨어지자 멈춤(중일 전쟁 뒤 재개)"]]],
+ ["f05","s4","L8","민족을 지워 간 순서",[["황국 신민 서사 암송 강요","1937","중일 전쟁과 함께 '천황의 백성'을 강요"],["국가 총동원법","1938","사람과 물자를 마음대로 끌어갈 법적 근거"],["창씨개명","1939","이름까지 일본식으로"],["우리글 신문 폐간","1940","『조선일보』·『동아일보』 폐간"],["조선어 학회 사건","1942","우리말 연구까지 치안 유지법으로 탄압"]]],
+ ["f06","s5","L10","1910년대 국내외 독립운동",[["독립 의군부","1912","고종의 밀명 — 대한 제국을 되살리자(복벽)"],["대한 광복회","1915","공화제 국가를 세우자"],["대동단결 선언","1917","황제가 아닌 국민이 주인 — 공화주의 확산"],["2·8 독립 선언","1919","도쿄 유학생들이 먼저 불을 지핌"],["3·1 운동","1919","국내에서 전 민족적 만세로"]]],
+ ["f07","s6","L12","불씨가 모인 순서",[["민족 자결주의 제창","1918","약소민족에게 희망"],["김규식, 파리로","1919","신한청년당이 파리 강화 회의에 대표 파견"],["2·8 독립 선언","1919","도쿄 유학생의 선언이 국내를 자극"],["3·1 운동","1919","고종의 국장을 앞두고 만세"],["대한민국 임시 정부 수립","1919","독립운동을 이끌 정부가 필요해졌어"]]],
+ ["f08","s6","L13","3·1 운동 그날부터",[["태화관·탑골 공원의 독립 선언","1919. 3. 1.","민족 대표와 학생·시민"],["전국 도시로 확산","3월","상인은 가게를 닫고(철시) 노동자는 파업"],["농촌 장터로","3~4월","탄압에 맞서 무력 투쟁으로 발전"],["일제의 문화 통치 전환","1919. 8.~","무력만으로는 안 된다는 걸 깨달음"]]],
+ ["f09","s7","L17","임시 정부의 위기와 수습",[["통합 임시 정부 출범","1919. 9.","한성 정부 법통 + 상하이 위치"],["연통제·교통국 발각","1920년대 초","국내와의 연결이 끊김"],["국민 대표 회의","1923","개조파 vs 창조파 → 결렬"],["이승만 탄핵","1925","임시 대통령을 물러나게 함"],["국무령 중심 집단 지도 체제","1926","흔들리던 정부를 다시 추스름"]]],
+ ["f10","s8","L20","만주 무장 투쟁 1920년대",[["봉오동 전투","1920. 6.","홍범도의 대한 독립군 승리"],["청산리 대첩","1920. 10.","김좌진·홍범도 연합 부대 대승"],["자유시 참변","1921","러시아 적군에게 무장 해제"],["3부 성립","1920년대 중반","참의부·정의부·신민부로 재정비"],["미쓰야 협정","1925","일제와 만주 군벌이 손잡고 독립군 탄압"],["3부 통합 운동","1929","국민부와 혁신 의회로"]]],
+ ["f11","s8","L20","1930년대 만주 한중 연합",[["3부 통합 운동","1929","국민부 → 조선 혁명군 / 혁신 의회 → 한국 독립군"],["만주 사변","1931","일본의 침략에 중국군과 손잡을 이유가 생김"],["한중 연합 작전","1932","영릉가(조선 혁명군) · 쌍성보(한국 독립군)"],["대전자령 전투","1933","한국 독립군의 대승"],["지청천 등 중국 관내로","1930년대 중반","임시 정부의 요청으로 이동"]]],
+ ["f12","s9","L21","의열단의 길",[["의열단 결성","1919","만주 지린, 김원봉"],["김익상, 조선 총독부 투탄","1921","식민 통치의 심장을 겨눔"],["「조선 혁명 선언」","1923","신채호 — 민중 직접 혁명을 지침으로"],["김지섭, 일본 왕궁 투탄","1924","일본 한복판까지"],["나석주, 동양 척식 주식회사 투탄","1926","수탈 기관을 겨눔"],["조선 혁명 간부 학교","1932","개인 투쟁의 한계 → 조직적 무장 투쟁"]]],
+ ["f13","s9","L22","1932년 한 해",[["한인 애국단 조직","1931","침체한 임시 정부를 살리려고 김구가"],["이봉창 의거","1932. 1.","도쿄에서 일왕 마차에 폭탄"],["상하이 사변","1932. 1.","이 의거를 구실로 일제가 상하이 침략"],["윤봉길 의거","1932. 4.","훙커우 공원 전승 기념식장"],["중국 국민당 정부의 지원","1932~","한중 공동 항일의 계기"]]],
+ ["f14","s10","L23","실력 양성 운동",[["물산 장려 운동","1920~","평양, 조만식 — 토산품 애용"],["민립 대학 설립 운동","1923","이상재 — 1천만 원 모금"],["자치 운동 등장","1924~","성과가 없자 일부가 일제와 타협"],["문자 보급 운동","1929","『조선일보』 — 아는 것이 힘"],["브나로드 운동","1931","『동아일보』 — 민중 속으로"]]],
+ ["f15","s11","L24","농민·노동 운동",[["암태도 소작 쟁의","1923","고율 소작료에 맞서 1년여 투쟁"],["조선 농민·노동 총동맹","1927","전국 조직으로"],["원산 총파업","1929","일제 강점기 최대 노동 운동"],["혁명적 농민·노동 조합","1930년대","대공황 뒤 비합법 투쟁으로"],["점차 위축","1937~","중일 전쟁 뒤 강력한 탄압"]]],
+ ["f16","s12","L25","학생 항일 운동",[["조선 청년 총동맹","1924","청년 운동을 하나로"],["6·10 만세 운동","1926. 6.","순종의 장례일"],["성진회","1926. 11.","광주의 비밀 결사 → 독서회"],["신간회 창립","1927","좌우 합작"],["광주 학생 항일 운동","1929","3·1 운동 이후 최대 규모"]]],
+ ["f17","s13","L26","신간회가 생기고 사라지기까지",[["제1차 국공 합작","1924","이념이 달라도 손잡을 수 있다"],["6·10 만세 운동","1926. 6.","좌우 연대의 경험"],["정우회 선언","1926. 11.","사회주의 쪽이 먼저 손을 내밈"],["신간회 창립","1927","최대 규모 합법 항일 단체"],["광주 학생 운동 진상 조사단","1929","민중 대회 추진 → 탄압"],["신간회 해소","1931","좌우 연대가 무너짐"]]],
+ ["f18","s14","L27","나라 밖 동포와 농촌",[["간도 참변","1920","일본군이 간도 한인 학살"],["관동 대지진 학살","1923","유언비어로 재일 한인 학살"],["농촌 진흥 운동","1932","대공황 뒤 농촌 통제"],["연해주 한인 강제 이주","1937","소련이 중앙아시아로"]]],
+ ["f19","s16","L30","말과 역사를 지킨 흐름",[["조선어 연구회","1921","가갸날, 『한글』"],["조선사 편수회","1925","일제가 식민 사관으로 『조선사』"],["조선어 학회","1931","맞춤법 통일안, 큰사전 추진"],["진단 학회","1934","실증 사학"],["조선어 학회 사건","1942","회원 투옥, 원고 압수"]]],
+ ["f20","s17","L31","중국 관내 항일 전선",[["민족 혁명당","1935","난징, 김원봉 — 통일 전선 정당"],["두 연합체로 재편","1937","중일 전쟁 — 김구 쪽 / 김원봉 쪽"],["조선 의용대","1938","우한 — 중국 관내 최초의 한인 부대"],["김구·김원봉 공개 통신","1939","통합을 호소"],["조선 의용대 화북 지대","1941","타이항산, 호가장 전투"],["김원봉, 한국광복군 합류","1942","임시 정부가 좌우 합작"]]],
+ ["f21","s18","L32","충칭 임시 정부",[["충칭 정착·한국광복군 창설","1940","지청천 총사령관"],["대한민국 건국 강령","1941. 11.","삼균주의"],["대일 선전 포고","1941. 12.","아시아·태평양 전쟁 직후"],["미얀마·인도 전선 파견","1943","영국군의 요청"],["국내 진공 작전 준비","1945","OSS와 국내 정진군 — 투입 직전 광복"]]],
+ ["f22","s18","L33","연합국의 약속",[["카이로 선언","1943. 12.","한국 독립을 처음 약속(적절한 시기)"],["얄타 회담","1945. 2.","소련의 대일전 참전 합의"],["포츠담 선언","1945. 7.","카이로 재확인, 무조건 항복 촉구"],["소련의 대일 선전 포고","1945. 8. 8.","포츠담 선언에도 참여"],["광복","1945. 8. 15.","일본의 항복"]]],
+ ["f23","s18","L33","광복 직전 세 단체",[["조선 의용대 화북 지대","1941","화북으로 간 조선 의용대"],["조선 독립 동맹","1942","김두봉 — 화북 지대를 조선 의용군으로"],["조선 건국 동맹","1944","여운형 — 국내 비밀 결사"],["광복","1945","통합을 이루기 전에 일제 항복"]]],
+ ["f24","s2","L4","통치 방식이 바뀐 흐름",[["무단 통치","1910년대","헌병 경찰, 태형"],["3·1 운동","1919","전 민족의 저항"],["'문화 정치'","1920년대","보통 경찰, 친일파 양성"],["만주 사변","1931","침략 전쟁 시작"],["민족 말살 통치","1930년대 후반~","황국 신민화, 전시 동원"]]]
+];
+var FLOWS=FLOWRAW.map(function(r){return {id:r[0],u:r[1],l:r[2],t:r[3],
+  s:r[4].map(function(x){return {n:x[0],y:x[1],w:x[2]};})};});
+var FMAP={}; FLOWS.forEach(function(f){FMAP[f.id]=f;});
+/* 큰 묶음 — 「쌓아 가기」는 이 다섯 칸을 먼저 순서대로 세운 뒤 사건을 채워 넣는다 */
+var BLOCKS=[
+ {n:"무단 통치와 국외 독립운동 기지",k:"헌병 경찰 · 토지 조사 사업 · 서간도 삼원보",lab:"~1918",y0:0,y1:1918},
+ {n:"3·1 운동의 해",k:"2·8 독립 선언 · 3·1 운동 · 임시 정부 수립",lab:"1919",y0:1919,y1:1919},
+ {n:"'문화 정치'와 민족 운동의 확산",k:"산미 증식 계획 · 실력 양성 운동 · 신간회",lab:"1920년대",y0:1920,y1:1929},
+ {n:"대공황과 만주 침략",k:"만주 사변 · 한인 애국단 · 한중 연합 작전",lab:"1930~1936",y0:1930,y1:1936},
+ {n:"전쟁 동원과 광복 준비",k:"중일 전쟁 · 창씨개명 · 한국광복군",lab:"1937~1945",y0:1937,y1:9999}
+];
+function blockOf(y){for(var i=0;i<BLOCKS.length;i++)if(y>=BLOCKS[i].y0&&y<=BLOCKS[i].y1)return i;return BLOCKS.length-1;}
+function oS(){ if(!S.ord)S.ord={}; var o=S.ord; if(!o.sets)o.sets={}; if(!o.fm)o.fm={}; if(!o.stk)o.stk={o:0,p:{}}; if(!o.stk.p)o.stk.p={}; return o; }
+function tlKey(r){return r.u+"|"+r.n;}
+/* 연표 줄 가운데 '사건'이 아닌 설명 카드(배경 · 의의 · 방식 · 지역 소개)는 순서 맞추기에서 뺀다 */
+var OSKIP={};
+["토지 조사 사업의 결과","증산 비용의 전가","식민지 공업화","인력 수탈","여성에 대한 동원","공출과 배급제",
+ "서간도 — 삼원보","북간도","연해주 — 신한촌","미주","상하이","국제적 배경","전국으로, 모든 계층으로","무력 투쟁으로",
+ "임시 정부 수립의 계기","통치 방식의 전환","민족 운동 주체의 확대","세계사적 의의","세 곳의 임시 정부","왜 상하이였을까",
+ "통합의 방식","초대 각료","3부의 성격","물산 장려 운동에 대한 비판","박은식","전체주의의 확산"].forEach(function(n){OSKIP[n]=1;});
+function oRows(){ return timeline().filter(function(r){return r.lid&&!OSKIP[r.n];}); }
+function oShuffle(a){a=a.slice();shuffleArr(a);return a;}
+/* 한 번 틀린 사실은 다음 판에 먼저 — 나머지는 섞는다 */
+function oPickFacts(rows,n,opt){
+  var fm=oS().fm, out=[], ys={}, us={};
+  var pool=oShuffle(rows).sort(function(a,b){return (fm[tlKey(b)]||0)-(fm[tlKey(a)]||0);});
+  pool.forEach(function(r){
+    if(out.length>=n)return;
+    if(opt&&opt.distinctYear&&ys[r.y])return;
+    if(opt&&opt.distinctUnit&&us[r.u]&&pool.length>n*3)return;
+    ys[r.y]=1; us[r.u]=1; out.push(r);
+  });
+  return out;
+}
+var O=null;   /* 지금 풀고 있는 판 */
+function oStartFlow(id){
+  var f=FMAP[id];
+  O={mode:"order",kind:"flow",fid:id,title:f.t,sub:UMAP[f.u].n,
+     items:f.s.map(function(x){return {n:x.n,y:x.y,w:x.w};})};
+  oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
+}
+function oStartMix(){
+  var rows=oPickFacts(oRows(),5,{distinctYear:true,distinctUnit:true});
+  rows.sort(function(a,b){return a.y-b.y;});
+  O={mode:"order",kind:"mix",title:"시대 섞기",sub:"여러 단원에서 다섯 장",
+     items:rows.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),sub:UMAP[r.u].n};})};
+  oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
+}
+function oStartBlockOrder(b){
+  var st=oS().stk, rows=oRows().filter(function(r){return st.p[tlKey(r)]&&blockOf(r.y)===b;});
+  var pick=oPickFacts(rows,5,{distinctYear:true}); pick.sort(function(a,b){return a.y-b.y;});
+  O={mode:"order",kind:"block",title:BLOCKS[b].n,sub:"묶음 안 순서 · "+BLOCKS[b].lab,
+     items:pick.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),sub:UMAP[r.u].n};})};
+  oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
+}
+function oStartBlocks(){
+  O={mode:"order",kind:"blocks",title:"큰 묶음부터 세우기",sub:"쌓아 가기 1단계",
+     items:BLOCKS.map(function(b){return {n:b.n,y:b.lab,w:b.k,hint:b.k};})};
+  oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
+}
+function oInitOrder(){
+  var n=O.items.length, ord=[]; for(var i=0;i<n;i++)ord.push(i);
+  /* 이미 맞는 순서로 섞이면 다시 섞는다 */
+  do{ shuffleArr(ord); }while(n>1&&ord.every(function(v,i){return v===i;}));
+  O.pos=ord; O.lock={}; O.tries=0; O.sel=null; O.done=false; O.wrongAt={};
+}
+function oStartPair(){
+  var rows=oRows().filter(function(r){return r.y!==1930;});
+  var zones=[{n:"1910~1919",t:"무단 통치"},{n:"1920년대",t:"'문화 정치'"},{n:"1930~1945",t:"민족 말살 · 전시 동원"}];
+  var cards=[];
+  zones.forEach(function(z,i){
+    var inE=function(r){return eraOf(r.y)===i;};
+    z.anchor=oShuffle(rows.filter(function(r){return r.k==="rule"&&inE(r);})).slice(0,2).map(function(r){return r.n;});
+    oPickFacts(rows.filter(function(r){return r.k==="resist"&&inE(r);}),2,{}).forEach(function(r){
+      cards.push({n:r.n,y:String(r.y),w:r.so,key:tlKey(r),z:i,sub:UMAP[r.u].n});});
+  });
+  O={mode:"bucket",kind:"pair",title:"통치 ↔ 저항",sub:"일제가 이럴 때 우리는?",zones:zones,items:oShuffle(cards)};
+  oInitBucket(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
+}
+function oStartStack(){
+  var st=oS().stk, rows=oRows();
+  var left=rows.filter(function(r){return !st.p[tlKey(r)];});
+  if(!left.length){ go("ordStack",null,true); return; }
+  var pick=oPickFacts(left,5,{distinctUnit:true});
+  O={mode:"bucket",kind:"stack",title:"사건을 묶음에 넣기",sub:"쌓아 가기",
+     zones:BLOCKS.map(function(b){return {n:b.lab,t:b.n};}),
+     items:oShuffle(pick.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),z:blockOf(r.y),sub:UMAP[r.u].n};}))};
+  oInitBucket(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
+}
+function oInitBucket(){ O.at={}; O.lock={}; O.tries=0; O.sel=null; O.done=false; O.wrongAt={}; }
+
+/* ── 결과 기록 ── */
+function oRecord(){
+  var o=oS();
+  if(O.kind==="flow"){
+    var st=o.sets[O.fid]||{b:0,n:0}; st.n++; st.last=Date.now();
+    st.b=O.first?Math.min(5,st.b+1):(O.solved?Math.max(1,st.b):0); o.sets[O.fid]=st;
+  }
+  if(O.kind==="blocks") o.stk.o=1;
+  O.items.forEach(function(it,i){
+    if(!it.key)return;
+    var bad=O.wrongAt[i];
+    if(bad) o.fm[it.key]=(o.fm[it.key]||0)+1;
+    else if(o.fm[it.key]) o.fm[it.key]--;
+    if(O.kind==="stack"&&!bad) o.stk.p[it.key]=1;
+  });
+  save();
+}
+/* ── 순서 판: 확인 ── */
+function oCheckOrder(){
+  O.tries++; var all=true;
+  /* 한 번이라도 제자리에 못 놓은 카드는 '틀린 카드'로 남긴다 — 다음 판에 먼저 나오게 */
+  O.pos.forEach(function(v,i){ if(v===i)O.lock[i]=true; else { all=false; O.wrongAt[v]=true; } });
+  if(all){ O.done=true; O.solved=true; O.first=O.tries===1; buzz(14); pop(O.first?"한 번에!":"맞췄어!"); }
+  else if(O.tries>=2){ O.done=true; O.solved=false; O.first=false; O.shown=O.pos.slice(); O.pos=O.pos.map(function(v,i){return i;}); buzz([20,40,20]); }
+  else buzz([20,40,20]);
+  if(O.done)oRecord();
+  vORun();
+}
+function oCheckBucket(){
+  O.tries++; var all=true;
+  O.items.forEach(function(it,i){ if(O.lock[i])return;
+    if(O.at[i]===it.z)O.lock[i]=true; else { all=false; O.wrongAt[i]=true; if(O.tries<2)delete O.at[i]; } });
+  if(all){ O.done=true; O.solved=true; O.first=O.tries===1; buzz(14); pop(O.first?"한 번에!":"맞췄어!"); }
+  else if(O.tries>=2){ O.done=true; O.solved=false; O.first=false;
+    O.items.forEach(function(it,i){ if(!O.lock[i]){O.miss=O.miss||{}; O.miss[i]=O.at[i]; O.at[i]=it.z;} }); buzz([20,40,20]); }
+  else buzz([20,40,20]);
+  if(O.done)oRecord();
+  vORun();
+}
+/* ── 판 그리기 ── */
+function vORun(){
+  titleEl.textContent="흐름 맞추기";
+  if(!O){ go("ord",null,true); return; }
+  var h='<div class="ohead"><div class="eyebrow">'+esc(O.sub)+'</div><div class="h sm">'+esc(O.title)+'</div>'+
+    '<p class="note">'+(O.done?(O.solved?(O.first?"한 번에 맞췄어. 아래 흐름을 한 번 소리 내어 읽어 보자."
+                                             :"두 번 만에 맞췄어. 흐름을 한 번 더 읽고 가자.")
+                               :"정답 순서로 바꿔 놨어. 빨간 카드가 틀렸던 자리야 — 까닭을 읽고 넘어가자.")
+       :(O.tries===1?(Object.keys(O.lock).length?"<b>초록 카드는 맞았어.</b> 나머지만 한 번 더 옮겨 봐.":"아직 제자리에 놓인 카드가 없어. 한 번 더 옮겨 봐 — 이번이 마지막 기회야.")
+          :(O.mode==="order"?"카드를 끌어다 다른 카드 위에 놓으면 자리가 바뀌어. 두 장을 차례로 눌러도 돼. 위가 먼저야."
+                            :"카드를 끌어다 알맞은 칸에 놓아. 카드를 누르고 칸을 눌러도 돼.")))+'</p></div>';
+  if(O.mode==="order"){
+    h+='<div class="obd">'+O.pos.map(function(v,i){
+      var it=O.items[v], lk=O.lock[i];
+      var cls="ocard"+(lk?" ok":"")+(O.done&&O.wrongAt[v]?" no":"")+(O.sel===i?" sel":"");
+      return '<div class="oslot" data-drop="s:'+i+'"><span class="onum">'+(i+1)+'</span>'+
+        '<button class="'+cls+'" data-drag="'+i+'"'+(lk||O.done?' data-lock="1"':'')+'>'+
+        '<span class="ot">'+esc(it.n)+'</span>'+
+        (it.hint&&!O.done?'<small class="oh">'+esc(it.hint)+'</small>':'')+
+        (it.sub&&!O.done?'<small class="oh">'+esc(it.sub)+'</small>':'')+
+        (O.done?'<small class="oy">'+esc(it.y)+'</small>':'')+'</button></div>';
+    }).join("")+'</div>';
+  }else{
+    var tray=[];
+    h+='<div class="ozs">'+O.zones.map(function(z,j){
+      var inz=O.items.map(function(it,i){return i;}).filter(function(i){return O.at[i]===j;});
+      return '<div class="ozone" data-drop="z:'+j+'"><div class="ozh"><b>'+esc(z.n)+'</b> '+esc(z.t)+'</div>'+
+        (z.anchor&&z.anchor.length?'<div class="oza">일제: '+z.anchor.map(esc).join(' · ')+'</div>':'')+
+        '<div class="ozc">'+inz.map(function(i){return oChip(i);}).join("")+
+        (inz.length?'':'<span class="ozp">여기에 놓기</span>')+'</div></div>';
+    }).join("")+'</div>';
+    O.items.forEach(function(it,i){ if(O.at[i]==null)tray.push(i); });
+    if(!O.done)h+='<div class="otray" data-drop="t"><div class="eyebrow">남은 카드 '+tray.length+'</div>'+
+      (tray.length?tray.map(oChip).join(""):'<span class="ozp">다 놓았어. 아래 「확인」을 눌러 봐.</span>')+'</div>';
+  }
+  if(O.done){
+    h+='<div class="part">흐름으로 다시 읽기</div><div class="oflow">';
+    var seq=O.mode==="order"?O.items:O.items.slice().sort(function(a,b){return (a.z-b.z)||(parseInt(a.y)-parseInt(b.y));});
+    seq.forEach(function(it,i){
+      var idx=O.items.indexOf(it);
+      h+=(i?'<div class="oarr">↓</div>':'')+'<div class="ofl'+(O.wrongAt[idx]?" no":"")+'"><b>'+esc(it.n)+'</b> <small>'+esc(it.y)+
+        (O.mode==="bucket"?' · '+esc(O.zones[it.z].n):'')+'</small>'+(it.w?'<p>'+esc(it.w)+'</p>':'')+'</div>';
+    });
+    h+='</div>';
+    if(O.kind==="flow")h+='<div style="display:flex;justify-content:flex-end;margin-top:10px">'+kBtn("O:"+O.fid)+'</div>';
+    var nextLabel=O.kind==="flow"?"다음 흐름":O.kind==="stack"?"다음 5장":O.kind==="blocks"?"사건 채우러 가기":"한 판 더";
+    h+='<div class="sticky"><div class="row"><button class="cta ghost" id="oback">목록</button>'+
+       '<button class="cta" id="onext">'+nextLabel+'</button></div></div>';
+  }else{
+    var ready=O.mode==="order"||O.items.every(function(it,i){return O.at[i]!=null;});
+    h+='<div class="sticky"><button class="cta" id="ochk"'+(ready?'':' disabled')+'>확인'+(O.tries?' (마지막 기회)':'')+'</button></div>';
+  }
+  view.innerHTML=h;
+  var ck=view.querySelector("#ochk"); if(ck)ck.onclick=function(){ if(O.mode==="order")oCheckOrder(); else oCheckBucket(); };
+  var ob=view.querySelector("#oback"); if(ob)ob.onclick=back;
+  var on=view.querySelector("#onext"); if(on)on.onclick=function(){
+    if(O.kind==="flow")oStartFlow(oNextFlow(O.fid));
+    else if(O.kind==="mix")oStartMix();
+    else if(O.kind==="pair")oStartPair();
+    else if(O.kind==="stack")oStartStack();
+    else back();
+  };
+  if(!O.done)oBind();
+}
+function oChip(i){
+  var it=O.items[i], lk=O.lock[i]||O.done;
+  return '<button class="ochip'+(O.lock[i]?" ok":"")+(O.done&&O.wrongAt[i]?" no":"")+(O.sel===i?" sel":"")+'" data-drag="'+i+'"'+(lk?' data-lock="1"':'')+'>'+
+    esc(it.n)+(O.done?' <small>'+esc(it.y)+'</small>':'')+'</button>';
+}
+/* ── 끌기 · 누르기 ── */
+function oScrollBox(el){
+  for(var n=el.parentElement;n&&n!==document.body;n=n.parentElement){
+    var cs=getComputedStyle(n); if(/(auto|scroll)/.test(cs.overflowY)&&n.scrollHeight>n.clientHeight)return n; }
+  return null;
+}
+function oDrop(src,target){
+  if(!target)return;
+  var t=target.split(":");
+  if(O.mode==="order"){
+    if(t[0]!=="s")return; var a=src,b=+t[1];
+    if(a===b||O.lock[a]||O.lock[b])return;
+    var x=O.pos[a]; O.pos[a]=O.pos[b]; O.pos[b]=x;
+  }else{
+    if(O.lock[src])return;
+    if(t[0]==="z")O.at[src]=+t[1]; else if(t[0]==="t")delete O.at[src];
+  }
+  O.sel=null; buzz(8); vORun();
+}
+function oBind(){
+  var box=view, st=null, ghost=null, over=null;
+  var clear=function(){ if(ghost)ghost.remove(); ghost=null; if(over)over.classList.remove("over"); over=null; if(st&&st.el)st.el.classList.remove("lift"); st=null; };
+  box.onpointerdown=function(e){
+    var el=e.target.closest("[data-drag]"); if(!el||el.dataset.lock)return;
+    st={el:el,i:+el.dataset.drag,x:e.clientX,y:e.clientY,m:false,id:e.pointerId};
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+  };
+  box.onpointermove=function(e){
+    if(!st||e.pointerId!==st.id)return;
+    var dx=e.clientX-st.x, dy=e.clientY-st.y;
+    if(!st.m){ if(dx*dx+dy*dy<49)return; st.m=true;
+      var r=st.el.getBoundingClientRect();
+      ghost=st.el.cloneNode(true); ghost.classList.add("oghost"); ghost.style.width=r.width+"px";
+      st.ox=e.clientX-r.left; st.oy=e.clientY-r.top; view.appendChild(ghost); st.el.classList.add("lift"); }
+    e.preventDefault();
+    ghost.style.left=(e.clientX-st.ox)+"px"; ghost.style.top=(e.clientY-st.oy)+"px";
+    var hit=document.elementFromPoint(e.clientX,e.clientY), d=hit&&hit.closest?hit.closest("[data-drop]"):null;
+    if(d!==over){ if(over)over.classList.remove("over"); over=d; if(over)over.classList.add("over"); }
+    /* 가장자리에 가면 화면을 밀어 준다 */
+    var sb=oScrollBox(view), H=sb?sb.getBoundingClientRect():{top:0,bottom:innerHeight};
+    if(e.clientY<H.top+56)(sb||window).scrollBy(0,-14); else if(e.clientY>H.bottom-56)(sb||window).scrollBy(0,14);
+  };
+  box.onpointerup=function(e){
+    if(!st||e.pointerId!==st.id)return;
+    var s=st, target=over?over.dataset.drop:null; clear();
+    if(s.m){ oDrop(s.i,target); return; }
+    /* 누르기: 하나 고르고 → 다른 카드(자리 바꿈)나 칸(놓기)을 누른다 */
+    if(O.sel===null||O.sel===undefined){ O.sel=s.i; vORun(); return; }
+    if(O.sel===s.i){ O.sel=null; vORun(); return; }
+    if(O.mode==="order")oDrop(O.sel,"s:"+s.i); else { O.sel=s.i; vORun(); }
+  };
+  box.onpointercancel=function(){ clear(); };
+  Array.prototype.forEach.call(view.querySelectorAll(".ozone,.otray"),function(z){
+    z.onclick=function(e){ if(e.target.closest("[data-drag]"))return; if(O.sel==null)return; oDrop(O.sel,z.dataset.drop); };
+  });
+}
+/* ── 흐름 목록에서 다음 고르기: 틀린 것 → 안 해 본 것 → 오래된 것 ── */
+function oNextFlow(cur){
+  var o=oS().sets;
+  var list=FLOWS.filter(function(f){return f.id!==cur;}).map(function(f){var s=o[f.id];
+    return {f:f,w:!s?1:(s.b===0?0:1+s.b+(s.last||0)/1e13)+Math.random()*0.5};}).sort(function(a,b){return a.w-b.w;});
+  return list[0].f.id;
+}
+function vOrd(){
+  titleEl.textContent="흐름 맞추기";
+  var o=oS(), sets=o.sets;
+  var ok=FLOWS.filter(function(f){return sets[f.id]&&sets[f.id].b>=1;}).length;
+  var re=FLOWS.filter(function(f){return sets[f.id]&&sets[f.id].b===0;}).length;
+  var rows=oRows(), pl=rows.filter(function(r){return o.stk.p[tlKey(r)];}).length;
+  var fm=Object.keys(o.fm).filter(function(k){return o.fm[k]>0;}).length;
+  var h='<p class="note" style="margin-bottom:12px">연도는 가려 두고 <b>흐름</b>만 맞춰. 맞추고 나면 연도와 \'왜 다음인지\'가 이어서 보여. '+
+      '틀린 것은 다음 판에 먼저 다시 나와.</p>'+
+    oMode("oflow","흐름 세트","수업에서 배운 흐름 4~6장 · 맞힌 흐름 "+ok+" / "+FLOWS.length+(re?" · 다시 풀 것 "+re:""),"1")+
+    oMode("omix","시대 섞기","여러 단원 사건 5장을 한 줄로 · 시험 직전 통합 정리","2")+
+    oMode("opair","통치 ↔ 저항","일제가 이럴 때 우리는? 시기 칸에 넣기","3")+
+    oMode("ostack","쌓아 가기","큰 묶음 다섯 개부터 세우고 사건을 채워 넣기 · "+pl+" / "+rows.length+" 채움","4")+
+    (fm?'<p class="note" style="margin-top:4px">자주 틀린 사건 '+fm+'개는 시대 섞기 · 통치↔저항 · 쌓아 가기에 먼저 나와.</p>':'')+
+    '<div class="part">흐름 세트 고르기</div>';
+  var lastU="";
+  FLOWS.forEach(function(f){
+    var s=sets[f.id], badge=!s?'<span class="obg">새로</span>':s.b===0?'<span class="obg no">다시</span>':'<span class="obg ok">'+"★".repeat(Math.min(3,s.b))+'</span>';
+    h+='<button class="ofrow" data-f="'+f.id+'"><span class="oft"><b>'+esc(f.t)+'</b><small>'+esc(UMAP[f.u].n)+' · '+f.s.length+'장</small></span>'+badge+'</button>';
+  });
+  view.innerHTML=h;
+  view.querySelector("#oflow").onclick=function(){oStartFlow(oNextFlow(null));};
+  view.querySelector("#omix").onclick=oStartMix;
+  view.querySelector("#opair").onclick=oStartPair;
+  view.querySelector("#ostack").onclick=function(){go("ordStack");};
+  Array.prototype.forEach.call(view.querySelectorAll(".ofrow"),function(b){b.onclick=function(){oStartFlow(b.dataset.f);};});
+}
+function oMode(id,t,s,n){
+  return '<button class="exbar obar" id="'+id+'"><span class="ic">'+n+'</span><span class="tx"><b>'+t+'</b><small>'+esc(s)+'</small></span>'+
+    '<span class="ch">'+IC.chev+'</span></button>';
+}
+function vOStack(){
+  titleEl.textContent="쌓아 가기";
+  var st=oS().stk, rows=oRows();
+  if(!st.o){
+    view.innerHTML='<div class="ohead"><div class="eyebrow">쌓아 가기</div><div class="h sm">먼저 큰 묶음 다섯 개를 시기 순서로</div>'+
+      '<p class="note">Ⅰ단원 전체를 다섯 시기로 나눴어. 각 묶음의 대표 사건을 보고 순서대로 세운 다음, 사건을 하나씩 알맞은 묶음에 채워 넣을 거야. '+
+      '큰 틀이 먼저 서 있으면 세부 사건이 붙을 자리가 생겨서 훨씬 오래 남아.</p></div>'+
+      '<div class="sticky"><button class="cta" id="osb">큰 묶음 세우기</button></div>';
+    view.querySelector("#osb").onclick=oStartBlocks; return;
+  }
+  var pl=rows.filter(function(r){return st.p[tlKey(r)];}).length;
+  var h='<div class="ohead"><div class="eyebrow">쌓아 가기</div><div class="h sm">채운 사건 '+pl+' / '+rows.length+'</div>'+
+    '<div style="display:flex;align-items:center;gap:12px;margin:8px 0 2px"><span class="track"><i style="width:'+(pl/rows.length*100)+'%"></i></span></div>'+
+    '<p class="note">한 판에 5장씩, 알맞은 묶음에 넣어. 한 번에 맞힌 사건만 묶음에 쌓여. 묶음에 네 개 넘게 쌓이면 그 안의 순서도 맞춰 볼 수 있어.</p></div>';
+  BLOCKS.forEach(function(b,i){
+    var inB=rows.filter(function(r){return blockOf(r.y)===i;}), got=inB.filter(function(r){return st.p[tlKey(r)];}).sort(function(a,c){return a.y-c.y;});
+    h+='<div class="oblk"><div class="obh"><span class="obn">'+(i+1)+'</span><span><b>'+esc(b.lab)+' · '+esc(b.n)+'</b>'+
+      '<small>'+got.length+' / '+inB.length+'</small></span></div>'+
+      (got.length?'<div class="obl">'+got.map(function(r){return '<span>'+esc(r.n)+'</span>';}).join("")+'</div>':'')+
+      (got.length>=4?'<button class="prgo" data-b="'+i+'">이 묶음 안 순서 맞추기 '+IC.chev+'</button>':'')+'</div>';
+  });
+  h+='<div class="sticky"><div class="row"><button class="cta ghost" id="osr">큰 묶음 다시</button>'+
+     '<button class="cta" id="osn"'+(pl>=rows.length?' disabled':'')+'>'+(pl>=rows.length?"다 채웠어!":"사건 5장 넣기")+'</button></div></div>';
+  view.innerHTML=h;
+  view.querySelector("#osr").onclick=oStartBlocks;
+  view.querySelector("#osn").onclick=oStartStack;
+  Array.prototype.forEach.call(view.querySelectorAll("[data-b]"),function(b){b.onclick=function(){oStartBlockOrder(+b.dataset.b);};});
 }
 
 /* 서술형 화면은 「이전」이 필요 없다 — 목록으로 돌아가면 되니까 */
@@ -4735,7 +5152,7 @@ function nextBtnW(label,fn){
 }
 VIEWS={home:vHome,lesson:vLesson,review:vReview,wrong:vWrong,wquiz:vWQuiz,due:vDue,find:vFind,
        exam:vExamPick,examRun:vExamRun,examResult:vExamResult,
-       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,keep:vKeep};
+       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack};
 load(); e2init(); save();
 /* 킵 버튼은 어느 화면에 있든 view 한곳에서 받는다 */
 view.addEventListener("click",function(e){
@@ -4793,7 +5210,7 @@ render();
   var PATH={home:"/HOME",lesson:"/LESSON",review:"/REVIEW",wrong:"/WRONG",
             due:"/REVIEW/DUE",find:"/FIND",
             wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT",
-            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",keep:"/KEEP"};
+            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK"};
 
   var dockEl=document.getElementById("dock");
   function paintDock(){
