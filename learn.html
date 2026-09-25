@@ -658,6 +658,40 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .orgleg i.c-j{background:var(--red-l)} .orgleg i.c-x{background:#EFE3F7} .orgleg i.ev{background:var(--panel);border-style:dashed;border-radius:5px}
 .orgleg .dl{display:inline-block;width:18px;border-top:2px dashed var(--ink)}
 .orgi{margin-top:10px}
+/* 시간순 복습 */
+.chbar{background:#FFF3C4;border-color:var(--yel-d)}
+.chnav{position:sticky;top:0;z-index:6;background:var(--cream);padding:6px 0 2px;margin:0 0 6px;border-bottom:2px solid var(--ink)}
+.chnav .tlbar{margin:4px 0 4px}
+.chs{padding-top:6px}
+.chhd{display:flex;align-items:center;gap:12px;margin:18px 0 8px}
+.chn{flex-shrink:0;width:40px;height:40px;display:grid;place-items:center;background:var(--ink);color:var(--cream);font-family:var(--f-px);font-size:13px}
+.chg{font-size:14px;line-height:1.7;background:var(--red-l);border:2px solid var(--ink);padding:7px 10px;margin-bottom:6px}
+.chs>.ozb{margin:0 0 10px}
+.chyr{display:flex;align-items:center;gap:8px;margin:14px 0 6px}
+.chyr b{font-family:var(--f-px);font-size:11px;background:var(--ink);color:var(--cream);padding:3px 7px}
+.chyr i{flex:1;border-top:2px dashed var(--ink-3)}
+.chev{margin-bottom:10px;content-visibility:auto;contain-intrinsic-size:auto 260px}
+.chev .chtop{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.chev .chtop .sp{flex:1}
+.chev .cyr{font-family:var(--f-px);font-size:10px;color:var(--ink);background:var(--yel);border:2px solid var(--ink);padding:4px 7px;min-height:30px}
+.chev .cyr.ya{font-family:inherit;font-size:12px;font-weight:800}
+.chev .cyr.hid{background:var(--panel);color:var(--ink-2)}
+.chev .tg{font-style:normal;font-size:12px;font-weight:800;padding:2px 6px;border:2px solid var(--ink);background:var(--panel)}
+.chev.k-rule .tg{background:var(--red-l)} .chev.k-resist .tg{background:var(--teal-l)} .chev.k-world .tg{background:var(--blue-l)} .chev.k-life .tg{background:#FAE4C2}
+.chev.k-rule{border-left-width:7px;border-left-color:var(--red)} .chev.k-resist{border-left-width:7px;border-left-color:var(--teal)}
+.chev .chso{font-size:14.5px;line-height:1.75;color:var(--ink-2);margin-top:4px}
+.chev .prgo{margin-top:8px}
+.chles{font-size:12.5px;font-weight:800;color:var(--ink-2);margin:12px 0 6px}
+.chs .hintcard,.chs .chq,.chs .card.chsum{margin-bottom:10px}
+.chs>.card{margin-bottom:10px}
+.chst .cl{opacity:1;animation:none}
+.chq .chans{display:block;width:100%;margin-top:10px;font-family:var(--f-h);font-size:17px;line-height:1.55;text-align:left;
+  background:var(--yel);border:var(--bd) solid var(--ink);padding:9px 11px;color:var(--ink)}
+.chq .tip{font-size:12.5px;color:var(--ink-3);margin-top:8px}
+.chnext{margin:14px 0 6px}
+.chs .card{animation:none}
+.chnav .chip{min-height:36px;padding:0 11px;font-size:13px}
+.chnav .tlbar{gap:8px}
 .orgtabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 .orgtabs .chip{flex-shrink:0;white-space:nowrap}
 .orgi .kh small{font-family:inherit;font-size:12px;color:var(--ink-2)}
@@ -2209,6 +2243,10 @@ function vHome(){
     '<span class="tx"><b>학교 프린트 정리</b><small>선생님 밑줄 '+PRINT.under.length+'곳 · 빈칸 '+(PBLANK.length+PCHK.length)+'문장 · 다른 점 '+PRINT.diff.length+'곳 · O·X '+PRINT.ox.length+'문항</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<div class="part">복습</div>'+
+    '<button class="exbar chbar" id="goChron" style="margin-bottom:9px"><span class="ic">⏷</span>'+
+    '<span class="tx"><b>시간순으로 쭉 복습</b><small>'+(S.chron&&S.chron.ch>0?(S.chron.ch+1)+'장 '+esc(BLOCKS[S.chron.ch].n.split(" · ")[0])+'부터 이어 읽기':
+      '첫 수업 사건 '+timeline().length+'개를 일어난 순서대로 · 본문 · 왜 · 그래서 + 시기별 암기 장치 · 확인 문제')+'</small></span>'+
+    '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="exbar obar" id="goOrd" style="margin-bottom:9px"><span class="ic">↕</span>'+
     '<span class="tx"><b>흐름 맞추기</b><small>카드를 끌어서 순서대로 · 흐름 세트 '+FLOWS.length+'개 · 시대 섞기 · 통치↔저항 · 쌓아 가기</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
@@ -2227,6 +2265,8 @@ function vHome(){
   if(gd)gd.onclick=function(){RV=null;go("due");};
   var go2=document.getElementById("goOrd");
   if(go2)go2.onclick=function(){go("ord");};
+  var gch=document.getElementById("goChron");
+  if(gch)gch.onclick=function(){go("chron",{ch:S.chron&&S.chron.ch>0?S.chron.ch:null});};
   var gog=document.getElementById("goOrgs");
   if(gog)gog.onclick=function(){go("orgs");};
   var gk=document.getElementById("goKeep");
@@ -2784,6 +2824,7 @@ function vTimeline(){
       '<b style="background:var(--red-l);color:var(--ink)">일제</b>가 한 일과 '+
       '<b style="background:var(--teal-l);color:var(--ink)">우리</b>가 한 일이 어떻게 맞물리는지 보면서 쭉 내려 봐. '+
       '아무 줄이나 누르면 그 수업의 그 자리로 바로 가.</p>'+
+    '<button class="prgo" id="tlch" style="margin:-4px 0 12px">본문·왜·그래서까지 자세히 읽으려면 「시간순 복습」 '+IC.chev+'</button>'+
     '<div class="tlbar">'+
       '<button class="chip'+(hide?"":" on")+'" id="tlh">'+(hide?"연도 펴기":"연도 접기")+'</button>'+
       '<button class="chip'+(desc?" on":"")+'" id="tld">'+(desc?"설명 접기":"설명 펴기")+'</button>'+
@@ -2815,6 +2856,7 @@ function vTimeline(){
   view.innerHTML=html;
   tabsBind();
   document.getElementById("tlh").onclick=function(){S.tlHide=!hide;save();vTimeline();};
+  document.getElementById("tlch").onclick=function(){go("chron");};
   document.getElementById("tld").onclick=function(){S.tlDesc=!desc;save();vTimeline();};
   Array.prototype.forEach.call(view.querySelectorAll("#tlu .chip"),function(b){
     b.onclick=function(){TLU=b.dataset.u;vTimeline();};});
@@ -5443,6 +5485,137 @@ function vOStack(){
   Array.prototype.forEach.call(view.querySelectorAll("[data-b]"),function(b){b.onclick=function(){oStartBlockOrder(+b.dataset.b);};});
 }
 
+/* ══════════ 시간순 복습 ══════════
+   첫 수업은 수업(단원) 차례로 짜여 있다. 여기서는 사실 카드 전부를 일어난 순서(timeline())대로 한 페이지에 늘어놓고,
+   큰 묶음(BLOCKS) 여섯 개를 장으로 삼는다. 장마다 그 시기 수업의 암기 장치 · 비교 · 인과 사슬 · 확인 문제를 붙인다.
+   수업 → 장: 그 수업 사실 카드가 가장 많이 속한 묶음(동률이면 앞 묶음). 그래서 정리 · 확인 카드는 정확히 한 장에만 나온다 */
+var CHRON_YO={}, CHRON_RV={}, CHRON_PK={}, CHRON_LB=null;
+function chronLessonBlock(){
+  if(CHRON_LB)return CHRON_LB; var m={};
+  LESSONS.forEach(function(l){ var cnt={};
+    l.cards.forEach(function(c){ if(c.t==="fact"&&c.y!=null){ var b=blockOf(c.y); cnt[b]=(cnt[b]||0)+1; } });
+    var best=0,bn=-1; Object.keys(cnt).forEach(function(k){ k=+k; if(cnt[k]>bn||(cnt[k]===bn&&k<best)){best=k;bn=cnt[k];} });
+    m[l.id]=bn<0?0:best; });
+  return CHRON_LB=m;
+}
+function chronParts(){
+  var tl=timeline().filter(function(r){return r.lid;}), lb=chronLessonBlock();
+  return BLOCKS.map(function(b,i){
+    var ls=LESSONS.filter(function(l){return lb[l.id]===i;});
+    var pick=function(types){ var out=[]; ls.forEach(function(l){ l.cards.forEach(function(c,ci){ if(types.indexOf(c.t)>=0)out.push({l:l,c:c,ci:ci}); }); }); return out; };
+    return {b:b,i:i,ev:tl.filter(function(r){return blockOf(r.y)===i;}),sum:pick(["hint","compare","chain"]),chk:pick(["check","pick"])};
+  });
+}
+function chronEvent(r,brief,hideY){
+  var l=LMAP[r.lid], c=l.cards[r.ci], key=r.lid+"#"+r.ci, yo=!hideY||CHRON_YO[key], yl=r.ya||String(r.y);
+  return '<div class="card chev k-'+r.k+'">'+
+    '<div class="chtop"><button class="cyr'+(r.ya?' ya':'')+(yo?'':' hid')+'" data-cy="'+key+'">'+(yo?esc(yl):'····')+'</button>'+
+      '<em class="tg">'+(TRACKN[r.k]||"")+'</em>'+prB(c)+'<span class="sp"></span>'+kBtn(key)+'</div>'+
+    '<div class="h sm">'+esc(c.n)+'</div>'+
+    (brief?'<p class="chso">→ '+c.so+'</p>'
+      :'<div class="bd">'+c.b+'</div><div class="wsblock">'+
+        '<div class="ws why"><span class="lb">왜?</span><p>'+c.why+'</p></div>'+
+        '<div class="ws so"><span class="lb">그래서</span><p>'+c.so+'</p></div></div>')+
+    '<button class="prgo" data-cl="'+r.lid+'" data-ci="'+r.ci+'">'+esc(l.title)+' 수업에서 보기 '+IC.chev+'</button></div>';
+}
+function chronSum(x){
+  var c=x.c;
+  if(c.t==="hint")return '<div class="card hintcard">'+prB(c)+'<div class="eyebrow">이렇게 외우자</div><div class="k">'+esc(c.k)+'</div><div class="bd">'+c.b+'</div></div>';
+  if(c.t==="compare")return '<div class="card">'+prB(c)+'<div class="eyebrow">헷갈리지 않게</div><div class="h sm">'+esc(c.title)+'</div>'+
+    '<div class="cmp"><div class="a"><h4>'+c.l.n+'</h4><ul>'+c.l.p.map(function(p){return "<li>"+p+"</li>";}).join("")+'</ul></div>'+
+    '<div class="b"><h4>'+c.r.n+'</h4><ul>'+c.r.p.map(function(p){return "<li>"+p+"</li>";}).join("")+'</ul></div></div></div>';
+  return '<div class="card">'+prB(c)+'<div class="eyebrow">인과 사슬</div><div class="h sm">'+esc(c.title)+'</div>'+
+    '<div class="chain chst">'+c.items.map(function(p){return '<div class="cl"><span class="dot"></span><p>'+p+'</p></div>';}).join("")+'</div></div>';
+}
+function chronChk(x){
+  var c=x.c, key=x.l.id+"#"+x.ci;
+  if(c.t==="check"){ var o=!!CHRON_RV[key];
+    return '<div class="card chq">'+prB(c)+'<div class="eyebrow">스스로 떠올리기</div><div class="h sm">'+esc(c.q)+'</div>'+
+      '<button class="chans'+(o?'':' blur')+'" data-rv="'+key+'">'+esc(c.a)+'</button>'+
+      (o?'':'<div class="tip">머릿속으로 답해 본 다음 눌러 봐</div>')+'</div>'; }
+  var st=CHRON_PK[key]||(CHRON_PK[key]={m:mixQ(c),ans:null}), m=st.m, done=st.ans!=null;
+  return '<div class="card chq">'+prB(c)+'<div class="eyebrow">골라 보자</div><div class="h sm">'+esc(c.q)+'</div>'+
+    '<div class="two">'+m.c.map(function(t,i){
+      return '<button class="tw'+(done?(i===m.a?" ok":i===st.ans?" no":""):"")+'" data-pk="'+key+'" data-i="'+i+'"'+(done?" disabled":"")+'>'+esc(t)+'</button>';}).join("")+'</div>'+
+    (done?'<div class="fb '+(st.ans===m.a?"ok":"no")+'"><span class="m">'+(st.ans===m.a?"맞아":"아냐")+'</span><span>'+c.e+'</span></div>':'')+'</div>';
+}
+function vChron(a){
+  titleEl.textContent="시간순 복습";
+  var P=chronParts(), brief=S.chronMode==="brief", hideY=!!S.chronHideY;
+  var nEv=P.reduce(function(s,p){return s+p.ev.length;},0);
+  var h='<p class="note" style="margin-bottom:10px">첫 수업의 사건 '+nEv+'개를 <b>일어난 순서대로</b> 쭉 이었어. 여섯 시기로 나눠, '+
+      '시기마다 그때 수업의 <b>암기 장치 · 비교 · 인과 사슬</b>과 <b>확인 문제</b>를 붙였어. 처음부터 끝까지 한 번 내려 읽으면 Ⅰ단원 복습 끝.</p>'+
+    '<div class="chnav"><div class="chips strip">'+P.map(function(p){
+      return '<button class="chip" data-cj="'+p.i+'">'+(p.i+1)+' '+esc(p.b.lab)+'</button>';}).join("")+'</div>'+
+    '<div class="tlbar"><button class="chip'+(brief?" on":"")+'" id="chm">'+(brief?"한 줄로 보는 중":"한 줄로 보기")+'</button>'+
+      '<button class="chip'+(hideY?" on":"")+'" id="chy">'+(hideY?"연도 가리는 중":"연도 가리기")+'</button></div></div>';
+  P.forEach(function(p){
+    var b=p.b, cy=null;
+    h+='<section class="chs" id="chs'+p.i+'" data-ch="'+p.i+'">'+
+      '<div class="chhd"><span class="chn">'+(p.i+1)+'</span><div><div class="eyebrow">'+esc(b.lab)+' · 사건 '+p.ev.length+'개</div>'+
+        '<div class="h">'+esc(b.n)+'</div></div></div>'+
+      '<div class="chg"><b>그때 일제는</b> '+esc(b.g)+'</div>'+
+      '<div class="ozb"><span>▶ '+esc(b.a)+'</span><span>◀ '+esc(b.z)+'</span></div>';
+    p.ev.forEach(function(r){
+      if(!hideY&&r.y!==cy){ cy=r.y; h+='<div class="chyr"><b>'+r.y+'</b><i></i></div>'; }
+      h+=chronEvent(r,brief,hideY);
+    });
+    if(p.sum.length){ h+='<div class="part">'+(p.i+1)+'장 정리 — 암기 장치 · 비교 · 인과 사슬</div>'; var lt=null;
+      p.sum.forEach(function(x){ if(x.l!==lt){ lt=x.l; h+='<div class="chles">'+esc(x.l.title)+'</div>'; } h+=chronSum(x); }); }
+    if(p.chk.length){ h+='<div class="part">'+(p.i+1)+'장 확인 — '+p.chk.length+'문제</div>'; p.chk.forEach(function(x){ h+=chronChk(x); }); }
+    h+=(p.i<P.length-1?'<button class="cta chnext" data-cj="'+(p.i+1)+'">다음 시기 → '+(p.i+2)+'장 '+esc(P[p.i+1].b.n)+'</button>'
+        :'<div class="done-hero" style="padding:18px 0 6px"><div class="big" style="font-size:22px">끝까지 읽었어</div>'+
+          '<div class="sub">순서만 따로 연습하려면 「흐름 맞추기」, 단체 흐름은 「단체 계보도」에서.</div></div>'+
+          '<div class="row" style="display:flex;gap:9px"><button class="cta ghost" id="chord">흐름 맞추기</button><button class="cta ghost" id="chorg">단체 계보도</button></div>')+
+      '</section>';
+  });
+  view.innerHTML=h;
+  var jump=function(i){ var s=document.getElementById("chs"+i); if(!s)return;
+    var nav=view.querySelector(".chnav"), off=nav?nav.getBoundingClientRect().height+8:0;
+    window.scrollTo(0,window.scrollY+s.getBoundingClientRect().top-off); chronMark(i); };
+  Array.prototype.forEach.call(view.querySelectorAll("[data-cj]"),function(x){x.onclick=function(){jump(+x.dataset.cj);};});
+  view.querySelector("#chm").onclick=function(){ var cur=chronCur(); S.chronMode=brief?"full":"brief"; save(); vChron({ch:cur}); };
+  view.querySelector("#chy").onclick=function(){ var sy=window.scrollY; S.chronHideY=!hideY; CHRON_YO={}; save(); vChron(); window.scrollTo(0,sy); };
+  chronBind(view);
+
+  var o1=view.querySelector("#chord"); if(o1)o1.onclick=function(){go("ord");};
+  var o2=view.querySelector("#chorg"); if(o2)o2.onclick=function(){go("orgs");};
+  var start=(a&&a.ch!=null)?a.ch:null;
+  if(start!=null){ if(a)a.ch=null; requestAnimationFrame(function(){ jump(start); }); } else chronMark(chronCur());
+}
+/* 누르기는 그 자리만 바꾼다 — 긴 페이지를 통째로 다시 그리면 카드 애니메이션이 다시 돈다 */
+function chronBind(root){
+  Array.prototype.forEach.call(root.querySelectorAll("[data-cy]"),function(x){x.onclick=function(){
+    if(!S.chronHideY||CHRON_YO[x.dataset.cy])return; CHRON_YO[x.dataset.cy]=1;
+    var p=x.dataset.cy.split("#"), c=LMAP[p[0]].cards[+p[1]], r=timeline().filter(function(t){return t.lid===p[0]&&t.ci===+p[1];})[0];
+    x.textContent=(r&&r.ya)||String(c.y); x.classList.remove("hid"); buzz(8); };});
+  Array.prototype.forEach.call(root.querySelectorAll("[data-rv]"),function(x){x.onclick=function(){
+    CHRON_RV[x.dataset.rv]=1; x.classList.remove("blur"); var t=x.parentNode.querySelector(".tip"); if(t)t.remove(); buzz(10); };});
+  Array.prototype.forEach.call(root.querySelectorAll("[data-pk]"),function(x){x.onclick=function(){
+    var key=x.dataset.pk, st=CHRON_PK[key]; if(!st||st.ans!=null)return; st.ans=+x.dataset.i;
+    buzz(st.ans===st.m.a?14:[20,40,20]); markDay();
+    var p=key.split("#"), card=x.closest(".chq"), tmp=document.createElement("div");
+    tmp.innerHTML=chronChk({l:LMAP[p[0]],c:LMAP[p[0]].cards[+p[1]],ci:+p[1]}); var nw=tmp.firstChild;
+    nw.style.animation="none"; card.parentNode.replaceChild(nw,card); chronBind(nw); };});
+  Array.prototype.forEach.call(root.querySelectorAll(".chev .prgo"),function(x){x.onclick=function(){ chronSave(); jumpCard(x.dataset.cl,+x.dataset.ci); };});
+}
+/* 지금 화면 위쪽에 걸친 장 */
+function chronCur(){
+  var secs=view.querySelectorAll(".chs"), nav=view.querySelector(".chnav"), top=(nav?nav.getBoundingClientRect().bottom:0)+20, cur=0;
+  Array.prototype.forEach.call(secs,function(s){ if(s.getBoundingClientRect().top<=top)cur=+s.dataset.ch; });
+  return cur;
+}
+function chronMark(i){
+  Array.prototype.forEach.call(view.querySelectorAll(".chnav [data-cj]"),function(x){ x.classList.toggle("on",+x.dataset.cj===i); });
+  if(!S.chron||S.chron.ch!==i){ S.chron={ch:i}; save(); }
+}
+function chronSave(){ if(stack[stack.length-1].n==="chron")chronMark(chronCur()); }
+var CHRON_T=null;
+window.addEventListener("scroll",function(){
+  if(stack[stack.length-1].n!=="chron"||CHRON_T||!document.body.contains(view))return;
+  CHRON_T=setTimeout(function(){ CHRON_T=null; if(stack[stack.length-1].n==="chron"&&document.body.contains(view))chronMark(chronCur()); },150);
+},{passive:true});
+
 /* ══════════ 단체 계보도 ══════════
    단체가 어디서 나와 무엇과 합치고 갈라졌는지를 화살표 그림으로. 연결은 모두 교과서 · 프린트 원문에 있는 것만 그린다.
    노드 [id, 이름(\n 줄바꿈), 해·설명, 열, 행, 종류, 갈래, 수업, 설명]
@@ -5843,7 +6016,7 @@ function nextBtnW(label,fn){
 }
 VIEWS={home:vHome,lesson:vLesson,review:vReview,wrong:vWrong,wquiz:vWQuiz,due:vDue,find:vFind,
        exam:vExamPick,examRun:vExamRun,examResult:vExamResult,
-       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet,orgs:vOrgs};
+       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet,orgs:vOrgs,chron:vChron};
 load(); e2init(); save();
 /* 킵 버튼은 어느 화면에 있든 view 한곳에서 받는다 */
 view.addEventListener("click",function(e){
@@ -5901,7 +6074,7 @@ render();
   var PATH={home:"/HOME",lesson:"/LESSON",review:"/REVIEW",wrong:"/WRONG",
             due:"/REVIEW/DUE",find:"/FIND",
             wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT",
-            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET",orgs:"/ORGS"};
+            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET",orgs:"/ORGS",chron:"/CHRON"};
 
   var dockEl=document.getElementById("dock");
   function paintDock(){
