@@ -458,6 +458,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .tlr.k-life .d{background:var(--org)}
 .tlr.k-life{border-left:7px solid var(--org)}
 .tlr.k-life .tg{background:#FAE4C2}
+.tlr .tg.ya{font-family:inherit;font-size:11px;font-weight:700;vertical-align:1px;background:var(--cream);border:1px dashed var(--ink-3)}
+.yr.ya{font-family:inherit;font-size:13px;font-weight:800}
 .tlr.nol{background:var(--panel);box-shadow:none;border-style:dashed}
 .tlr.nol .d{background:var(--panel-d)}
 .tlr.nol .src{font-style:italic}
@@ -1439,7 +1441,7 @@ const LESSONS=[
  {t:"fact",y:1936,n:"동북 항일 연군",b:"중국 공산당이 만주의 항일 유격대를 모아 <b>동북 인민 혁명군</b>(1933)을 만들었고, 여기에 많은 한인 사회주의자가 참여했어. 이 부대가 1936년에 <b>동북 항일 연군</b>으로 발전해.",
   why:"사회주의 계열도 항일이라는 목표는 같았어.",
   so:"소속 한인 유격대원들은 민족주의자와 함께 <b>조국 광복회</b>를 조직했어(1936)."},
- {t:"chain",title:"만주 무장 투쟁 전체 흐름",items:["봉오동(1920.6) · 청산리(1920.10)","간도 참변 · 자유시 참변","3부 성립(1924)","미쓰야 협정(1925) → 3부 통합 운동(1929)","국민부 → 조선 혁명군 (양세봉)","혁신 의회 → 한국 독립군 (지청천)","한중 연합 작전 · 동북 항일 연군"]},
+ {t:"chain",title:"만주 무장 투쟁 전체 흐름",items:["봉오동(1920.6) · 청산리(1920.10)","간도 참변 · 자유시 참변","3부 성립(1920년대 중반)","미쓰야 협정(1925) → 3부 통합 운동(1920년대 후반)","국민부 → 조선 혁명군 (양세봉)","혁신 의회 → 한국 독립군 (지청천)","한중 연합 작전 · 동북 항일 연군"]},
  {t:"hint",k:"양-남-영흥 / 지-북-쌍동대",b:"<em>양</em>세봉은 <em>남</em>만주에서 <em>영</em>릉가·<em>흥</em>경성. <em>지</em>청천은 <em>북</em>만주에서 <em>쌍</em>성보·<em>동</em>경성·<em>대</em>전자령. 이름 첫 글자로 묶으면 안 헷갈려."},
  {t:"pick",q:"영릉가 전투를 이끈 부대는?",c:["조선 혁명군","한국 독립군"],a:0,e:"양세봉의 조선 혁명군이야. 지청천의 한국 독립군은 쌍성보·동경성·대전자령."}
  ],
@@ -2231,7 +2233,7 @@ function peekCard(){
     if(!S.done[l.id])return;
     l.cards.forEach(function(c){
       if(c.t==="hint")pool.push({l:l,html:'<b class="k">'+esc(c.k)+'</b><span>'+c.b+'</span>'});
-      if(c.t==="fact")pool.push({l:l,html:'<b class="k" style="color:var(--ink)">'+c.y+' · '+esc(c.n)+'</b><span>'+c.so+'</span>'});
+      if(c.t==="fact")pool.push({l:l,html:'<b class="k" style="color:var(--ink)">'+yLab(c)+' · '+esc(c.n)+'</b><span>'+c.so+'</span>'});
       if(c.t==="chain")pool.push({l:l,html:'<b class="k" style="font-size:16px">'+esc(c.title)+'</b><span>'+
         c.items.map(function(x){return x.replace(/<[^>]+>/g,"");}).join(" → ")+'</span>'});
     });
@@ -2406,7 +2408,7 @@ function paintCard(){
        '<div class="bd">'+c.b+'</div></div>';
 
   if(c.t==="fact")
-    h+='<div class="card">'+prB(c)+'<span class="yr">'+c.y+'</span>'+
+    h+='<div class="card">'+prB(c)+'<span class="yr'+(YAPX[c.n]?' ya':'')+'">'+yLab(c)+'</span>'+
        '<div class="h">'+esc(c.n)+'</div><div class="bd">'+c.b+'</div>'+
        '<div class="wsblock">'+
          '<div class="ws why"><span class="lb">왜?</span><p>'+c.why+'</p></div>'+
@@ -2538,7 +2540,7 @@ function paintEnd(){
     '<div class="part">오늘 배운 것</div>'+
     '<div class="sumlist">'+facts.map(function(c,i){
       return '<div class="sum"><span class="n">'+(i+1)+'</span><span><b style="font-family:var(--f-d)">'+
-        esc(c.n)+'</b> · '+c.y+'년<br><span style="color:var(--tx2);font-size:14px">'+
+        esc(c.n)+'</b> · '+yLab(c)+(YAPX[c.n]?'':'년')+'<br><span style="color:var(--tx2);font-size:14px">'+
         c.so.replace(/<[^>]+>/g,"")+'</span></span></div>';
     }).join("")+'</div>'+
     (hint?'<div class="part">외울 때 이걸 떠올려</div><div class="rv"><div class="k">'+esc(hint.k)+'</div>'+
@@ -2654,6 +2656,17 @@ function eraOf(y){ for(var i=0;i<ERAS.length;i++) if(y<=ERAS[i].y) return i; ret
    3·1 운동 자체(s6), 파리 강화 회의(s1)는 무단 통치 칸.
    1930년 「식민지 공업화」는 민족 말살 통치 단원(s4)이라 1930년대 칸 */
 var ERA1919={s3:1,s5:1,s7:1,s9:1};
+/* 교과서가 한 해로 못 박지 않은 것(여러 해에 걸친 정책 · 흐름 · 설명) — [보여 줄 시기, 쌓아 가기 칸에 넣나, 통치↔저항 칸에 넣나].
+   카드 · 연표에는 숫자 대신 이 말을 보여 주고, 연도를 겨루는 판(시대 섞기 · 묶음 안 순서)에서는 뺀다.
+   숫자 y 는 연표 안 자리를 잡는 데만 쓴다. 시기 칸이 둘에 걸치면(예: 「1930년대」는 쌓아 가기 5·6칸) 그 판에서도 뺀다 */
+var YAPX={"우민화 교육":["1910년대",1,1],"기간 시설 건설":["1910년대",1,1],
+  "3부의 성립":["1920년대 중반",1,1],"3부의 성격":["1920년대 중반",1,1],"3부 통합 운동":["1920년대 후반",1,1],
+  "자치 운동":["1920년대 중반~1930년대 초",0,0],"황푸 군관 학교 입교":["1920년대 후반",1,1],
+  "혁명적 농민·노동 조합":["1930년대",0,1],"농촌 진흥 운동":["1930년대",0,1],"남면북양 정책":["1930년대",0,1],
+  "조선학 운동":["1930년대 중반",1,1],"신채호의 고대사 연구":["1920~30년대",0,0],"백남운의 사회 경제 사학":["1930년대",0,1],
+  "내선일체와 일선동조론":["1930년대",0,1],"신사 참배 강요":["1930년대",0,1],
+  "인력 수탈":["1930년대 후반~1945",0,1],"공출과 배급제":["1930년대 후반~1945",0,1]};
+function yLab(c){ var a=YAPX[c.n]; return a?a[0]:c.y; }
 function eraOfRow(r){
   if(r.y===1919) return (ERA1919[r.u]||r.k==="rule")?1:0;
   if(r.y===1930&&r.u==="s4") return 2;
@@ -2665,7 +2678,7 @@ function timeline(){
   LESSONS.forEach(function(l){
     l.cards.forEach(function(c,i){
       if(c.t==="fact"&&c.y!=null)
-        TL.push({y:c.y,n:c.n,u:l.u,lid:l.id,ci:i,lt:l.title,
+        TL.push({y:c.y,n:c.n,u:l.u,lid:l.id,ci:i,lt:l.title,ya:YAPX[c.n]?YAPX[c.n][0]:null,
                  k:c.tk||TRACK[l.u]||"world",pr:c.pr||0,po:c.po||0,
                  so:(c.so||"").replace(/<[^>]+>/g,"")});
     });
@@ -2675,7 +2688,7 @@ function timeline(){
   var has={}; LESSONS.forEach(function(l){ l.cards.forEach(function(c){ if(c.t==="fact")has[l.u+"|"+c.n]=1; }); });
   TL_EXTRA.forEach(function(r){
     if(has[r[0]+"|"+r[2]])return;
-    TL.push({y:r[1],n:r[2],u:r[0],lid:null,ci:null,lt:UMAP[r[0]].n+" · "+UMAP[r[0]].bk,
+    TL.push({y:r[1],n:r[2],u:r[0],lid:null,ci:null,lt:UMAP[r[0]].n+" · "+UMAP[r[0]].bk,ya:YAPX[r[2]]?YAPX[r[2]][0]:null,
              k:r[4]||TRACK[r[0]]||"world",so:r[3]});
   });
   /* 같은 해 안에서는 시기(1919년의 3·1 운동 전·후) → 교과서 차례 (정렬이 안정적이라 차례는 그대로 남는다) */
@@ -2726,7 +2739,7 @@ function vTimeline(){
       html+='<div class="tly'+(hide?" hid":"")+'"><b data-y="'+r.y+'">'+(hide?"·····":r.y)+'</b><i></i></div>'; }
     html+='<button class="tlr k-'+r.k+(r.lid?(S.done[r.lid]?"":" new"):" nol")+'" data-i="'+i+'">'+
       '<span class="d"></span><span class="x">'+
-      '<b>'+esc(r.n)+'<em class="tg">'+TRACKN[r.k]+'</em></b>'+
+      '<b>'+esc(r.n)+'<em class="tg">'+TRACKN[r.k]+'</em>'+(r.ya?'<em class="tg ya">'+esc(r.ya)+'</em>':'')+'</b>'+
       (desc&&r.so?'<small class="so">'+esc(r.so)+'</small>':'')+
       '<small class="src">'+(r.lid?'수업 · '+esc(r.lt):esc(r.lt)+' · 수업 준비 중')+(r.pr?' '+prB(r):'')+'</small></span></button>';
   });
@@ -3202,7 +3215,7 @@ function buildIndex(){
     IDX.push({t:"수업",lid:l.id,li:li,ci:0,head:l.title,body:l.hook});
     l.cards.forEach(function(c,ci){
       var head="",body="";
-      if(c.t==="fact"){head=c.n+" · "+c.y+"년";body=c.b+" "+c.why+" "+c.so;}
+      if(c.t==="fact"){head=c.n+" · "+yLab(c)+(YAPX[c.n]?"":"년");body=c.b+" "+c.why+" "+c.so;}
       else if(c.t==="hint"){head=c.k;body=c.b;}
       else if(c.t==="chain"){head=c.title;body=c.items.join(" ");}
       else if(c.t==="compare"){head=c.title;body=c.l.n+" "+c.l.p.join(" ")+" "+c.r.n+" "+c.r.p.join(" ");}
@@ -4898,7 +4911,7 @@ function kBtn(k){var on=kOn(k);
   return '<button class="kbtn'+(on?" on":"")+'" data-k="'+esc(k)+'" aria-pressed="'+on+'">'+(on?"★ 킵함":"☆ 킵")+'</button>';}
 /* 수업 카드 한 장을 머리말 + 본문으로 줄인다(찾기 색인과 같은 규칙) */
 function kCardText(c){
-  if(c.t==="fact")return {h:c.n+" · "+c.y,b:c.b+'<p class="kso">→ '+c.so+'</p>'};
+  if(c.t==="fact")return {h:c.n+" · "+yLab(c),b:c.b+'<p class="kso">→ '+c.so+'</p>'};
   if(c.t==="hint")return {h:c.k,b:c.b};
   if(c.t==="chain")return {h:c.title,b:c.items.join("<br>")};
   if(c.t==="compare")return {h:c.title,b:'<b>'+c.l.n+'</b> — '+c.l.p.join(" · ")+'<br><b>'+c.r.n+'</b> — '+c.r.p.join(" · ")};
@@ -4991,15 +5004,15 @@ var FLOWRAW=[
  ["f07","s6","L12","불씨가 모인 순서",[["민족 자결주의 제창","1918","약소민족에게 희망"],["김규식, 파리로","1919","신한청년당이 파리 강화 회의에 대표 파견"],["2·8 독립 선언","1919","도쿄 유학생의 선언이 국내를 자극"],["3·1 운동","1919","고종의 국장을 앞두고 만세"],["대한민국 임시 정부 수립","1919","독립운동을 이끌 정부가 필요해졌어"]]],
  ["f08","s6","L13","3·1 운동 그날부터",[["태화관·탑골 공원의 독립 선언","1919. 3. 1.","민족 대표와 학생·시민"],["전국 도시로 확산","3월","상인은 가게를 닫고(철시) 노동자는 파업"],["농촌 장터로","3~4월","탄압에 맞서 무력 투쟁으로 발전"],["일제의 문화 통치 전환","1919. 8.~","무력만으로는 안 된다는 걸 깨달음"]]],
  ["f09","s7","L17","임시 정부의 위기와 수습",[["통합 임시 정부 출범","1919. 9.","한성 정부 법통 + 상하이 위치"],["연통제·교통국 발각","1920년대 초","국내와의 연결이 끊김"],["국민 대표 회의","1923","개조파 vs 창조파 → 결렬"],["이승만 탄핵","1925","임시 대통령을 물러나게 함"],["국무령 중심 집단 지도 체제","1925","탄핵 직후 헌법을 고쳐 흔들리던 정부를 추스름"]]],
- ["f10","s8","L20","만주 무장 투쟁 1920년대",[["봉오동 전투","1920. 6.","홍범도의 대한 독립군 승리"],["청산리 대첩","1920. 10.","김좌진·홍범도 연합 부대 대승"],["자유시 참변","1921","러시아 적군에게 무장 해제"],["3부 성립","1920년대 중반","참의부·정의부·신민부로 재정비"],["미쓰야 협정","1925","일제와 만주 군벌이 손잡고 독립군 탄압"],["3부 통합 운동","1929","국민부와 혁신 의회로"]]],
- ["f11","s8","L20","1930년대 만주 한중 연합",[["3부 통합 운동","1929","국민부 → 조선 혁명군 / 혁신 의회 → 한국 독립군"],["만주 사변","1931","일본의 침략에 중국군과 손잡을 이유가 생김"],["한중 연합 작전","1932","영릉가(조선 혁명군) · 쌍성보(한국 독립군)"],["대전자령 전투","1933","한국 독립군의 대승"],["지청천 등 중국 관내로","1930년대 중반","임시 정부의 요청으로 이동"]]],
+ ["f10","s8","L20","만주 무장 투쟁 1920년대",[["봉오동 전투","1920. 6.","홍범도의 대한 독립군 승리"],["청산리 대첩","1920. 10.","김좌진·홍범도 연합 부대 대승"],["자유시 참변","1921","러시아 적군에게 무장 해제"],["3부 성립","1920년대 중반","참의부·정의부·신민부로 재정비"],["미쓰야 협정","1925","일제와 만주 군벌이 손잡고 독립군 탄압"],["3부 통합 운동","1920년대 후반","국민부와 혁신 의회로"]]],
+ ["f11","s8","L20","1930년대 만주 한중 연합",[["3부 통합 운동","1920년대 후반","국민부 → 조선 혁명군 / 혁신 의회 → 한국 독립군"],["만주 사변","1931","일본의 침략에 중국군과 손잡을 이유가 생김"],["한중 연합 작전","1932","영릉가(조선 혁명군) · 쌍성보(한국 독립군)"],["대전자령 전투","1933","한국 독립군의 대승"],["지청천 등 중국 관내로","1930년대 중반","임시 정부의 요청으로 이동"]]],
  ["f12","s9","L21","의열단의 길",[["의열단 결성","1919","만주 지린, 김원봉"],["김익상, 조선 총독부 투탄","1921","식민 통치의 심장을 겨눔"],["「조선 혁명 선언」","1923","신채호 — 민중 직접 혁명을 지침으로"],["김지섭, 일본 왕궁 투탄","1924","일본 한복판까지"],["나석주, 동양 척식 주식회사 투탄","1926","수탈 기관을 겨눔"],["조선 혁명 간부 학교","1932","개인 투쟁의 한계 → 조직적 무장 투쟁"]]],
  ["f13","s9","L22","1932년 한 해",[["한인 애국단 조직","1931","침체한 임시 정부를 살리려고 김구가"],["이봉창 의거","1932. 1.","도쿄에서 일왕 마차에 폭탄"],["상하이 사변","1932. 1.","이 의거를 구실로 일제가 상하이 침략"],["윤봉길 의거","1932. 4.","훙커우 공원 전승 기념식장"],["중국 국민당 정부의 지원","1932~","한중 공동 항일의 계기"]]],
- ["f14","s10","L23","실력 양성 운동",[["물산 장려 운동","1920~","평양, 조만식 — 토산품 애용"],["민립 대학 설립 운동","1923","이상재 — 1천만 원 모금"],["자치 운동 등장","1924~","성과가 없자 일부가 일제와 타협"],["문자 보급 운동","1929","『조선일보』 — 아는 것이 힘"],["브나로드 운동","1931","『동아일보』 — 민중 속으로"]]],
+ ["f14","s10","L23","실력 양성 운동",[["물산 장려 운동","1920~","평양, 조만식 — 토산품 애용"],["민립 대학 설립 운동","1923","이상재 — 1천만 원 모금"],["자치 운동 등장","1920년대 중반~","성과가 없자 일부가 일제와 타협"],["문자 보급 운동","1929","『조선일보』 — 아는 것이 힘"],["브나로드 운동","1931","『동아일보』 — 민중 속으로"]]],
  ["f15","s11","L24","농민·노동 운동",[["암태도 소작 쟁의","1923","고율 소작료에 맞서 1년여 투쟁"],["조선 농민·노동 총동맹","1927","전국 조직으로"],["원산 총파업","1929","일제 강점기 최대 노동 운동"],["혁명적 농민·노동 조합","1930년대","대공황 뒤 비합법 투쟁으로"],["점차 위축","1937~","중일 전쟁 뒤 강력한 탄압"]]],
  ["f16","s12","L25","학생 항일 운동",[["조선 청년 총동맹","1924","청년 운동을 하나로"],["6·10 만세 운동","1926. 6.","순종의 장례일"],["성진회","1926. 11.","광주의 비밀 결사 → 독서회"],["신간회 창립","1927","좌우 합작"],["광주 학생 항일 운동","1929","3·1 운동 이후 최대 규모"]]],
  ["f17","s13","L26","신간회가 생기고 사라지기까지",[["제1차 국공 합작","1924","이념이 달라도 손잡을 수 있다"],["6·10 만세 운동","1926. 6.","좌우 연대의 경험"],["정우회 선언","1926. 11.","사회주의 쪽이 먼저 손을 내밈"],["신간회 창립","1927","최대 규모 합법 항일 단체"],["광주 학생 운동 진상 조사단","1929","민중 대회 추진 → 탄압"],["신간회 해소","1931","좌우 연대가 무너짐"]]],
- ["f18","s14","L27","나라 밖 동포와 농촌",[["간도 참변","1920","일본군이 간도 한인 학살"],["관동 대지진 학살","1923","유언비어로 재일 한인 학살"],["농촌 진흥 운동","1932","대공황 뒤 농촌 통제"],["연해주 한인 강제 이주","1937","소련이 중앙아시아로"]]],
+ ["f18","s14","L27","나라 밖 동포와 농촌",[["간도 참변","1920","일본군이 간도 한인 학살"],["관동 대지진 학살","1923","유언비어로 재일 한인 학살"],["농촌 진흥 운동","1930년대","대공황 뒤 농촌 통제"],["연해주 한인 강제 이주","1937","소련이 중앙아시아로"]]],
  ["f19","s16","L30","말과 역사를 지킨 흐름",[["조선어 연구회","1921","가갸날, 『한글』"],["조선사 편수회","1925","일제가 식민 사관으로 『조선사』"],["조선어 학회","1931","맞춤법 통일안, 큰사전 추진"],["진단 학회","1934","실증 사학"],["조선어 학회 사건","1942","회원 투옥, 원고 압수"]]],
  ["f20","s17","L31","중국 관내 항일 전선",[["민족 혁명당","1935","난징, 김원봉 — 통일 전선 정당"],["두 연합체로 재편","1937","중일 전쟁 — 김구 쪽 / 김원봉 쪽"],["조선 의용대","1938","우한 — 중국 관내 최초의 한인 부대"],["김구·김원봉 공개 통신","1939","통합을 호소"],["조선 의용대 화북 지대","1941","타이항산, 호가장 전투"],["김원봉, 한국광복군 합류","1942","임시 정부가 좌우 합작"]]],
  ["f21","s18","L32","충칭 임시 정부",[["충칭 정착·한국광복군 창설","1940","지청천 총사령관"],["대한민국 건국 강령","1941. 11.","삼균주의"],["대일 선전 포고","1941. 12.","아시아·태평양 전쟁 직후"],["미얀마·인도 전선 파견","1943","영국군의 요청"],["국내 진공 작전 준비","1945","OSS와 국내 정진군 — 투입 직전 광복"]]],
@@ -5042,6 +5055,11 @@ var OSKIP={};
  "임시 정부 수립의 계기","통치 방식의 전환","민족 운동 주체의 확대","세계사적 의의","세 곳의 임시 정부","왜 상하이였을까",
  "통합의 방식","초대 각료","3부의 성격","물산 장려 운동에 대한 비판","박은식","전체주의의 확산"].forEach(function(n){OSKIP[n]=1;});
 function oRows(){ return timeline().filter(function(r){return r.lid&&!OSKIP[r.n];}); }
+/* 연도로 줄 세우는 판은 대략의 시기만 있는 사실을 뺀다. 칸에 넣는 판은 칸이 하나로 정해지는 것만 */
+function oRowsExact(){ return oRows().filter(function(r){return !r.ya;}); }
+function oRowsStack(){ return oRows().filter(function(r){return !r.ya||YAPX[r.n][1];}); }
+function oRowsPair(){ return oRows().filter(function(r){return !r.ya||YAPX[r.n][2];}); }
+function oYL(r){ return r.ya||String(r.y); }
 function oShuffle(a){a=a.slice();shuffleArr(a);return a;}
 /* 한 번 틀린 사실은 다음 판에 먼저 — 나머지는 섞는다 */
 function oPickFacts(rows,n,opt){
@@ -5063,14 +5081,14 @@ function oStartFlow(id){
   oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oStartMix(){
-  var rows=oPickFacts(oRows(),5,{distinctYear:true,distinctUnit:true});
+  var rows=oPickFacts(oRowsExact(),5,{distinctYear:true,distinctUnit:true});
   rows.sort(function(a,b){return a.y-b.y;});
   O={mode:"order",kind:"mix",title:"시대 섞기",sub:"여러 단원에서 다섯 장",
      items:rows.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),sub:UMAP[r.u].n};})};
   oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oStartBlockOrder(b){
-  var st=oS().stk, rows=oRows().filter(function(r){return st.p[tlKey(r)]&&blockOf(r.y)===b;});
+  var st=oS().stk, rows=oRowsExact().filter(function(r){return st.p[tlKey(r)]&&blockOf(r.y)===b;});
   var pick=oPickFacts(rows,5,{distinctYear:true}); pick.sort(function(a,b){return a.y-b.y;});
   O={mode:"order",kind:"block",title:BLOCKS[b].n,sub:"묶음 안 순서 · "+BLOCKS[b].lab,
      items:pick.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),sub:UMAP[r.u].n};})};
@@ -5091,26 +5109,26 @@ function oInitOrder(){
   O.pos=ord; O.lock={}; O.tries=0; O.sel=null; O.done=false; O.wrongAt={};
 }
 function oStartPair(){
-  var rows=oRows().filter(function(r){return r.y!==1930;});
+  var rows=oRowsPair().filter(function(r){return r.y!==1930;});
   var zones=[{n:"1910년대~3·1 운동",t:"무단 통치"},{n:"3·1 운동 뒤~1920년대",t:"'문화 정치'"},{n:"만주 사변~1945",t:"민족 말살 · 전시 동원"}];
   var cards=[];
   zones.forEach(function(z,i){
     var inE=function(r){return eraOfRow(r)===i;};
     z.anchor=oShuffle(rows.filter(function(r){return r.k==="rule"&&inE(r);})).slice(0,2).map(function(r){return r.n;});
     oPickFacts(rows.filter(function(r){return r.k==="resist"&&inE(r);}),2,{}).forEach(function(r){
-      cards.push({n:r.n,y:String(r.y),w:r.so,key:tlKey(r),z:i,sub:UMAP[r.u].n});});
+      cards.push({n:r.n,y:oYL(r),w:r.so,key:tlKey(r),z:i,sub:UMAP[r.u].n});});
   });
   O={mode:"bucket",kind:"pair",title:"통치 ↔ 저항",sub:"일제가 이럴 때 우리는?",zones:zones,items:oShuffle(cards)};
   oInitBucket(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oStartStack(){
-  var st=oS().stk, rows=oRows();
+  var st=oS().stk, rows=oRowsStack();
   var left=rows.filter(function(r){return !st.p[tlKey(r)];});
   if(!left.length){ go("ordStack",null,true); return; }
   var pick=oPickFacts(left,5,{distinctUnit:true});
   O={mode:"bucket",kind:"stack",title:"사건을 묶음에 넣기",sub:"쌓아 가기",
      zones:BLOCKS.map(function(b){return {n:b.lab,t:b.n,a:b.a,z:b.z};}),
-     items:oShuffle(pick.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),z:blockOf(r.y),sub:UMAP[r.u].n};}))};
+     items:oShuffle(pick.map(function(r){return {n:r.n,y:oYL(r),w:r.so,key:tlKey(r),z:blockOf(r.y),sub:UMAP[r.u].n};}))};
   oInitBucket(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oInitBucket(){ O.at={}; O.lock={}; O.tries=0; O.sel=null; O.done=false; O.wrongAt={}; }
@@ -5296,7 +5314,7 @@ function vOrd(){
   var o=oS(), sets=o.sets;
   var ok=FLOWS.filter(function(f){return sets[f.id]&&sets[f.id].b>=1;}).length;
   var re=FLOWS.filter(function(f){return sets[f.id]&&sets[f.id].b===0;}).length;
-  var rows=oRows(), pl=rows.filter(function(r){return o.stk.p[tlKey(r)];}).length;
+  var rows=oRowsStack(), pl=rows.filter(function(r){return o.stk.p[tlKey(r)];}).length;
   var fm=Object.keys(o.fm).filter(function(k){return o.fm[k]>0;}).length;
   var h='<p class="note" style="margin-bottom:12px">연도는 가려 두고 <b>흐름</b>만 맞춰. 맞추고 나면 연도와 \'왜 다음인지\'가 이어서 보여. '+
       '틀린 것은 다음 판에 먼저 다시 나와.</p>'+
@@ -5324,7 +5342,7 @@ function oMode(id,t,s,n){
 }
 function vOStack(){
   titleEl.textContent="쌓아 가기";
-  var st=oS().stk, rows=oRows();
+  var st=oS().stk, rows=oRowsStack();
   if(!st.o){
     view.innerHTML='<div class="ohead"><div class="eyebrow">쌓아 가기</div><div class="h sm">먼저 큰 묶음 여섯 개를 시기 순서로</div>'+
       '<p class="note">Ⅰ단원 전체를 여섯 시기로 나눴어. 묶음마다 <b>문을 여는 사건(▶)</b>과 <b>문을 닫는 사건(◀)</b>이 있어. '+
@@ -5346,7 +5364,7 @@ function vOStack(){
       '<small>'+esc(b.lab)+' · 채운 사건 '+got.length+' / '+inB.length+'</small></span></div>'+
       '<div class="ozb"><span>▶ '+esc(b.a)+'</span><span>◀ '+esc(b.z)+'</span></div>'+
       (got.length?'<div class="obl">'+got.map(function(r){return '<span>'+esc(r.n)+'</span>';}).join("")+'</div>':'')+
-      (got.length>=4?'<button class="prgo" data-b="'+i+'">이 묶음 안 순서 맞추기 '+IC.chev+'</button>':'')+'</div>';
+      (got.filter(function(r){return !r.ya;}).length>=4?'<button class="prgo" data-b="'+i+'">이 묶음 안 순서 맞추기 '+IC.chev+'</button>':'')+'</div>';
   });
   h+='<div class="sticky"><div class="row"><button class="cta ghost" id="osr">큰 묶음 다시</button>'+
      '<button class="cta" id="osn"'+(pl>=rows.length?' disabled':'')+'>'+(pl>=rows.length?"다 채웠어!":"사건 5장 넣기")+'</button></div></div>';

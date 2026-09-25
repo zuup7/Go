@@ -138,6 +138,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .card-b{padding:17px 15px}
 
 /* 연도 — 이 앱의 주인공 */
+.yr.ya{font-size:clamp(18px,6vw,24px)}
 .yr{font-family:var(--f-px);font-size:clamp(30px,10vw,44px);line-height:1.15;
   color:var(--ink);background:var(--yel);border:var(--bd) solid var(--ink);
   padding:9px 11px;display:inline-block;
@@ -158,6 +159,7 @@ mark{background:var(--yel);color:var(--ink);padding:1px 4px;font-weight:700}
 .rl:first-child::before{top:18px}
 .rl:last-child::before{bottom:calc(100% - 18px)}
 .rl .y{font-family:var(--f-px);font-size:10px;text-align:right;color:var(--ink);padding-top:3px}
+.rl .y.ya{font-family:inherit;font-size:11px;font-weight:700;line-height:1.3;word-break:keep-all;padding-top:1px}
 .rl .dot{position:absolute;left:63px;top:14px;width:11px;height:11px;background:var(--red);
   border:2px solid var(--ink)}
 .rl .t{font-family:var(--f-h);font-size:16px;padding-left:13px;line-height:1.5}
@@ -454,7 +456,7 @@ const RAW=[
 ["s1",1929,"대공황과 전체주의","미국에서 시작된 대공황에 미국은 뉴딜 정책, 영국은 블록 경제로 맞섰으나 경제 기반이 빈약한 이탈리아·독일·일본에서는 전체주의가 확산되었다.","뉴딜 정책"],
 ["s1",1931,"만주 사변","일본이 만주를 침략하고 이듬해 만주국을 세웠다.","만주국"],
 ["s1",1937,"중일 전쟁","일본이 루거우차오 사건을 빌미로 일으켰으며 난징 대학살을 저질렀다.","루거우차오 사건"],
-["s1",1936,"추축국 형성","독일·일본·이탈리아가 3국 방공 협정을 계기로 추축국을 이루고 대외 침략을 본격화하였다.","3국 방공 협정"],
+["s1",1937,"추축국 형성","독일·일본·이탈리아가 3국 방공 협정을 계기로 추축국을 이루고 대외 침략을 본격화하였다.","3국 방공 협정"],
 ["s1",1939,"제2차 세계 대전","독일이 독소 불가침 조약을 맺은 뒤 폴란드를 기습 침공하자 영국과 프랑스가 선전 포고하며 시작되었다.","폴란드"],
 ["s1",1941,"아시아·태평양 전쟁","미국이 전쟁 물자 수출을 금지하며 압박하자 일본이 하와이 진주만을 기습 공격하며 일으켰다.","진주만"],
 
@@ -528,7 +530,7 @@ const RAW=[
 ["s6",1919,"3·1 운동의 의의","일제 강점기 최대 규모의 항일 운동으로 우리 민족의 독립 의지를 전 세계에 알렸고, 학생·농민·노동자·여성이 참여해 민족 운동의 주체가 확대되었다.","최대 규모"],
 ["s6",1919,"3·1 운동의 영향","민족 운동을 조직적으로 지도할 구심점이 필요하다는 인식에서 대한민국 임시 정부가 수립되었고, 일제는 통치 방식을 문화 정치로 바꾸었다.","구심점"],
 ["s6",1919,"세계사적 의의","대표적인 반제국주의 민족 운동으로 중국의 5·4 운동 등 약소민족의 민족 운동에 영향을 주었다.","5·4 운동"],
-["s6",1920,"유관순","이화 학당 학생으로 천안 아우내 장터에서 만세 시위를 주도하다 붙잡혀 서대문 형무소에서 순국했다.","아우내"],
+["s6",1919,"유관순","이화 학당 학생으로 천안 아우내 장터에서 만세 시위를 주도하다 붙잡혀 서대문 형무소에서 순국했다.","아우내"],
 
 /* ================= s7 · 대한민국 임시 정부 (26~29쪽) ================= */
 ["s7",1919,"여러 임시 정부의 수립","연해주에 대한 국민 의회, 상하이에 대한민국 임시 정부가 세워지고 국내에서는 한성 정부 수립이 선포되었다.","대한 국민 의회"],
@@ -772,6 +774,18 @@ const RAW=[
 ["s9", 1928, "조명하의 의거", "타이완(타이중)에서 일본 왕족을 처단한 개인 의열 투쟁이다.", "타이완", null, "pr"]
 ];
 const FACTS=RAW.map(function(r,i){return {id:"f"+i,u:r[0],y:r[1],t:r[2],d:r[3],k:r[4],tk:r[5]||null,pr:r[6]||null};});
+/* 교과서가 한 해로 못 박지 않은 것(여러 해에 걸친 정책 · 흐름 · 설명). 연도 칸에는 이 말을 보여 주고,
+   「몇 년?」 문제와 순서 맞추기에서는 뺀다 — 대표 연도를 정답처럼 외우게 하면 안 된다.
+   숫자 연도(r[1])는 연표 안 자리를 잡는 데만 쓴다 */
+var APX={"우민화 교육":"1910년대","기간 시설 건설":"1910년대","북간도의 민족 운동":"1910년대",
+  "3·1 운동의 국제적 배경":"1917~1918","산미 증식 계획의 부담":"1920년대",
+  "3부의 성립":"1920년대 중반","3부의 성격":"1920년대 중반","3부 통합 운동":"1920년대 후반",
+  "자치 운동":"1920년대 중반~1930년대 초","황푸 군관 학교 입교":"1920년대 후반",
+  "혁명적 농민·노동 조합":"1930년대","농촌 진흥 운동":"1930년대","남면북양 정책":"1930년대",
+  "조선학 운동":"1930년대 중반","신채호의 고대사 연구":"1920~30년대","백남운의 사회 경제 사학":"1930년대",
+  "지청천의 중국 관내 이동":"1930년대 중반","신사 참배 강요":"1930년대","한국어 교육 금지":"1930년대 후반",
+  "인력 수탈":"1930년대 후반~1945","공출과 배급제":"1930년대 후반~1945"};
+FACTS.forEach(function(f){ if(APX[f.t])f.ya=APX[f.t]; });
 
 /* OX — 시험에서 실제로 헷갈리는 함정. [단원, 문장, 정답, 해설] */
 const OXRAW=[
@@ -957,6 +971,7 @@ var KEY="hansa-sprint-v2";   /* 교과서 단원 구조로 개편 */
 /* ---------- 날짜 ---------- */
 function dayNo(d){d=d||new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);}
 function fmtY(y){return y<0?"기원전 "+(-y):String(y);}
+function yl(f){return f.ya||fmtY(f.y);}
 
 /* ---------- 상태 ---------- */
 var S;
@@ -1079,8 +1094,8 @@ function makeItem(id){
   if(id.charAt(0)==="o"){var o=OMAP[id];return {kind:"ox",id:id,u:o.u,ox:o};}
   var f=FMAP[id],sib=FACTS.filter(function(x){return x.u===f.u&&x.id!==f.id;});
   var kinds=["flash","event"];
-  var ys=distinct(sib.map(function(x){return x.y;}),3,f.y);
-  if(ys.length===3)kinds.push("year");   /* 선택지 4개를 못 채우면 연도 문제는 건너뛴다 */
+  var ys=distinct(sib.filter(function(x){return !x.ya;}).map(function(x){return x.y;}),3,f.y);
+  if(ys.length===3&&!f.ya)kinds.push("year");   /* 대략의 시기만 있는 것은 연도 문제로 내지 않는다 */   /* 선택지 4개를 못 채우면 연도 문제는 건너뛴다 */
   if(f.d.indexOf(f.k)>=0)kinds.push("cloze");
   var kind=kinds[Math.floor(Math.random()*kinds.length)];
   if(kind==="year")return {kind:"year",id:id,u:f.u,f:f,opts:shuffle(ys.concat([f.y])),ans:f.y};
@@ -1097,7 +1112,7 @@ function makeItem(id){
 function makeOrder(){
   /* 연도가 4개 이상 서로 다른 단원만 후보로 삼는다.
      3·1 운동처럼 사건이 한 해에 몰린 단원은 순서를 물을 수 없다. */
-  var byU={};poolFacts().forEach(function(f){(byU[f.u]=byU[f.u]||[]).push(f);});
+  var byU={};poolFacts().forEach(function(f){ if(!f.ya)(byU[f.u]=byU[f.u]||[]).push(f); });
   var us=Object.keys(byU).filter(function(u){
     var ys={},n=0;
     byU[u].forEach(function(f){if(!ys[f.y]){ys[f.y]=1;n++;}});
@@ -1157,7 +1172,7 @@ function renderFlash(it,done){
     '<div class="card-b"><div class="q">'+esc(f.t)+'</div>'+
     '<p class="hint" style="margin-top:12px">언제, 무슨 일이었는지 머릿속으로 답해 보고 넘기세요.</p>'+
     '<div id="back" style="display:none"><hr style="border:none;border-top:1px solid var(--line);margin:16px 0">'+
-    '<span class="yr">'+fmtY(f.y)+'</span><p class="d">'+f.d+'</p></div>'+
+    '<span class="yr'+(f.ya?' ya':'')+'">'+yl(f)+'</span><p class="d">'+f.d+'</p></div>'+
     '<button class="btn wide" id="bFlip" style="margin-top:18px">답 확인</button>'+
     '<div class="grade" id="gr" style="display:none">'+
     '<button class="gbtn g1" data-s="0"><strong>다시</strong><small>오늘 또</small></button>'+
@@ -1177,7 +1192,7 @@ function renderFlash(it,done){
 function renderChoice(it,done){
   var f=it.f,qh,opts=it.opts,label;
   if(it.kind==="year"){label="연도 맞히기";qh='<div class="q">'+esc(f.t)+'<span style="color:var(--tx-3);font-weight:400"> — 몇 년?</span></div><p class="d">'+f.d+'</p>';}
-  else if(it.kind==="event"){label="사건 찾기";qh='<span class="yr">'+fmtY(f.y)+'</span><p class="d" style="margin-top:6px">'+f.d+'</p><div class="q sm" style="margin-top:14px">이 설명에 해당하는 것은?</div>';}
+  else if(it.kind==="event"){label="사건 찾기";qh='<span class="yr'+(f.ya?' ya':'')+'">'+yl(f)+'</span><p class="d" style="margin-top:6px">'+f.d+'</p><div class="q sm" style="margin-top:14px">이 설명에 해당하는 것은?</div>';}
   else{label="빈칸 채우기";
     qh='<div class="q sm">'+esc(f.t)+'</div><p class="d" style="margin-top:10px">'+
        f.d.replace(f.k,'<mark>&nbsp;&nbsp;?&nbsp;&nbsp;</mark>')+'</p>';}
@@ -1198,7 +1213,7 @@ function renderChoice(it,done){
       grade(it.id,ok?2:0);
       document.getElementById("fb").innerHTML=
         '<div class="fb '+(ok?"ok":"no")+'" style="margin-top:14px"><span class="ic">'+(ok?"○":"×")+'</span><span>'+
-        (ok?"정답! ":"<b>"+esc(f.t)+" — "+fmtY(f.y)+"</b><br>")+f.d+'</span></div>'+
+        (ok?"정답! ":"<b>"+esc(f.t)+" — "+yl(f)+"</b><br>")+f.d+'</span></div>'+
         '<button class="btn wide" id="bNext" style="margin-top:12px">다음 →</button>';
       document.getElementById("bNext").onclick=done;
       document.getElementById("bNext").focus();
@@ -1239,7 +1254,7 @@ function renderOrder(g,done){
         var cls=i>=0?(wrong?"":"ok"):"";
         return '<button class="opt '+cls+'" data-id="'+f.id+'"'+(i>=0?" disabled":"")+'>'+
                '<span class="k">'+(i>=0?(i+1):"·")+'</span><span>'+esc(f.t)+
-               (i>=0||wrong?' <span style="color:var(--tx-3)">— '+fmtY(f.y)+'</span>':'')+'</span></button>';
+               (i>=0||wrong?' <span style="color:var(--tx-3)">— '+yl(f)+'</span>':'')+'</span></button>';
       }).join("")+'</div><div id="fb"></div></div></div>';
     Array.prototype.forEach.call(document.querySelectorAll("#op .opt"),function(b){
       b.onclick=function(){
@@ -1259,7 +1274,7 @@ function renderOrder(g,done){
       '<div class="fb '+(ok?"ok":"no")+'" style="margin-top:14px"><span class="ic">'+(ok?"○":"×")+
       '</span><span>'+(ok?"완벽한 순서예요! 4장 모두 +XP":"순서가 어긋났어요. 아래 연표로 확인하세요.")+'</span></div>'+
       '<div class="rail-line" style="margin-top:12px">'+g.sorted.map(function(f){
-        return '<div class="rl"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
+        return '<div class="rl"><span class="y'+(f.ya?' ya':'')+'">'+yl(f)+'</span><span class="dot"></span>'+
                '<div><div class="t">'+esc(f.t)+'</div><div class="s">'+f.d+'</div></div></div>';
       }).join("")+'</div>'+
       '<button class="btn wide" id="bNext" style="margin-top:14px">다음 →</button>';
@@ -1301,7 +1316,7 @@ function viewTimeline(){
       if(ei!==ce){ ce=ei;
         body+='<div class="era"><b>'+ERAS[ei].n+'</b><span>'+esc(ERAS[ei].t)+'</span></div>'; }
       var k=trackOf(f.u,f);
-      body+='<div class="rl k-'+k+'"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
+      body+='<div class="rl k-'+k+'"><span class="y'+(f.ya?' ya':'')+'">'+yl(f)+'</span><span class="dot"></span>'+
         '<div><div class="t">'+esc(f.t)+'<em class="tg">'+TRACKN[k]+'</em>'+(f.pr?'<em class="tg pr">프린트</em>':'')+'</div>'+
         '<div class="s">'+f.d+'</div></div></div>';
     });
@@ -1316,7 +1331,7 @@ function viewTimeline(){
       gg=gg.slice().sort(function(a,b){return a.y-b.y;});
       body+='<div class="sect" style="margin-top:20px">'+u.short+' · '+u.bk+'</div><div class="rail-line">'+
         gg.map(function(f){
-          return '<div class="rl"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
+          return '<div class="rl"><span class="y'+(f.ya?' ya':'')+'">'+yl(f)+'</span><span class="dot"></span>'+
             '<div><div class="t">'+esc(f.t)+'</div><div class="s">'+f.d+'</div></div></div>';
         }).join("")+'</div>';
     });

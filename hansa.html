@@ -597,6 +597,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .tlr.k-life .d{background:var(--org)}
 .a-learn .tlr.k-life{border-left:7px solid var(--org)}
 .a-learn .tlr.k-life .tg{background:#FAE4C2}
+.a-learn .tlr .tg.ya{font-family:inherit;font-size:11px;font-weight:700;vertical-align:1px;background:var(--cream);border:1px dashed var(--ink-3)}
+.a-learn .yr.ya{font-family:inherit;font-size:13px;font-weight:800}
 .a-learn .tlr.nol{background:var(--panel);box-shadow:none;border-style:dashed}
 .a-learn .tlr.nol .d{background:var(--panel-d)}
 .a-learn .tlr.nol .src{font-style:italic}
@@ -1716,6 +1718,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-sprint .card-b{padding:17px 15px}
 
 /* 연도 — 이 앱의 주인공 */
+.a-sprint .yr.ya{font-size:clamp(18px,6vw,24px)}
 .a-sprint .yr{font-family:var(--f-px);font-size:clamp(30px,10vw,44px);line-height:1.15;
   color:var(--ink);background:var(--yel);border:var(--bd) solid var(--ink);
   padding:9px 11px;display:inline-block;
@@ -1736,6 +1739,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-sprint .rl:first-child::before{top:18px}
 .a-sprint .rl:last-child::before{bottom:calc(100% - 18px)}
 .a-sprint .rl .y{font-family:var(--f-px);font-size:10px;text-align:right;color:var(--ink);padding-top:3px}
+.a-sprint .rl .y.ya{font-family:inherit;font-size:11px;font-weight:700;line-height:1.3;word-break:keep-all;padding-top:1px}
 .a-sprint .rl .dot{position:absolute;left:63px;top:14px;width:11px;height:11px;background:var(--red);
   border:2px solid var(--ink)}
 .a-sprint .rl .t{font-family:var(--f-h);font-size:16px;padding-left:13px;line-height:1.5}
@@ -2534,7 +2538,7 @@ const LESSONS=[
  {t:"fact",y:1936,n:"동북 항일 연군",b:"중국 공산당이 만주의 항일 유격대를 모아 <b>동북 인민 혁명군</b>(1933)을 만들었고, 여기에 많은 한인 사회주의자가 참여했어. 이 부대가 1936년에 <b>동북 항일 연군</b>으로 발전해.",
   why:"사회주의 계열도 항일이라는 목표는 같았어.",
   so:"소속 한인 유격대원들은 민족주의자와 함께 <b>조국 광복회</b>를 조직했어(1936)."},
- {t:"chain",title:"만주 무장 투쟁 전체 흐름",items:["봉오동(1920.6) · 청산리(1920.10)","간도 참변 · 자유시 참변","3부 성립(1924)","미쓰야 협정(1925) → 3부 통합 운동(1929)","국민부 → 조선 혁명군 (양세봉)","혁신 의회 → 한국 독립군 (지청천)","한중 연합 작전 · 동북 항일 연군"]},
+ {t:"chain",title:"만주 무장 투쟁 전체 흐름",items:["봉오동(1920.6) · 청산리(1920.10)","간도 참변 · 자유시 참변","3부 성립(1920년대 중반)","미쓰야 협정(1925) → 3부 통합 운동(1920년대 후반)","국민부 → 조선 혁명군 (양세봉)","혁신 의회 → 한국 독립군 (지청천)","한중 연합 작전 · 동북 항일 연군"]},
  {t:"hint",k:"양-남-영흥 / 지-북-쌍동대",b:"<em>양</em>세봉은 <em>남</em>만주에서 <em>영</em>릉가·<em>흥</em>경성. <em>지</em>청천은 <em>북</em>만주에서 <em>쌍</em>성보·<em>동</em>경성·<em>대</em>전자령. 이름 첫 글자로 묶으면 안 헷갈려."},
  {t:"pick",q:"영릉가 전투를 이끈 부대는?",c:["조선 혁명군","한국 독립군"],a:0,e:"양세봉의 조선 혁명군이야. 지청천의 한국 독립군은 쌍성보·동경성·대전자령."}
  ],
@@ -3330,7 +3334,7 @@ function peekCard(){
     if(!S.done[l.id])return;
     l.cards.forEach(function(c){
       if(c.t==="hint")pool.push({l:l,html:'<b class="k">'+esc(c.k)+'</b><span>'+c.b+'</span>'});
-      if(c.t==="fact")pool.push({l:l,html:'<b class="k" style="color:var(--ink)">'+c.y+' · '+esc(c.n)+'</b><span>'+c.so+'</span>'});
+      if(c.t==="fact")pool.push({l:l,html:'<b class="k" style="color:var(--ink)">'+yLab(c)+' · '+esc(c.n)+'</b><span>'+c.so+'</span>'});
       if(c.t==="chain")pool.push({l:l,html:'<b class="k" style="font-size:16px">'+esc(c.title)+'</b><span>'+
         c.items.map(function(x){return x.replace(/<[^>]+>/g,"");}).join(" → ")+'</span>'});
     });
@@ -3505,7 +3509,7 @@ function paintCard(){
        '<div class="bd">'+c.b+'</div></div>';
 
   if(c.t==="fact")
-    h+='<div class="card">'+prB(c)+'<span class="yr">'+c.y+'</span>'+
+    h+='<div class="card">'+prB(c)+'<span class="yr'+(YAPX[c.n]?' ya':'')+'">'+yLab(c)+'</span>'+
        '<div class="h">'+esc(c.n)+'</div><div class="bd">'+c.b+'</div>'+
        '<div class="wsblock">'+
          '<div class="ws why"><span class="lb">왜?</span><p>'+c.why+'</p></div>'+
@@ -3637,7 +3641,7 @@ function paintEnd(){
     '<div class="part">오늘 배운 것</div>'+
     '<div class="sumlist">'+facts.map(function(c,i){
       return '<div class="sum"><span class="n">'+(i+1)+'</span><span><b style="font-family:var(--f-d)">'+
-        esc(c.n)+'</b> · '+c.y+'년<br><span style="color:var(--tx2);font-size:14px">'+
+        esc(c.n)+'</b> · '+yLab(c)+(YAPX[c.n]?'':'년')+'<br><span style="color:var(--tx2);font-size:14px">'+
         c.so.replace(/<[^>]+>/g,"")+'</span></span></div>';
     }).join("")+'</div>'+
     (hint?'<div class="part">외울 때 이걸 떠올려</div><div class="rv"><div class="k">'+esc(hint.k)+'</div>'+
@@ -3753,6 +3757,17 @@ function eraOf(y){ for(var i=0;i<ERAS.length;i++) if(y<=ERAS[i].y) return i; ret
    3·1 운동 자체(s6), 파리 강화 회의(s1)는 무단 통치 칸.
    1930년 「식민지 공업화」는 민족 말살 통치 단원(s4)이라 1930년대 칸 */
 var ERA1919={s3:1,s5:1,s7:1,s9:1};
+/* 교과서가 한 해로 못 박지 않은 것(여러 해에 걸친 정책 · 흐름 · 설명) — [보여 줄 시기, 쌓아 가기 칸에 넣나, 통치↔저항 칸에 넣나].
+   카드 · 연표에는 숫자 대신 이 말을 보여 주고, 연도를 겨루는 판(시대 섞기 · 묶음 안 순서)에서는 뺀다.
+   숫자 y 는 연표 안 자리를 잡는 데만 쓴다. 시기 칸이 둘에 걸치면(예: 「1930년대」는 쌓아 가기 5·6칸) 그 판에서도 뺀다 */
+var YAPX={"우민화 교육":["1910년대",1,1],"기간 시설 건설":["1910년대",1,1],
+  "3부의 성립":["1920년대 중반",1,1],"3부의 성격":["1920년대 중반",1,1],"3부 통합 운동":["1920년대 후반",1,1],
+  "자치 운동":["1920년대 중반~1930년대 초",0,0],"황푸 군관 학교 입교":["1920년대 후반",1,1],
+  "혁명적 농민·노동 조합":["1930년대",0,1],"농촌 진흥 운동":["1930년대",0,1],"남면북양 정책":["1930년대",0,1],
+  "조선학 운동":["1930년대 중반",1,1],"신채호의 고대사 연구":["1920~30년대",0,0],"백남운의 사회 경제 사학":["1930년대",0,1],
+  "내선일체와 일선동조론":["1930년대",0,1],"신사 참배 강요":["1930년대",0,1],
+  "인력 수탈":["1930년대 후반~1945",0,1],"공출과 배급제":["1930년대 후반~1945",0,1]};
+function yLab(c){ var a=YAPX[c.n]; return a?a[0]:c.y; }
 function eraOfRow(r){
   if(r.y===1919) return (ERA1919[r.u]||r.k==="rule")?1:0;
   if(r.y===1930&&r.u==="s4") return 2;
@@ -3764,7 +3779,7 @@ function timeline(){
   LESSONS.forEach(function(l){
     l.cards.forEach(function(c,i){
       if(c.t==="fact"&&c.y!=null)
-        TL.push({y:c.y,n:c.n,u:l.u,lid:l.id,ci:i,lt:l.title,
+        TL.push({y:c.y,n:c.n,u:l.u,lid:l.id,ci:i,lt:l.title,ya:YAPX[c.n]?YAPX[c.n][0]:null,
                  k:c.tk||TRACK[l.u]||"world",pr:c.pr||0,po:c.po||0,
                  so:(c.so||"").replace(/<[^>]+>/g,"")});
     });
@@ -3774,7 +3789,7 @@ function timeline(){
   var has={}; LESSONS.forEach(function(l){ l.cards.forEach(function(c){ if(c.t==="fact")has[l.u+"|"+c.n]=1; }); });
   TL_EXTRA.forEach(function(r){
     if(has[r[0]+"|"+r[2]])return;
-    TL.push({y:r[1],n:r[2],u:r[0],lid:null,ci:null,lt:UMAP[r[0]].n+" · "+UMAP[r[0]].bk,
+    TL.push({y:r[1],n:r[2],u:r[0],lid:null,ci:null,lt:UMAP[r[0]].n+" · "+UMAP[r[0]].bk,ya:YAPX[r[2]]?YAPX[r[2]][0]:null,
              k:r[4]||TRACK[r[0]]||"world",so:r[3]});
   });
   /* 같은 해 안에서는 시기(1919년의 3·1 운동 전·후) → 교과서 차례 (정렬이 안정적이라 차례는 그대로 남는다) */
@@ -3825,7 +3840,7 @@ function vTimeline(){
       html+='<div class="tly'+(hide?" hid":"")+'"><b data-y="'+r.y+'">'+(hide?"·····":r.y)+'</b><i></i></div>'; }
     html+='<button class="tlr k-'+r.k+(r.lid?(S.done[r.lid]?"":" new"):" nol")+'" data-i="'+i+'">'+
       '<span class="d"></span><span class="x">'+
-      '<b>'+esc(r.n)+'<em class="tg">'+TRACKN[r.k]+'</em></b>'+
+      '<b>'+esc(r.n)+'<em class="tg">'+TRACKN[r.k]+'</em>'+(r.ya?'<em class="tg ya">'+esc(r.ya)+'</em>':'')+'</b>'+
       (desc&&r.so?'<small class="so">'+esc(r.so)+'</small>':'')+
       '<small class="src">'+(r.lid?'수업 · '+esc(r.lt):esc(r.lt)+' · 수업 준비 중')+(r.pr?' '+prB(r):'')+'</small></span></button>';
   });
@@ -4301,7 +4316,7 @@ function buildIndex(){
     IDX.push({t:"수업",lid:l.id,li:li,ci:0,head:l.title,body:l.hook});
     l.cards.forEach(function(c,ci){
       var head="",body="";
-      if(c.t==="fact"){head=c.n+" · "+c.y+"년";body=c.b+" "+c.why+" "+c.so;}
+      if(c.t==="fact"){head=c.n+" · "+yLab(c)+(YAPX[c.n]?"":"년");body=c.b+" "+c.why+" "+c.so;}
       else if(c.t==="hint"){head=c.k;body=c.b;}
       else if(c.t==="chain"){head=c.title;body=c.items.join(" ");}
       else if(c.t==="compare"){head=c.title;body=c.l.n+" "+c.l.p.join(" ")+" "+c.r.n+" "+c.r.p.join(" ");}
@@ -5997,7 +6012,7 @@ function kBtn(k){var on=kOn(k);
   return '<button class="kbtn'+(on?" on":"")+'" data-k="'+esc(k)+'" aria-pressed="'+on+'">'+(on?"★ 킵함":"☆ 킵")+'</button>';}
 /* 수업 카드 한 장을 머리말 + 본문으로 줄인다(찾기 색인과 같은 규칙) */
 function kCardText(c){
-  if(c.t==="fact")return {h:c.n+" · "+c.y,b:c.b+'<p class="kso">→ '+c.so+'</p>'};
+  if(c.t==="fact")return {h:c.n+" · "+yLab(c),b:c.b+'<p class="kso">→ '+c.so+'</p>'};
   if(c.t==="hint")return {h:c.k,b:c.b};
   if(c.t==="chain")return {h:c.title,b:c.items.join("<br>")};
   if(c.t==="compare")return {h:c.title,b:'<b>'+c.l.n+'</b> — '+c.l.p.join(" · ")+'<br><b>'+c.r.n+'</b> — '+c.r.p.join(" · ")};
@@ -6090,15 +6105,15 @@ var FLOWRAW=[
  ["f07","s6","L12","불씨가 모인 순서",[["민족 자결주의 제창","1918","약소민족에게 희망"],["김규식, 파리로","1919","신한청년당이 파리 강화 회의에 대표 파견"],["2·8 독립 선언","1919","도쿄 유학생의 선언이 국내를 자극"],["3·1 운동","1919","고종의 국장을 앞두고 만세"],["대한민국 임시 정부 수립","1919","독립운동을 이끌 정부가 필요해졌어"]]],
  ["f08","s6","L13","3·1 운동 그날부터",[["태화관·탑골 공원의 독립 선언","1919. 3. 1.","민족 대표와 학생·시민"],["전국 도시로 확산","3월","상인은 가게를 닫고(철시) 노동자는 파업"],["농촌 장터로","3~4월","탄압에 맞서 무력 투쟁으로 발전"],["일제의 문화 통치 전환","1919. 8.~","무력만으로는 안 된다는 걸 깨달음"]]],
  ["f09","s7","L17","임시 정부의 위기와 수습",[["통합 임시 정부 출범","1919. 9.","한성 정부 법통 + 상하이 위치"],["연통제·교통국 발각","1920년대 초","국내와의 연결이 끊김"],["국민 대표 회의","1923","개조파 vs 창조파 → 결렬"],["이승만 탄핵","1925","임시 대통령을 물러나게 함"],["국무령 중심 집단 지도 체제","1925","탄핵 직후 헌법을 고쳐 흔들리던 정부를 추스름"]]],
- ["f10","s8","L20","만주 무장 투쟁 1920년대",[["봉오동 전투","1920. 6.","홍범도의 대한 독립군 승리"],["청산리 대첩","1920. 10.","김좌진·홍범도 연합 부대 대승"],["자유시 참변","1921","러시아 적군에게 무장 해제"],["3부 성립","1920년대 중반","참의부·정의부·신민부로 재정비"],["미쓰야 협정","1925","일제와 만주 군벌이 손잡고 독립군 탄압"],["3부 통합 운동","1929","국민부와 혁신 의회로"]]],
- ["f11","s8","L20","1930년대 만주 한중 연합",[["3부 통합 운동","1929","국민부 → 조선 혁명군 / 혁신 의회 → 한국 독립군"],["만주 사변","1931","일본의 침략에 중국군과 손잡을 이유가 생김"],["한중 연합 작전","1932","영릉가(조선 혁명군) · 쌍성보(한국 독립군)"],["대전자령 전투","1933","한국 독립군의 대승"],["지청천 등 중국 관내로","1930년대 중반","임시 정부의 요청으로 이동"]]],
+ ["f10","s8","L20","만주 무장 투쟁 1920년대",[["봉오동 전투","1920. 6.","홍범도의 대한 독립군 승리"],["청산리 대첩","1920. 10.","김좌진·홍범도 연합 부대 대승"],["자유시 참변","1921","러시아 적군에게 무장 해제"],["3부 성립","1920년대 중반","참의부·정의부·신민부로 재정비"],["미쓰야 협정","1925","일제와 만주 군벌이 손잡고 독립군 탄압"],["3부 통합 운동","1920년대 후반","국민부와 혁신 의회로"]]],
+ ["f11","s8","L20","1930년대 만주 한중 연합",[["3부 통합 운동","1920년대 후반","국민부 → 조선 혁명군 / 혁신 의회 → 한국 독립군"],["만주 사변","1931","일본의 침략에 중국군과 손잡을 이유가 생김"],["한중 연합 작전","1932","영릉가(조선 혁명군) · 쌍성보(한국 독립군)"],["대전자령 전투","1933","한국 독립군의 대승"],["지청천 등 중국 관내로","1930년대 중반","임시 정부의 요청으로 이동"]]],
  ["f12","s9","L21","의열단의 길",[["의열단 결성","1919","만주 지린, 김원봉"],["김익상, 조선 총독부 투탄","1921","식민 통치의 심장을 겨눔"],["「조선 혁명 선언」","1923","신채호 — 민중 직접 혁명을 지침으로"],["김지섭, 일본 왕궁 투탄","1924","일본 한복판까지"],["나석주, 동양 척식 주식회사 투탄","1926","수탈 기관을 겨눔"],["조선 혁명 간부 학교","1932","개인 투쟁의 한계 → 조직적 무장 투쟁"]]],
  ["f13","s9","L22","1932년 한 해",[["한인 애국단 조직","1931","침체한 임시 정부를 살리려고 김구가"],["이봉창 의거","1932. 1.","도쿄에서 일왕 마차에 폭탄"],["상하이 사변","1932. 1.","이 의거를 구실로 일제가 상하이 침략"],["윤봉길 의거","1932. 4.","훙커우 공원 전승 기념식장"],["중국 국민당 정부의 지원","1932~","한중 공동 항일의 계기"]]],
- ["f14","s10","L23","실력 양성 운동",[["물산 장려 운동","1920~","평양, 조만식 — 토산품 애용"],["민립 대학 설립 운동","1923","이상재 — 1천만 원 모금"],["자치 운동 등장","1924~","성과가 없자 일부가 일제와 타협"],["문자 보급 운동","1929","『조선일보』 — 아는 것이 힘"],["브나로드 운동","1931","『동아일보』 — 민중 속으로"]]],
+ ["f14","s10","L23","실력 양성 운동",[["물산 장려 운동","1920~","평양, 조만식 — 토산품 애용"],["민립 대학 설립 운동","1923","이상재 — 1천만 원 모금"],["자치 운동 등장","1920년대 중반~","성과가 없자 일부가 일제와 타협"],["문자 보급 운동","1929","『조선일보』 — 아는 것이 힘"],["브나로드 운동","1931","『동아일보』 — 민중 속으로"]]],
  ["f15","s11","L24","농민·노동 운동",[["암태도 소작 쟁의","1923","고율 소작료에 맞서 1년여 투쟁"],["조선 농민·노동 총동맹","1927","전국 조직으로"],["원산 총파업","1929","일제 강점기 최대 노동 운동"],["혁명적 농민·노동 조합","1930년대","대공황 뒤 비합법 투쟁으로"],["점차 위축","1937~","중일 전쟁 뒤 강력한 탄압"]]],
  ["f16","s12","L25","학생 항일 운동",[["조선 청년 총동맹","1924","청년 운동을 하나로"],["6·10 만세 운동","1926. 6.","순종의 장례일"],["성진회","1926. 11.","광주의 비밀 결사 → 독서회"],["신간회 창립","1927","좌우 합작"],["광주 학생 항일 운동","1929","3·1 운동 이후 최대 규모"]]],
  ["f17","s13","L26","신간회가 생기고 사라지기까지",[["제1차 국공 합작","1924","이념이 달라도 손잡을 수 있다"],["6·10 만세 운동","1926. 6.","좌우 연대의 경험"],["정우회 선언","1926. 11.","사회주의 쪽이 먼저 손을 내밈"],["신간회 창립","1927","최대 규모 합법 항일 단체"],["광주 학생 운동 진상 조사단","1929","민중 대회 추진 → 탄압"],["신간회 해소","1931","좌우 연대가 무너짐"]]],
- ["f18","s14","L27","나라 밖 동포와 농촌",[["간도 참변","1920","일본군이 간도 한인 학살"],["관동 대지진 학살","1923","유언비어로 재일 한인 학살"],["농촌 진흥 운동","1932","대공황 뒤 농촌 통제"],["연해주 한인 강제 이주","1937","소련이 중앙아시아로"]]],
+ ["f18","s14","L27","나라 밖 동포와 농촌",[["간도 참변","1920","일본군이 간도 한인 학살"],["관동 대지진 학살","1923","유언비어로 재일 한인 학살"],["농촌 진흥 운동","1930년대","대공황 뒤 농촌 통제"],["연해주 한인 강제 이주","1937","소련이 중앙아시아로"]]],
  ["f19","s16","L30","말과 역사를 지킨 흐름",[["조선어 연구회","1921","가갸날, 『한글』"],["조선사 편수회","1925","일제가 식민 사관으로 『조선사』"],["조선어 학회","1931","맞춤법 통일안, 큰사전 추진"],["진단 학회","1934","실증 사학"],["조선어 학회 사건","1942","회원 투옥, 원고 압수"]]],
  ["f20","s17","L31","중국 관내 항일 전선",[["민족 혁명당","1935","난징, 김원봉 — 통일 전선 정당"],["두 연합체로 재편","1937","중일 전쟁 — 김구 쪽 / 김원봉 쪽"],["조선 의용대","1938","우한 — 중국 관내 최초의 한인 부대"],["김구·김원봉 공개 통신","1939","통합을 호소"],["조선 의용대 화북 지대","1941","타이항산, 호가장 전투"],["김원봉, 한국광복군 합류","1942","임시 정부가 좌우 합작"]]],
  ["f21","s18","L32","충칭 임시 정부",[["충칭 정착·한국광복군 창설","1940","지청천 총사령관"],["대한민국 건국 강령","1941. 11.","삼균주의"],["대일 선전 포고","1941. 12.","아시아·태평양 전쟁 직후"],["미얀마·인도 전선 파견","1943","영국군의 요청"],["국내 진공 작전 준비","1945","OSS와 국내 정진군 — 투입 직전 광복"]]],
@@ -6141,6 +6156,11 @@ var OSKIP={};
  "임시 정부 수립의 계기","통치 방식의 전환","민족 운동 주체의 확대","세계사적 의의","세 곳의 임시 정부","왜 상하이였을까",
  "통합의 방식","초대 각료","3부의 성격","물산 장려 운동에 대한 비판","박은식","전체주의의 확산"].forEach(function(n){OSKIP[n]=1;});
 function oRows(){ return timeline().filter(function(r){return r.lid&&!OSKIP[r.n];}); }
+/* 연도로 줄 세우는 판은 대략의 시기만 있는 사실을 뺀다. 칸에 넣는 판은 칸이 하나로 정해지는 것만 */
+function oRowsExact(){ return oRows().filter(function(r){return !r.ya;}); }
+function oRowsStack(){ return oRows().filter(function(r){return !r.ya||YAPX[r.n][1];}); }
+function oRowsPair(){ return oRows().filter(function(r){return !r.ya||YAPX[r.n][2];}); }
+function oYL(r){ return r.ya||String(r.y); }
 function oShuffle(a){a=a.slice();shuffleArr(a);return a;}
 /* 한 번 틀린 사실은 다음 판에 먼저 — 나머지는 섞는다 */
 function oPickFacts(rows,n,opt){
@@ -6162,14 +6182,14 @@ function oStartFlow(id){
   oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oStartMix(){
-  var rows=oPickFacts(oRows(),5,{distinctYear:true,distinctUnit:true});
+  var rows=oPickFacts(oRowsExact(),5,{distinctYear:true,distinctUnit:true});
   rows.sort(function(a,b){return a.y-b.y;});
   O={mode:"order",kind:"mix",title:"시대 섞기",sub:"여러 단원에서 다섯 장",
      items:rows.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),sub:UMAP[r.u].n};})};
   oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oStartBlockOrder(b){
-  var st=oS().stk, rows=oRows().filter(function(r){return st.p[tlKey(r)]&&blockOf(r.y)===b;});
+  var st=oS().stk, rows=oRowsExact().filter(function(r){return st.p[tlKey(r)]&&blockOf(r.y)===b;});
   var pick=oPickFacts(rows,5,{distinctYear:true}); pick.sort(function(a,b){return a.y-b.y;});
   O={mode:"order",kind:"block",title:BLOCKS[b].n,sub:"묶음 안 순서 · "+BLOCKS[b].lab,
      items:pick.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),sub:UMAP[r.u].n};})};
@@ -6190,26 +6210,26 @@ function oInitOrder(){
   O.pos=ord; O.lock={}; O.tries=0; O.sel=null; O.done=false; O.wrongAt={};
 }
 function oStartPair(){
-  var rows=oRows().filter(function(r){return r.y!==1930;});
+  var rows=oRowsPair().filter(function(r){return r.y!==1930;});
   var zones=[{n:"1910년대~3·1 운동",t:"무단 통치"},{n:"3·1 운동 뒤~1920년대",t:"'문화 정치'"},{n:"만주 사변~1945",t:"민족 말살 · 전시 동원"}];
   var cards=[];
   zones.forEach(function(z,i){
     var inE=function(r){return eraOfRow(r)===i;};
     z.anchor=oShuffle(rows.filter(function(r){return r.k==="rule"&&inE(r);})).slice(0,2).map(function(r){return r.n;});
     oPickFacts(rows.filter(function(r){return r.k==="resist"&&inE(r);}),2,{}).forEach(function(r){
-      cards.push({n:r.n,y:String(r.y),w:r.so,key:tlKey(r),z:i,sub:UMAP[r.u].n});});
+      cards.push({n:r.n,y:oYL(r),w:r.so,key:tlKey(r),z:i,sub:UMAP[r.u].n});});
   });
   O={mode:"bucket",kind:"pair",title:"통치 ↔ 저항",sub:"일제가 이럴 때 우리는?",zones:zones,items:oShuffle(cards)};
   oInitBucket(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oStartStack(){
-  var st=oS().stk, rows=oRows();
+  var st=oS().stk, rows=oRowsStack();
   var left=rows.filter(function(r){return !st.p[tlKey(r)];});
   if(!left.length){ go("ordStack",null,true); return; }
   var pick=oPickFacts(left,5,{distinctUnit:true});
   O={mode:"bucket",kind:"stack",title:"사건을 묶음에 넣기",sub:"쌓아 가기",
      zones:BLOCKS.map(function(b){return {n:b.lab,t:b.n,a:b.a,z:b.z};}),
-     items:oShuffle(pick.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),z:blockOf(r.y),sub:UMAP[r.u].n};}))};
+     items:oShuffle(pick.map(function(r){return {n:r.n,y:oYL(r),w:r.so,key:tlKey(r),z:blockOf(r.y),sub:UMAP[r.u].n};}))};
   oInitBucket(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oInitBucket(){ O.at={}; O.lock={}; O.tries=0; O.sel=null; O.done=false; O.wrongAt={}; }
@@ -6395,7 +6415,7 @@ function vOrd(){
   var o=oS(), sets=o.sets;
   var ok=FLOWS.filter(function(f){return sets[f.id]&&sets[f.id].b>=1;}).length;
   var re=FLOWS.filter(function(f){return sets[f.id]&&sets[f.id].b===0;}).length;
-  var rows=oRows(), pl=rows.filter(function(r){return o.stk.p[tlKey(r)];}).length;
+  var rows=oRowsStack(), pl=rows.filter(function(r){return o.stk.p[tlKey(r)];}).length;
   var fm=Object.keys(o.fm).filter(function(k){return o.fm[k]>0;}).length;
   var h='<p class="note" style="margin-bottom:12px">연도는 가려 두고 <b>흐름</b>만 맞춰. 맞추고 나면 연도와 \'왜 다음인지\'가 이어서 보여. '+
       '틀린 것은 다음 판에 먼저 다시 나와.</p>'+
@@ -6423,7 +6443,7 @@ function oMode(id,t,s,n){
 }
 function vOStack(){
   titleEl.textContent="쌓아 가기";
-  var st=oS().stk, rows=oRows();
+  var st=oS().stk, rows=oRowsStack();
   if(!st.o){
     view.innerHTML='<div class="ohead"><div class="eyebrow">쌓아 가기</div><div class="h sm">먼저 큰 묶음 여섯 개를 시기 순서로</div>'+
       '<p class="note">Ⅰ단원 전체를 여섯 시기로 나눴어. 묶음마다 <b>문을 여는 사건(▶)</b>과 <b>문을 닫는 사건(◀)</b>이 있어. '+
@@ -6445,7 +6465,7 @@ function vOStack(){
       '<small>'+esc(b.lab)+' · 채운 사건 '+got.length+' / '+inB.length+'</small></span></div>'+
       '<div class="ozb"><span>▶ '+esc(b.a)+'</span><span>◀ '+esc(b.z)+'</span></div>'+
       (got.length?'<div class="obl">'+got.map(function(r){return '<span>'+esc(r.n)+'</span>';}).join("")+'</div>':'')+
-      (got.length>=4?'<button class="prgo" data-b="'+i+'">이 묶음 안 순서 맞추기 '+IC.chev+'</button>':'')+'</div>';
+      (got.filter(function(r){return !r.ya;}).length>=4?'<button class="prgo" data-b="'+i+'">이 묶음 안 순서 맞추기 '+IC.chev+'</button>':'')+'</div>';
   });
   h+='<div class="sticky"><div class="row"><button class="cta ghost" id="osr">큰 묶음 다시</button>'+
      '<button class="cta" id="osn"'+(pl>=rows.length?' disabled':'')+'>'+(pl>=rows.length?"다 채웠어!":"사건 5장 넣기")+'</button></div></div>';
@@ -6821,9 +6841,9 @@ const QUESTIONS=[
 {id:"s1-07-ev",unit:"s1",type:"mc",question:"일본이 루거우차오 사건을 빌미로 일으켰으며 난징 대학살을 저질렀다.",choices:["대공황과 전체주의","중일 전쟁","제1차 세계 대전","윌슨의 14개조 평화 원칙"],answer:1,explain:"중일 전쟁 · 1937년",era:"세계대전의 소용돌이"},
 {id:"s1-07-yr",unit:"s1",type:"mc",question:"「중일 전쟁」은(는) 몇 년의 일일까?",choices:["1914","1918","1939","1937"],answer:3,explain:"일본이 루거우차오 사건을 빌미로 일으켰으며 난징 대학살을 저질렀다.",era:"세계대전의 소용돌이"},
 {id:"s1-07-bl",unit:"s1",type:"mc",question:"[중일 전쟁] 일본이 　____　을 빌미로 일으켰으며 난징 대학살을 저질렀다.",choices:["군비 축소","베르사유 조약","진주만","루거우차오 사건"],answer:3,explain:"중일 전쟁 · 1937년",era:"세계대전의 소용돌이"},
-{id:"s1-08-ev",unit:"s1",type:"mc",question:"독일·일본·이탈리아가 3국 방공 협정을 계기로 추축국을 이루고 대외 침략을 본격화하였다.",choices:["제2차 세계 대전","워싱턴 회의","추축국 형성","중일 전쟁"],answer:2,explain:"추축국 형성 · 1936년",era:"세계대전의 소용돌이"},
-{id:"s1-08-yr",unit:"s1",type:"mc",question:"「추축국 형성」은(는) 몇 년의 일일까?",choices:["1931","1936","1929","1937"],answer:1,explain:"독일·일본·이탈리아가 3국 방공 협정을 계기로 추축국을 이루고 대외 침략을 본격화하였다.",era:"세계대전의 소용돌이"},
-{id:"s1-08-bl",unit:"s1",type:"mc",question:"[추축국 형성] 독일·일본·이탈리아가 　____　을 계기로 추축국을 이루고 대외 침략을 본격화하였다.",choices:["민족 자결주의","3국 방공 협정","진주만","군비 축소"],answer:1,explain:"추축국 형성 · 1936년",era:"세계대전의 소용돌이"},
+{id:"s1-08-ev",unit:"s1",type:"mc",question:"독일·일본·이탈리아가 3국 방공 협정을 계기로 추축국을 이루고 대외 침략을 본격화하였다.",choices:["제2차 세계 대전","워싱턴 회의","추축국 형성","중일 전쟁"],answer:2,explain:"추축국 형성 · 1937년",era:"세계대전의 소용돌이"},
+{id:"s1-08-yr",unit:"s1",type:"mc",question:"「추축국 형성」은(는) 몇 년의 일일까?",choices:["1931","1936","1929","1937"],answer:3,explain:"독일·일본·이탈리아가 3국 방공 협정을 계기로 추축국을 이루고 대외 침략을 본격화하였다.",era:"세계대전의 소용돌이"},
+{id:"s1-08-bl",unit:"s1",type:"mc",question:"[추축국 형성] 독일·일본·이탈리아가 　____　을 계기로 추축국을 이루고 대외 침략을 본격화하였다.",choices:["민족 자결주의","3국 방공 협정","진주만","군비 축소"],answer:1,explain:"추축국 형성 · 1937년",era:"세계대전의 소용돌이"},
 {id:"s1-09-ev",unit:"s1",type:"mc",question:"독일이 독소 불가침 조약을 맺은 뒤 폴란드를 기습 침공하자 영국과 프랑스가 선전 포고하며 시작되었다.",choices:["추축국 형성","만주 사변","제2차 세계 대전","대공황과 전체주의"],answer:2,explain:"제2차 세계 대전 · 1939년",era:"세계대전의 소용돌이"},
 {id:"s1-09-yr",unit:"s1",type:"mc",question:"「제2차 세계 대전」은(는) 몇 년의 일일까?",choices:["1939","1931","1914","1937"],answer:0,explain:"독일이 독소 불가침 조약을 맺은 뒤 폴란드를 기습 침공하자 영국과 프랑스가 선전 포고하며 시작되었다.",era:"세계대전의 소용돌이"},
 {id:"s1-09-bl",unit:"s1",type:"mc",question:"[제2차 세계 대전] 독일이 독소 불가침 조약을 맺은 뒤 　____　를 기습 침공하자 영국과 프랑스가 선전 포고하며 시작되었다.",choices:["군비 축소","폴란드","민족 자결주의","사라예보 사건"],answer:1,explain:"제2차 세계 대전 · 1939년",era:"세계대전의 소용돌이"},
@@ -6836,8 +6856,8 @@ const QUESTIONS=[
 {id:"s2-01-bl",unit:"s2",type:"mc",question:"[중추원] 조선 총독의 자문 기구에 불과했고 친일파로 구성되어 3·1 운동 전까지 　____　.",choices:["반출","한 번도 소집되지 않았다","실업 교육","조선인에 한하여"],answer:1,explain:"중추원 · 1910년",era:"칼을 찬 교사의 시대"},
 {id:"s2-02-ev",unit:"s2",type:"mc",question:"헌병 사령관을 경무 총감으로 임명했으며 헌병과 경찰이 정식 재판 없이 즉결 심판권을 행사해 구류·벌금·태형을 내릴 수 있었다.",choices:["우민화 교육","경찰범 처벌 규칙","회사령 공포","헌병 경찰제"],answer:3,explain:"헌병 경찰제 · 1910년",era:"칼을 찬 교사의 시대"},
 {id:"s2-02-bl",unit:"s2",type:"mc",question:"[헌병 경찰제] 헌병 사령관을 경무 총감으로 임명했으며 헌병과 경찰이 정식 재판 없이 　____　을 행사해 구류·벌금·태형을 내릴 수 있었다.",choices:["허가","조선인에 한하여","실업 교육","즉결 심판권"],answer:3,explain:"헌병 경찰제 · 1910년",era:"칼을 찬 교사의 시대"},
-{id:"s2-03-ev",unit:"s2",type:"mc",question:"한국인을 식민 지배에 순응시키려 교육 체계를 보통 교육과 실업 교육 위주로 편성했고, 관리와 교사에게도 제복을 입고 칼을 차게 했다.",choices:["토지 조사령과 토지 조사 사업","조선 총독부 설치","우민화 교육","조선 태형령"],answer:2,explain:"우민화 교육 · 1911년",era:"칼을 찬 교사의 시대"},
-{id:"s2-03-bl",unit:"s2",type:"mc",question:"[우민화 교육] 한국인을 식민 지배에 순응시키려 교육 체계를 보통 교육과 　____　 위주로 편성했고, 관리와 교사에게도 제복을 입고 칼을 차게 했다.",choices:["실업 교육","반출","즉결 심판권","조선인에 한하여"],answer:0,explain:"우민화 교육 · 1911년",era:"칼을 찬 교사의 시대"},
+{id:"s2-03-ev",unit:"s2",type:"mc",question:"한국인을 식민 지배에 순응시키려 교육 체계를 보통 교육과 실업 교육 위주로 편성했고, 관리와 교사에게도 제복을 입고 칼을 차게 했다.",choices:["토지 조사령과 토지 조사 사업","조선 총독부 설치","우민화 교육","조선 태형령"],answer:2,explain:"우민화 교육 · 1910년대",era:"칼을 찬 교사의 시대"},
+{id:"s2-03-bl",unit:"s2",type:"mc",question:"[우민화 교육] 한국인을 식민 지배에 순응시키려 교육 체계를 보통 교육과 　____　 위주로 편성했고, 관리와 교사에게도 제복을 입고 칼을 차게 했다.",choices:["실업 교육","반출","즉결 심판권","조선인에 한하여"],answer:0,explain:"우민화 교육 · 1910년대",era:"칼을 찬 교사의 시대"},
 {id:"s2-04-ev",unit:"s2",type:"mc",question:"제13조에 본령은 조선인에 한하여 적용한다고 못 박은 노골적인 차별 법령이다.",choices:["경찰범 처벌 규칙","조선 총독부 설치","헌병 경찰제","조선 태형령"],answer:3,explain:"조선 태형령 · 1912년",era:"칼을 찬 교사의 시대"},
 {id:"s2-04-bl",unit:"s2",type:"mc",question:"[조선 태형령] 제13조에 본령은 　____　 적용한다고 못 박은 노골적인 차별 법령이다.",choices:["조선인에 한하여","동양 척식 주식회사","허가","한 번도 소집되지 않았다"],answer:0,explain:"조선 태형령 · 1912년",era:"칼을 찬 교사의 시대"},
 {id:"s2-05-ev",unit:"s2",type:"mc",question:"함부로 대중을 모아 청원한 자, 경찰의 지시를 어긴 자 등을 구류 또는 벌금에 처하도록 해 일상까지 통제했다.",choices:["경찰범 처벌 규칙","회사령 공포","우민화 교육","토지 조사 사업의 결과"],answer:0,explain:"경찰범 처벌 규칙 · 1912년",era:"칼을 찬 교사의 시대"},
@@ -6848,8 +6868,8 @@ const QUESTIONS=[
 {id:"s2-07-bl",unit:"s2",type:"mc",question:"[토지 조사 사업의 결과] 총독부는 지세 수입이 늘고 소유권이 불분명한 토지와 국공유지를 차지했으며, 그 땅은 　____　나 일본인에게 헐값으로 넘어갔다.",choices:["일왕에게 직속","동양 척식 주식회사","즉결 심판권","반출"],answer:1,explain:"토지 조사 사업의 결과 · 1918년",era:"칼을 찬 교사의 시대"},
 {id:"s2-08-ev",unit:"s2",type:"mc",question:"회사 설립에 조선 총독의 허가를 받게 하고 총독의 명령만으로 해산까지 시킬 수 있었으며, 어업과 광업에도 허가제를 적용했다.",choices:["회사령 공포","중추원","경찰범 처벌 규칙","조선 총독부 설치"],answer:0,explain:"회사령 공포 · 1910년",era:"칼을 찬 교사의 시대"},
 {id:"s2-08-bl",unit:"s2",type:"mc",question:"[회사령 공포] 회사 설립에 조선 총독의 　____　를 받게 하고 총독의 명령만으로 해산까지 시킬 수 있었으며, 어업과 광업에도 허가제를 적용했다.",choices:["반출","기간 안에 신고","허가","한 번도 소집되지 않았다"],answer:2,explain:"회사령 공포 · 1910년",era:"칼을 찬 교사의 시대"},
-{id:"s2-09-ev",unit:"s2",type:"mc",question:"철도·도로·항만·통신망을 새로 놓았는데 일본 상품의 유통을 넓히고 한국의 식량과 자원을 쉽게 반출하려는 의도였다.",choices:["기간 시설 건설","우민화 교육","토지 조사령과 토지 조사 사업","조선 태형령"],answer:0,explain:"기간 시설 건설 · 1914년",era:"칼을 찬 교사의 시대"},
-{id:"s2-09-bl",unit:"s2",type:"mc",question:"[기간 시설 건설] 철도·도로·항만·통신망을 새로 놓았는데 일본 상품의 유통을 넓히고 한국의 식량과 자원을 쉽게 　____　하려는 의도였다.",choices:["일왕에게 직속","동양 척식 주식회사","기간 안에 신고","반출"],answer:3,explain:"기간 시설 건설 · 1914년",era:"칼을 찬 교사의 시대"},
+{id:"s2-09-ev",unit:"s2",type:"mc",question:"철도·도로·항만·통신망을 새로 놓았는데 일본 상품의 유통을 넓히고 한국의 식량과 자원을 쉽게 반출하려는 의도였다.",choices:["기간 시설 건설","우민화 교육","토지 조사령과 토지 조사 사업","조선 태형령"],answer:0,explain:"기간 시설 건설 · 1910년대",era:"칼을 찬 교사의 시대"},
+{id:"s2-09-bl",unit:"s2",type:"mc",question:"[기간 시설 건설] 철도·도로·항만·통신망을 새로 놓았는데 일본 상품의 유통을 넓히고 한국의 식량과 자원을 쉽게 　____　하려는 의도였다.",choices:["일왕에게 직속","동양 척식 주식회사","기간 안에 신고","반출"],answer:3,explain:"기간 시설 건설 · 1910년대",era:"칼을 찬 교사의 시대"},
 {id:"s3-00-ev",unit:"s3",type:"mc",question:"3·1 운동으로 무단 통치의 한계가 드러나자 새 총독이 시정 방침을 발표하며 기만적인 문화 정치를 표방했다.",choices:["사이토 마코토의 부임","조선일보·동아일보 창간","회사령 폐지","일본 상품 관세 철폐"],answer:0,explain:"사이토 마코토의 부임 · 1919년",era:"가면을 쓴 통치"},
 {id:"s3-00-yr",unit:"s3",type:"mc",question:"「사이토 마코토의 부임」은(는) 몇 년의 일일까?",choices:["1919","1923","1920","1926"],answer:0,explain:"3·1 운동으로 무단 통치의 한계가 드러나자 새 총독이 시정 방침을 발표하며 기만적인 문화 정치를 표방했다.",era:"가면을 쓴 통치"},
 {id:"s3-00-bl",unit:"s3",type:"mc",question:"[사이토 마코토의 부임] 3·1 운동으로 무단 통치의 한계가 드러나자 새 총독이 시정 방침을 발표하며 기만적인 　____　를 표방했다.",choices:["오히려","수리 조합비","민족 분열","문화 정치"],answer:3,explain:"사이토 마코토의 부임 · 1919년",era:"가면을 쓴 통치"},
@@ -6874,9 +6894,9 @@ const QUESTIONS=[
 {id:"s3-07-ev",unit:"s3",type:"mc",question:"일본의 쌀 부족을 메우려 실시했다. 생산량은 늘었지만 목표에 못 미쳤고 반출은 예정대로 진행되어 한국의 식량 사정이 악화되었다.",choices:["회사령 폐지","도 평의회와 부·면 협의회","산미 증식 계획","문관 총독 임명 관제 개정"],answer:2,explain:"산미 증식 계획 · 1920년",era:"가면을 쓴 통치"},
 {id:"s3-07-yr",unit:"s3",type:"mc",question:"「산미 증식 계획」은(는) 몇 년의 일일까?",choices:["1920","1925","1919","1923"],answer:0,explain:"일본의 쌀 부족을 메우려 실시했다. 생산량은 늘었지만 목표에 못 미쳤고 반출은 예정대로 진행되어 한국의 식량 사정이 악화되었다.",era:"가면을 쓴 통치"},
 {id:"s3-07-bl",unit:"s3",type:"mc",question:"[산미 증식 계획] 일본의 쌀 부족을 메우려 실시했다. 생산량은 늘었지만 목표에 못 미쳤고 반출은 예정대로 진행되어 한국의 　____　이 악화되었다.",choices:["의결권","신고제","식량 사정","수리 조합비"],answer:2,explain:"산미 증식 계획 · 1920년",era:"가면을 쓴 통치"},
-{id:"s3-08-ev",unit:"s3",type:"mc",question:"비료 대금과 수리 조합비 등 증산 비용이 농민에게 전가되어 자작농이 소작농이나 화전민·토막민으로 전락하고 만주·연해주로 이주하기도 했다.",choices:["사이토 마코토의 부임","조선일보·동아일보 창간","도 평의회와 부·면 협의회","산미 증식 계획의 부담"],answer:3,explain:"산미 증식 계획의 부담 · 1926년",era:"가면을 쓴 통치"},
+{id:"s3-08-ev",unit:"s3",type:"mc",question:"비료 대금과 수리 조합비 등 증산 비용이 농민에게 전가되어 자작농이 소작농이나 화전민·토막민으로 전락하고 만주·연해주로 이주하기도 했다.",choices:["사이토 마코토의 부임","조선일보·동아일보 창간","도 평의회와 부·면 협의회","산미 증식 계획의 부담"],answer:3,explain:"산미 증식 계획의 부담 · 1920년대",era:"가면을 쓴 통치"},
 {id:"s3-08-yr",unit:"s3",type:"mc",question:"「산미 증식 계획의 부담」은(는) 몇 년의 일일까?",choices:["1919","1926","1923","1921"],answer:1,explain:"비료 대금과 수리 조합비 등 증산 비용이 농민에게 전가되어 자작농이 소작농이나 화전민·토막민으로 전락하고 만주·연해주로 이주하기도 했다.",era:"가면을 쓴 통치"},
-{id:"s3-08-bl",unit:"s3",type:"mc",question:"[산미 증식 계획의 부담] 비료 대금과 　____　 등 증산 비용이 농민에게 전가되어 자작농이 소작농이나 화전민·토막민으로 전락하고 만주·연해주로 이주하기도 했다.",choices:["사유 재산","민족 분열","문화 정치","수리 조합비"],answer:3,explain:"산미 증식 계획의 부담 · 1926년",era:"가면을 쓴 통치"},
+{id:"s3-08-bl",unit:"s3",type:"mc",question:"[산미 증식 계획의 부담] 비료 대금과 　____　 등 증산 비용이 농민에게 전가되어 자작농이 소작농이나 화전민·토막민으로 전락하고 만주·연해주로 이주하기도 했다.",choices:["사유 재산","민족 분열","문화 정치","수리 조합비"],answer:3,explain:"산미 증식 계획의 부담 · 1920년대",era:"가면을 쓴 통치"},
 {id:"s3-09-ev",unit:"s3",type:"mc",question:"제1차 세계 대전으로 자본을 축적한 일본 기업의 진출을 돕고자 회사 설립을 신고제로 바꾸었다.",choices:["문관 총독 임명 관제 개정","치안 유지법","회사령 폐지","산미 증식 계획의 부담"],answer:2,explain:"회사령 폐지 · 1920년",era:"가면을 쓴 통치"},
 {id:"s3-09-yr",unit:"s3",type:"mc",question:"「회사령 폐지」은(는) 몇 년의 일일까?",choices:["1919","1921","1925","1920"],answer:3,explain:"제1차 세계 대전으로 자본을 축적한 일본 기업의 진출을 돕고자 회사 설립을 신고제로 바꾸었다.",era:"가면을 쓴 통치"},
 {id:"s3-09-bl",unit:"s3",type:"mc",question:"[회사령 폐지] 제1차 세계 대전으로 자본을 축적한 일본 기업의 진출을 돕고자 회사 설립을 　____　로 바꾸었다.",choices:["오히려","한국인 기업","신고제","사유 재산"],answer:2,explain:"회사령 폐지 · 1920년",era:"가면을 쓴 통치"},
@@ -6889,12 +6909,12 @@ const QUESTIONS=[
 {id:"s4-01-ev",unit:"s4",type:"mc",question:"일왕에게 충성을 맹세하는 문구를 강제로 외우게 하고 매일 아침 일본 궁성을 향해 절하는 궁성 요배를 시켰다.",choices:["민족 말살 통치의 시작","여자 정신 근로령","황국 신민 서사","남면북양 정책"],answer:2,explain:"황국 신민 서사 · 1937년",era:"이름을 빼앗긴 시대"},
 {id:"s4-01-yr",unit:"s4",type:"mc",question:"「황국 신민 서사」은(는) 몇 년의 일일까?",choices:["1939","1941","1937","1930"],answer:2,explain:"일왕에게 충성을 맹세하는 문구를 강제로 외우게 하고 매일 아침 일본 궁성을 향해 절하는 궁성 요배를 시켰다.",era:"이름을 빼앗긴 시대"},
 {id:"s4-01-bl",unit:"s4",type:"mc",question:"[황국 신민 서사] 일왕에게 충성을 맹세하는 문구를 강제로 외우게 하고 매일 아침 일본 궁성을 향해 절하는 　____　를 시켰다.",choices:["국민 징용령","궁성 요배","신사","애국반"],answer:1,explain:"황국 신민 서사 · 1937년",era:"이름을 빼앗긴 시대"},
-{id:"s4-02-ev",unit:"s4",type:"mc",question:"각지에 신사를 세우고 참배를 강요했으며 거부하면 처벌하고 학교까지 폐쇄했다.",choices:["창씨개명 강요","공출과 배급제","신사 참배 강요","국민학교로 개칭"],answer:2,explain:"신사 참배 강요 · 1937년",era:"이름을 빼앗긴 시대"},
+{id:"s4-02-ev",unit:"s4",type:"mc",question:"각지에 신사를 세우고 참배를 강요했으며 거부하면 처벌하고 학교까지 폐쇄했다.",choices:["창씨개명 강요","공출과 배급제","신사 참배 강요","국민학교로 개칭"],answer:2,explain:"신사 참배 강요 · 1930년대",era:"이름을 빼앗긴 시대"},
 {id:"s4-02-yr",unit:"s4",type:"mc",question:"「신사 참배 강요」은(는) 몇 년의 일일까?",choices:["1937","1934","1938","1940"],answer:0,explain:"각지에 신사를 세우고 참배를 강요했으며 거부하면 처벌하고 학교까지 폐쇄했다.",era:"이름을 빼앗긴 시대"},
-{id:"s4-02-bl",unit:"s4",type:"mc",question:"[신사 참배 강요] 각지에 　____　를 세우고 참배를 강요했으며 거부하면 처벌하고 학교까지 폐쇄했다.",choices:["일본어","인적·물적","신사","북부 지방"],answer:2,explain:"신사 참배 강요 · 1937년",era:"이름을 빼앗긴 시대"},
-{id:"s4-03-ev",unit:"s4",type:"mc",question:"한국어 교육을 금지하고 일본어 사용을 강요했다.",choices:["한국어 교육 금지","국민정신 총동원 운동","신사 참배 강요","병참 기지화 정책"],answer:0,explain:"한국어 교육 금지 · 1938년",era:"이름을 빼앗긴 시대"},
+{id:"s4-02-bl",unit:"s4",type:"mc",question:"[신사 참배 강요] 각지에 　____　를 세우고 참배를 강요했으며 거부하면 처벌하고 학교까지 폐쇄했다.",choices:["일본어","인적·물적","신사","북부 지방"],answer:2,explain:"신사 참배 강요 · 1930년대",era:"이름을 빼앗긴 시대"},
+{id:"s4-03-ev",unit:"s4",type:"mc",question:"한국어 교육을 금지하고 일본어 사용을 강요했다.",choices:["한국어 교육 금지","국민정신 총동원 운동","신사 참배 강요","병참 기지화 정책"],answer:0,explain:"한국어 교육 금지 · 1930년대 후반",era:"이름을 빼앗긴 시대"},
 {id:"s4-03-yr",unit:"s4",type:"mc",question:"「한국어 교육 금지」은(는) 몇 년의 일일까?",choices:["1930","1937","1931","1938"],answer:3,explain:"한국어 교육을 금지하고 일본어 사용을 강요했다.",era:"이름을 빼앗긴 시대"},
-{id:"s4-03-bl",unit:"s4",type:"mc",question:"[한국어 교육 금지] 한국어 교육을 금지하고 　____　 사용을 강요했다.",choices:["국민학교","일본어","면화","궁성 요배"],answer:1,explain:"한국어 교육 금지 · 1938년",era:"이름을 빼앗긴 시대"},
+{id:"s4-03-bl",unit:"s4",type:"mc",question:"[한국어 교육 금지] 한국어 교육을 금지하고 　____　 사용을 강요했다.",choices:["국민학교","일본어","면화","궁성 요배"],answer:1,explain:"한국어 교육 금지 · 1930년대 후반",era:"이름을 빼앗긴 시대"},
 {id:"s4-04-ev",unit:"s4",type:"mc",question:"소학교의 이름을 황국 신민의 학교라는 뜻의 국민학교로 바꾸었다.",choices:["민족 말살 통치의 시작","병참 기지화 정책","국민학교로 개칭","조선어 학회 사건"],answer:2,explain:"국민학교로 개칭 · 1941년",era:"이름을 빼앗긴 시대"},
 {id:"s4-04-yr",unit:"s4",type:"mc",question:"「국민학교로 개칭」은(는) 몇 년의 일일까?",choices:["1944","1942","1938","1941"],answer:3,explain:"소학교의 이름을 황국 신민의 학교라는 뜻의 국민학교로 바꾸었다.",era:"이름을 빼앗긴 시대"},
 {id:"s4-04-bl",unit:"s4",type:"mc",question:"[국민학교로 개칭] 소학교의 이름을 황국 신민의 학교라는 뜻의 　____　로 바꾸었다.",choices:["국민학교","면화","일본어","국민 징용령"],answer:0,explain:"국민학교로 개칭 · 1941년",era:"이름을 빼앗긴 시대"},
@@ -6910,24 +6930,24 @@ const QUESTIONS=[
 {id:"s4-08-ev",unit:"s4",type:"mc",question:"대공황 이후 일본 독점 자본이 값싼 노동력과 지하자원을 노리고 들어와 중화학 공업과 광업에 투자하면서 북부 지방에 공장이 몰렸다.",choices:["한국어 교육 금지","국민학교로 개칭","식민지 공업화","국민정신 총동원 운동"],answer:2,explain:"식민지 공업화 · 1930년",era:"이름을 빼앗긴 시대"},
 {id:"s4-08-yr",unit:"s4",type:"mc",question:"「식민지 공업화」은(는) 몇 년의 일일까?",choices:["1931","1940","1938","1930"],answer:3,explain:"대공황 이후 일본 독점 자본이 값싼 노동력과 지하자원을 노리고 들어와 중화학 공업과 광업에 투자하면서 북부 지방에 공장이 몰렸다.",era:"이름을 빼앗긴 시대"},
 {id:"s4-08-bl",unit:"s4",type:"mc",question:"[식민지 공업화] 대공황 이후 일본 독점 자본이 값싼 노동력과 지하자원을 노리고 들어와 중화학 공업과 광업에 투자하면서 　____　에 공장이 몰렸다.",choices:["북부 지방","인적·물적","군수 물자","궁성 요배"],answer:0,explain:"식민지 공업화 · 1930년",era:"이름을 빼앗긴 시대"},
-{id:"s4-09-ev",unit:"s4",type:"mc",question:"일본 방직 자본가에게 값싼 원료를 공급하려고 남부에서는 면화를 재배하고 북부에서는 양을 기르도록 강요했다.",choices:["남면북양 정책","공출과 배급제","황국 신민 서사","국민정신 총동원 운동"],answer:0,explain:"남면북양 정책 · 1934년",era:"이름을 빼앗긴 시대"},
+{id:"s4-09-ev",unit:"s4",type:"mc",question:"일본 방직 자본가에게 값싼 원료를 공급하려고 남부에서는 면화를 재배하고 북부에서는 양을 기르도록 강요했다.",choices:["남면북양 정책","공출과 배급제","황국 신민 서사","국민정신 총동원 운동"],answer:0,explain:"남면북양 정책 · 1930년대",era:"이름을 빼앗긴 시대"},
 {id:"s4-09-yr",unit:"s4",type:"mc",question:"「남면북양 정책」은(는) 몇 년의 일일까?",choices:["1940","1942","1938","1934"],answer:3,explain:"일본 방직 자본가에게 값싼 원료를 공급하려고 남부에서는 면화를 재배하고 북부에서는 양을 기르도록 강요했다.",era:"이름을 빼앗긴 시대"},
-{id:"s4-09-bl",unit:"s4",type:"mc",question:"[남면북양 정책] 일본 방직 자본가에게 값싼 원료를 공급하려고 남부에서는 　____　를 재배하고 북부에서는 양을 기르도록 강요했다.",choices:["면화","배급제","신사","폐간"],answer:0,explain:"남면북양 정책 · 1934년",era:"이름을 빼앗긴 시대"},
+{id:"s4-09-bl",unit:"s4",type:"mc",question:"[남면북양 정책] 일본 방직 자본가에게 값싼 원료를 공급하려고 남부에서는 　____　를 재배하고 북부에서는 양을 기르도록 강요했다.",choices:["면화","배급제","신사","폐간"],answer:0,explain:"남면북양 정책 · 1930년대",era:"이름을 빼앗긴 시대"},
 {id:"s4-10-ev",unit:"s4",type:"mc",question:"중일 전쟁이 터지자 한반도를 군수 물자 공급 기지로 삼으려 했고, 산업 구조가 군수 산업 중심으로 개편되며 지역 간 불균형이 심해졌다.",choices:["조선일보·동아일보 폐간","조선어 학회 사건","병참 기지화 정책","식민지 공업화"],answer:2,explain:"병참 기지화 정책 · 1938년",era:"이름을 빼앗긴 시대"},
 {id:"s4-10-yr",unit:"s4",type:"mc",question:"「병참 기지화 정책」은(는) 몇 년의 일일까?",choices:["1938","1940","1930","1937"],answer:0,explain:"중일 전쟁이 터지자 한반도를 군수 물자 공급 기지로 삼으려 했고, 산업 구조가 군수 산업 중심으로 개편되며 지역 간 불균형이 심해졌다.",era:"이름을 빼앗긴 시대"},
 {id:"s4-10-bl",unit:"s4",type:"mc",question:"[병참 기지화 정책] 중일 전쟁이 터지자 한반도를 　____　 공급 기지로 삼으려 했고, 산업 구조가 군수 산업 중심으로 개편되며 지역 간 불균형이 심해졌다.",choices:["내선일체","군수 물자","궁성 요배","국민 징용령"],answer:1,explain:"병참 기지화 정책 · 1938년",era:"이름을 빼앗긴 시대"},
 {id:"s4-11-ev",unit:"s4",type:"mc",question:"전시에 인적·물적 자원을 통제 운용한다는 법으로 강제 징용과 징병의 근거가 되었다.",choices:["신사 참배 강요","조선어 학회 사건","인력 수탈","국가 총동원법"],answer:3,explain:"국가 총동원법 · 1938년",era:"이름을 빼앗긴 시대"},
 {id:"s4-11-yr",unit:"s4",type:"mc",question:"「국가 총동원법」은(는) 몇 년의 일일까?",choices:["1942","1944","1937","1938"],answer:3,explain:"전시에 인적·물적 자원을 통제 운용한다는 법으로 강제 징용과 징병의 근거가 되었다.",era:"이름을 빼앗긴 시대"},
 {id:"s4-11-bl",unit:"s4",type:"mc",question:"[국가 총동원법] 전시에 　____　 자원을 통제 운용한다는 법으로 강제 징용과 징병의 근거가 되었다.",choices:["애국반","치안 유지법","신사","인적·물적"],answer:3,explain:"국가 총동원법 · 1938년",era:"이름을 빼앗긴 시대"},
-{id:"s4-12-ev",unit:"s4",type:"mc",question:"지원병제·학도 지원병제·징병제로 청년을 전쟁터로 보내고, 국민 징용령으로 청장년을 탄광과 군수 공장에 강제 동원했다.",choices:["창씨개명 강요","인력 수탈","국민정신 총동원 운동","병참 기지화 정책"],answer:1,explain:"인력 수탈 · 1943년",era:"이름을 빼앗긴 시대"},
+{id:"s4-12-ev",unit:"s4",type:"mc",question:"지원병제·학도 지원병제·징병제로 청년을 전쟁터로 보내고, 국민 징용령으로 청장년을 탄광과 군수 공장에 강제 동원했다.",choices:["창씨개명 강요","인력 수탈","국민정신 총동원 운동","병참 기지화 정책"],answer:1,explain:"인력 수탈 · 1930년대 후반~1945",era:"이름을 빼앗긴 시대"},
 {id:"s4-12-yr",unit:"s4",type:"mc",question:"「인력 수탈」은(는) 몇 년의 일일까?",choices:["1941","1943","1939","1937"],answer:1,explain:"지원병제·학도 지원병제·징병제로 청년을 전쟁터로 보내고, 국민 징용령으로 청장년을 탄광과 군수 공장에 강제 동원했다.",era:"이름을 빼앗긴 시대"},
-{id:"s4-12-bl",unit:"s4",type:"mc",question:"[인력 수탈] 지원병제·학도 지원병제·징병제로 청년을 전쟁터로 보내고, 　____　으로 청장년을 탄광과 군수 공장에 강제 동원했다.",choices:["식량 배급","북부 지방","국민학교","국민 징용령"],answer:3,explain:"인력 수탈 · 1943년",era:"이름을 빼앗긴 시대"},
+{id:"s4-12-bl",unit:"s4",type:"mc",question:"[인력 수탈] 지원병제·학도 지원병제·징병제로 청년을 전쟁터로 보내고, 　____　으로 청장년을 탄광과 군수 공장에 강제 동원했다.",choices:["식량 배급","북부 지방","국민학교","국민 징용령"],answer:3,explain:"인력 수탈 · 1930년대 후반~1945",era:"이름을 빼앗긴 시대"},
 {id:"s4-13-ev",unit:"s4",type:"mc",question:"수십만 명의 여성을 군수 공장 등에 동원했다. 앞서 수많은 여성이 일본군 위안부로 끌려가 성 노예가 되기도 했다.",choices:["국민학교로 개칭","여자 정신 근로령","황국 신민 서사","조선일보·동아일보 폐간"],answer:1,explain:"여자 정신 근로령 · 1944년",era:"이름을 빼앗긴 시대"},
 {id:"s4-13-yr",unit:"s4",type:"mc",question:"「여자 정신 근로령」은(는) 몇 년의 일일까?",choices:["1938","1944","1937","1939"],answer:1,explain:"수십만 명의 여성을 군수 공장 등에 동원했다. 앞서 수많은 여성이 일본군 위안부로 끌려가 성 노예가 되기도 했다.",era:"이름을 빼앗긴 시대"},
 {id:"s4-13-bl",unit:"s4",type:"mc",question:"[여자 정신 근로령] 수십만 명의 여성을 군수 공장 등에 동원했다. 앞서 수많은 여성이 　____　로 끌려가 성 노예가 되기도 했다.",choices:["군수 물자","면화","배급제","일본군 위안부"],answer:3,explain:"여자 정신 근로령 · 1944년",era:"이름을 빼앗긴 시대"},
-{id:"s4-14-ev",unit:"s4",type:"mc",question:"집집마다 할당량을 정해 쌀을 걷고 배급제를 시행했으며, 무기를 만들려 절의 종과 놋그릇·숟가락까지 빼앗아 갔다.",choices:["공출과 배급제","조선일보·동아일보 폐간","국민정신 총동원 운동","인력 수탈"],answer:0,explain:"공출과 배급제 · 1939년",era:"이름을 빼앗긴 시대"},
+{id:"s4-14-ev",unit:"s4",type:"mc",question:"집집마다 할당량을 정해 쌀을 걷고 배급제를 시행했으며, 무기를 만들려 절의 종과 놋그릇·숟가락까지 빼앗아 갔다.",choices:["공출과 배급제","조선일보·동아일보 폐간","국민정신 총동원 운동","인력 수탈"],answer:0,explain:"공출과 배급제 · 1930년대 후반~1945",era:"이름을 빼앗긴 시대"},
 {id:"s4-14-yr",unit:"s4",type:"mc",question:"「공출과 배급제」은(는) 몇 년의 일일까?",choices:["1931","1939","1938","1941"],answer:1,explain:"집집마다 할당량을 정해 쌀을 걷고 배급제를 시행했으며, 무기를 만들려 절의 종과 놋그릇·숟가락까지 빼앗아 갔다.",era:"이름을 빼앗긴 시대"},
-{id:"s4-14-bl",unit:"s4",type:"mc",question:"[공출과 배급제] 집집마다 할당량을 정해 쌀을 걷고 　____　를 시행했으며, 무기를 만들려 절의 종과 놋그릇·숟가락까지 빼앗아 갔다.",choices:["내선일체","애국반","배급제","군수 물자"],answer:2,explain:"공출과 배급제 · 1939년",era:"이름을 빼앗긴 시대"},
+{id:"s4-14-bl",unit:"s4",type:"mc",question:"[공출과 배급제] 집집마다 할당량을 정해 쌀을 걷고 　____　를 시행했으며, 무기를 만들려 절의 종과 놋그릇·숟가락까지 빼앗아 갔다.",choices:["내선일체","애국반","배급제","군수 물자"],answer:2,explain:"공출과 배급제 · 1930년대 후반~1945",era:"이름을 빼앗긴 시대"},
 {id:"s4-15-ev",unit:"s4",type:"mc",question:"전국 조직망의 말단에 애국반을 두어 일장기 게양·신사 참배·애국 저금을 강요하고 공출과 징용에 앞장서게 했다.",choices:["신사 참배 강요","병참 기지화 정책","국민정신 총동원 운동","여자 정신 근로령"],answer:2,explain:"국민정신 총동원 운동 · 1938년",era:"이름을 빼앗긴 시대"},
 {id:"s4-15-yr",unit:"s4",type:"mc",question:"「국민정신 총동원 운동」은(는) 몇 년의 일일까?",choices:["1941","1938","1934","1944"],answer:1,explain:"전국 조직망의 말단에 애국반을 두어 일장기 게양·신사 참배·애국 저금을 강요하고 공출과 징용에 앞장서게 했다.",era:"이름을 빼앗긴 시대"},
 {id:"s4-15-bl",unit:"s4",type:"mc",question:"[국민정신 총동원 운동] 전국 조직망의 말단에 　____　을 두어 일장기 게양·신사 참배·애국 저금을 강요하고 공출과 징용에 앞장서게 했다.",choices:["신사","면화","일본군 위안부","애국반"],answer:3,explain:"국민정신 총동원 운동 · 1938년",era:"이름을 빼앗긴 시대"},
@@ -6943,9 +6963,9 @@ const QUESTIONS=[
 {id:"s5-03-ev",unit:"s5",type:"mc",question:"신흥 강습소가 발전한 학교로, 3·1 운동 이후 만주로 향한 청년들을 받아 군사 훈련을 실시했다.",choices:["대한 광복군 정부","독립 의군부","서간도 삼원보","신흥 무관 학교"],answer:3,explain:"신흥 무관 학교 · 1919년",era:"국경을 넘은 사람들"},
 {id:"s5-03-yr",unit:"s5",type:"mc",question:"「신흥 무관 학교」은(는) 몇 년의 일일까?",choices:["1915","1919","1912","1914"],answer:1,explain:"신흥 강습소가 발전한 학교로, 3·1 운동 이후 만주로 향한 청년들을 받아 군사 훈련을 실시했다.",era:"국경을 넘은 사람들"},
 {id:"s5-03-bl",unit:"s5",type:"mc",question:"[신흥 무관 학교] 　____　가 발전한 학교로, 3·1 운동 이후 만주로 향한 청년들을 받아 군사 훈련을 실시했다.",choices:["신흥 강습소","안창호","이상설","경학사"],answer:0,explain:"신흥 무관 학교 · 1919년",era:"국경을 넘은 사람들"},
-{id:"s5-04-ev",unit:"s5",type:"mc",question:"간민회 등 자치 단체가 동포 사회를 이끌었고 서전서숙을 계승한 명동 학교가 세워졌다.",choices:["대한 광복군 정부","중광단","서간도 삼원보","북간도의 민족 운동"],answer:3,explain:"북간도의 민족 운동 · 1913년",era:"국경을 넘은 사람들"},
+{id:"s5-04-ev",unit:"s5",type:"mc",question:"간민회 등 자치 단체가 동포 사회를 이끌었고 서전서숙을 계승한 명동 학교가 세워졌다.",choices:["대한 광복군 정부","중광단","서간도 삼원보","북간도의 민족 운동"],answer:3,explain:"북간도의 민족 운동 · 1910년대",era:"국경을 넘은 사람들"},
 {id:"s5-04-yr",unit:"s5",type:"mc",question:"「북간도의 민족 운동」은(는) 몇 년의 일일까?",choices:["1913","1911","1917","1919"],answer:0,explain:"간민회 등 자치 단체가 동포 사회를 이끌었고 서전서숙을 계승한 명동 학교가 세워졌다.",era:"국경을 넘은 사람들"},
-{id:"s5-04-bl",unit:"s5",type:"mc",question:"[북간도의 민족 운동] 간민회 등 자치 단체가 동포 사회를 이끌었고 서전서숙을 계승한 　____　가 세워졌다.",choices:["명동 학교","경학사","신한청년당","복벽주의"],answer:0,explain:"북간도의 민족 운동 · 1913년",era:"국경을 넘은 사람들"},
+{id:"s5-04-bl",unit:"s5",type:"mc",question:"[북간도의 민족 운동] 간민회 등 자치 단체가 동포 사회를 이끌었고 서전서숙을 계승한 　____　가 세워졌다.",choices:["명동 학교","경학사","신한청년당","복벽주의"],answer:0,explain:"북간도의 민족 운동 · 1910년대",era:"국경을 넘은 사람들"},
 {id:"s5-05-ev",unit:"s5",type:"mc",question:"서일 등 대종교 간부들이 만든 무장 독립 단체로 이후 북로 군정서로 발전했다.",choices:["북간도의 민족 운동","신흥 무관 학교","중광단","연해주 권업회"],answer:2,explain:"중광단 · 1911년",era:"국경을 넘은 사람들"},
 {id:"s5-05-yr",unit:"s5",type:"mc",question:"「중광단」은(는) 몇 년의 일일까?",choices:["1913","1911","1919","1912"],answer:1,explain:"서일 등 대종교 간부들이 만든 무장 독립 단체로 이후 북로 군정서로 발전했다.",era:"국경을 넘은 사람들"},
 {id:"s5-05-bl",unit:"s5",type:"mc",question:"[중광단] 서일 등 대종교 간부들이 만든 무장 독립 단체로 이후 　____　로 발전했다.",choices:["민주 공화제","이상설","북로 군정서","신한청년당"],answer:2,explain:"중광단 · 1911년",era:"국경을 넘은 사람들"},
@@ -6967,8 +6987,8 @@ const QUESTIONS=[
 {id:"s5-11-ev",unit:"s5",type:"mc",question:"신규식·박은식·신채호·조소앙 등이 상하이에서 발표했으며, 주권이 순종에게서 일반 국민에게 넘어왔다는 국민 주권론을 폈다.",choices:["북간도의 민족 운동","동제사","중광단","대동단결 선언"],answer:3,explain:"대동단결 선언 · 1917년",era:"국경을 넘은 사람들"},
 {id:"s5-11-yr",unit:"s5",type:"mc",question:"「대동단결 선언」은(는) 몇 년의 일일까?",choices:["1910","1913","1917","1911"],answer:2,explain:"신규식·박은식·신채호·조소앙 등이 상하이에서 발표했으며, 주권이 순종에게서 일반 국민에게 넘어왔다는 국민 주권론을 폈다.",era:"국경을 넘은 사람들"},
 {id:"s5-11-bl",unit:"s5",type:"mc",question:"[대동단결 선언] 신규식·박은식·신채호·조소앙 등이 상하이에서 발표했으며, 주권이 순종에게서 일반 국민에게 넘어왔다는 　____　을 폈다.",choices:["신한촌","신한청년당","복벽주의","국민 주권론"],answer:3,explain:"대동단결 선언 · 1917년",era:"국경을 넘은 사람들"},
-{id:"s6-00-ev",unit:"s6",type:"mc",question:"러시아 혁명 뒤 레닌이 약소민족 해방 운동 지원을 선언하고 미국 대통령 윌슨이 민족 자결주의를 제창하면서 독립운동가들이 희망을 품었다.",choices:["3·1 운동의 영향","3·1 운동의 의의","탑골 공원 만세 시위","3·1 운동의 국제적 배경"],answer:3,explain:"3·1 운동의 국제적 배경 · 1918년",era:"만세의 봄"},
-{id:"s6-00-bl",unit:"s6",type:"mc",question:"[3·1 운동의 국제적 배경] 러시아 혁명 뒤 레닌이 약소민족 해방 운동 지원을 선언하고 미국 대통령 윌슨이 　____　를 제창하면서 독립운동가들이 희망을 품었다.",choices:["제암리","민족 자결주의","장날","국장일"],answer:1,explain:"3·1 운동의 국제적 배경 · 1918년",era:"만세의 봄"},
+{id:"s6-00-ev",unit:"s6",type:"mc",question:"러시아 혁명 뒤 레닌이 약소민족 해방 운동 지원을 선언하고 미국 대통령 윌슨이 민족 자결주의를 제창하면서 독립운동가들이 희망을 품었다.",choices:["3·1 운동의 영향","3·1 운동의 의의","탑골 공원 만세 시위","3·1 운동의 국제적 배경"],answer:3,explain:"3·1 운동의 국제적 배경 · 1917~1918",era:"만세의 봄"},
+{id:"s6-00-bl",unit:"s6",type:"mc",question:"[3·1 운동의 국제적 배경] 러시아 혁명 뒤 레닌이 약소민족 해방 운동 지원을 선언하고 미국 대통령 윌슨이 　____　를 제창하면서 독립운동가들이 희망을 품었다.",choices:["제암리","민족 자결주의","장날","국장일"],answer:1,explain:"3·1 운동의 국제적 배경 · 1917~1918",era:"만세의 봄"},
 {id:"s6-01-ev",unit:"s6",type:"mc",question:"상하이의 신한청년당이 한국의 독립을 청원하려 파리 강화 회의에 대표로 보냈다.",choices:["민족 대표의 독립 선언","탑골 공원 만세 시위","3·1 운동의 영향","김규식의 파리 파견"],answer:3,explain:"김규식의 파리 파견 · 1919년",era:"만세의 봄"},
 {id:"s6-01-bl",unit:"s6",type:"mc",question:"[김규식의 파리 파견] 상하이의 　____　이 한국의 독립을 청원하려 파리 강화 회의에 대표로 보냈다.",choices:["최대 규모","5·4 운동","구심점","신한청년당"],answer:3,explain:"김규식의 파리 파견 · 1919년",era:"만세의 봄"},
 {id:"s6-02-ev",unit:"s6",type:"mc",question:"일본에 유학 중이던 학생들이 조선 청년 독립단의 이름으로 도쿄에서 독립 선언서를 발표했다.",choices:["3·1 운동의 국제적 배경","고종의 서거","2·8 독립 선언","3·1 운동의 영향"],answer:2,explain:"2·8 독립 선언 · 1919년",era:"만세의 봄"},
@@ -6991,8 +7011,8 @@ const QUESTIONS=[
 {id:"s6-10-bl",unit:"s6",type:"mc",question:"[3·1 운동의 영향] 민족 운동을 조직적으로 지도할 　____　이 필요하다는 인식에서 대한민국 임시 정부가 수립되었고, 일제는 통치 방식을 문화 정치로 바꾸었다.",choices:["구심점","조선 청년 독립단","5·4 운동","독립 선언서"],answer:0,explain:"3·1 운동의 영향 · 1919년",era:"만세의 봄"},
 {id:"s6-11-ev",unit:"s6",type:"mc",question:"대표적인 반제국주의 민족 운동으로 중국의 5·4 운동 등 약소민족의 민족 운동에 영향을 주었다.",choices:["세계사적 의의","3·1 운동의 국제적 배경","제암리 학살","무력 투쟁으로의 발전"],answer:0,explain:"세계사적 의의 · 1919년",era:"만세의 봄"},
 {id:"s6-11-bl",unit:"s6",type:"mc",question:"[세계사적 의의] 대표적인 반제국주의 민족 운동으로 중국의 　____　 등 약소민족의 민족 운동에 영향을 주었다.",choices:["제암리","5·4 운동","최대 규모","장날"],answer:1,explain:"세계사적 의의 · 1919년",era:"만세의 봄"},
-{id:"s6-12-ev",unit:"s6",type:"mc",question:"이화 학당 학생으로 천안 아우내 장터에서 만세 시위를 주도하다 붙잡혀 서대문 형무소에서 순국했다.",choices:["제암리 학살","민족 대표의 독립 선언","유관순","세계사적 의의"],answer:2,explain:"유관순 · 1920년",era:"만세의 봄"},
-{id:"s6-12-bl",unit:"s6",type:"mc",question:"[유관순] 이화 학당 학생으로 천안 　____　 장터에서 만세 시위를 주도하다 붙잡혀 서대문 형무소에서 순국했다.",choices:["아우내","신한청년당","제암리","독립 선언서"],answer:0,explain:"유관순 · 1920년",era:"만세의 봄"},
+{id:"s6-12-ev",unit:"s6",type:"mc",question:"이화 학당 학생으로 천안 아우내 장터에서 만세 시위를 주도하다 붙잡혀 서대문 형무소에서 순국했다.",choices:["제암리 학살","민족 대표의 독립 선언","유관순","세계사적 의의"],answer:2,explain:"유관순 · 1919년",era:"만세의 봄"},
+{id:"s6-12-bl",unit:"s6",type:"mc",question:"[유관순] 이화 학당 학생으로 천안 　____　 장터에서 만세 시위를 주도하다 붙잡혀 서대문 형무소에서 순국했다.",choices:["아우내","신한청년당","제암리","독립 선언서"],answer:0,explain:"유관순 · 1919년",era:"만세의 봄"},
 {id:"s7-00-ev",unit:"s7",type:"mc",question:"연해주에 대한 국민 의회, 상하이에 대한민국 임시 정부가 세워지고 국내에서는 한성 정부 수립이 선포되었다.",choices:["육군 주만 참의부","여러 임시 정부의 수립","국민 대표 회의","국무령 중심 체제"],answer:1,explain:"여러 임시 정부의 수립 · 1919년",era:"황제의 나라에서 국민의 나라로"},
 {id:"s7-00-bl",unit:"s7",type:"mc",question:"[여러 임시 정부의 수립] 연해주에 　____　, 상하이에 대한민국 임시 정부가 세워지고 국내에서는 한성 정부 수립이 선포되었다.",choices:["대한 국민 의회","상하이","박은식","비밀 행정 조직"],answer:0,explain:"여러 임시 정부의 수립 · 1919년",era:"황제의 나라에서 국민의 나라로"},
 {id:"s7-01-ev",unit:"s7",type:"mc",question:"한성 정부의 법통을 잇고 대한 국민 의회를 통합했으며, 조계 지역이 많아 외교에 유리한 상하이에 정부를 두기로 결정했다.",choices:["국무령 중심 체제","육군 주만 참의부","임시 정부의 통합","여러 임시 정부의 수립"],answer:2,explain:"임시 정부의 통합 · 1919년",era:"황제의 나라에서 국민의 나라로"},
@@ -7034,18 +7054,18 @@ const QUESTIONS=[
 {id:"s8-04-ev",unit:"s8",type:"mc",question:"밀산에 모였다가 레닌의 지원을 기대하며 자유시로 옮긴 독립군이 지휘권 분쟁 끝에 러시아 적군에게 무장 해제당하며 희생되었다.",choices:["자유시 참변","미쓰야 협정","양세봉 전사","동북 인민 혁명군"],answer:0,explain:"자유시 참변 · 1921년",era:"봉오동에서 대전자령까지"},
 {id:"s8-04-yr",unit:"s8",type:"mc",question:"「자유시 참변」은(는) 몇 년의 일일까?",choices:["1921","1920","1933","1932"],answer:0,explain:"밀산에 모였다가 레닌의 지원을 기대하며 자유시로 옮긴 독립군이 지휘권 분쟁 끝에 러시아 적군에게 무장 해제당하며 희생되었다.",era:"봉오동에서 대전자령까지"},
 {id:"s8-04-bl",unit:"s8",type:"mc",question:"[자유시 참변] 밀산에 모였다가 레닌의 지원을 기대하며 자유시로 옮긴 독립군이 지휘권 분쟁 끝에 러시아 적군에게 　____　당하며 희생되었다.",choices:["동북 항일 연군","무장 해제","정의부","최진동"],answer:1,explain:"자유시 참변 · 1921년",era:"봉오동에서 대전자령까지"},
-{id:"s8-05-ev",unit:"s8",type:"mc",question:"남만주에 참의부, 지린성 일대에 정의부, 북만주에 신민부가 세워졌다.",choices:["조선 혁명군 조직","3부 통합 운동","조국 광복회","3부의 성립"],answer:3,explain:"3부의 성립 · 1924년",era:"봉오동에서 대전자령까지"},
+{id:"s8-05-ev",unit:"s8",type:"mc",question:"남만주에 참의부, 지린성 일대에 정의부, 북만주에 신민부가 세워졌다.",choices:["조선 혁명군 조직","3부 통합 운동","조국 광복회","3부의 성립"],answer:3,explain:"3부의 성립 · 1920년대 중반",era:"봉오동에서 대전자령까지"},
 {id:"s8-05-yr",unit:"s8",type:"mc",question:"「3부의 성립」은(는) 몇 년의 일일까?",choices:["1933","1929","1924","1920"],answer:2,explain:"남만주에 참의부, 지린성 일대에 정의부, 북만주에 신민부가 세워졌다.",era:"봉오동에서 대전자령까지"},
-{id:"s8-05-bl",unit:"s8",type:"mc",question:"[3부의 성립] 남만주에 참의부, 지린성 일대에 　____　, 북만주에 신민부가 세워졌다.",choices:["동북 항일 연군","한국 독립군","한국광복군","정의부"],answer:3,explain:"3부의 성립 · 1924년",era:"봉오동에서 대전자령까지"},
-{id:"s8-06-ev",unit:"s8",type:"mc",question:"민정 조직과 군정 조직을 갖추고 관할 구역 한인에게 세금을 거두어 운영한 사실상의 공화주의 자치 정부였다.",choices:["미쓰야 협정","3부의 성격","봉오동 전투","동북 인민 혁명군"],answer:1,explain:"3부의 성격 · 1925년",era:"봉오동에서 대전자령까지"},
+{id:"s8-05-bl",unit:"s8",type:"mc",question:"[3부의 성립] 남만주에 참의부, 지린성 일대에 　____　, 북만주에 신민부가 세워졌다.",choices:["동북 항일 연군","한국 독립군","한국광복군","정의부"],answer:3,explain:"3부의 성립 · 1920년대 중반",era:"봉오동에서 대전자령까지"},
+{id:"s8-06-ev",unit:"s8",type:"mc",question:"민정 조직과 군정 조직을 갖추고 관할 구역 한인에게 세금을 거두어 운영한 사실상의 공화주의 자치 정부였다.",choices:["미쓰야 협정","3부의 성격","봉오동 전투","동북 인민 혁명군"],answer:1,explain:"3부의 성격 · 1920년대 중반",era:"봉오동에서 대전자령까지"},
 {id:"s8-06-yr",unit:"s8",type:"mc",question:"「3부의 성격」은(는) 몇 년의 일일까?",choices:["1933","1925","1935","1920"],answer:1,explain:"민정 조직과 군정 조직을 갖추고 관할 구역 한인에게 세금을 거두어 운영한 사실상의 공화주의 자치 정부였다.",era:"봉오동에서 대전자령까지"},
-{id:"s8-06-bl",unit:"s8",type:"mc",question:"[3부의 성격] 민정 조직과 군정 조직을 갖추고 관할 구역 한인에게 세금을 거두어 운영한 사실상의 　____　였다.",choices:["공화주의 자치 정부","동북 항일 연군","국민부","백운평"],answer:0,explain:"3부의 성격 · 1925년",era:"봉오동에서 대전자령까지"},
+{id:"s8-06-bl",unit:"s8",type:"mc",question:"[3부의 성격] 민정 조직과 군정 조직을 갖추고 관할 구역 한인에게 세금을 거두어 운영한 사실상의 　____　였다.",choices:["공화주의 자치 정부","동북 항일 연군","국민부","백운평"],answer:0,explain:"3부의 성격 · 1920년대 중반",era:"봉오동에서 대전자령까지"},
 {id:"s8-07-ev",unit:"s8",type:"mc",question:"조선 총독부 경무 국장 미쓰야가 만주 군벌과 맺어, 한국인 독립운동가를 체포해 일본 경찰에 넘기도록 했다.",choices:["미쓰야 협정","3부의 성격","훈춘 사건","자유시 참변"],answer:0,explain:"미쓰야 협정 · 1925년",era:"봉오동에서 대전자령까지"},
 {id:"s8-07-yr",unit:"s8",type:"mc",question:"「미쓰야 협정」은(는) 몇 년의 일일까?",choices:["1929","1933","1925","1920"],answer:2,explain:"조선 총독부 경무 국장 미쓰야가 만주 군벌과 맺어, 한국인 독립운동가를 체포해 일본 경찰에 넘기도록 했다.",era:"봉오동에서 대전자령까지"},
 {id:"s8-07-bl",unit:"s8",type:"mc",question:"[미쓰야 협정] 조선 총독부 경무 국장 미쓰야가 　____　과 맺어, 한국인 독립운동가를 체포해 일본 경찰에 넘기도록 했다.",choices:["양세봉","정의부","백운평","만주 군벌"],answer:3,explain:"미쓰야 협정 · 1925년",era:"봉오동에서 대전자령까지"},
-{id:"s8-08-ev",unit:"s8",type:"mc",question:"통합 방법을 둘러싼 이견으로 완전한 통합에 이르지 못한 채 남만주의 국민부와 북만주의 혁신 의회로 재편되었다.",choices:["훈춘 사건","청산리 대첩","3부 통합 운동","대전자령 전투"],answer:2,explain:"3부 통합 운동 · 1929년",era:"봉오동에서 대전자령까지"},
+{id:"s8-08-ev",unit:"s8",type:"mc",question:"통합 방법을 둘러싼 이견으로 완전한 통합에 이르지 못한 채 남만주의 국민부와 북만주의 혁신 의회로 재편되었다.",choices:["훈춘 사건","청산리 대첩","3부 통합 운동","대전자령 전투"],answer:2,explain:"3부 통합 운동 · 1920년대 후반",era:"봉오동에서 대전자령까지"},
 {id:"s8-08-yr",unit:"s8",type:"mc",question:"「3부 통합 운동」은(는) 몇 년의 일일까?",choices:["1925","1920","1930","1929"],answer:3,explain:"통합 방법을 둘러싼 이견으로 완전한 통합에 이르지 못한 채 남만주의 국민부와 북만주의 혁신 의회로 재편되었다.",era:"봉오동에서 대전자령까지"},
-{id:"s8-08-bl",unit:"s8",type:"mc",question:"[3부 통합 운동] 통합 방법을 둘러싼 이견으로 완전한 통합에 이르지 못한 채 남만주의 　____　와 북만주의 혁신 의회로 재편되었다.",choices:["대전자령","한국 독립군","지청천","국민부"],answer:3,explain:"3부 통합 운동 · 1929년",era:"봉오동에서 대전자령까지"},
+{id:"s8-08-bl",unit:"s8",type:"mc",question:"[3부 통합 운동] 통합 방법을 둘러싼 이견으로 완전한 통합에 이르지 못한 채 남만주의 　____　와 북만주의 혁신 의회로 재편되었다.",choices:["대전자령","한국 독립군","지청천","국민부"],answer:3,explain:"3부 통합 운동 · 1920년대 후반",era:"봉오동에서 대전자령까지"},
 {id:"s8-09-ev",unit:"s8",type:"mc",question:"국민부가 조선 혁명당을 결성하고 그 아래에 조직한 무장 부대다.",choices:["지청천의 중국 관내 이동","청산리 대첩","조선 혁명군 조직","조국 광복회"],answer:2,explain:"조선 혁명군 조직 · 1929년",era:"봉오동에서 대전자령까지"},
 {id:"s8-09-yr",unit:"s8",type:"mc",question:"「조선 혁명군 조직」은(는) 몇 년의 일일까?",choices:["1934","1925","1929","1933"],answer:2,explain:"국민부가 조선 혁명당을 결성하고 그 아래에 조직한 무장 부대다.",era:"봉오동에서 대전자령까지"},
 {id:"s8-09-bl",unit:"s8",type:"mc",question:"[조선 혁명군 조직] 국민부가 　____　을 결성하고 그 아래에 조직한 무장 부대다.",choices:["대전자령","동북 항일 연군","조선 혁명당","근거지"],answer:2,explain:"조선 혁명군 조직 · 1929년",era:"봉오동에서 대전자령까지"},
@@ -7073,9 +7093,9 @@ const QUESTIONS=[
 {id:"s8-17-ev",unit:"s8",type:"mc",question:"동북 항일 연군에 속한 한인 유격대원들이 민족주의자와 함께 조직했다.",choices:["청산리 대첩","지청천의 중국 관내 이동","3부 통합 운동","조국 광복회"],answer:3,explain:"조국 광복회 · 1936년",era:"봉오동에서 대전자령까지"},
 {id:"s8-17-yr",unit:"s8",type:"mc",question:"「조국 광복회」은(는) 몇 년의 일일까?",choices:["1935","1930","1936","1925"],answer:2,explain:"동북 항일 연군에 속한 한인 유격대원들이 민족주의자와 함께 조직했다.",era:"봉오동에서 대전자령까지"},
 {id:"s8-17-bl",unit:"s8",type:"mc",question:"[조국 광복회] 　____　에 속한 한인 유격대원들이 민족주의자와 함께 조직했다.",choices:["최진동","동북 항일 연군","대전자령","공화주의 자치 정부"],answer:1,explain:"조국 광복회 · 1936년",era:"봉오동에서 대전자령까지"},
-{id:"s8-18-ev",unit:"s8",type:"mc",question:"한국 독립군 지도부가 임시 정부의 요청으로 만리장성 이남으로 옮겼고, 지청천은 뒷날 한국광복군 창설을 주도했다.",choices:["자유시 참변","영릉가 전투","지청천의 중국 관내 이동","양세봉 전사"],answer:2,explain:"지청천의 중국 관내 이동 · 1935년",era:"봉오동에서 대전자령까지"},
+{id:"s8-18-ev",unit:"s8",type:"mc",question:"한국 독립군 지도부가 임시 정부의 요청으로 만리장성 이남으로 옮겼고, 지청천은 뒷날 한국광복군 창설을 주도했다.",choices:["자유시 참변","영릉가 전투","지청천의 중국 관내 이동","양세봉 전사"],answer:2,explain:"지청천의 중국 관내 이동 · 1930년대 중반",era:"봉오동에서 대전자령까지"},
 {id:"s8-18-yr",unit:"s8",type:"mc",question:"「지청천의 중국 관내 이동」은(는) 몇 년의 일일까?",choices:["1932","1924","1935","1933"],answer:2,explain:"한국 독립군 지도부가 임시 정부의 요청으로 만리장성 이남으로 옮겼고, 지청천은 뒷날 한국광복군 창설을 주도했다.",era:"봉오동에서 대전자령까지"},
-{id:"s8-18-bl",unit:"s8",type:"mc",question:"[지청천의 중국 관내 이동] 한국 독립군 지도부가 임시 정부의 요청으로 만리장성 이남으로 옮겼고, 지청천은 뒷날 　____　 창설을 주도했다.",choices:["최진동","양세봉","한국광복군","공화주의 자치 정부"],answer:2,explain:"지청천의 중국 관내 이동 · 1935년",era:"봉오동에서 대전자령까지"},
+{id:"s8-18-bl",unit:"s8",type:"mc",question:"[지청천의 중국 관내 이동] 한국 독립군 지도부가 임시 정부의 요청으로 만리장성 이남으로 옮겼고, 지청천은 뒷날 　____　 창설을 주도했다.",choices:["최진동","양세봉","한국광복군","공화주의 자치 정부"],answer:2,explain:"지청천의 중국 관내 이동 · 1930년대 중반",era:"봉오동에서 대전자령까지"},
 {id:"s1-ox00",unit:"s1",type:"ox",question:"파리 강화 회의는 윌슨의 14개조 평화 원칙을 토대로 열렸다.",choices:["O","X"],answer:0,explain:"맞다. 그중 민족 자결주의가 3·1 운동의 국제적 배경이 된다.",era:"세계대전의 소용돌이"},
 {id:"s1-ox01",unit:"s1",type:"ox",question:"제1차 세계 대전은 사라예보 사건을 계기로 일어났다.",choices:["O","X"],answer:0,explain:"맞다. 오스트리아·헝가리 제국 황태자 부부가 암살된 사건이다.",era:"세계대전의 소용돌이"},
 {id:"s1-ox02",unit:"s1",type:"ox",question:"일본은 루거우차오 사건을 빌미로 아시아·태평양 전쟁을 일으켰다.",choices:["O","X"],answer:1,explain:"루거우차오 사건 → 중일 전쟁(1937). 아시아·태평양 전쟁(1941)의 계기는 진주만 기습이다.",era:"세계대전의 소용돌이"},
@@ -7199,8 +7219,8 @@ const QUESTIONS=[
 {id:"s9-04-bl",unit:"s9",type:"mc",question:"[김상옥의 의거] 의열단원 김상옥이 　____　에 폭탄을 던졌다.",choices:["신채호", "조선 총독부", "김구", "종로 경찰서"],answer:3,explain:"김상옥의 의거 · 1923년",era:"폭탄과 권총의 독립운동"},
 {id:"s9-05-ev",unit:"s9",type:"mc",question:"의열단원 나석주가 동양 척식 주식회사에 폭탄을 던지고 권총을 쏘아 일본인을 살상하였다.",choices:["한인 애국단", "나석주의 의거", "윤봉길의 의거", "조선 혁명 선언"],answer:1,explain:"나석주의 의거 · 1926년",era:"폭탄과 권총의 독립운동"},
 {id:"s9-05-bl",unit:"s9",type:"mc",question:"[나석주의 의거] 의열단원 나석주가 　____　에 폭탄을 던지고 권총을 쏘아 일본인을 살상하였다.",choices:["동양 척식 주식회사", "개인 의열 투쟁", "국민당", "김구"],answer:0,explain:"나석주의 의거 · 1926년",era:"폭탄과 권총의 독립운동"},
-{id:"s9-06-ev",unit:"s9",type:"mc",question:"개인 의열 투쟁의 한계를 느낀 의열단원들이 중국 국민당 정부가 운영하는 황푸 군관 학교에 들어가 정규 군사 훈련을 받았다.",choices:["김상옥의 의거", "김익상의 의거", "윤봉길의 의거", "황푸 군관 학교 입교"],answer:3,explain:"황푸 군관 학교 입교 · 1926년",era:"폭탄과 권총의 독립운동"},
-{id:"s9-06-bl",unit:"s9",type:"mc",question:"[황푸 군관 학교 입교] 　____　의 한계를 느낀 의열단원들이 중국 국민당 정부가 운영하는 황푸 군관 학교에 들어가 정규 군사 훈련을 받았다.",choices:["훙커우 공원", "개인 의열 투쟁", "조선 총독부", "신채호"],answer:1,explain:"황푸 군관 학교 입교 · 1926년",era:"폭탄과 권총의 독립운동"},
+{id:"s9-06-ev",unit:"s9",type:"mc",question:"개인 의열 투쟁의 한계를 느낀 의열단원들이 중국 국민당 정부가 운영하는 황푸 군관 학교에 들어가 정규 군사 훈련을 받았다.",choices:["김상옥의 의거", "김익상의 의거", "윤봉길의 의거", "황푸 군관 학교 입교"],answer:3,explain:"황푸 군관 학교 입교 · 1920년대 후반",era:"폭탄과 권총의 독립운동"},
+{id:"s9-06-bl",unit:"s9",type:"mc",question:"[황푸 군관 학교 입교] 　____　의 한계를 느낀 의열단원들이 중국 국민당 정부가 운영하는 황푸 군관 학교에 들어가 정규 군사 훈련을 받았다.",choices:["훙커우 공원", "개인 의열 투쟁", "조선 총독부", "신채호"],answer:1,explain:"황푸 군관 학교 입교 · 1920년대 후반",era:"폭탄과 권총의 독립운동"},
 {id:"s9-07-ev",unit:"s9",type:"mc",question:"국민 대표 회의 결렬 뒤 침체된 대한민국 임시 정부에 활기를 불어넣으려고 김구가 조직하였다.",choices:["한인 애국단", "이봉창의 의거", "나석주의 의거", "조선 혁명 간부 학교"],answer:0,explain:"한인 애국단 · 1931년",era:"폭탄과 권총의 독립운동"},
 {id:"s9-07-bl",unit:"s9",type:"mc",question:"[한인 애국단] 국민 대표 회의 결렬 뒤 침체된 대한민국 임시 정부에 활기를 불어넣으려고 　____　가 조직하였다.",choices:["김구", "지린", "도쿄", "동양 척식 주식회사"],answer:0,explain:"한인 애국단 · 1931년",era:"폭탄과 권총의 독립운동"},
 {id:"s9-08-ev",unit:"s9",type:"mc",question:"한인 애국단의 첫 거사로 이봉창이 도쿄에서 일왕의 마차를 향해 폭탄을 던졌다. 실패하였지만 일본에 큰 충격을 주었다.",choices:["이봉창의 의거", "나석주의 의거", "조선 혁명 간부 학교", "황푸 군관 학교 입교"],answer:0,explain:"이봉창의 의거 · 1932년",era:"폭탄과 권총의 독립운동"},
@@ -7224,8 +7244,8 @@ const QUESTIONS=[
 {id:"s10-01-bl",unit:"s10",type:"mc",question:"[민립 대학 설립 운동] 이상재·이승훈 등이 조직한 　____　가 1천만 원을 모으려 전국적인 모금 운동을 펼쳤으나, 자연재해와 일제의 탄압으로 성과를 거두지 못하였다.",choices:["동아일보", "이광수", "사회주의자", "조선 민립 대학 기성회"],answer:3,explain:"민립 대학 설립 운동 · 1923년",era:"힘을 기르자는 사람들"},
 {id:"s10-02-ev",unit:"s10",type:"mc",question:"토산품 값이 폭등하는 문제가 나타났고, 일부 사회주의자는 자본가 계급의 이익만을 도모하는 운동이라고 비판하였다.",choices:["브나로드 운동", "민립 대학 설립 운동", "물산 장려 운동", "물산 장려 운동에 대한 비판"],answer:3,explain:"물산 장려 운동에 대한 비판 · 1923년",era:"힘을 기르자는 사람들"},
 {id:"s10-02-bl",unit:"s10",type:"mc",question:"[물산 장려 운동에 대한 비판] 토산품 값이 폭등하는 문제가 나타났고, 일부 　____　는 자본가 계급의 이익만을 도모하는 운동이라고 비판하였다.",choices:["조선 민립 대학 기성회", "동아일보", "조선일보", "사회주의자"],answer:3,explain:"물산 장려 운동에 대한 비판 · 1923년",era:"힘을 기르자는 사람들"},
-{id:"s10-03-ev",unit:"s10",type:"mc",question:"이광수·최린·김성수 등이 일제의 식민 지배를 인정하고 그 안에서 자치권과 참정권을 얻으려 한 타협적 운동으로, 일제의 민족 분열 정책에 이용만 당하였다.",choices:["자치 운동", "브나로드 운동", "물산 장려 운동", "문자 보급 운동"],answer:0,explain:"자치 운동 · 1924년",era:"힘을 기르자는 사람들"},
-{id:"s10-03-bl",unit:"s10",type:"mc",question:"[자치 운동] 　____　·최린·김성수 등이 일제의 식민 지배를 인정하고 그 안에서 자치권과 참정권을 얻으려 한 타협적 운동으로, 일제의 민족 분열 정책에 이용만 당하였다.",choices:["이광수", "조선 민립 대학 기성회", "조만식", "동아일보"],answer:0,explain:"자치 운동 · 1924년",era:"힘을 기르자는 사람들"},
+{id:"s10-03-ev",unit:"s10",type:"mc",question:"이광수·최린·김성수 등이 일제의 식민 지배를 인정하고 그 안에서 자치권과 참정권을 얻으려 한 타협적 운동으로, 일제의 민족 분열 정책에 이용만 당하였다.",choices:["자치 운동", "브나로드 운동", "물산 장려 운동", "문자 보급 운동"],answer:0,explain:"자치 운동 · 1920년대 중반~1930년대 초",era:"힘을 기르자는 사람들"},
+{id:"s10-03-bl",unit:"s10",type:"mc",question:"[자치 운동] 　____　·최린·김성수 등이 일제의 식민 지배를 인정하고 그 안에서 자치권과 참정권을 얻으려 한 타협적 운동으로, 일제의 민족 분열 정책에 이용만 당하였다.",choices:["이광수", "조선 민립 대학 기성회", "조만식", "동아일보"],answer:0,explain:"자치 운동 · 1920년대 중반~1930년대 초",era:"힘을 기르자는 사람들"},
 {id:"s10-04-ev",unit:"s10",type:"mc",question:"『조선일보』가 '아는 것이 힘, 배워야 산다'를 구호로 한글 교재를 보급하고 전국 순회강연을 열었다.",choices:["문자 보급 운동", "자치 운동", "물산 장려 운동", "물산 장려 운동에 대한 비판"],answer:0,explain:"문자 보급 운동 · 1929년",era:"힘을 기르자는 사람들"},
 {id:"s10-04-bl",unit:"s10",type:"mc",question:"[문자 보급 운동] 『　____　』가 '아는 것이 힘, 배워야 산다'를 구호로 한글 교재를 보급하고 전국 순회강연을 열었다.",choices:["이광수", "조선 민립 대학 기성회", "조선일보", "조만식"],answer:2,explain:"문자 보급 운동 · 1929년",era:"힘을 기르자는 사람들"},
 {id:"s10-05-ev",unit:"s10",type:"mc",question:"『동아일보』가 벌인 농촌 계몽 운동으로, 학생과 청년이 농촌을 찾아가 글을 가르치고 미신 타파와 근검절약을 강조하였다.",choices:["물산 장려 운동", "자치 운동", "물산 장려 운동에 대한 비판", "브나로드 운동"],answer:3,explain:"브나로드 운동 · 1931년",era:"힘을 기르자는 사람들"},
@@ -7244,8 +7264,8 @@ const QUESTIONS=[
 {id:"s11-02-bl",unit:"s11",type:"mc",question:"[조선 노동 총동맹] 　____　 발생 건수와 참여 노동자가 크게 늘면서 결성된 전국 규모의 노동 운동 단체이다.",choices:["노동 쟁의", "4개월", "농민 조합", "지주"],answer:0,explain:"조선 노동 총동맹 · 1927년",era:"소작료와 총파업"},
 {id:"s11-03-ev",unit:"s11",type:"mc",question:"일본인 감독이 한국인 노동자를 구타한 일을 계기로 시작되어 4개월여 이어진, 일제 강점기 최대 규모의 노동 운동이자 반제국주의 항일 운동이다.",choices:["혁명적 농민·노동 조합", "원산 총파업", "조선 농민 총동맹", "암태도 소작 쟁의"],answer:1,explain:"원산 총파업 · 1929년",era:"소작료와 총파업"},
 {id:"s11-03-bl",unit:"s11",type:"mc",question:"[원산 총파업] 일본인 감독이 한국인 노동자를 구타한 일을 계기로 시작되어 　____　여 이어진, 일제 강점기 최대 규모의 노동 운동이자 반제국주의 항일 운동이다.",choices:["농민 조합", "비합법적", "4개월", "지주"],answer:2,explain:"원산 총파업 · 1929년",era:"소작료와 총파업"},
-{id:"s11-04-ev",unit:"s11",type:"mc",question:"대공황으로 생활이 더 어려워지자 농민과 노동자가 사회주의 세력과 연대해 혁명적 조합을 만들고 비합법적 폭력 투쟁으로 일제에 맞섰다.",choices:["원산 총파업", "조선 농민 총동맹", "조선 노동 총동맹", "혁명적 농민·노동 조합"],answer:3,explain:"혁명적 농민·노동 조합 · 1931년",era:"소작료와 총파업"},
-{id:"s11-04-bl",unit:"s11",type:"mc",question:"[혁명적 농민·노동 조합] 대공황으로 생활이 더 어려워지자 농민과 노동자가 사회주의 세력과 연대해 혁명적 조합을 만들고 　____　 폭력 투쟁으로 일제에 맞섰다.",choices:["노동 쟁의", "지주", "비합법적", "농민 조합"],answer:2,explain:"혁명적 농민·노동 조합 · 1931년",era:"소작료와 총파업"},
+{id:"s11-04-ev",unit:"s11",type:"mc",question:"대공황으로 생활이 더 어려워지자 농민과 노동자가 사회주의 세력과 연대해 혁명적 조합을 만들고 비합법적 폭력 투쟁으로 일제에 맞섰다.",choices:["원산 총파업", "조선 농민 총동맹", "조선 노동 총동맹", "혁명적 농민·노동 조합"],answer:3,explain:"혁명적 농민·노동 조합 · 1930년대",era:"소작료와 총파업"},
+{id:"s11-04-bl",unit:"s11",type:"mc",question:"[혁명적 농민·노동 조합] 대공황으로 생활이 더 어려워지자 농민과 노동자가 사회주의 세력과 연대해 혁명적 조합을 만들고 　____　 폭력 투쟁으로 일제에 맞섰다.",choices:["노동 쟁의", "지주", "비합법적", "농민 조합"],answer:2,explain:"혁명적 농민·노동 조합 · 1930년대",era:"소작료와 총파업"},
 {id:"s11-ox00",unit:"s11",type:"ox",question:"암태도 소작 쟁의는 소작료 인하를 이끌어 냈다.",choices:["O", "X"],answer:0,explain:"맞다. 1년여 투쟁 끝에 지주가 소작인회의 요구를 받아들였다.",era:"소작료와 총파업"},
 {id:"s11-ox01",unit:"s11",type:"ox",question:"원산 총파업은 일제 강점기 최대 규모의 노동 운동이다.",choices:["O", "X"],answer:0,explain:"맞다. 4개월여 이어졌고 국내외 노동 단체가 지원했다.",era:"소작료와 총파업"},
 {id:"s11-ox02",unit:"s11",type:"ox",question:"1930년대 농민·노동 운동은 합법적인 온건 노선으로 바뀌었다.",choices:["O", "X"],answer:1,explain:"반대다. 혁명적 조합을 만들어 비합법적 폭력 투쟁으로 급진화했다.",era:"소작료와 총파업"},
@@ -7285,8 +7305,8 @@ const QUESTIONS=[
 {id:"s14-01-bl",unit:"s14",type:"mc",question:"[「운수 좋은 날」] 현진건의 소설로, 　____　 김 첨지의 삶을 통해 일제 강점기 가난한 도시민의 모습을 보여 준다.",choices:["인력거꾼", "중앙아시아", "통제", "변사"],answer:0,explain:"「운수 좋은 날」 · 1924년",era:"경성의 두 얼굴"},
 {id:"s14-02-ev",unit:"s14",type:"mc",question:"나운규가 각본·주연·감독을 맡아 흥행한 무성 영화로, 당시에는 장면을 해설하는 변사가 큰 인기를 누렸다.",choices:["농촌 진흥 운동", "영화 「아리랑」", "「운수 좋은 날」", "연해주 한인 강제 이주"],answer:1,explain:"영화 「아리랑」 · 1926년",era:"경성의 두 얼굴"},
 {id:"s14-02-bl",unit:"s14",type:"mc",question:"[영화 「아리랑」] 나운규가 각본·주연·감독을 맡아 흥행한 무성 영화로, 당시에는 장면을 해설하는 　____　가 큰 인기를 누렸다.",choices:["유언비어", "통제", "인력거꾼", "변사"],answer:3,explain:"영화 「아리랑」 · 1926년",era:"경성의 두 얼굴"},
-{id:"s14-03-ev",unit:"s14",type:"mc",question:"대공황으로 농민이 몰락하자 일제가 생활 개선을 내세워 벌였으나, 농촌 통제를 강화하고 빈곤의 책임을 농민에게 돌렸다.",choices:["연해주 한인 강제 이주", "「운수 좋은 날」", "농촌 진흥 운동", "관동 대지진 한국인 학살"],answer:2,explain:"농촌 진흥 운동 · 1932년",era:"경성의 두 얼굴"},
-{id:"s14-03-bl",unit:"s14",type:"mc",question:"[농촌 진흥 운동] 대공황으로 농민이 몰락하자 일제가 생활 개선을 내세워 벌였으나, 농촌 　____　를 강화하고 빈곤의 책임을 농민에게 돌렸다.",choices:["유언비어", "인력거꾼", "변사", "통제"],answer:3,explain:"농촌 진흥 운동 · 1932년",era:"경성의 두 얼굴"},
+{id:"s14-03-ev",unit:"s14",type:"mc",question:"대공황으로 농민이 몰락하자 일제가 생활 개선을 내세워 벌였으나, 농촌 통제를 강화하고 빈곤의 책임을 농민에게 돌렸다.",choices:["연해주 한인 강제 이주", "「운수 좋은 날」", "농촌 진흥 운동", "관동 대지진 한국인 학살"],answer:2,explain:"농촌 진흥 운동 · 1930년대",era:"경성의 두 얼굴"},
+{id:"s14-03-bl",unit:"s14",type:"mc",question:"[농촌 진흥 운동] 대공황으로 농민이 몰락하자 일제가 생활 개선을 내세워 벌였으나, 농촌 　____　를 강화하고 빈곤의 책임을 농민에게 돌렸다.",choices:["유언비어", "인력거꾼", "변사", "통제"],answer:3,explain:"농촌 진흥 운동 · 1930년대",era:"경성의 두 얼굴"},
 {id:"s14-04-ev",unit:"s14",type:"mc",question:"소련이 일본에 협력할 것이라는 구실로 연해주 한국인 수십만 명을 중앙아시아로 강제 이주시켰다.",choices:["영화 「아리랑」", "관동 대지진 한국인 학살", "연해주 한인 강제 이주", "농촌 진흥 운동"],answer:2,explain:"연해주 한인 강제 이주 · 1937년",era:"경성의 두 얼굴"},
 {id:"s14-04-bl",unit:"s14",type:"mc",question:"[연해주 한인 강제 이주] 소련이 일본에 협력할 것이라는 구실로 연해주 한국인 수십만 명을 　____　로 강제 이주시켰다.",choices:["유언비어", "인력거꾼", "중앙아시아", "변사"],answer:2,explain:"연해주 한인 강제 이주 · 1937년",era:"경성의 두 얼굴"},
 {id:"s14-ox00",unit:"s14",type:"ox",question:"일제 강점기 도시에서는 한국인 거주지와 일본인 거주지가 구분되었다.",choices:["O", "X"],answer:0,explain:"맞다. 수도·전기·도로는 일본인 거주지에 몰렸다.",era:"경성의 두 얼굴"},
@@ -7317,14 +7337,14 @@ const QUESTIONS=[
 {id:"s16-04-bl",unit:"s16",type:"mc",question:"[조선사 편수회] 조선 총독부 부설 기구로, 타율성론·정체성론·당파성론의 　____　에 따라 『조선사』를 편찬하였다.",choices:["식민 사관", "훈민정음", "가갸날", "국혼"],answer:0,explain:"조선사 편수회 · 1925년",era:"말과 글과 역사를 지키다"},
 {id:"s16-05-ev",unit:"s16",type:"mc",question:"조선어 연구회가 발전한 단체로, 한글 맞춤법 통일안을 제정하고 『조선말 큰사전』 편찬을 추진하였다.",choices:["전형필의 문화유산 수집", "조선학 운동", "사찰령", "조선어 학회"],answer:3,explain:"조선어 학회 · 1931년",era:"말과 글과 역사를 지키다"},
 {id:"s16-05-bl",unit:"s16",type:"mc",question:"[조선어 학회] 조선어 연구회가 발전한 단체로, 한글 　____　 통일안을 제정하고 『조선말 큰사전』 편찬을 추진하였다.",choices:["정인보", "주지", "맞춤법", "훈민정음"],answer:2,explain:"조선어 학회 · 1931년",era:"말과 글과 역사를 지키다"},
-{id:"s16-06-ev",unit:"s16",type:"mc",question:"고대사 연구에 주력하여 『조선상고사』, 『조선사연구초』 등을 저술한 민족주의 사학자이다.",choices:["신채호의 고대사 연구", "사찰령", "박은식", "천도교의 제2의 독립 선언 계획"],answer:0,explain:"신채호의 고대사 연구 · 1931년",era:"말과 글과 역사를 지키다"},
-{id:"s16-06-bl",unit:"s16",type:"mc",question:"[신채호의 고대사 연구] 고대사 연구에 주력하여 『　____　』, 『조선사연구초』 등을 저술한 민족주의 사학자이다.",choices:["맞춤법", "주지", "정체성론", "조선상고사"],answer:3,explain:"신채호의 고대사 연구 · 1931년",era:"말과 글과 역사를 지키다"},
-{id:"s16-07-ev",unit:"s16",type:"mc",question:"마르크스의 유물 사관에 근거해 『조선사회경제사』를 쓰고, 한국사도 세계사의 보편적 발전 법칙에 따랐다며 식민 사관의 정체성론을 극복하려 하였다.",choices:["조선학 운동", "백남운의 사회 경제 사학", "사찰령", "천도교의 제2의 독립 선언 계획"],answer:1,explain:"백남운의 사회 경제 사학 · 1933년",era:"말과 글과 역사를 지키다"},
-{id:"s16-07-bl",unit:"s16",type:"mc",question:"[백남운의 사회 경제 사학] 마르크스의 유물 사관에 근거해 『조선사회경제사』를 쓰고, 한국사도 세계사의 보편적 발전 법칙에 따랐다며 식민 사관의 　____　을 극복하려 하였다.",choices:["조선상고사", "정체성론", "가갸날", "맞춤법"],answer:1,explain:"백남운의 사회 경제 사학 · 1933년",era:"말과 글과 역사를 지키다"},
+{id:"s16-06-ev",unit:"s16",type:"mc",question:"고대사 연구에 주력하여 『조선상고사』, 『조선사연구초』 등을 저술한 민족주의 사학자이다.",choices:["신채호의 고대사 연구", "사찰령", "박은식", "천도교의 제2의 독립 선언 계획"],answer:0,explain:"신채호의 고대사 연구 · 1920~30년대",era:"말과 글과 역사를 지키다"},
+{id:"s16-06-bl",unit:"s16",type:"mc",question:"[신채호의 고대사 연구] 고대사 연구에 주력하여 『　____　』, 『조선사연구초』 등을 저술한 민족주의 사학자이다.",choices:["맞춤법", "주지", "정체성론", "조선상고사"],answer:3,explain:"신채호의 고대사 연구 · 1920~30년대",era:"말과 글과 역사를 지키다"},
+{id:"s16-07-ev",unit:"s16",type:"mc",question:"마르크스의 유물 사관에 근거해 『조선사회경제사』를 쓰고, 한국사도 세계사의 보편적 발전 법칙에 따랐다며 식민 사관의 정체성론을 극복하려 하였다.",choices:["조선학 운동", "백남운의 사회 경제 사학", "사찰령", "천도교의 제2의 독립 선언 계획"],answer:1,explain:"백남운의 사회 경제 사학 · 1930년대",era:"말과 글과 역사를 지키다"},
+{id:"s16-07-bl",unit:"s16",type:"mc",question:"[백남운의 사회 경제 사학] 마르크스의 유물 사관에 근거해 『조선사회경제사』를 쓰고, 한국사도 세계사의 보편적 발전 법칙에 따랐다며 식민 사관의 　____　을 극복하려 하였다.",choices:["조선상고사", "정체성론", "가갸날", "맞춤법"],answer:1,explain:"백남운의 사회 경제 사학 · 1930년대",era:"말과 글과 역사를 지키다"},
 {id:"s16-08-ev",unit:"s16",type:"mc",question:"문헌 고증으로 객관적인 역사를 서술하려는 실증 사학자들이 조직하고 『진단학보』를 발행하였다.",choices:["조선어 연구회", "진단 학회", "전형필의 문화유산 수집", "천도교의 제2의 독립 선언 계획"],answer:1,explain:"진단 학회 · 1934년",era:"말과 글과 역사를 지키다"},
 {id:"s16-08-bl",unit:"s16",type:"mc",question:"[진단 학회] 문헌 고증으로 객관적인 역사를 서술하려는 실증 사학자들이 조직하고 『　____　』를 발행하였다.",choices:["조선상고사", "정체성론", "진단학보", "맞춤법"],answer:2,explain:"진단 학회 · 1934년",era:"말과 글과 역사를 지키다"},
-{id:"s16-09-ev",unit:"s16",type:"mc",question:"정인보 등이 '문화가 살면 민족은 죽지 않는다'는 신념으로 펼친 운동으로, 특히 조선 후기 실학 연구에 성과를 거두었다.",choices:["전형필의 문화유산 수집", "조선학 운동", "조선어 연구회", "박은식"],answer:1,explain:"조선학 운동 · 1934년",era:"말과 글과 역사를 지키다"},
-{id:"s16-09-bl",unit:"s16",type:"mc",question:"[조선학 운동] 　____　 등이 '문화가 살면 민족은 죽지 않는다'는 신념으로 펼친 운동으로, 특히 조선 후기 실학 연구에 성과를 거두었다.",choices:["조선상고사", "국혼", "정인보", "맞춤법"],answer:2,explain:"조선학 운동 · 1934년",era:"말과 글과 역사를 지키다"},
+{id:"s16-09-ev",unit:"s16",type:"mc",question:"정인보 등이 '문화가 살면 민족은 죽지 않는다'는 신념으로 펼친 운동으로, 특히 조선 후기 실학 연구에 성과를 거두었다.",choices:["전형필의 문화유산 수집", "조선학 운동", "조선어 연구회", "박은식"],answer:1,explain:"조선학 운동 · 1930년대 중반",era:"말과 글과 역사를 지키다"},
+{id:"s16-09-bl",unit:"s16",type:"mc",question:"[조선학 운동] 　____　 등이 '문화가 살면 민족은 죽지 않는다'는 신념으로 펼친 운동으로, 특히 조선 후기 실학 연구에 성과를 거두었다.",choices:["조선상고사", "국혼", "정인보", "맞춤법"],answer:2,explain:"조선학 운동 · 1930년대 중반",era:"말과 글과 역사를 지키다"},
 {id:"s16-10-ev",unit:"s16",type:"mc",question:"간송 전형필이 재산을 들여 『훈민정음』 해례본 등 국외로 반출되던 문화유산을 지켰다.",choices:["사찰령", "박은식", "조선어 연구회", "전형필의 문화유산 수집"],answer:3,explain:"전형필의 문화유산 수집 · 1936년",era:"말과 글과 역사를 지키다"},
 {id:"s16-10-bl",unit:"s16",type:"mc",question:"[전형필의 문화유산 수집] 간송 전형필이 재산을 들여 『　____　』 해례본 등 국외로 반출되던 문화유산을 지켰다.",choices:["가갸날", "훈민정음", "국혼", "개벽"],answer:1,explain:"전형필의 문화유산 수집 · 1936년",era:"말과 글과 역사를 지키다"},
 {id:"s16-ox00",unit:"s16",type:"ox",question:"식민 사관의 정체성론은 한국사가 외세에 의해 타율적으로 전개되었다는 주장이다.",choices:["O", "X"],answer:1,explain:"그건 타율성론. 정체성론은 사회·경제가 발전 없이 정체됐다는 주장이다.",era:"말과 글과 역사를 지키다"},
@@ -9426,7 +9446,7 @@ const RAW=[
 ["s1",1929,"대공황과 전체주의","미국에서 시작된 대공황에 미국은 뉴딜 정책, 영국은 블록 경제로 맞섰으나 경제 기반이 빈약한 이탈리아·독일·일본에서는 전체주의가 확산되었다.","뉴딜 정책"],
 ["s1",1931,"만주 사변","일본이 만주를 침략하고 이듬해 만주국을 세웠다.","만주국"],
 ["s1",1937,"중일 전쟁","일본이 루거우차오 사건을 빌미로 일으켰으며 난징 대학살을 저질렀다.","루거우차오 사건"],
-["s1",1936,"추축국 형성","독일·일본·이탈리아가 3국 방공 협정을 계기로 추축국을 이루고 대외 침략을 본격화하였다.","3국 방공 협정"],
+["s1",1937,"추축국 형성","독일·일본·이탈리아가 3국 방공 협정을 계기로 추축국을 이루고 대외 침략을 본격화하였다.","3국 방공 협정"],
 ["s1",1939,"제2차 세계 대전","독일이 독소 불가침 조약을 맺은 뒤 폴란드를 기습 침공하자 영국과 프랑스가 선전 포고하며 시작되었다.","폴란드"],
 ["s1",1941,"아시아·태평양 전쟁","미국이 전쟁 물자 수출을 금지하며 압박하자 일본이 하와이 진주만을 기습 공격하며 일으켰다.","진주만"],
 
@@ -9500,7 +9520,7 @@ const RAW=[
 ["s6",1919,"3·1 운동의 의의","일제 강점기 최대 규모의 항일 운동으로 우리 민족의 독립 의지를 전 세계에 알렸고, 학생·농민·노동자·여성이 참여해 민족 운동의 주체가 확대되었다.","최대 규모"],
 ["s6",1919,"3·1 운동의 영향","민족 운동을 조직적으로 지도할 구심점이 필요하다는 인식에서 대한민국 임시 정부가 수립되었고, 일제는 통치 방식을 문화 정치로 바꾸었다.","구심점"],
 ["s6",1919,"세계사적 의의","대표적인 반제국주의 민족 운동으로 중국의 5·4 운동 등 약소민족의 민족 운동에 영향을 주었다.","5·4 운동"],
-["s6",1920,"유관순","이화 학당 학생으로 천안 아우내 장터에서 만세 시위를 주도하다 붙잡혀 서대문 형무소에서 순국했다.","아우내"],
+["s6",1919,"유관순","이화 학당 학생으로 천안 아우내 장터에서 만세 시위를 주도하다 붙잡혀 서대문 형무소에서 순국했다.","아우내"],
 
 /* ================= s7 · 대한민국 임시 정부 (26~29쪽) ================= */
 ["s7",1919,"여러 임시 정부의 수립","연해주에 대한 국민 의회, 상하이에 대한민국 임시 정부가 세워지고 국내에서는 한성 정부 수립이 선포되었다.","대한 국민 의회"],
@@ -9744,6 +9764,18 @@ const RAW=[
 ["s9", 1928, "조명하의 의거", "타이완(타이중)에서 일본 왕족을 처단한 개인 의열 투쟁이다.", "타이완", null, "pr"]
 ];
 const FACTS=RAW.map(function(r,i){return {id:"f"+i,u:r[0],y:r[1],t:r[2],d:r[3],k:r[4],tk:r[5]||null,pr:r[6]||null};});
+/* 교과서가 한 해로 못 박지 않은 것(여러 해에 걸친 정책 · 흐름 · 설명). 연도 칸에는 이 말을 보여 주고,
+   「몇 년?」 문제와 순서 맞추기에서는 뺀다 — 대표 연도를 정답처럼 외우게 하면 안 된다.
+   숫자 연도(r[1])는 연표 안 자리를 잡는 데만 쓴다 */
+var APX={"우민화 교육":"1910년대","기간 시설 건설":"1910년대","북간도의 민족 운동":"1910년대",
+  "3·1 운동의 국제적 배경":"1917~1918","산미 증식 계획의 부담":"1920년대",
+  "3부의 성립":"1920년대 중반","3부의 성격":"1920년대 중반","3부 통합 운동":"1920년대 후반",
+  "자치 운동":"1920년대 중반~1930년대 초","황푸 군관 학교 입교":"1920년대 후반",
+  "혁명적 농민·노동 조합":"1930년대","농촌 진흥 운동":"1930년대","남면북양 정책":"1930년대",
+  "조선학 운동":"1930년대 중반","신채호의 고대사 연구":"1920~30년대","백남운의 사회 경제 사학":"1930년대",
+  "지청천의 중국 관내 이동":"1930년대 중반","신사 참배 강요":"1930년대","한국어 교육 금지":"1930년대 후반",
+  "인력 수탈":"1930년대 후반~1945","공출과 배급제":"1930년대 후반~1945"};
+FACTS.forEach(function(f){ if(APX[f.t])f.ya=APX[f.t]; });
 
 /* OX — 시험에서 실제로 헷갈리는 함정. [단원, 문장, 정답, 해설] */
 const OXRAW=[
@@ -9928,6 +9960,7 @@ var KEY="hansa-sprint-v2";   /* 교과서 단원 구조로 개편 */
 /* ---------- 날짜 ---------- */
 function dayNo(d){d=d||new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5);}
 function fmtY(y){return y<0?"기원전 "+(-y):String(y);}
+function yl(f){return f.ya||fmtY(f.y);}
 
 /* ---------- 상태 ---------- */
 var S;
@@ -10050,8 +10083,8 @@ function makeItem(id){
   if(id.charAt(0)==="o"){var o=OMAP[id];return {kind:"ox",id:id,u:o.u,ox:o};}
   var f=FMAP[id],sib=FACTS.filter(function(x){return x.u===f.u&&x.id!==f.id;});
   var kinds=["flash","event"];
-  var ys=distinct(sib.map(function(x){return x.y;}),3,f.y);
-  if(ys.length===3)kinds.push("year");   /* 선택지 4개를 못 채우면 연도 문제는 건너뛴다 */
+  var ys=distinct(sib.filter(function(x){return !x.ya;}).map(function(x){return x.y;}),3,f.y);
+  if(ys.length===3&&!f.ya)kinds.push("year");   /* 대략의 시기만 있는 것은 연도 문제로 내지 않는다 */   /* 선택지 4개를 못 채우면 연도 문제는 건너뛴다 */
   if(f.d.indexOf(f.k)>=0)kinds.push("cloze");
   var kind=kinds[Math.floor(Math.random()*kinds.length)];
   if(kind==="year")return {kind:"year",id:id,u:f.u,f:f,opts:shuffle(ys.concat([f.y])),ans:f.y};
@@ -10068,7 +10101,7 @@ function makeItem(id){
 function makeOrder(){
   /* 연도가 4개 이상 서로 다른 단원만 후보로 삼는다.
      3·1 운동처럼 사건이 한 해에 몰린 단원은 순서를 물을 수 없다. */
-  var byU={};poolFacts().forEach(function(f){(byU[f.u]=byU[f.u]||[]).push(f);});
+  var byU={};poolFacts().forEach(function(f){ if(!f.ya)(byU[f.u]=byU[f.u]||[]).push(f); });
   var us=Object.keys(byU).filter(function(u){
     var ys={},n=0;
     byU[u].forEach(function(f){if(!ys[f.y]){ys[f.y]=1;n++;}});
@@ -10128,7 +10161,7 @@ function renderFlash(it,done){
     '<div class="card-b"><div class="q">'+esc(f.t)+'</div>'+
     '<p class="hint" style="margin-top:12px">언제, 무슨 일이었는지 머릿속으로 답해 보고 넘기세요.</p>'+
     '<div id="back" style="display:none"><hr style="border:none;border-top:1px solid var(--line);margin:16px 0">'+
-    '<span class="yr">'+fmtY(f.y)+'</span><p class="d">'+f.d+'</p></div>'+
+    '<span class="yr'+(f.ya?' ya':'')+'">'+yl(f)+'</span><p class="d">'+f.d+'</p></div>'+
     '<button class="btn wide" id="bFlip" style="margin-top:18px">답 확인</button>'+
     '<div class="grade" id="gr" style="display:none">'+
     '<button class="gbtn g1" data-s="0"><strong>다시</strong><small>오늘 또</small></button>'+
@@ -10148,7 +10181,7 @@ function renderFlash(it,done){
 function renderChoice(it,done){
   var f=it.f,qh,opts=it.opts,label;
   if(it.kind==="year"){label="연도 맞히기";qh='<div class="q">'+esc(f.t)+'<span style="color:var(--tx-3);font-weight:400"> — 몇 년?</span></div><p class="d">'+f.d+'</p>';}
-  else if(it.kind==="event"){label="사건 찾기";qh='<span class="yr">'+fmtY(f.y)+'</span><p class="d" style="margin-top:6px">'+f.d+'</p><div class="q sm" style="margin-top:14px">이 설명에 해당하는 것은?</div>';}
+  else if(it.kind==="event"){label="사건 찾기";qh='<span class="yr'+(f.ya?' ya':'')+'">'+yl(f)+'</span><p class="d" style="margin-top:6px">'+f.d+'</p><div class="q sm" style="margin-top:14px">이 설명에 해당하는 것은?</div>';}
   else{label="빈칸 채우기";
     qh='<div class="q sm">'+esc(f.t)+'</div><p class="d" style="margin-top:10px">'+
        f.d.replace(f.k,'<mark>&nbsp;&nbsp;?&nbsp;&nbsp;</mark>')+'</p>';}
@@ -10169,7 +10202,7 @@ function renderChoice(it,done){
       grade(it.id,ok?2:0);
       document.getElementById("fb").innerHTML=
         '<div class="fb '+(ok?"ok":"no")+'" style="margin-top:14px"><span class="ic">'+(ok?"○":"×")+'</span><span>'+
-        (ok?"정답! ":"<b>"+esc(f.t)+" — "+fmtY(f.y)+"</b><br>")+f.d+'</span></div>'+
+        (ok?"정답! ":"<b>"+esc(f.t)+" — "+yl(f)+"</b><br>")+f.d+'</span></div>'+
         '<button class="btn wide" id="bNext" style="margin-top:12px">다음 →</button>';
       document.getElementById("bNext").onclick=done;
       document.getElementById("bNext").focus();
@@ -10210,7 +10243,7 @@ function renderOrder(g,done){
         var cls=i>=0?(wrong?"":"ok"):"";
         return '<button class="opt '+cls+'" data-id="'+f.id+'"'+(i>=0?" disabled":"")+'>'+
                '<span class="k">'+(i>=0?(i+1):"·")+'</span><span>'+esc(f.t)+
-               (i>=0||wrong?' <span style="color:var(--tx-3)">— '+fmtY(f.y)+'</span>':'')+'</span></button>';
+               (i>=0||wrong?' <span style="color:var(--tx-3)">— '+yl(f)+'</span>':'')+'</span></button>';
       }).join("")+'</div><div id="fb"></div></div></div>';
     Array.prototype.forEach.call(document.querySelectorAll("#op .opt"),function(b){
       b.onclick=function(){
@@ -10230,7 +10263,7 @@ function renderOrder(g,done){
       '<div class="fb '+(ok?"ok":"no")+'" style="margin-top:14px"><span class="ic">'+(ok?"○":"×")+
       '</span><span>'+(ok?"완벽한 순서예요! 4장 모두 +XP":"순서가 어긋났어요. 아래 연표로 확인하세요.")+'</span></div>'+
       '<div class="rail-line" style="margin-top:12px">'+g.sorted.map(function(f){
-        return '<div class="rl"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
+        return '<div class="rl"><span class="y'+(f.ya?' ya':'')+'">'+yl(f)+'</span><span class="dot"></span>'+
                '<div><div class="t">'+esc(f.t)+'</div><div class="s">'+f.d+'</div></div></div>';
       }).join("")+'</div>'+
       '<button class="btn wide" id="bNext" style="margin-top:14px">다음 →</button>';
@@ -10272,7 +10305,7 @@ function viewTimeline(){
       if(ei!==ce){ ce=ei;
         body+='<div class="era"><b>'+ERAS[ei].n+'</b><span>'+esc(ERAS[ei].t)+'</span></div>'; }
       var k=trackOf(f.u,f);
-      body+='<div class="rl k-'+k+'"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
+      body+='<div class="rl k-'+k+'"><span class="y'+(f.ya?' ya':'')+'">'+yl(f)+'</span><span class="dot"></span>'+
         '<div><div class="t">'+esc(f.t)+'<em class="tg">'+TRACKN[k]+'</em>'+(f.pr?'<em class="tg pr">프린트</em>':'')+'</div>'+
         '<div class="s">'+f.d+'</div></div></div>';
     });
@@ -10287,7 +10320,7 @@ function viewTimeline(){
       gg=gg.slice().sort(function(a,b){return a.y-b.y;});
       body+='<div class="sect" style="margin-top:20px">'+u.short+' · '+u.bk+'</div><div class="rail-line">'+
         gg.map(function(f){
-          return '<div class="rl"><span class="y">'+fmtY(f.y)+'</span><span class="dot"></span>'+
+          return '<div class="rl"><span class="y'+(f.ya?' ya':'')+'">'+yl(f)+'</span><span class="dot"></span>'+
             '<div><div class="t">'+esc(f.t)+'</div><div class="s">'+f.d+'</div></div></div>';
         }).join("")+'</div>';
     });
