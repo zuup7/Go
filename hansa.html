@@ -747,6 +747,28 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 
 
 /* 인물·단체 카드 */
+/* 킵 */
+.a-learn .kbtn{flex-shrink:0;min-height:36px;padding:0 10px;font-size:13px;font-weight:700;color:var(--ink-2);
+  background:var(--cream);border:2px solid var(--ink);white-space:nowrap}
+.a-learn .kbtn.on{background:var(--yel);color:var(--ink)}
+.a-learn .nkeep{display:flex;justify-content:flex-end;margin-top:10px}
+.a-learn .kbar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:70px;padding:11px 12px;margin-bottom:12px;
+  background:#FFF3C4;border:var(--bd) solid var(--yel-d);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28)}
+.a-learn .kbar:active{transform:translate(var(--sh),var(--sh));box-shadow:none}
+.a-learn .kbar .n{font-family:var(--f-px);font-size:16px;color:var(--ink);min-width:34px;text-align:center}
+.a-learn .kbar .tx{flex:1;min-width:0}
+.a-learn .kbar .tx b{display:block;font-family:var(--f-h);font-size:15.5px;line-height:1.45}
+.a-learn .kbar .tx small{display:block;font-size:12px;color:var(--ink-2);line-height:1.6}
+.a-learn .kbar .ch{flex-shrink:0;color:var(--ink-3)}
+.a-learn .kitem{background:var(--cream);border:var(--bd) solid var(--ink);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28);
+  padding:11px 13px;margin-bottom:10px}
+.a-learn .kitem .kt{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink-2);line-height:1.5}
+.a-learn .kitem .kh{font-family:var(--f-h);font-size:18px;line-height:1.45;margin:6px 0 6px;color:var(--ink)}
+.a-learn .kitem .kb{font-size:14px;line-height:1.75;color:var(--ink)}
+.a-learn .kitem .kb b,.a-learn .kitem .kh b{background:var(--yel);padding:0 3px}
+.a-learn .kitem .kb em{font-style:normal;font-weight:800}
+.a-learn .kitem .kso{margin-top:6px;color:var(--ink-2)}
+.a-learn .kitem .peekbtn{margin-top:4px}
 .a-learn .exbar.nbar{background:#FAE4C2;border-color:var(--org-d)}
 .a-learn .exbar.nbar .ic{color:var(--org-d)}
 .a-learn .ncard .nname{font-family:var(--f-h);font-size:30px;line-height:1.3;margin:4px 0 6px;color:var(--ink)}
@@ -2984,8 +3006,8 @@ var S;
 function load(){
   try{var r=localStorage.getItem(KEY);
     S=r?JSON.parse(r):null;}catch(e){S=null;}
-  if(!S)S={done:{},pos:{},quiz:{},wrong:{},due:{},mem:{},essay:{},pmark:{},nbox:{},streak:0,last:0,dday:"",hist:[],theme:""};
-  ["done","pos","quiz","wrong","due","mem","essay","pmark","nbox"].forEach(function(k){if(!S[k])S[k]={};});
+  if(!S)S={done:{},pos:{},quiz:{},wrong:{},due:{},mem:{},essay:{},pmark:{},nbox:{},keep:{},streak:0,last:0,dday:"",hist:[],theme:""};
+  ["done","pos","quiz","wrong","due","mem","essay","pmark","nbox","keep"].forEach(function(k){if(!S[k])S[k]={};});
   if(!S.hist)S.hist=[]; if(S.dday==null)S.dday="";
   /* 옛 저장본: 마친 수업에 복습 일정이 없으면 내일로 잡아 준다 */
   Object.keys(S.done).forEach(function(k){ if(!S.due[k])S.due[k]={n:0,at:today()+1}; });
@@ -3071,6 +3093,10 @@ function vHome(){
   if(mw)html+='<button class="mbar" id="goMem"><span class="n">'+mw+'</span>'+
     '<span class="tx"><b>헷갈린다고 매긴 것 '+mw+'개</b><small>덜 외운 암기 장치를 위로 모아 열어 줄게. 「기억났어」로 바꾸면 사라져.</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>';
+  var kc=kCount();
+  if(kc)html+='<button class="kbar" id="goKeep"><span class="n">'+kc+'</span>'+
+    '<span class="tx"><b>킵한 것 '+kc+'개</b><small>헷갈린다고 찍어 둔 카드 · 인물 · 빈칸을 한곳에 모아 뒀어.</small></span>'+
+    '<span class="ch">'+IC.chev+'</span></button>';
   var rc=peekCard();
   if(rc)html+='<div class="peek"><div class="pt">'+
     '<span class="lb">30초 복습 · '+esc(rc.l.title)+'</span>'+
@@ -3123,6 +3149,8 @@ function vHome(){
   if(gw)gw.onclick=function(){go("wrong");};
   var gd=document.getElementById("goDue");
   if(gd)gd.onclick=function(){RV=null;go("due");};
+  var gk=document.getElementById("goKeep");
+  if(gk)gk.onclick=function(){go("keep");};
   var gm=document.getElementById("goMem");
   if(gm)gm.onclick=function(){S.mmOnly=true;save();RVTAB="hint";go("review");};
   var de=document.getElementById("ddEdit");
@@ -3245,7 +3273,8 @@ function hud(){
   var cur=L.phase==="card"?L.i:l.cards.length+L.qi;
   return '<div style="display:flex;align-items:center;gap:12px;padding:2px 0 16px">'+
     '<span class="track"><i style="width:'+(cur/tot*100)+'%"></i></span>'+
-    '<span class="step">'+(cur+1)+' / '+tot+'</span></div>';
+    '<span class="step">'+(cur+1)+' / '+tot+'</span>'+
+    (L.phase==="card"?kBtn(L.id+"#"+L.i):'')+'</div>';
 }
 /* 되돌아갈 자리가 있나 — 첫 카드 앞으로는 못 간다 */
 function canBack(){
@@ -5661,6 +5690,7 @@ function vNRun(){
       ? '<div class="nname">'+esc(x.n)+'</div><div class="h sm">맞는 설명은?</div>'
       : '<div class="h sm">'+(x.k==="인물"?"누구일까?":"어느 단체일까?")+'</div>'+
         '<ul class="nclue">'+x.cl.map(function(c){return '<li>'+c+'</li>';}).join("")+'</ul>')+
+    '<div class="nkeep">'+kBtn("N:"+x.id)+'</div>'+
     '</div><div style="margin-top:12px" id="opts">'+m.c.map(function(c,i){
       return '<button class="qopt" data-i="'+i+'"><span class="kx">'+"ABCD".charAt(i)+'</span><span>'+stripTags(c)+'</span></button>';
     }).join("")+'</div><div id="fb"></div>';
@@ -5718,6 +5748,79 @@ function nEnd(){
   view.querySelector("#nnext").onclick=function(){nDeal();NR=null;vNRun();};
 }
 
+/* ── 킵: 헷갈리는 걸 찍어 두고 한곳에서 모아 본다 ──
+   수업 카드는 "L21#3", 인물·단체 카드는 "N:n_kimgu" 로 S.keep 에 남는다.
+   프린트 빈칸의 「헷갈림」(S.pmark)도 같은 목록에 함께 보여 준다 */
+var KPTAB="all", KPO={};
+function kOn(k){return !!S.keep[k];}
+function kToggle(k){ if(S.keep[k])delete S.keep[k]; else S.keep[k]=Date.now(); save(); }
+function kBtn(k){var on=kOn(k);
+  return '<button class="kbtn'+(on?" on":"")+'" data-k="'+esc(k)+'" aria-pressed="'+on+'">'+(on?"★ 킵함":"☆ 킵")+'</button>';}
+/* 수업 카드 한 장을 머리말 + 본문으로 줄인다(찾기 색인과 같은 규칙) */
+function kCardText(c){
+  if(c.t==="fact")return {h:c.n+" · "+c.y,b:c.b+'<p class="kso">→ '+c.so+'</p>'};
+  if(c.t==="hint")return {h:c.k,b:c.b};
+  if(c.t==="chain")return {h:c.title,b:c.items.join("<br>")};
+  if(c.t==="compare")return {h:c.title,b:'<b>'+c.l.n+'</b> — '+c.l.p.join(" · ")+'<br><b>'+c.r.n+'</b> — '+c.r.p.join(" · ")};
+  if(c.t==="story")return {h:c.h,b:c.b};
+  if(c.t==="check")return {h:c.q,b:esc(c.a)};
+  if(c.t==="pick")return {h:c.q,b:'<b>'+esc(c.c[c.a])+'</b> — '+esc(c.e)};
+  return {h:"",b:""};
+}
+function kList(){
+  var out=[];
+  LESSONS.forEach(function(l){ l.cards.forEach(function(c,i){ var k=l.id+"#"+i;
+    if(S.keep[k]){ var t=kCardText(c); out.push({g:"card",k:k,lid:l.id,ci:i,sub:l.title,h:t.h,b:t.b}); } }); });
+  NAMES.forEach(function(x){ var k="N:"+x.id;
+    if(S.keep[k])out.push({g:"name",k:k,sub:x.k+" · "+UMAP[x.u].n,h:x.n,
+      b:'<ul class="nclue">'+x.cl.map(function(c){return "<li>"+c+"</li>";}).join("")+'</ul><p class="kso">→ '+esc(x.e)+'</p>',x:x}); });
+  PBLANK.concat(PCHK).forEach(function(r){ if(S.pmark[r.id])out.push({g:"blank",k:r.id,sub:"프린트 "+r[0]+"쪽 · "+UMAP[r[1]].n,r:r}); });
+  return out;
+}
+function kCount(){return kList().length;}
+function vKeep(){
+  titleEl.textContent="킵한 것";
+  var all=kList(), n={card:0,name:0,blank:0};
+  all.forEach(function(x){n[x.g]++;});
+  var list=KPTAB==="all"?all:all.filter(function(x){return x.g===KPTAB;});
+  var hide=S.kpHide==null?true:!!S.kpHide;
+  var T=[["all","전체 "+all.length],["card","수업 "+n.card],["name","인물·단체 "+n.name],["blank","빈칸 "+n.blank]];
+  var h='<p class="note" style="margin-bottom:12px">수업 카드와 인물·단체 카드에서 <b>☆ 킵</b>을 누른 것, 프린트 빈칸에서 '+
+      '<b>헷갈림</b>을 누른 것이 여기 모여. 다 외웠으면 <b>★ 킵함</b>을 한 번 더 눌러 빼면 돼.</p>'+
+    '<div class="chips" style="margin-bottom:10px">'+T.map(function(t){
+      return '<button class="chip'+(KPTAB===t[0]?" on":"")+'" data-kt="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>'+
+    '<div class="tlbar"><button class="chip'+(hide?" on":"")+'" id="kph">'+(hide?"가리고 보기":"다 펴 놓기")+'</button>'+
+      '<span class="cnt">'+list.length+'개</span></div>';
+  if(!list.length)h+='<div class="empty">'+scene("book",56)+'<p>'+(all.length?"이 칸엔 아직 없어.":
+      "아직 킵한 게 없어.<br>수업을 보다가 헷갈리는 카드가 나오면 위쪽의 <b>☆ 킵</b>을 눌러 봐.")+'</p></div>';
+  var lastSub="";
+  list.forEach(function(x){
+    var open=!hide||KPO[x.k];
+    if(x.g==="blank"){
+      var r=x.r, bo=!!PBO[r.id];
+      h+='<div class="kitem"><div class="kt">'+esc(x.sub)+'</div>'+
+        '<div class="pbl'+(bo?" open":"")+'" style="margin:6px 0 0"><button class="pbs" data-id="'+r.id+'">'+
+        esc(r[2]).replace(/\{([^}]+)\}/g,function(_,a){return '<span class="pbk">'+a+'</span>';})+'</button>'+
+        '<button class="pbm on" data-id="'+r.id+'" aria-pressed="true">빼기</button></div></div>';
+      return;
+    }
+    h+='<div class="kitem"><div class="kt">'+esc(x.sub)+kBtn(x.k)+'</div>'+
+      '<div class="kh">'+(x.g==="card"?x.h:esc(x.h))+'</div>'+
+      (open?'<div class="kb">'+x.b+'</div>':'<button class="peekbtn" data-kk="'+esc(x.k)+'"><span>속으로 떠올린 다음 눌러 봐</span></button>')+
+      (x.g==="card"?'<button class="prgo" data-l="'+x.lid+'" data-ci="'+x.ci+'">수업에서 보기 '+IC.chev+'</button>':
+        (LMAP[x.x.l]?'<button class="prgo" data-l="'+x.x.l+'" data-nk="'+esc(x.x.n)+'">'+esc(LMAP[x.x.l].title)+' 수업에서 보기 '+IC.chev+'</button>':''))+
+      '</div>';
+  });
+  view.innerHTML=h;
+  Array.prototype.forEach.call(view.querySelectorAll("[data-kt]"),function(b){b.onclick=function(){KPTAB=b.dataset.kt;vKeep();};});
+  view.querySelector("#kph").onclick=function(){S.kpHide=!hide;KPO={};save();vKeep();};
+  Array.prototype.forEach.call(view.querySelectorAll("[data-kk]"),function(b){b.onclick=function(){KPO[b.dataset.kk]=1;buzz(10);vKeep();};});
+  Array.prototype.forEach.call(view.querySelectorAll(".kitem .pbs"),function(b){b.onclick=function(){PBO[b.dataset.id]=!PBO[b.dataset.id];buzz(10);vKeep();};});
+  Array.prototype.forEach.call(view.querySelectorAll(".kitem .pbm"),function(b){b.onclick=function(){delete S.pmark[b.dataset.id];save();vKeep();};});
+  Array.prototype.forEach.call(view.querySelectorAll(".kitem .prgo"),function(b){b.onclick=function(){
+    jumpCard(b.dataset.l, b.dataset.ci!=null?+b.dataset.ci:prFind(b.dataset.l,b.dataset.nk)); };});
+}
+
 /* 서술형 화면은 「이전」이 필요 없다 — 목록으로 돌아가면 되니까 */
 function nextBtnW(label,fn){
   var h='<div class="sticky"><button class="cta" id="nx">'+label+'</button></div>';
@@ -5726,8 +5829,16 @@ function nextBtnW(label,fn){
 }
 VIEWS={home:vHome,lesson:vLesson,review:vReview,wrong:vWrong,wquiz:vWQuiz,due:vDue,find:vFind,
        exam:vExamPick,examRun:vExamRun,examResult:vExamResult,
-       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun};
+       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,keep:vKeep};
 load(); e2init(); save();
+/* 킵 버튼은 어느 화면에 있든 view 한곳에서 받는다 */
+view.addEventListener("click",function(e){
+  var b=e.target.closest?e.target.closest(".kbtn"):null; if(!b)return;
+  e.stopPropagation(); kToggle(b.dataset.k); buzz(10);
+  if(stack[stack.length-1].n==="keep"){ vKeep(); return; }
+  var on=kOn(b.dataset.k); b.classList.toggle("on",on); b.setAttribute("aria-pressed",on); b.textContent=on?"★ 킵함":"☆ 킵";
+  if(on)pop("킵했어");
+},true);
 
 stack=[{n:"home"}];
 try{history.replaceState({i:1},"");}catch(e){}
@@ -5776,7 +5887,7 @@ render();
   var PATH={home:"/HOME",lesson:"/LESSON",review:"/REVIEW",wrong:"/WRONG",
             due:"/REVIEW/DUE",find:"/FIND",
             wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT",
-            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN"};
+            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",keep:"/KEEP"};
 
   var dockEl=document.getElementById("Ldock");
   function paintDock(){
