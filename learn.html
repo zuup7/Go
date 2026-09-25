@@ -631,6 +631,36 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   background:var(--cream);border:2px solid var(--ink);white-space:nowrap}
 .kbtn.on{background:var(--yel);color:var(--ink)}
 .nkeep{display:flex;justify-content:flex-end;margin-top:10px}
+/* 단체 계보도 */
+.orgfig{margin:0;padding:10px 8px 12px;background:var(--cream);border:var(--bd) solid var(--ink);color:var(--ink)}
+.orgfig .eyebrow{margin:0 2px 6px}
+.orgfig figcaption{font-size:13px;line-height:1.7;color:var(--ink-2);margin:8px 4px 0}
+.orgsvg{display:block;width:100%;height:auto;color:var(--ink);font-family:inherit}
+.orgsvg .oe{fill:none;stroke:currentColor;stroke-width:1.6}
+.orgsvg .oe.dash{stroke-dasharray:4 3}
+.orgsvg .oh{fill:currentColor}
+.orgsvg .ol{font-size:10.5px;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:var(--cream);stroke-width:4px;stroke-linejoin:round}
+.orgsvg .olane{font-size:11px;font-weight:800;fill:var(--ink-2)}
+.orgsvg .olline{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:2 3}
+.orgsvg .og{cursor:pointer;outline:none}
+.orgsvg .og rect{fill:var(--cream);stroke:currentColor;stroke-width:1.6}
+.orgsvg .og.k-e rect{stroke-dasharray:4 3;fill:var(--panel)}
+.orgsvg .og.k-g rect{stroke-width:3}
+.orgsvg .og.c-n rect{fill:var(--teal-l)} .orgsvg .og.c-s rect{fill:var(--blue-l)} .orgsvg .og.c-m rect{fill:#FFF3C4}
+.orgsvg .og.c-j rect{fill:var(--red-l)} .orgsvg .og.c-x rect{fill:#EFE3F7}
+.orgsvg .og.sel rect,.orgsvg .og:focus-visible rect{stroke:var(--blue);stroke-width:3}
+.orgsvg .onm{font-size:12px;font-weight:800;fill:var(--ink)}
+.orgsvg .osb{font-size:10px;fill:var(--ink-2)}
+.orgleg{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--ink-2);margin:0 0 10px}
+.orgleg span{display:inline-flex;align-items:center;gap:5px}
+.orgleg i{display:inline-block;width:14px;height:11px;border:1.5px solid var(--ink)}
+.orgleg i.c-n{background:var(--teal-l)} .orgleg i.c-s{background:var(--blue-l)} .orgleg i.c-m{background:#FFF3C4}
+.orgleg i.c-j{background:var(--red-l)} .orgleg i.c-x{background:#EFE3F7} .orgleg i.ev{background:var(--panel);border-style:dashed;border-radius:5px}
+.orgleg .dl{display:inline-block;width:18px;border-top:2px dashed var(--ink)}
+.orgi{margin-top:10px}
+.orgtabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.orgtabs .chip{flex-shrink:0;white-space:nowrap}
+.orgi .kh small{font-family:inherit;font-size:12px;color:var(--ink-2)}
 .nskip{display:block;width:100%;min-height:46px;margin-top:4px;font-size:14px;font-weight:700;color:var(--ink-2);
   background:transparent;border:2px dashed var(--ink-3)}
 .nskip:active{background:var(--panel)}
@@ -2182,6 +2212,9 @@ function vHome(){
     '<button class="exbar obar" id="goOrd" style="margin-bottom:9px"><span class="ic">↕</span>'+
     '<span class="tx"><b>흐름 맞추기</b><small>카드를 끌어서 순서대로 · 흐름 세트 '+FLOWS.length+'개 · 시대 섞기 · 통치↔저항 · 쌓아 가기</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
+    '<button class="exbar orbar" id="goOrgs" style="margin-bottom:9px"><span class="ic">⇶</span>'+
+    '<span class="tx"><b>단체 계보도</b><small>합쳐지고 갈라진 단체들을 화살표 그림으로 · 그림 '+ORGMAP.length+'장</small></span>'+
+    '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="cta ghost" id="goRev2">'+IC.book+' 암기 장치와 인과 사슬 모아 보기</button>'+
     '<button class="cta ghost" id="goTL" style="margin-top:9px">&#9202; 연표 한 장으로 쭉 보기 ('+timeline().length+'개 사건)</button>'+
     '<p class="note" style="margin-top:14px">배운 내용을 문제로 확인하고 싶으면 「오답 몬스터」로 넘어가면 돼. 여긴 처음 배우는 곳이야.</p>';
@@ -2194,6 +2227,8 @@ function vHome(){
   if(gd)gd.onclick=function(){RV=null;go("due");};
   var go2=document.getElementById("goOrd");
   if(go2)go2.onclick=function(){go("ord");};
+  var gog=document.getElementById("goOrgs");
+  if(gog)gog.onclick=function(){go("orgs");};
   var gk=document.getElementById("goKeep");
   if(gk)gk.onclick=function(){go("keep");};
   var gm=document.getElementById("goMem");
@@ -4831,6 +4866,7 @@ function vNames(){
     '<div style="display:flex;align-items:center;gap:12px;margin:10px 0 4px"><span class="track"><i style="width:'+(kn/NAMES.length*100)+'%"></i></span></div>'+
     '<p class="note" style="margin-top:8px">단서를 보고 이름을, 이름을 보고 한 일을 골라. 맞히면 바로 다음 카드, '+
     '틀리면 몇 장 뒤에 <b>다시 나오고</b> 오답 노트에도 남아. 처음에 한 번에 맞힌 게 쌓이면(세 번) 「외운 것」이 돼.</p></div>';
+  h+='<button class="prgo" id="norg" style="margin-top:10px">단체가 합치고 갈라진 흐름은 「단체 계보도」에서 '+IC.chev+'</button>';
   if(run)h+='<button class="cta" id="nres" style="margin-top:14px">'+IC.play+' 이어서 풀기 (남은 '+run.q.length+'장)</button>';
   h+='<div class="part">범위</div><div class="chips">'+
       chip("r","all",o.r,"전체")+chip("r","a",o.r,"8~33쪽")+chip("r","b",o.r,"34~63쪽")+'</div>'+
@@ -4843,6 +4879,7 @@ function vNames(){
   Array.prototype.forEach.call(view.querySelectorAll("[data-r]"),function(b){b.onclick=function(){S.nopt.r=b.dataset.r;save();vNames();};});
   Array.prototype.forEach.call(view.querySelectorAll("[data-k]"),function(b){b.onclick=function(){S.nopt.k=b.dataset.k;save();vNames();};});
   var nr=view.querySelector("#nres"); if(nr)nr.onclick=function(){NR=null;go("nrun");};
+  var nog=view.querySelector("#norg"); if(nog)nog.onclick=function(){go("orgs");};
   view.querySelector("#nnew").onclick=function(){ if(!pool.length)return; nDeal(); NR=null; go("nrun"); };
 }
 function vNRun(){
@@ -4905,7 +4942,9 @@ function vNRun(){
       document.getElementById("fb").innerHTML='<div class="fb no"><span class="m">'+(skip?"→":"×")+'</span><span>'+
         (skip?'<small class="nskd">넘겼어 · 조금 뒤에 다시 나와</small><br>':'')+'<b>'+
         esc(stripTags(m.c[m.a]))+'</b><br>'+esc(x.e)+
-        (LMAP[x.l]?'<br><button class="prgo" id="nles">'+esc(LMAP[x.l].title)+' 수업에서 보기 '+IC.chev+'</button>':'')+'</span></div>';
+        (LMAP[x.l]?'<br><button class="prgo" id="nles">'+esc(LMAP[x.l].title)+' 수업에서 보기 '+IC.chev+'</button>':'')+
+        (x.k==="단체"&&orgFind(x.n)>=0?'<br><button class="prgo" id="norg2">계보도에서 보기 '+IC.chev+'</button>':'')+'</span></div>';
+      var no2=view.querySelector("#norg2"); if(no2)no2.onclick=function(){ NR=null; go("orgs",{name:x.n}); };
       var nl=view.querySelector("#nles");
       if(nl)nl.onclick=function(){ NR=null; jumpCard(x.l,prFind(x.l,x.n)); };
       view.insertAdjacentHTML("beforeend",nextBtnW("다음",function(){NR=null;vNRun();}));
@@ -5404,6 +5443,240 @@ function vOStack(){
   Array.prototype.forEach.call(view.querySelectorAll("[data-b]"),function(b){b.onclick=function(){oStartBlockOrder(+b.dataset.b);};});
 }
 
+/* ══════════ 단체 계보도 ══════════
+   단체가 어디서 나와 무엇과 합치고 갈라졌는지를 화살표 그림으로. 연결은 모두 교과서 · 프린트 원문에 있는 것만 그린다.
+   노드 [id, 이름(\n 줄바꿈), 해·설명, 열, 행, 종류, 갈래, 수업, 설명]
+     종류 o 단체 · e 사건 · g 정부 · l 칸 제목   갈래 n 민족주의 · s 사회주의 · m 좌우 합작 · j 일제 · x 종교 · "" 그 밖
+   화살표 [from, to, 말, 선]  선 "" 이어짐 · "d" 점선 화살표 · "r" 점선(화살촉 없음, 관계) */
+var ORGMAP=[
+ {id:"base",s:"국외 기지",t:"1910년대 국외 기지",cols:3,
+  cap:"1910년대 독립운동 기지는 지역마다 자치 단체 → 학교 → 무장 단체로 자라났고, 국내에선 복벽(독립 의군부)에서 공화(대한 광복회)로 이념이 바뀌었다.",
+  n:[["l1","서간도 · 삼원보 — 신민회가 세운 기지","",0,0,"l"],
+     ["sinmin","신민회","이회영·이상룡",0,0.4,"o","n"],["gh","경학사","자치 단체",1,0.4,"o","n"],["bm","부민단","",2,0.4,"o","n","L11","경학사가 발전한 자치 단체."],
+     ["sg","신흥 강습소","",0,1.4,"o","n","L11","독립군을 기르려고 세운 학교. 뒤에 신흥 무관 학교가 됐다."],["sh","신흥 무관 학교","독립군 양성",1,1.4,"o","n"],["sr","서로 군정서","무장 단체",2,1.4,"o","n","L11","서간도의 독립운동 단체."],
+     ["l2","북간도 · 명동촌","",0,2.4,"l"],
+     ["gm","간민회","자치 단체",0,2.8,"o","n","L11","북간도 동포 사회를 이끈 자치 단체."],["sj","서전서숙","학교",1,2.8,"o","n","L11","북간도 민족 교육의 시작. 명동 학교가 이어받았다."],["md","명동 학교","",2,2.8,"o","n","L11","서전서숙을 계승한 북간도의 학교."],
+     ["jg","중광단","대종교 · 서일",0,3.8,"o","x"],["br","북로 군정서","김좌진 → 청산리",1,3.8,"o","n"],
+     ["l3","연해주 · 신한촌","",0,4.8,"l"],
+     ["gu","권업회","자치 단체",0,5.2,"o","n"],["gbg","대한 광복군\n정부","이상설·이동휘",1,5.2,"g","n"],
+     ["l4","상하이","",0,6.2,"l"],
+     ["dj","동제사","1912 · 신규식",0,6.6,"o","n"],["shc","신한청년당","김규식 파리 파견",1,6.6,"o","n"],["ipj","임시 정부\n수립의 기반","",2,6.6,"e","",'L15',"신한청년당이 대한민국 임시 정부 수립의 기반을 만들었다."],
+     ["l5","미주","",0,7.6,"l"],
+     ["gmh","대한인 국민회","1910",0,8,"o","n"],["gd","대조선\n국민군단","하와이 · 박용만",1,8,"o","n"],
+     ["l6","국내 비밀 결사 — 복벽에서 공화로","",0,9,"l"],
+     ["ug","독립 의군부","1912 · 복벽",0,9.4,"o","n"],["gbh","대한 광복회","1915 · 공화",1,9.4,"o","n"],["ddg","대동단결 선언","1917 · 상하이",2,9.4,"e","n","L10","황제가 아닌 국민이 주인 — 공화주의가 퍼졌다."]],
+  e:[["sinmin","gh","",""],["gh","bm","발전",""],["sinmin","sg","세움",""],["sg","sh","발전",""],
+     ["sj","md","계승",""],["jg","br","발전",""],["gu","gbg","",""],["dj","shc","일부가",""],["shc","ipj","",""],
+     ["ug","gbh","복벽→공화","r"],["gbh","ddg","공화주의","r"]]},
+
+ {id:"gov",s:"임시 정부",t:"임시 정부: 셋이 하나로, 그리고 흔들림",cols:3,
+  cap:"3·1 운동 뒤 세 곳에 세워진 정부가 1919년 9월 상하이의 대한민국 임시 정부로 통합됐다. 연통제·교통국이 발각되고 외교가 막히자 국민 대표 회의가 열렸지만 창조파와 개조파로 갈라졌다.",
+  n:[["shc","신한청년당","김규식 파리 파견",0,0,"o","n"],["cd","조선 청년\n독립단","도쿄 · 2·8 선언",2,0,"o","n"],
+     ["s31","3·1 운동","1919",1,1,"e","","L13","전 민족이 참여한 만세 운동. 조직적인 지도부가 필요해졌다."],
+     ["gmu","대한 국민 의회","연해주",0,2,"o","n"],["shg","상하이\n임시 정부","",1,2,"o","n","L15","1919년 4월 상하이에 세운 대한민국 임시 정부."],["hs","한성 정부","국내",2,2,"o","n"],
+     ["ip","대한민국\n임시 정부","1919.9 · 상하이",1,3,"g","n","L15","한성 정부의 법통을 잇고 대한 국민 의회를 통합해, 외교에 유리한 상하이에 두었다. 최초의 민주 공화제 정부."],
+     ["yt","연통제","비밀 행정 조직",0,4,"o","n"],["gt","교통국","통신 · 이륭 양행",1,4,"o","n"],["gm","구미 위원부","미국 · 외교",2,4,"o","n"],
+     ["gmd","국민 대표 회의","1923",1,5,"e","","L17","침체한 임시 정부의 진로를 두고 연 회의."],
+     ["cj","창조파","새 정부를 세우자",0,6,"o","n","L17","임시 정부를 없애고 새 정부를 세우자는 쪽."],["gj","개조파","고쳐서 쓰자",2,6,"o","n","L17","임시 정부를 두고 조직만 고치자는 쪽."],
+     ["tn","이승만 탄핵\n국무령 체제","1925",1,7,"g","n","L17","이승만을 탄핵하고 박은식이 뒤를 이었으며, 곧 국무령 중심 집단 지도 체제로 바꿨다."]],
+  e:[["shc","s31","불씨",""],["cd","s31","",""],["s31","gmu","",""],["s31","shg","수립",""],["s31","hs","",""],
+     ["gmu","ip","",""],["shg","ip","통합",""],["hs","ip","",""],
+     ["ip","yt","",""],["ip","gt","",""],["ip","gm","",""],
+     ["yt","gmd","발각",""],["gt","gmd","",""],["gm","gmd","성과 부진",""],
+     ["gmd","cj","결렬",""],["gmd","gj","",""],["gmd","tn","침체 뒤",""]]},
+
+ {id:"mz1",s:"만주 ①",t:"만주 ① 봉오동에서 3부까지",cols:3,
+  cap:"독립군 부대들이 연합해 봉오동·청산리에서 이겼지만, 일제의 간도 참변과 자유시 참변으로 큰 타격을 입고 만주로 돌아와 3부로 재정비했다.",
+  n:[["jg","중광단","대종교",0,0,"o","x"],["gmg","국민회군","안무",1,0,"o","n","L18","안무가 이끈 부대. 봉오동 전투에 참여."],["gmd","군무 도독부군","최진동",2,0,"o","n","L18","최진동이 이끈 부대. 봉오동 전투에 참여."],
+     ["br","북로 군정서","김좌진",0,1,"o","n"],["dhd","대한 독립군","홍범도",1,1,"o","n"],
+     ["bo","봉오동 전투","1920.6",2,2,"e","","L18","홍범도의 대한 독립군 등 연합 부대가 일본군을 골짜기로 유인해 이겼다."],
+     ["cs","청산리 대첩","1920.10",0,3,"e","","L18","김좌진의 북로 군정서와 홍범도 부대 등이 크게 이겼다."],
+     ["gd","간도 참변","1920 · 일본군",2,4,"e","j","L18","청산리 대첩에 대한 보복으로 일본군이 간도의 한인을 학살했다."],
+     ["ms","밀산 집결","독립군 약 4,000명",0,4,"e","","L18","일본군을 피해 러시아 국경 가까운 밀산에 모였다."],
+     ["js","자유시 참변","1921 · 러시아 적군",0,5,"e","j","L18","자유시로 옮긴 독립군이 러시아 적군에게 무장 해제당했다."],
+     ["cu","참의부","남만주",0,6,"o","n"],["ju","정의부","지린성 일대",1,6,"o","n"],["smb","신민부","북만주",2,6,"o","n"],
+     ["mya","미쓰야 협정","1925",0,7,"e","j","L19","일제와 만주 군벌이 손잡고 독립군을 잡아들였다."],
+     ["tb","3부 통합 운동","그림 ②로 →",1,7,"e","","L19","위기를 넘으려 3부를 합치려 했다. 이어지는 그림 ②에서."]],
+  e:[["jg","br","발전",""],["gmg","bo","연합",""],["gmd","bo","",""],["dhd","bo","",""],
+     ["br","cs","연합",""],["dhd","cs","",""],["cs","gd","보복",""],["cs","ms","피신",""],["ms","js","자유시로",""],
+     ["js","cu","",""],["js","ju","만주로 돌아와",""],["js","smb","",""],
+     ["cu","tb","",""],["ju","tb","통합 시도",""],["smb","tb","",""],["mya","tb","위기",""]]},
+
+ {id:"mz2",s:"만주 ②",t:"만주 ② 3부 통합 뒤 — 두 갈래",cols:3,
+  cap:"3부는 완전히 합치지 못하고 남만주의 국민부와 북만주의 혁신 의회로 나뉘었다. 가운데 줄은 중국 공산당 쪽 유격대에 한인이 들어간 사회주의 계열의 흐름이다.",
+  n:[["tb","3부 통합 운동","1920년대 후반",1,0,"e","","L19","통합 방법을 두고 의견이 갈려 완전한 통합에 이르지 못했다."],
+     ["gmb","국민부","남만주",0,1,"o","n"],["hs","혁신 의회","북만주",2,1,"o","n"],
+     ["jhd","조선 혁명당","",0,2,"o","n","L19","국민부가 결성한 당."],["hd30","한국 독립당","지청천 · 1930",2,2,"o","n","L19","혁신 의회가 해체된 뒤 지청천 등이 만든 당(1940년 충칭의 한국 독립당과 다르다)."],
+     ["dbi","동북 인민\n혁명군","중국 공산당",1,2,"o","s","L20","중국 공산당이 만주의 항일 유격대를 모아 만든 군대. 한인 사회주의자도 많이 들어갔다."],
+     ["jhg","조선 혁명군","양세봉 · 영릉가",0,3,"o","n"],["hdg","한국 독립군","지청천 · 대전자령",2,3,"o","n"],
+     ["dhy","동북 항일 연군","",1,3,"o","s"],
+     ["ysb","양세봉 전사 뒤","1930년대 후반까지",0,4,"e","","L20","사령관 양세봉이 전사한 뒤 약해졌지만 1930년대 후반까지 싸웠다."],
+     ["jgk","조국 광복회","한인 유격대원",1,4,"o","s","L20","동북 항일 연군 안의 한인들이 만든 조직."],
+     ["gn","지도부\n관내로 이동","임시 정부 요청",2,4,"e","","L20","한국 독립군 지도부가 임시 정부의 요청으로 중국 관내로 옮겼다."],
+     ["gbk","한국광복군","1940 · 지청천",2,5,"o","n"]],
+  e:[["tb","gmb","",""],["tb","hs","나뉨",""],["gmb","jhd","결성",""],["hs","hd30","해체 뒤",""],
+     ["jhd","jhg","조직",""],["hd30","hdg","편성",""],["dbi","dhy","발전",""],["dhy","jgk","",""],
+     ["jhg","ysb","",""],["hdg","gn","",""],["gn","gbk","창설 주도",""]]},
+
+ {id:"sg",s:"신간회",t:"민족 유일당 운동과 신간회",cols:3,
+  cap:"실력 양성 운동이 성과를 못 내자 민족주의가 타협(자치 운동)과 비타협으로 나뉘었고, 비타협 민족주의와 사회주의가 손잡아 신간회를 세웠다. 1931년 해소로 연대가 끝났다.",
+  n:[["mj","민족주의 계열","",0,0,"e","n","L23","실력 양성 운동(물산 장려·민립 대학)을 벌였다."],["sh","사회주의 계열","",2,0,"e","s","L26","3·1 운동 뒤 퍼진 사회주의 사상을 따르는 쪽."],
+     ["mr","조선 민립 대학\n기성회","1923 · 실력 양성",0,1,"o","n"],["gs","조선 공산당","1925",1,1,"o","s","L26","사회주의 계열의 조직. 6·10 만세 운동을 준비했다."],
+     ["jc","자치 운동","타협 — 이광수·최린",0,2,"e","n"],["bt","비타협 민족주의","이상재·안재홍",1,2,"e","n","L26","자치 운동을 비판하고 사회주의 진영과 연대하려 했다."],["jw","정우회","1926 · 정우회 선언",2,2,"o","s"],
+     ["yd","민족 유일당\n운동","국내·관내·만주",0,3,"e","m","L26","민족주의와 사회주의가 하나로 뭉치자는 움직임. 만주에선 3부 통합 운동으로 이어졌다."],
+     ["sgh","신간회","1927 · 좌우 합작",1,3,"o","m"],["gw","근우회","1927 · 여성",2,3,"o","m"],
+     ["cs","한국 독립\n유일당 촉성회","베이징 등 관내",0,4,"o","m","L26","중국 관내에서 조직된 유일당 운동 단체."],
+     ["jsd","진상 조사단","1929",1,4,"e","m","L26","광주 학생 항일 운동이 일어나자 신간회가 보냈다. 민중 대회를 추진하다 탄압받았다."],["gj","광주 학생\n항일 운동","1929",2,4,"e","","L25","한·일 학생 충돌에서 시작해 전국으로 번진 학생 운동."],
+     ["hs","신간회 해소","1931",1,5,"e","","L26","사회주의자들이 해소를 결정해 좌우 연대가 무너졌다."],
+     ["hj","혁명적\n농민·노동 조합","1930년대 · 비합법",2,6,"o","s","L24","해소 뒤 사회주의 계열이 만든 비합법 조직."]],
+  e:[["mj","mr","실력 양성",""],["sh","gs","",""],["sh","jw","",""],
+     ["mr","jc","타협",""],["mr","bt","비타협",""],["bt","jc","비판","r"],
+     ["bt","sgh","",""],["jw","sgh","합작",""],["yd","sgh","국내",""],["sgh","gw","계기",""],
+     ["yd","cs","관내",""],["sgh","jsd","파견",""],["jsd","gj","",""],["jsd","hs","탄압 뒤",""],["hs","hj","사회주의자",""]]},
+
+ {id:"gn",s:"중국 관내",t:"중국 관내: 김원봉 줄기 · 김구 줄기",cols:2,
+  cap:"왼쪽은 의열단에서 조선 의용대로 이어진 김원봉의 줄기, 오른쪽은 한인 애국단에서 한국 독립당·한국광복군으로 이어진 김구의 줄기다. 두 진영은 통합에 실패했지만, 1942년 조선 의용대 일부가 한국광복군에 합류해 임시 정부가 좌우 합작을 이뤘다.",
+  n:[["uy","의열단","1919 · 김원봉",0,0,"o","n"],["ag","한인 애국단","1931 · 김구",1,0,"o","n"],
+     ["hp","황푸 군관 학교 입교","1920년대 후반",0,1,"e","","L21","개인 의거의 한계를 느끼고 정규 군사 훈련을 받았다."],
+     ["gh","조선 혁명 간부 학교","1932",0,2,"o","n","L21","김원봉이 세운 간부 학교. 조직적 무장 투쟁을 준비했다."],
+     ["mh","민족 혁명당","1935 · 난징 · 여러 단체 통합",0,3,"o","n"],["gmd","한국 국민당","1935 · 민족 혁명당 불참",1,3,"o","n"],
+     ["mj","조선 민족 전선 연맹","1937",0,4,"o","n"],["gw","한국 광복 운동\n단체 연합회","1937",1,4,"o","n"],
+     ["uyd","조선 의용대","1938 · 우한",0,5,"o","n"],["hd","한국 독립당","1940 · 민족주의 정당 통합",1,5,"o","n"],
+     ["hb","조선 의용대 화북 지대","1941 · 타이항산",0,6,"o","s"],["gbk","한국광복군","1940 · 충칭",1,6,"o","m"],
+     ["ug","조선 의용군","1942 · 조선 독립 동맹",0,7,"o","s"]],
+  e:[["uy","hp","",""],["hp","gh","",""],["gh","mh","",""],["ag","gmd","김구","d"],
+     ["mh","mj","중심으로",""],["gmd","gw","중심으로",""],["mj","gw","통합 실패","r"],
+     ["mj","uyd","창설",""],["gw","hd","",""],["hd","gbk","임시 정부",""],
+     ["uyd","hb","다수 화북으로",""],["uyd","gbk","일부 합류(1942)",""],["hb","ug","개편",""]]},
+
+ {id:"mass",s:"대중 운동",t:"대중 운동 단체",cols:3,
+  cap:"청년·학생·농민·노동·여성·소년·형평 운동이 저마다 전국 조직을 만들었다. 성진회는 해산 뒤 학교별 독서회로 이어져 광주 학생 항일 운동을 이끌었다.",
+  n:[["l1","청년 · 학생","",0,0,"l"],
+     ["cn","조선 청년 총동맹","1924",0,0.4,"o","s"],["610","6·10 만세 운동","1926 · 좌우 연대",1,0.4,"e","","L25","순종의 장례일에 학생들이 만세를 외쳤다."],
+     ["sj","성진회","1926 · 광주",0,1.4,"o",""],["ds","학교별 독서회","",1,1.4,"o","","L25","성진회 출신 학생들이 학교마다 비밀리에 만든 모임."],["gj","광주 학생\n항일 운동","1929",2,1.4,"e","","L25","독서회가 이끌고 신간회가 진상 조사단을 보냈다."],
+     ["l2","농민 · 노동","",0,2.4,"l"],
+     ["nm","조선 농민\n총동맹","1927",0,2.8,"o","s"],["nd","조선 노동\n총동맹","1927",1,2.8,"o","s"],["ws","원산 총파업","1929",2,2.8,"e","","L24","일제 강점기 최대 규모의 노동 운동."],
+     ["hj","혁명적\n농민·노동 조합","1930년대 · 비합법",1,3.8,"o","s","L24","대공황 뒤 사회주의 세력과 손잡고 비합법으로 싸웠다."],
+     ["l3","여성","",0,4.8,"l"],
+     ["ym","민족주의 계열\n여성 단체","",0,5.2,"o","n","L28","신여성을 중심으로 만든 여성 단체들."],["ys","사회주의 계열\n여성 단체","",2,5.2,"o","s","L28","사회주의 계열 여성 단체들."],
+     ["gw","근우회","1927 · 신간회 자매",1,6.2,"o","m"],
+     ["l4","소년 · 형평","",0,7.2,"l"],
+     ["cs","천도교 소년회","방정환 · 어린이날",0,7.6,"o","x"],["sy","조선 소년 연합회","1927 · 전국 조직",1,7.6,"o",""],["hp","조선 형평사","1923 · 진주 · 백정",2,7.6,"o",""]],
+  e:[["sj","ds","해산 뒤",""],["ds","gj","주도",""],["nm","hj","",""],["nd","hj","1930년대",""],
+     ["ym","gw","",""],["ys","gw","통합",""],["cs","sy","확산",""]]},
+
+ {id:"cul",s:"말·글·종교",t:"말 · 글 · 역사 · 종교",cols:3,
+  cap:"한글 연구는 국문 연구소 → 조선어 연구회 → 조선어 학회로 이어지다 1942년 조선어 학회 사건으로 탄압받았다. 종교계도 저마다 단체를 만들어 맞섰다.",
+  n:[["l1","우리말과 글","",0,0,"l"],
+     ["gm","국문 연구소","대한 제국",0,0.4,"o","","L30","주시경 등이 우리말을 연구한 기관. 조선어 연구회의 뿌리."],["yg","조선어 연구회","1921 · 가갸날",1,0.4,"o",""],["hh","조선어 학회","1931 · 맞춤법",2,0.4,"o",""],
+     ["hs","조선어 학회 사건","1942 · 치안 유지법",2,1.4,"e","j","L30","일제가 회원들을 잡아 가두고 사전 원고를 빼앗았다."],
+     ["l2","역사","",0,2.4,"l"],
+     ["ps","조선사 편수회","1925 · 식민 사관",0,2.8,"o","j"],["jd","진단 학회","1934 · 실증 사학",2,2.8,"o",""],
+     ["l3","종교계","",0,3.8,"l"],
+     ["dj","대종교","",0,4.2,"e","x","L30","단군 신앙. 무장 단체 중광단을 만들었다."],["jg","중광단","→ 북로 군정서",1,4.2,"o","x"],
+     ["cd","천도교","3·1 운동 · 『개벽』",0,5.2,"e","x","L30","3·1 운동을 이끌고 제2의 독립 선언을 계획했다(1922)."],["cs","천도교 소년회","방정환",1,5.2,"o","x"],
+     ["bg","불교","",0,6.2,"e","x","L30","한용운 등이 일제의 불교 통제에 맞섰다."],["by","조선 불교\n유신회","한용운 · 청년 승려",1,6.2,"o","x"],
+     ["cj","천주교","",0,7.2,"e","x","L30","보육원·양로원 등 사회사업을 했다."],["um","의민단","국외 무장 투쟁",1,7.2,"o","x"]],
+  e:[["gm","yg","후신",""],["yg","hh","",""],["hh","hs","",""],["ps","jd","맞서 연구","r"],
+     ["dj","jg","",""],["cd","cs","",""],["bg","by","",""],["cj","um","",""]]},
+
+ {id:"end",s:"광복 직전",t:"광복 직전 세 단체",cols:3,
+  cap:"광복 직전 충칭의 임시 정부, 화북의 조선 독립 동맹, 국내의 조선 건국 동맹이 각자 광복을 준비했지만 하나로 합치기 전에 일제가 항복했다.",
+  n:[["ip","충칭 임시 정부","1942~ 좌우 합작",0,0,"g","m","L32","김원봉 등이 들어와 좌우 합작 정부가 됐다."],["dm","조선 독립 동맹","1942 · 김두봉",1,0,"o","s"],["gg","조선 건국 동맹","1944 · 여운형",2,0,"o","m"],
+     ["gbk","한국광복군","국내 진공 작전 준비",0,1,"o","m"],["ug","조선 의용군","",1,1,"o","s"],
+     ["gb","8·15 광복","1945",1,2,"e","","L33","세 단체가 통합을 이루기 전에 일제가 항복했다."]],
+  e:[["ip","dm","통일 전선 교섭","r"],["ip","gbk","",""],["dm","ug","재편",""],
+     ["gbk","gb","",""],["ug","gb","통합 전 광복",""],["gg","gb","",""]]}
+];
+var ORGTAB=0, ORGSEL=null, ORGOPEN={};
+var ORG_W=340, ORG_PX=4, ORG_RH=92, ORG_PAD=8, ORG_GAP=16;
+function orgNode(g,t){ var x=t[3],cw=(ORG_W-2*ORG_PX)/g.cols;
+  var nm=String(t[1]).split("\n"), h=t[5]==="l"?18:12+nm.length*15+(t[2]?13:0);
+  return {id:t[0],name:t[1],plain:String(t[1]).replace(/\n/g," "),sub:t[2]||"",col:x,row:t[4],kind:t[5],camp:t[6]||"",lid:t[7]||null,d:t[8]||"",
+    cx:ORG_PX+(x+0.5)*cw, w:cw-ORG_GAP, top:ORG_PAD+t[4]*ORG_RH, h:h, lines:nm}; }
+function orgNodes(g){ if(!g._n){ g._n={}; g.n.forEach(function(t){ g._n[t[0]]=orgNode(g,t); }); } return g._n; }
+function orgName(nd){ return NAMES.filter(function(x){return x.n===nd.plain;})[0]||null; }
+function orgFind(name){ for(var i=0;i<ORGMAP.length;i++){ var N=orgNodes(ORGMAP[i]); for(var k in N)if(N[k].plain===name)return i; } return -1; }
+function orgSVG(g,gi){
+  var N=orgNodes(g), H=0, s="", hide=!!S.orgHide; g._seg=[];
+  Object.keys(N).forEach(function(k){ H=Math.max(H,N[k].top+N[k].h); });
+  H+=ORG_PAD+4;
+  /* 화살표 — 아래로는 직각으로 꺾고(대상 바로 위에서 가로), 같은 줄이면 가로로 */
+  g.e.forEach(function(e){
+    var a=N[e[0]], b=N[e[1]], dash=e[3]==="d"||e[3]==="r", head=e[3]!=="r", p, lx, ly, tip="";
+    if(Math.abs(a.row-b.row)<0.01){
+      var yc=a.top+Math.min(a.h,b.h)/2, dir=b.cx>a.cx?1:-1, x1=a.cx+dir*a.w/2, x2=b.cx-dir*b.w/2;
+      p="M"+x1+" "+yc+" H"+x2; lx=(x1+x2)/2; ly=a.top+Math.max(a.h,b.h)+12; g._seg.push([x1,yc,x2,yc,e[0],e[1]]);
+      if(head)tip=(x2)+","+yc+" "+(x2-dir*7)+","+(yc-4)+" "+(x2-dir*7)+","+(yc+4);
+    }else{
+      var y1=a.top+a.h, y2=b.top;
+      if(Math.abs(a.cx-b.cx)<1){ p="M"+a.cx+" "+y1+" V"+y2; lx=a.cx; ly=y1+14; g._seg.push([a.cx,y1,a.cx,y2,e[0],e[1]]); }
+      else {
+        /* 원래 줄 쪽 세로선이 다른 상자를 지나가면, 출발 바로 아래에서 꺾어 대상 줄 쪽으로 내려간다 */
+        var blocked=Object.keys(N).some(function(k){ var o=N[k]; return o.kind!=="l"&&o!==a&&Math.abs(o.cx-a.cx)<1&&o.row>a.row+0.01&&o.row<b.row-0.01; });
+        var ym=blocked?y1+14:y2-14; p="M"+a.cx+" "+y1+" V"+ym+" H"+b.cx+" V"+y2; lx=(a.cx+b.cx)/2; ly=ym-4;
+        g._seg.push([a.cx,y1,a.cx,ym,e[0],e[1]],[a.cx,ym,b.cx,ym,e[0],e[1]],[b.cx,ym,b.cx,y2,e[0],e[1]]); }
+      if(head)tip=b.cx+","+y2+" "+(b.cx-4)+","+(y2-7)+" "+(b.cx+4)+","+(y2-7);
+    }
+    s+='<path class="oe'+(dash?" dash":"")+'" d="'+p+'"/>'+(tip?'<polygon class="oh" points="'+tip+'"/>':'');
+    if(e[2])s+='<text class="ol" x="'+lx+'" y="'+ly+'" text-anchor="middle">'+esc(e[2])+'</text>';
+  });
+  Object.keys(N).forEach(function(k){
+    var n=N[k];
+    if(n.kind==="l"){ s+='<text class="olane" x="'+(ORG_PX+2)+'" y="'+(n.top+12)+'">'+esc(n.name)+'</text>'+
+      '<line class="olline" x1="'+ORG_PX+'" x2="'+(ORG_W-ORG_PX)+'" y1="'+(n.top+17)+'" y2="'+(n.top+17)+'"/>'; return; }
+    var x=n.cx-n.w/2, cov=hide&&!ORGOPEN[gi+":"+k], sel=ORGSEL&&ORGSEL.g===gi&&ORGSEL.k===k;
+    s+='<g class="og k-'+n.kind+' c-'+(n.camp||"0")+(sel?" sel":"")+'" data-k="'+k+'" tabindex="0" role="button" aria-label="'+esc(cov?"가린 단체":n.plain)+'">'+
+      '<rect x="'+x+'" y="'+n.top+'" width="'+n.w+'" height="'+n.h+'" rx="'+(n.kind==="e"?12:3)+'"/>';
+    if(cov) s+='<text class="onm" x="'+n.cx+'" y="'+(n.top+n.h/2+5)+'" text-anchor="middle">?</text>';
+    else{
+      n.lines.forEach(function(ln,i){ s+='<text class="onm" x="'+n.cx+'" y="'+(n.top+20+i*15)+'" text-anchor="middle">'+esc(ln)+'</text>'; });
+      if(n.sub)s+='<text class="osb" x="'+n.cx+'" y="'+(n.top+17+n.lines.length*15)+'" text-anchor="middle">'+esc(n.sub)+'</text>';
+    }
+    s+='</g>';
+  });
+  return '<svg class="orgsvg" viewBox="0 0 '+ORG_W+' '+H+'" role="img" aria-label="'+esc(g.cap)+'">'+s+'</svg>';
+}
+function vOrgs(a){
+  titleEl.textContent="단체 계보도";
+  if(a&&a.name!=null){ var fi=orgFind(a.name); if(fi>=0){ ORGTAB=fi; var N0=orgNodes(ORGMAP[fi]);
+    for(var k0 in N0)if(N0[k0].plain===a.name){ ORGSEL={g:fi,k:k0}; ORGOPEN[fi+":"+k0]=1; } } a.name=null; }
+  var g=ORGMAP[ORGTAB], hide=!!S.orgHide;
+  var h='<p class="note" style="margin-bottom:10px">단체가 어디서 나와 <b>무엇과 합치고(통합) 갈라졌는지(분리)</b>를 화살표로 그렸어. '+
+      '상자를 누르면 설명이 나와. 교과서·프린트에 있는 연결만 그렸어.</p>'+
+    '<div class="chips strip orgtabs" style="margin-bottom:10px">'+ORGMAP.map(function(x,i){
+      return '<button class="chip'+(i===ORGTAB?" on":"")+'" data-og="'+i+'">'+(i+1)+' '+esc(x.s)+'</button>';}).join("")+'</div>'+
+    '<div class="orgleg"><span><i class="c-n"></i>민족주의</span><span><i class="c-s"></i>사회주의</span><span><i class="c-m"></i>좌우 합작</span>'+
+      '<span><i class="c-j"></i>일제</span><span><i class="c-x"></i>종교</span><span><i class="ev"></i>사건</span><span><b class="dl"></b>관계·교섭</span></div>'+
+    '<div class="tlbar"><button class="chip'+(hide?" on":"")+'" id="orh">'+(hide?"이름 가리는 중":"이름 가리기")+'</button>'+
+      '<span class="cnt">'+(ORGTAB+1)+' / '+ORGMAP.length+'</span></div>'+
+    '<figure class="orgfig"><div class="eyebrow">'+(ORGTAB+1)+'. '+esc(g.t)+'</div>'+orgSVG(g,ORGTAB)+
+      '<figcaption>'+esc(g.cap)+'</figcaption></figure><div id="orinfo"></div>'+
+    '<div class="sticky"><div class="row"><button class="cta ghost" id="orp"'+(ORGTAB?'':' disabled')+'>이전 그림</button>'+
+      '<button class="cta" id="orn"'+(ORGTAB<ORGMAP.length-1?'':' disabled')+'>다음 그림</button></div></div>';
+  view.innerHTML=h;
+  var info=function(){
+    var box=view.querySelector("#orinfo"); if(!ORGSEL||ORGSEL.g!==ORGTAB){box.innerHTML="";return;}
+    var n=orgNodes(g)[ORGSEL.k], x=orgName(n), lid=x?x.l:n.lid;
+    box.innerHTML='<div class="kitem orgi"><div class="kt">'+(x?x.k+" · "+esc(UMAP[x.u].n):(n.kind==="e"?"사건·흐름":"단체"))+'</div>'+
+      '<div class="kh">'+esc(n.plain)+(n.sub?' <small>'+esc(n.sub)+'</small>':'')+'</div>'+
+      '<div class="kb">'+(x?'<ul class="nclue">'+x.cl.map(function(c){return '<li>'+c+'</li>';}).join("")+'</ul><p class="kso">→ '+esc(x.e)+'</p>':esc(n.d||""))+'</div>'+
+      (lid&&LMAP[lid]?'<button class="prgo" id="orgo">'+esc(LMAP[lid].title)+' 수업에서 보기 '+IC.chev+'</button>':'')+'</div>';
+    var b=box.querySelector("#orgo"); if(b)b.onclick=function(){ jumpCard(lid,prFind(lid,n.plain)); };
+  };
+  info();
+  Array.prototype.forEach.call(view.querySelectorAll("[data-og]"),function(b){b.onclick=function(){ORGTAB=+b.dataset.og;ORGSEL=null;vOrgs();};});
+  view.querySelector("#orh").onclick=function(){S.orgHide=!hide;ORGOPEN={};save();vOrgs();};
+  view.querySelector("#orp").onclick=function(){ if(ORGTAB>0){ORGTAB--;ORGSEL=null;vOrgs();window.scrollTo(0,0);} };
+  view.querySelector("#orn").onclick=function(){ if(ORGTAB<ORGMAP.length-1){ORGTAB++;ORGSEL=null;vOrgs();window.scrollTo(0,0);} };
+  Array.prototype.forEach.call(view.querySelectorAll(".orgsvg .og"),function(el){
+    var pick=function(){ var k=el.getAttribute("data-k"); ORGSEL={g:ORGTAB,k:k}; ORGOPEN[ORGTAB+":"+k]=1; buzz(8);
+      var sy=window.scrollY; vOrgs(); window.scrollTo(0,sy); };
+    el.addEventListener("click",pick);
+    el.addEventListener("keydown",function(ev){ if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();pick();} });
+  });
+}
+
 /* ── 단원별 기록 · 약점 리포트 · 한 장 요약 ── */
 function uHit(u,ok){ if(!u)return; if(!S.ust)S.ust={}; var t=S.ust[u]||(S.ust[u]={n:0,ok:0}); t.n++; if(ok)t.ok++; }
 function wUnit(x){
@@ -5570,7 +5843,7 @@ function nextBtnW(label,fn){
 }
 VIEWS={home:vHome,lesson:vLesson,review:vReview,wrong:vWrong,wquiz:vWQuiz,due:vDue,find:vFind,
        exam:vExamPick,examRun:vExamRun,examResult:vExamResult,
-       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet};
+       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet,orgs:vOrgs};
 load(); e2init(); save();
 /* 킵 버튼은 어느 화면에 있든 view 한곳에서 받는다 */
 view.addEventListener("click",function(e){
@@ -5628,7 +5901,7 @@ render();
   var PATH={home:"/HOME",lesson:"/LESSON",review:"/REVIEW",wrong:"/WRONG",
             due:"/REVIEW/DUE",find:"/FIND",
             wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT",
-            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET"};
+            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET",orgs:"/ORGS"};
 
   var dockEl=document.getElementById("dock");
   function paintDock(){
