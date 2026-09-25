@@ -768,6 +768,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   background:var(--cream);border:2px solid var(--ink);white-space:nowrap}
 .a-learn .kbtn.on{background:var(--yel);color:var(--ink)}
 .a-learn .nkeep{display:flex;justify-content:flex-end;margin-top:10px}
+.a-learn .nskip{display:block;width:100%;min-height:46px;margin-top:4px;font-size:14px;font-weight:700;color:var(--ink-2);
+  background:transparent;border:2px dashed var(--ink-3)}
+.a-learn .nskip:active{background:var(--panel)}
+.a-learn .nskd{font-size:12px;color:var(--ink-2)}
 .a-learn .kbar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:70px;padding:11px 12px;margin-bottom:12px;
   background:#FFF3C4;border:var(--bd) solid var(--yel-d);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28)}
 .a-learn .kbar:active{transform:translate(var(--sh),var(--sh));box-shadow:none}
@@ -813,6 +817,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .ozh{font-size:13.5px;color:var(--ink);line-height:1.5}
 .a-learn .ozh b{font-family:var(--f-px);font-size:9px;background:var(--ink);color:var(--cream);padding:3px 6px;margin-right:4px}
 .a-learn .oza{font-size:12px;color:var(--red-d);margin-top:4px;line-height:1.5}
+.a-learn .ozb{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:5px;font-size:12px;line-height:1.5;color:var(--ink)}
+.a-learn .ozb span{padding:1px 6px;background:var(--cream);border:1px solid var(--ink-3)}
+.a-learn .obk{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin-top:6px}
+.a-learn .oblks{margin:4px 0 8px}
+.a-learn .ochip .osu{display:block;font-style:normal;font-size:11px;color:var(--ink-2);margin-top:1px}
 .a-learn .ozc{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
 .a-learn .ozp{font-size:12.5px;color:var(--ink-2)}
 .a-learn .ochip{min-height:44px;padding:8px 11px;font-size:14.5px;font-weight:700;line-height:1.35}
@@ -820,6 +829,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .otray{margin-top:14px;padding:10px;background:var(--cream);border:var(--bd) solid var(--ink);display:flex;flex-wrap:wrap;gap:8px;min-height:70px}
 .a-learn .otray .eyebrow{width:100%;margin-bottom:0}
 .a-learn .otray.over{background:var(--blue-l)}
+.a-learn .otray.stick{position:sticky;bottom:0;z-index:6;max-height:30vh;overflow-y:auto;padding:8px;gap:6px;min-height:0;
+  box-shadow:0 -8px 0 var(--cream)}
+.a-learn .otray.stick .ochip{padding:6px 9px;font-size:14px}
+.a-learn .otray.stick .ochip .osu{font-size:10.5px}
+@media(max-width:819px){.a-learn .otray.stick{bottom:calc(76px + env(safe-area-inset-bottom,0px))}}
+.a-learn .ozs.cmp{gap:8px}
+.a-learn .ozs.cmp .ozone{min-height:0;padding:7px 9px}
+.a-learn .ozs.cmp .ozc{margin-top:5px}
+.a-learn .ozs.cmp .ozc:empty{display:none}
 .a-learn .oflow{background:var(--cream);border:var(--bd) solid var(--ink);padding:10px 12px}
 .a-learn .ofl b{font-family:var(--f-h);font-size:16px;font-weight:400}
 .a-learn .ofl small{font-family:var(--f-px);font-size:9px;color:var(--ink);background:var(--yel);padding:1px 5px;margin-left:4px}
@@ -5897,12 +5915,18 @@ function vNRun(){
     '<div class="nkeep">'+kBtn("N:"+x.id)+'</div>'+
     '</div><div style="margin-top:12px" id="opts">'+m.c.map(function(c,i){
       return '<button class="qopt" data-i="'+i+'"><span class="kx">'+"ABCD".charAt(i)+'</span><span>'+stripTags(c)+'</span></button>';
-    }).join("")+'</div><div id="fb"></div>';
+    }).join("")+'</div>'+
+    '<button class="nskip" id="nskip">모르겠어 · 넘기기</button><div id="fb"></div>';
   view.innerHTML=h;
+  /* 넘기기 = 틀린 것과 똑같이 처리한다(정답을 보여 주고, 3~5장 뒤에 다시, 오답 노트에도) */
+  view.querySelector("#nskip").onclick=function(){ answer(null); };
   Array.prototype.forEach.call(view.querySelectorAll("#opts .qopt"),function(bt){
-    bt.onclick=function(){
+    bt.onclick=function(){ answer(bt); };
+  });
+  function answer(bt){
       if(NR.done)return; NR.done=true;
-      var mine=+bt.dataset.i, ok=mine===m.a;
+      var skip=!bt, mine=skip?null:+bt.dataset.i, ok=!skip&&mine===m.a;
+      var sk=view.querySelector("#nskip"); if(sk)sk.remove();
       Array.prototype.forEach.call(view.querySelectorAll("#opts .qopt"),function(e,i){
         e.disabled=true; if(i===m.a)e.classList.add("ok"); else if(e===bt)e.classList.add("no"); else e.classList.add("dim");});
       buzz(ok?14:[20,40,20]); markDay();
@@ -5920,25 +5944,26 @@ function vNRun(){
         return;
       }
       R.cmb=0; R.miss[key]=(R.miss[key]||0)+1; if(R.wr.indexOf(key)<0)R.wr.push(key);
-      S.nbox[x.id]=0; wAdd("NAME","n",key,unmix(m,mine));
+      if(skip)R.sk=(R.sk||0)+1;
+      S.nbox[x.id]=0; wAdd("NAME","n",key,skip?null:unmix(m,mine));
       /* 틀린 카드는 3~5장 뒤에 다시 — 남은 게 적으면 맨 끝 */
       R.q.shift(); R.q.splice(Math.min(R.q.length,3+Math.floor(Math.random()*3)),0,key);
       save();
-      document.getElementById("fb").innerHTML='<div class="fb no"><span class="m">×</span><span><b>'+
+      document.getElementById("fb").innerHTML='<div class="fb no"><span class="m">'+(skip?"→":"×")+'</span><span>'+
+        (skip?'<small class="nskd">넘겼어 · 조금 뒤에 다시 나와</small><br>':'')+'<b>'+
         esc(stripTags(m.c[m.a]))+'</b><br>'+esc(x.e)+
         (LMAP[x.l]?'<br><button class="prgo" id="nles">'+esc(LMAP[x.l].title)+' 수업에서 보기 '+IC.chev+'</button>':'')+'</span></div>';
       var nl=view.querySelector("#nles");
       if(nl)nl.onclick=function(){ NR=null; jumpCard(x.l,prFind(x.l,x.n)); };
       view.insertAdjacentHTML("beforeend",nextBtnW("다음",function(){NR=null;vNRun();}));
-    };
-  });
+  }
 }
 function nEnd(){
   var R=S.nrun;
   var h='<div class="done-hero"><div class="scene">'+scene("book",64)+'</div>'+
     '<div class="big">'+R.ok1+' / '+R.n+'</div>'+
-    '<div class="sub">한 번에 맞힌 카드'+(R.ok2?' · 다시 나와서 맞힌 카드 '+R.ok2+'장':'')+'</div></div>';
-  if(R.wr.length)h+='<div class="part">이번 판에서 틀렸던 것</div>'+R.wr.map(function(k){
+    '<div class="sub">한 번에 맞힌 카드'+(R.ok2?' · 다시 나와서 맞힌 카드 '+R.ok2+'장':'')+(R.sk?' · 넘긴 횟수 '+R.sk:'')+'</div></div>';
+  if(R.wr.length)h+='<div class="part">이번 판에서 틀렸거나 넘긴 것</div>'+R.wr.map(function(k){
       var x=NMAP[k.split("|")[0]]; if(!x)return "";
       return '<div class="wcard"><div class="wq"><b>'+esc(x.n)+'</b> <small class="nk">'+x.k+'</small></div><div class="wex">'+esc(x.e)+'</div></div>';}).join("");
   h+='<p class="note" style="margin:12px 0 0">외운 것 '+nKnown()+' / '+NAMES.length+
@@ -6075,16 +6100,30 @@ var FLOWRAW=[
 var FLOWS=FLOWRAW.map(function(r){return {id:r[0],u:r[1],l:r[2],t:r[3],
   s:r[4].map(function(x){return {n:x[0],y:x[1],w:x[2]};})};});
 var FMAP={}; FLOWS.forEach(function(f){FMAP[f.id]=f;});
-/* 큰 묶음 — 「쌓아 가기」는 이 다섯 칸을 먼저 순서대로 세운 뒤 사건을 채워 넣는다 */
+/* 큰 묶음 — 「쌓아 가기」는 이 여섯 칸을 먼저 순서대로 세운 뒤 사건을 채워 넣는다.
+   예전엔 다섯 칸이었는데 1920년대 칸 하나에 사건이 53개나 몰리고, 「대공황과 만주 침략」 칸 이름과 달리
+   대공황(1929)은 그 앞 칸에 들어가서 헷갈렸다. 그래서
+   - 1920년대를 전반(3·1 운동 뒤 여러 갈래로) · 후반(좌우가 손잡다)으로 나누고
+   - 칸마다 「문을 여는 사건」과 「문을 닫는 사건」을 붙여 경계를 사건으로 보여 준다.
+   n 이름 · lab 햇수 · g 통치 방식 · a 여는 사건 · z 닫는 사건 · k 대표 사건 */
 var BLOCKS=[
- {n:"무단 통치와 국외 독립운동 기지",k:"헌병 경찰 · 토지 조사 사업 · 서간도 삼원보",lab:"~1918",y0:0,y1:1918},
- {n:"3·1 운동의 해",k:"2·8 독립 선언 · 3·1 운동 · 임시 정부 수립",lab:"1919",y0:1919,y1:1919},
- {n:"'문화 정치'와 민족 운동의 확산",k:"산미 증식 계획 · 실력 양성 운동 · 신간회",lab:"1920년대",y0:1920,y1:1929},
- {n:"대공황과 만주 침략",k:"만주 사변 · 한인 애국단 · 한중 연합 작전",lab:"1930~1936",y0:1930,y1:1936},
- {n:"전쟁 동원과 광복 준비",k:"중일 전쟁 · 창씨개명 · 한국광복군",lab:"1937~1945",y0:1937,y1:9999}
+ {n:"1910년대 · 무단 통치",lab:"1910~1918",y0:0,y1:1918,g:"무단 통치 — 헌병 경찰, 태형",
+  a:"조선 총독부 설치",z:"민족 자결주의 제창(1918)",k:"토지 조사 사업 · 독립 의군부 · 대한 광복회 · 대동단결 선언"},
+ {n:"1919년 한 해 · 3·1 운동과 임시 정부",lab:"1919",y0:1919,y1:1919,g:"무단 통치 → '문화 정치'로 바꾸기 시작(보통 경찰제)",
+  a:"고종 서거 · 파리 강화 회의(1919 초)",z:"임시 정부 통합 · 의열단 결성(1919 말)",k:"2·8 독립 선언 · 3·1 운동 · 임시 정부 수립과 통합"},
+ {n:"1920년대 전반 · 3·1 운동 뒤 여러 갈래로",lab:"1920~1925",y0:1920,y1:1925,g:"'문화 정치' — 산미 증식 계획",
+  a:"봉오동 전투 · 청산리 대첩(1920)",z:"치안 유지법 · 미쓰야 협정(1925)",k:"물산 장려 · 민립 대학 · 국민 대표 회의 · 암태도 소작 쟁의"},
+ {n:"1920년대 후반 · 좌우가 손잡다",lab:"1926~1929",y0:1926,y1:1929,g:"'문화 정치' 속 치안 유지법 탄압",
+  a:"6·10 만세 운동(1926)",z:"광주 학생 항일 운동 · 대공황(1929)",k:"정우회 선언 · 신간회 · 근우회 · 원산 총파업"},
+ {n:"1930년대 전반 · 만주 사변과 한중 연합",lab:"1931~1936",y0:1930,y1:1936,g:"만주 침략 · 남면북양 정책 · 농촌 진흥 운동",
+  a:"만주 사변(1931)",z:"중일 전쟁이 터지기 전까지(~1936)",k:"한인 애국단 · 한중 연합 작전 · 민족 혁명당 · 브나로드 운동"},
+ {n:"중일 전쟁 이후 · 민족 말살과 광복 준비",lab:"1937~1945",y0:1937,y1:9999,g:"민족 말살 통치 — 황국 신민화, 전시 총동원",
+  a:"중일 전쟁(1937)",z:"8·15 광복(1945)",k:"국가 총동원법 · 창씨개명 · 조선 의용대 · 한국광복군"}
 ];
+var BLOCKV=2;   /* 묶음을 바꾸면 올린다 — 예전 1단계(묶음 세우기) 기록은 다시 하게 한다 */
 function blockOf(y){for(var i=0;i<BLOCKS.length;i++)if(y>=BLOCKS[i].y0&&y<=BLOCKS[i].y1)return i;return BLOCKS.length-1;}
-function oS(){ if(!S.ord)S.ord={}; var o=S.ord; if(!o.sets)o.sets={}; if(!o.fm)o.fm={}; if(!o.stk)o.stk={o:0,p:{}}; if(!o.stk.p)o.stk.p={}; return o; }
+function oS(){ if(!S.ord)S.ord={}; var o=S.ord; if(!o.sets)o.sets={}; if(!o.fm)o.fm={}; if(!o.stk)o.stk={o:0,p:{}}; if(!o.stk.p)o.stk.p={};
+  if(o.stk.v!==BLOCKV){ o.stk.o=0; o.stk.v=BLOCKV; } return o; }
 function tlKey(r){return r.u+"|"+r.n;}
 /* 연표 줄 가운데 '사건'이 아닌 설명 카드(배경 · 의의 · 방식 · 지역 소개)는 순서 맞추기에서 뺀다 */
 var OSKIP={};
@@ -6128,8 +6167,11 @@ function oStartBlockOrder(b){
   oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oStartBlocks(){
+  /* 카드에는 경계 사건만 보여 준다(햇수는 확인한 뒤에) */
   O={mode:"order",kind:"blocks",title:"큰 묶음부터 세우기",sub:"쌓아 가기 1단계",
-     items:BLOCKS.map(function(b){return {n:b.n,y:b.lab,w:b.k,hint:b.k};})};
+     items:BLOCKS.map(function(b){var nt=function(t){return t.replace(/\s*\([^)]*\d[^)]*\)/g,"");};
+       return {n:b.n.split(" · ")[1],y:b.lab+" · "+b.n.split(" · ")[0],
+       w:"▶ "+b.a+"  ◀ "+b.z+" — "+b.k,hint:"▶ "+nt(b.a)+"   ◀ "+nt(b.z)};})};
   oInitOrder(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
 function oInitOrder(){
@@ -6157,7 +6199,7 @@ function oStartStack(){
   if(!left.length){ go("ordStack",null,true); return; }
   var pick=oPickFacts(left,5,{distinctUnit:true});
   O={mode:"bucket",kind:"stack",title:"사건을 묶음에 넣기",sub:"쌓아 가기",
-     zones:BLOCKS.map(function(b){return {n:b.lab,t:b.n};}),
+     zones:BLOCKS.map(function(b){return {n:b.lab,t:b.n,a:b.a,z:b.z};}),
      items:oShuffle(pick.map(function(r){return {n:r.n,y:String(r.y),w:r.so,key:tlKey(r),z:blockOf(r.y),sub:UMAP[r.u].n};}))};
   oInitBucket(); go("ordRun",null,stack[stack.length-1].n==="ordRun");
 }
@@ -6228,15 +6270,18 @@ function vORun(){
     }).join("")+'</div>';
   }else{
     var tray=[];
-    h+='<div class="ozs">'+O.zones.map(function(z,j){
+    var cmp=O.kind==="stack";
+    h+='<div class="ozs'+(cmp?' cmp':'')+'">'+O.zones.map(function(z,j){
       var inz=O.items.map(function(it,i){return i;}).filter(function(i){return O.at[i]===j;});
       return '<div class="ozone" data-drop="z:'+j+'"><div class="ozh"><b>'+esc(z.n)+'</b> '+esc(z.t)+'</div>'+
         (z.anchor&&z.anchor.length?'<div class="oza">일제: '+z.anchor.map(esc).join(' · ')+'</div>':'')+
+        (z.a?'<div class="ozb"><span>▶ '+esc(z.a)+'</span><span>◀ '+esc(z.z)+'</span></div>':'')+
         '<div class="ozc">'+inz.map(function(i){return oChip(i);}).join("")+
-        (inz.length?'':'<span class="ozp">여기에 놓기</span>')+'</div></div>';
+        (inz.length||cmp?'':'<span class="ozp">여기에 놓기</span>')+'</div></div>';
     }).join("")+'</div>';
     O.items.forEach(function(it,i){ if(O.at[i]==null)tray.push(i); });
-    if(!O.done)h+='<div class="otray" data-drop="t"><div class="eyebrow">남은 카드 '+tray.length+'</div>'+
+    /* 쌓아 가기는 칸이 여섯이라 길다 — 남은 카드 칸을 화면 아래에 붙여 둬서 어느 칸이든 짧게 끌 수 있게 한다 */
+    if(!O.done)h+='<div class="otray'+(cmp?' stick':'')+'" data-drop="t"><div class="eyebrow">남은 카드 '+tray.length+'</div>'+
       (tray.length?tray.map(oChip).join(""):'<span class="ozp">다 놓았어. 아래 「확인」을 눌러 봐.</span>')+'</div>';
   }
   if(O.done){
@@ -6271,7 +6316,7 @@ function vORun(){
 function oChip(i){
   var it=O.items[i], lk=O.lock[i]||O.done;
   return '<button class="ochip'+(O.lock[i]?" ok":"")+(O.done&&O.wrongAt[i]?" no":"")+(O.sel===i?" sel":"")+'" data-drag="'+i+'"'+(lk?' data-lock="1"':'')+'>'+
-    esc(it.n)+(O.done?' <small>'+esc(it.y)+'</small>':'')+'</button>';
+    esc(it.n)+(O.done?' <small>'+esc(it.y)+'</small>':O.kind==="stack"&&it.sub?'<i class="osu">'+esc(it.sub)+'</i>':'')+'</button>';
 }
 /* ── 끌기 · 누르기 ── */
 function oScrollBox(el){
@@ -6348,7 +6393,7 @@ function vOrd(){
     oMode("oflow","흐름 세트","수업에서 배운 흐름 4~6장 · 맞힌 흐름 "+ok+" / "+FLOWS.length+(re?" · 다시 풀 것 "+re:""),"1")+
     oMode("omix","시대 섞기","여러 단원 사건 5장을 한 줄로 · 시험 직전 통합 정리","2")+
     oMode("opair","통치 ↔ 저항","일제가 이럴 때 우리는? 시기 칸에 넣기","3")+
-    oMode("ostack","쌓아 가기","큰 묶음 다섯 개부터 세우고 사건을 채워 넣기 · "+pl+" / "+rows.length+" 채움","4")+
+    oMode("ostack","쌓아 가기","큰 묶음 여섯 개부터 세우고 사건을 채워 넣기 · "+pl+" / "+rows.length+" 채움","4")+
     (fm?'<p class="note" style="margin-top:4px">자주 틀린 사건 '+fm+'개는 시대 섞기 · 통치↔저항 · 쌓아 가기에 먼저 나와.</p>':'')+
     '<div class="part">흐름 세트 고르기</div>';
   var lastU="";
@@ -6371,9 +6416,13 @@ function vOStack(){
   titleEl.textContent="쌓아 가기";
   var st=oS().stk, rows=oRows();
   if(!st.o){
-    view.innerHTML='<div class="ohead"><div class="eyebrow">쌓아 가기</div><div class="h sm">먼저 큰 묶음 다섯 개를 시기 순서로</div>'+
-      '<p class="note">Ⅰ단원 전체를 다섯 시기로 나눴어. 각 묶음의 대표 사건을 보고 순서대로 세운 다음, 사건을 하나씩 알맞은 묶음에 채워 넣을 거야. '+
+    view.innerHTML='<div class="ohead"><div class="eyebrow">쌓아 가기</div><div class="h sm">먼저 큰 묶음 여섯 개를 시기 순서로</div>'+
+      '<p class="note">Ⅰ단원 전체를 여섯 시기로 나눴어. 묶음마다 <b>문을 여는 사건(▶)</b>과 <b>문을 닫는 사건(◀)</b>이 있어. '+
+      '이 경계 사건만 알면 나머지 사건은 「어느 두 사건 사이에 있었나」로 넣을 수 있어. 아래를 한 번 읽고, 순서대로 세운 다음 사건을 하나씩 채워 넣자. '+
       '큰 틀이 먼저 서 있으면 세부 사건이 붙을 자리가 생겨서 훨씬 오래 남아.</p></div>'+
+      '<div class="oblks">'+BLOCKS.map(function(b,i){return '<div class="oblk"><div class="obh"><span class="obn">'+(i+1)+'</span><span><b>'+esc(b.n)+'</b>'+
+        '<small>'+esc(b.lab)+' · '+esc(b.g)+'</small></span></div>'+
+        '<div class="ozb"><span>▶ '+esc(b.a)+'</span><span>◀ '+esc(b.z)+'</span></div><p class="obk">'+esc(b.k)+'</p></div>';}).join("")+'</div>'+
       '<div class="sticky"><button class="cta" id="osb">큰 묶음 세우기</button></div>';
     view.querySelector("#osb").onclick=oStartBlocks; return;
   }
@@ -6383,8 +6432,9 @@ function vOStack(){
     '<p class="note">한 판에 5장씩, 알맞은 묶음에 넣어. 한 번에 맞힌 사건만 묶음에 쌓여. 묶음에 네 개 넘게 쌓이면 그 안의 순서도 맞춰 볼 수 있어.</p></div>';
   BLOCKS.forEach(function(b,i){
     var inB=rows.filter(function(r){return blockOf(r.y)===i;}), got=inB.filter(function(r){return st.p[tlKey(r)];}).sort(function(a,c){return a.y-c.y;});
-    h+='<div class="oblk"><div class="obh"><span class="obn">'+(i+1)+'</span><span><b>'+esc(b.lab)+' · '+esc(b.n)+'</b>'+
-      '<small>'+got.length+' / '+inB.length+'</small></span></div>'+
+    h+='<div class="oblk"><div class="obh"><span class="obn">'+(i+1)+'</span><span><b>'+esc(b.n)+'</b>'+
+      '<small>'+esc(b.lab)+' · 채운 사건 '+got.length+' / '+inB.length+'</small></span></div>'+
+      '<div class="ozb"><span>▶ '+esc(b.a)+'</span><span>◀ '+esc(b.z)+'</span></div>'+
       (got.length?'<div class="obl">'+got.map(function(r){return '<span>'+esc(r.n)+'</span>';}).join("")+'</div>':'')+
       (got.length>=4?'<button class="prgo" data-b="'+i+'">이 묶음 안 순서 맞추기 '+IC.chev+'</button>':'')+'</div>';
   });
