@@ -745,6 +745,18 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .wcard{content-visibility:auto;contain-intrinsic-size:auto 96px}
 .a-learn .hit{content-visibility:auto;contain-intrinsic-size:auto 86px}
 
+
+/* 인물·단체 카드 */
+.a-learn .exbar.nbar{background:#FAE4C2;border-color:var(--org-d)}
+.a-learn .exbar.nbar .ic{color:var(--org-d)}
+.a-learn .ncard .nname{font-family:var(--f-h);font-size:30px;line-height:1.3;margin:4px 0 6px;color:var(--ink)}
+.a-learn .nclue{list-style:none;margin-top:10px}
+.a-learn .nclue li{position:relative;padding:7px 0 7px 16px;font-size:15.5px;line-height:1.65;border-top:2px dashed var(--panel-d)}
+.a-learn .nclue li:first-child{border-top:0}
+.a-learn .nclue li::before{content:"";position:absolute;left:0;top:16px;width:7px;height:7px;background:var(--org)}
+.a-learn .nclue li b{background:var(--yel);padding:0 3px}
+.a-learn .nagain{background:var(--red-l);color:var(--red-d);padding:1px 5px;border:1px solid var(--red-d)}
+.a-learn .wq small.nk{font-size:12px;color:var(--ink-2);font-weight:400}
 /* 학교 프린트 — 수업 카드 표시와 정리 화면 */
 .a-learn .pbl{display:flex;align-items:stretch;margin-bottom:8px;background:var(--cream);border:var(--bd) solid var(--ink);
   box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28)}
@@ -2965,8 +2977,8 @@ var S;
 function load(){
   try{var r=localStorage.getItem(KEY);
     S=r?JSON.parse(r):null;}catch(e){S=null;}
-  if(!S)S={done:{},pos:{},quiz:{},wrong:{},due:{},mem:{},essay:{},pmark:{},streak:0,last:0,dday:"",hist:[],theme:""};
-  ["done","pos","quiz","wrong","due","mem","essay","pmark"].forEach(function(k){if(!S[k])S[k]={};});
+  if(!S)S={done:{},pos:{},quiz:{},wrong:{},due:{},mem:{},essay:{},pmark:{},nbox:{},streak:0,last:0,dday:"",hist:[],theme:""};
+  ["done","pos","quiz","wrong","due","mem","essay","pmark","nbox"].forEach(function(k){if(!S[k])S[k]={};});
   if(!S.hist)S.hist=[]; if(S.dday==null)S.dday="";
   /* 옛 저장본: 마친 수업에 복습 일정이 없으면 내일로 잡아 준다 */
   Object.keys(S.done).forEach(function(k){ if(!S.due[k])S.due[k]={n:0,at:today()+1}; });
@@ -3083,6 +3095,10 @@ function vHome(){
     '<span class="tx"><b>서술형 연습</b><small>문장으로 답하는 '+ESSAY.length+'문항 · 채점 기준을 스스로 매겨 봐'+
       ((typeof S.essay==="object"&&Object.keys(S.essay).length)?' · '+ESSAY.filter(wdone).length+'개 통과':'')+'</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
+    '<button class="exbar nbar" id="goNames" style="margin-top:9px"><span class="ic">'+IC.book+'</span>'+
+    '<span class="tx"><b>인물·단체 카드</b><small>'+(S.nrun&&S.nrun.q&&S.nrun.q.length?'이어서 풀기 · 남은 '+S.nrun.q.length+'장 · ':'')+
+      '외운 것 '+nKnown()+' / '+NAMES.length+' · 틀리면 다시 나와</small></span>'+
+    '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="exbar prbar" id="goPrint" style="margin-top:9px"><span class="ic">'+IC.paper+'</span>'+
     '<span class="tx"><b>학교 프린트 정리</b><small>선생님 밑줄 '+PRINT.under.length+'곳 · 빈칸 '+PBLANK.length+'문장 · 다른 점 '+PRINT.diff.length+'곳 · O·X '+PRINT.ox.length+'문항</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
@@ -3106,6 +3122,8 @@ function vHome(){
   if(de)de.onclick=askDday;
   var ge=document.getElementById("goExam");
   if(ge)ge.onclick=function(){go("exam");};
+  var gnm=document.getElementById("goNames");
+  if(gnm)gnm.onclick=function(){go("names");};
   var gp=document.getElementById("goPrint");
   if(gp)gp.onclick=function(){go("print");};
   var gy=document.getElementById("goEssay");
@@ -3183,6 +3201,11 @@ function wItem(w){
     var x=(typeof EMAP!=="undefined")?EMAP[w.idx]:null; if(!x)return null;
     return {lid:"EXAM",kind:"e",idx:w.idx,lesson:{title:"내신 실전 · "+UMAP[x.u].n},
       q:x.q,c:x.c,a:x.a,e:x.e,miss:w.miss,chose:w.chose,type:x.type,boki:x.boki};
+  }
+  if(w.kind==="n"){                      /* 인물·단체 카드 */
+    var nb=(typeof nOpts==="function")?nOpts(w.idx):null; if(!nb)return null;
+    return {lid:"NAME",kind:"n",idx:w.idx,lesson:{title:"인물·단체 · "+UMAP[nb.x.u].n},
+      q:nb.q,c:nb.c.map(stripTags),a:0,e:nb.e,miss:w.miss,chose:w.chose};
   }
   var l=LMAP[w.lid]; if(!l)return null;
   if(w.kind==="q"){ var q=l.quiz[w.idx]; if(!q)return null;
@@ -3795,6 +3818,7 @@ function vWrong(){
     '<button class="cta" id="wgo" style="margin-bottom:6px">'+IC.play+' 오답만 다시 풀기</button>';
   var groups=LESSONS.map(function(l){return {key:l.id,name:l.title};});
   groups.push({key:"EXAM",name:"내신 실전"});
+  groups.push({key:"NAME",name:"인물·단체 카드"});
   groups.forEach(function(gr){
     var g=byL[gr.key]; if(!g)return;
     html+='<div class="part">'+esc(gr.name)+'</div>';
@@ -4027,6 +4051,10 @@ function buildIndex(){
   });
   ESSAY.forEach(function(x){
     IDX.push({t:"서술형",wid:x.id,head:x.q,body:x.keys.join(" ")+" "+x.model,sub:UMAP[x.u].n});
+  });
+  NAMES.forEach(function(x){
+    var cl=x.cl.map(stripTags);
+    IDX.push({t:"인물·단체",head:x.n,body:cl.join(" ")+" "+x.e,sub:x.k+" · "+UMAP[x.u].n,ans:cl.join(" · "),ex:x.e});
   });
   EXAM.forEach(function(q){
     IDX.push({t:"내신",eid:q.id,head:q.q.split("\n")[0],
@@ -5338,6 +5366,300 @@ function vPrint(){
     list.forEach(function(o){PROX[PRINT.ox.indexOf(o)]=!all;}); vPrint();};
 }
 
+/* ── 인물·단체 카드 ──
+   [id, 이름, 종류(인물/단체), 단원, 수업, 헷갈림 묶음(여럿이면 띄어 씀), 단서들, 한 줄 정리]
+   단서의 <b>…</b> 는 교과서·프린트에 그대로 있는 낱말이다(검증 스크립트가 원문과 대조한다).
+   단서에는 정답 이름을 쓰지 않는다 — 이름을 보고 고르면 외우는 게 아니니까 */
+var NRAW=[
+ /* s1 세계 */
+ ["wilson","윌슨","인물","s1","L1","p1",["미국 대통령으로 <b>14개조 평화 원칙</b>을 제안","<b>민족 자결주의</b>를 제창"],"미국 대통령. 파리 강화 회의의 토대가 된 14개조와 민족 자결주의."],
+ ["lenin","레닌","인물","s1","L1","p1",["<b>러시아</b>의 사회주의 혁명을 이끎","<b>약소민족</b>의 해방 운동을 지원하겠다고 선언"],"러시아 혁명(1917)의 지도자. 약소민족 해방 운동 지원 선언."],
+ /* s5 1910년대 */
+ ["imbc","임병찬","인물","s5","L10","p5",["<b>고종의 밀명</b>을 받아 비밀 결사 조직","의병장 출신, <b>복벽주의</b>를 내세움"],"독립 의군부를 이끈 의병장 출신. 대한 제국 체제 회복(복벽주의)."],
+ ["parksj","박상진","인물","s5","L10","p5",["<b>대한 광복회</b>의 중심인물","<b>민주 공화제</b> 국가를 세우려 한 비밀 결사를 이끎"],"대한 광복회를 이끌었다. 복벽이 아니라 민주 공화제."],
+ ["leehy","이회영","인물","s5","L11","p5",["형제들과 <b>전 재산</b>을 처분해 만주로 이주","<b>삼원보</b>에 독립운동 기지 건설, 신흥 강습소"],"서간도 삼원보 기지를 세운 신민회 인사."],
+ ["leesangseol","이상설","인물","s5","L11","p5",["<b>연해주</b>에서 <b>대한 광복군 정부</b>를 세움(이동휘와 함께)"],"연해주 대한 광복군 정부."],
+ ["leedh","이동휘","인물","s7","L15","p5 kim",["<b>대한민국 임시 정부</b>의 <b>국무총리</b>","연해주 대한 광복군 정부에도 참여"],"통합 임시 정부의 국무총리."],
+ ["ahnch","안창호","인물","s5","L11","p5 sil10",["<b>대한인 국민회</b>를 이끌며 미주 한인 단체를 통합","<b>신민회</b>를 만든 인물"],"미주 대한인 국민회. 신민회."],
+ ["parkym","박용만","인물","s5","L11","p5",["<b>하와이</b>에서 <b>대조선 국민군단</b>을 조직"],"하와이의 대조선 국민군단 — 미주 무장 투쟁."],
+ ["singyusik","신규식","인물","s5","L11","p5",["<b>상하이</b>에서 <b>동제사</b>를 조직"],"상하이 동제사."],
+ /* s6 3·1 운동 */
+ ["kimgs","김규식","인물","s6","L12","kim",["<b>신한청년당</b> 대표로 <b>파리 강화 회의</b>에 파견","1942년 민족 혁명당 인사로 <b>충칭</b> 임시 정부에 합류"],"파리 강화 회의에 간 신한청년당 대표."],
+ ["gojong","고종","인물","s6","L12","king",["갑작스러운 서거와 <b>독살설</b>이 <b>3·1 운동</b>의 계기가 됨"],"고종의 국장일 즈음 3·1 운동."],
+ ["sunjong","순종","인물","s12","L25","king",["대한 제국의 마지막 황제","장례일에 <b>6·10 만세 운동</b>이 일어남"],"순종의 장례 → 6·10 만세 운동(1926)."],
+ /* s7 임시 정부 */
+ ["syngman","이승만","인물","s7","L17","",["<b>임시 대통령</b>으로 선임","<b>구미 위원부</b> 중심의 외교 활동","국민 대표 회의 뒤 <b>탄핵</b>됨"],"임시 대통령 → 1925년 탄핵."],
+ /* s8 무장 투쟁 */
+ ["hongbd","홍범도","인물","s8","L18","gen8",["<b>대한 독립군</b>을 이끎","<b>봉오동 전투</b>를 승리로 이끎"],"대한 독립군 · 봉오동."],
+ ["kimjj","김좌진","인물","s8","L18","gen8 kim",["<b>북로 군정서</b>를 이끎","<b>청산리</b> 대첩을 이끎"],"북로 군정서 · 청산리."],
+ ["jicc","지청천","인물","s8","L20","gen8",["<b>한국 독립군</b> 총사령관, <b>쌍성보</b> · <b>대전자령</b> 전투","뒤에 <b>한국광복군</b> 총사령관"],"한국 독립군 → 한국광복군 총사령관."],
+ ["yangsb","양세봉","인물","s8","L20","gen8",["<b>조선 혁명군</b> 총사령관","<b>영릉가</b> · <b>흥경성</b> 전투에서 승리"],"조선 혁명군 · 영릉가."],
+ /* s9 의열 투쟁 */
+ ["kangwg","강우규","인물","s9","L21","bomb",["<b>남대문역</b>에서 새로 부임하는 총독에게 폭탄 투척(1919)","단체가 아닌 <b>개인 의열 투쟁</b>"],"1919년 총독 마차에 폭탄 — 개인 의거."],
+ ["kimwb","김원봉","인물","s9","L21","kim",["<b>의열단</b>을 조직(1919, 만주 지린)","난징에서 <b>민족 혁명당</b> 결성 주도","<b>조선 의용대</b>를 이끎"],"의열단 → 민족 혁명당 → 조선 의용대 → 1942 광복군 합류."],
+ ["sinch","신채호","인물","s9","L21","hist",["<b>「조선 혁명 선언」</b>을 씀 — 민중 직접 혁명","<b>『조선상고사』</b>를 쓴 고대사 연구"],"조선 혁명 선언(의열단 지침) + 조선상고사."],
+ ["kimis","김익상","인물","s9","L21","bomb",["의열단원, <b>조선 총독부</b>에 폭탄 투척(1921)"],"조선 총독부."],
+ ["kimso","김상옥","인물","s9","L21","bomb",["의열단원, <b>종로 경찰서</b>에 폭탄 투척(1923)"],"종로 경찰서."],
+ ["nasj","나석주","인물","s9","L21","bomb",["의열단원, <b>동양 척식 주식회사</b>에 폭탄 투척(1926)"],"동척."],
+ ["parkjh","박재혁","인물","s9","L21","bomb",["의열단원, <b>부산 경찰서</b>에 폭탄 투척(1920)"],"부산 경찰서."],
+ ["choisb","최수봉","인물","s9","L21","bomb",["의열단원, <b>밀양 경찰서</b>에 폭탄 투척(1920)"],"밀양 경찰서."],
+ ["kimjs","김지섭","인물","s9","L21","bomb",["의열단원, 도쿄의 <b>일본 왕궁</b>에 폭탄 투척(1924)"],"일본 왕궁 — 의열단(이봉창과 구별)."],
+ ["jomh","조명하","인물","s9","L21","bomb",["<b>타이완</b>에서 <b>일본 왕족</b>을 처단(1928)"],"타이완 — 개인 의거."],
+ ["kimgu","김구","인물","s9","L22","kim",["<b>한인 애국단</b>을 조직(1931)","민족 혁명당에 빠지고 <b>한국 국민당</b>을 만듦","충칭 임시 정부의 <b>주석</b>"],"한인 애국단 · 한국 국민당 · 주석."],
+ ["leebc","이봉창","인물","s9","L22","bomb",["<b>도쿄</b>에서 일왕의 마차에 폭탄 투척(1932. 1.)","이를 구실로 일제가 <b>상하이 사변</b>을 일으킴"],"한인 애국단의 첫 거사 — 도쿄."],
+ ["yoonbg","윤봉길","인물","s9","L22","bomb",["상하이 <b>훙커우 공원</b> 기념식장에 폭탄 투척(1932. 4.)","<b>중국 국민당 정부</b>가 한국 독립운동을 지원하는 계기"],"훙커우 공원 → 중국의 지원."],
+ /* s10~s13 */
+ ["chomsk","조만식","인물","s10","L23","sil10",["<b>평양</b>에서 <b>물산 장려 운동</b>을 이끎"],"물산 장려 운동 · 평양."],
+ ["leesj","이상재","인물","s10","L23","sil10",["<b>조선 민립 대학 기성회</b>를 조직","자치 운동을 비판한 <b>비타협적 민족주의자</b>"],"민립 대학 기성회 · 비타협적 민족주의."],
+ ["leeks","이광수","인물","s10","L23","sil10",["일제 지배를 인정하고 <b>자치권</b> · <b>참정권</b>을 얻자고 주장","<b>타협적</b> 민족주의"],"자치 운동(타협적)."],
+ ["jangjs","장재성","인물","s12","L25","",["<b>성진회</b> 출신으로 <b>광주 학생 항일 운동</b>을 주도","법정에서 <b>\"조선 학생 만세\"</b>를 외침"],"광주 학생 항일 운동 · 성진회."],
+ ["ahnjh","안재홍","인물","s13","L26","sil10",["이상재와 함께 <b>자치 운동</b>을 비판한 <b>비타협적 민족주의자</b>"],"비타협적 민족주의 — 신간회로."],
+ /* s14~s16 */
+ ["nawg","나운규","인물","s14","L27","art",["영화 <b>「아리랑」</b>의 각본 · 주연 · 감독"],"영화 아리랑."],
+ ["hyunjg","현진건","인물","s14","L27","art",["소설 <b>「운수 좋은 날」</b>로 가난한 도시민을 그림"],"운수 좋은 날."],
+ ["bangjh","방정환","인물","s15","L28","sil10",["<b>'어린이'</b>라는 말을 널리 보급","<b>천도교 소년회</b>를 이끌고 <b>어린이날</b> 제정"],"소년 운동 · 어린이날."],
+ ["parkes","박은식","인물","s16","L29","hist",["<b>'조선 국혼'</b>을 강조","<b>『한국통사』</b> · <b>『한국독립운동지혈사』</b>를 씀"],"국혼 · 한국통사 — 민족주의 사학."],
+ ["jungib","정인보","인물","s16","L29","hist",["<b>조선학 운동</b>을 펼침","조선 후기 <b>실학</b> 연구"],"조선학 운동 · 실학."],
+ ["baeknu","백남운","인물","s16","L29","hist",["<b>『조선사회경제사』</b>를 씀","<b>유물 사관</b>으로 <b>정체성론</b>을 비판"],"사회 경제 사학."],
+ ["jusg","주시경","인물","s16","L30","",["그의 제자들이 <b>조선어 연구회</b>를 만듦"],"주시경의 제자들 → 조선어 연구회."],
+ ["nachul","나철","인물","s16","L30","rel",["<b>대종교</b>를 일으켜 <b>단군</b> 신앙을 전파"],"대종교 — 중광단."],
+ ["hanyw","한용운","인물","s16","L30","rel poet",["<b>조선 불교 유신회</b>를 조직","<b>사찰령</b> 등 일제의 불교 통제에 저항"],"불교 · 저항 시인."],
+ ["parkjb","박중빈","인물","s16","L30","rel",["<b>원불교</b>를 창시","<b>새 생활 운동</b>(허례 폐지 · 근검절약)"],"원불교 · 새 생활 운동."],
+ ["jugc","주기철","인물","s16","L30","rel",["<b>신사 참배</b>를 거부하다 고문 끝에 순교한 목사"],"개신교 · 신사 참배 거부."],
+ ["leeys","이육사","인물","s16","L30","poet",["시 <b>「광야」</b> · <b>「청포도」</b>를 남김","의열단원으로 활동하다 옥중에서 순국"],"광야 · 청포도."],
+ ["yoondj","윤동주","인물","s16","L30","poet",["<b>일본 유학</b> 중 항일 운동 혐의로 수감되어 세상을 떠난 시인"],"일본 유학 중 옥사."],
+ ["simhun","심훈","인물","s16","L30","poet",["시 <b>「그날이 오면」</b>"],"그날이 오면."],
+ ["leesh","이상화","인물","s16","L30","poet",["시 <b>「빼앗긴 들에도 봄은 오는가」</b>"],"빼앗긴 들에도 봄은 오는가."],
+ ["jeonhp","전형필","인물","s16","L30","",["<b>『훈민정음』 해례본</b>을 지킨 문화재 수집가","'<b>문화 독립운동가</b>'"],"간송 — 문화유산 지키기."],
+ /* s17~s18 */
+ ["josa","조소앙","인물","s18","L32","",["<b>삼균주의</b>(정치 · 경제 · 교육의 균등)","민족 혁명당에서 <b>탈당</b>"],"삼균주의 → 건국 강령."],
+ ["yeounh","여운형","인물","s18","L33","left18",["국내에서 <b>조선 건국 동맹</b>을 결성(1944)"],"조선 건국 동맹 — 국내."],
+ ["kimdb","김두봉","인물","s18","L33","left18 kim",["화북에서 <b>조선 독립 동맹</b>의 <b>위원장</b>"],"조선 독립 동맹 — 화북."],
+
+ /* ───── 단체 ───── */
+ ["g_uigun","독립 의군부","단체","s5","L10","secret5",["<b>고종의 밀명</b>, 임병찬이 조직","<b>복벽주의</b> — 대한 제국 회복","<b>국권 반환 요구서</b>를 보내려다 발각"],"복벽주의 비밀 결사."],
+ ["g_gwangbok","대한 광복회","단체","s5","L10","secret5",["<b>박상진</b> 등이 주축인 비밀 결사","<b>민주 공화제</b> 국가 수립 지향, <b>군자금</b> 모집 · 친일파 처단"],"민주 공화제를 꿈꾼 비밀 결사."],
+ ["g_sinmin","신민회","단체","s5","L11","sin",["이회영 · 이상룡 등이 주도해 <b>삼원보</b>에 독립운동 기지"],"국외 독립운동 기지의 출발."],
+ ["g_gyeonghak","경학사","단체","s5","L11","base5",["서간도 <b>삼원보</b>의 한인 <b>자치 단체</b>","뒤에 <b>부민단</b>으로 이어짐"],"서간도 자치 단체."],
+ ["g_sinheung","신흥 무관 학교","단체","s5","L11","base5 sin",["<b>신흥 강습소</b>에서 발전","서간도에서 <b>독립군</b>을 길러 냄"],"서간도 독립군 양성 학교."],
+ ["g_jungwang","중광단","단체","s5","L11","base5 rel",["<b>대종교</b> 계열이 <b>북간도</b>에서 조직","뒤에 <b>북로 군정서</b>로 발전"],"대종교 · 북간도 → 북로 군정서."],
+ ["g_gwoneop","권업회","단체","s5","L11","base5",["<b>연해주</b> <b>신한촌</b>의 한인 <b>자치 단체</b>"],"연해주 자치 단체."],
+ ["g_gwangbokgun","대한 광복군 정부","단체","s5","L11","base5",["<b>연해주</b>에서 <b>이상설</b> · <b>이동휘</b>가 세운 정부"],"연해주 망명 정부."],
+ ["g_gungminhoe","대한인 국민회","단체","s5","L11","base5",["<b>안창호</b> 주도로 <b>미주</b> 한인 단체를 통합","<b>파리 강화 회의</b> 의제로 한국 독립 문제를 다뤄 달라고 미국 정부에 건의"],"미주 한인 단체의 중심."],
+ ["g_gundan","대조선 국민군단","단체","s5","L11","base5",["<b>박용만</b>이 <b>하와이</b>에서 조직한 무장 단체"],"하와이 — 미주 무장 투쟁."],
+ ["g_dongje","동제사","단체","s5","L11","base5",["<b>신규식</b> 등이 <b>상하이</b>에서 조직"],"상하이의 초기 독립운동 단체."],
+ ["g_sinhan","신한청년당","단체","s6","L12","sin",["<b>김규식</b>을 <b>파리 강화 회의</b>에 파견","대한민국 임시 정부 수립의 기반"],"상하이 · 파리 파견."],
+ ["g_28","조선 청년 독립단","단체","s6","L12","",["<b>도쿄</b> 유학생들이 이 이름으로 <b>2·8 독립 선언</b>"],"2·8 독립 선언."],
+ /* s7 */
+ ["g_yeontong","연통제","단체","s7","L16","gov7",["국내 <b>비밀 행정 조직</b>","<b>군자금</b> 조달, 정부 문서와 명령 전달"],"비밀 행정 조직."],
+ ["g_gyotong","교통국","단체","s7","L16","gov7",["<b>통신 기관</b> — 정보 수집과 분석","<b>이륭 양행</b>에 둔 안동 지부"],"통신 기관 · 이륭 양행."],
+ ["g_gumi","구미 위원부","단체","s7","L16","gov7",["<b>미국</b>에 설치한 임시 정부의 <b>외교</b> 기구"],"미국의 외교 기구."],
+ ["g_gungmin","대한 국민 의회","단체","s7","L15","gov7",["3·1 운동 직후 <b>연해주</b>에서 세운 임시 정부"],"연해주 임시 정부."],
+ ["g_hanseong","한성 정부","단체","s7","L15","gov7",["<b>국내</b>에서 세운 임시 정부","통합 임시 정부가 이 정부의 <b>법통</b>을 이음"],"국내 · 법통."],
+ /* s8 */
+ ["g_daehandok","대한 독립군","단체","s8","L18","gun8",["<b>홍범도</b>가 이끈 부대","<b>봉오동 전투</b>의 주역"],"봉오동."],
+ ["g_bukro","북로 군정서","단체","s8","L18","gun8 base5",["<b>김좌진</b>이 이끈 부대","<b>대종교</b> 계열 중광단에서 발전"],"청산리."],
+ ["g_chamui","참의부","단체","s8","L19","3bu",["3부 가운데 <b>남만주</b> 지역에 세워진 곳"],"3부 · 남만주."],
+ ["g_jeongui","정의부","단체","s8","L19","3bu",["3부 가운데 <b>지린성</b> 일대를 중심으로 세워진 곳"],"3부 · 지린."],
+ ["g_sinminbu","신민부","단체","s8","L19","3bu sin",["3부 가운데 <b>북만주</b>","<b>자유시</b>에서 돌아온 독립군이 중심"],"3부 · 북만주."],
+ ["g_gungminbu","국민부","단체","s8","L19","3bu",["3부 통합 뒤 <b>남만주</b>에 성립","산하에 <b>조선 혁명당</b>을 만들고 조선 혁명군 조직"],"남만주 → 조선 혁명군."],
+ ["g_hyeoksin","혁신 의회","단체","s8","L19","3bu",["3부 통합 뒤 <b>북만주</b>, 곧 해체","뒤에 한국 독립당 · 한국 독립군으로"],"북만주 → 한국 독립군."],
+ ["g_joseonhyeok","조선 혁명군","단체","s8","L20","gun8",["<b>양세봉</b>이 이끈 부대","<b>영릉가</b> · 흥경성 전투에서 승리한 부대"],"남만주 · 양세봉."],
+ ["g_hangukdok","한국 독립군","단체","s8","L20","gun8",["<b>지청천</b>이 이끈 부대","<b>쌍성보</b> · <b>대전자령</b> 전투에서 승리한 부대"],"북만주 · 지청천."],
+ ["g_dongbuk","동북 항일 연군","단체","s8","L20","gun8",["<b>중국 공산당</b>이 이끈 유격 부대에 한인 사회주의자들이 참여","안의 한인들이 <b>조국 광복회</b>를 결성"],"만주 항일 유격 투쟁."],
+ /* s9 */
+ ["g_uiyeol","의열단","단체","s9","L21","uiyeol",["1919년 만주 <b>지린</b>에서 <b>김원봉</b> 등이 조직","<b>「조선 혁명 선언」</b>을 활동 지침으로"],"김원봉 · 조선 혁명 선언."],
+ ["g_aeguk","한인 애국단","단체","s9","L22","uiyeol",["<b>김구</b>가 침체한 임시 정부를 살리려고 조직(1931)","<b>이봉창</b> · <b>윤봉길</b>의 의거"],"김구 · 이봉창 · 윤봉길."],
+ /* s10~s13 */
+ ["g_minrip","조선 민립 대학 기성회","단체","s10","L23","",["<b>이상재</b> · 이승훈 등이 조직","대학 설립을 위해 <b>1천만 원</b> 모금"],"민립 대학 설립 운동."],
+ ["g_nongmin","조선 농민 총동맹","단체","s11","L24","labor",["<b>소작 쟁의</b>가 늘며 결성된 전국적 <b>농민</b> 운동 단체(1927)"],"전국 농민 단체."],
+ ["g_nodong","조선 노동 총동맹","단체","s11","L24","labor",["<b>노동 쟁의</b>가 늘며 결성된 전국 규모의 <b>노동</b> 운동 단체(1927)"],"전국 노동 단체."],
+ ["g_cheongnyeon","조선 청년 총동맹","단체","s12","L25","labor",["여러 <b>청년</b> 단체를 통일적으로 이끌려고 결성(1924)"],"청년 운동 통일 조직."],
+ ["g_seongjin","성진회","단체","s12","L25","",["<b>광주</b>의 학생 비밀 결사(1926)","참여 학생들이 학교마다 <b>독서회</b>를 만듦"],"광주 학생 항일 운동의 뿌리."],
+ ["g_jeongu","정우회","단체","s13","L26","sin",["<b>사회주의</b> 진영이 민족주의 세력과 손잡자고 <b>선언</b>(1926)"],"정우회 선언 → 신간회."],
+ ["g_singan","신간회","단체","s13","L26","sin",["비타협적 민족주의 + 사회주의가 만든 <b>합법</b> 단체(1927)","<b>'기회주의를 일체 부인함'</b>","<b>광주 학생 항일 운동</b>에 진상 조사단"],"좌우 합작 · 최대 합법 항일 단체."],
+ /* s15 */
+ ["g_geunu","근우회","단체","s15","L28","eq15",["<b>신간회</b>의 자매단체 — 여성계 민족 유일당","기관지 <b>『근우』</b>를 펴냄"],"여성 · 좌우 합작."],
+ ["g_sonyeonhoe","천도교 소년회","단체","s15","L28","eq15",["<b>방정환</b>이 이끈 소년 단체","<b>어린이날</b> 제정"],"소년 운동."],
+ ["g_hyeongpyeong","조선 형평사","단체","s15","L28","eq15",["<b>백정</b>에 대한 차별 철폐를 요구","<b>진주</b>에서 창립(1923)"],"형평 운동 · 진주."],
+ ["g_sonyeonyeon","조선 소년 연합회","단체","s15","L28","eq15 labor",["소년 운동이 퍼지며 만든 <b>전국</b> 조직(1927)"],"소년 운동 전국 조직."],
+ /* s16 */
+ ["g_pyeonsu","조선사 편수회","단체","s16","L29","lang",["<b>조선 총독부</b>에 딸려 <b>식민 사관</b>에 따라 『조선사』 편찬"],"식민 사관 · 『조선사』."],
+ ["g_jindan","진단 학회","단체","s16","L29","lang",["<b>실증 사학</b> — 문헌 고증","<b>『진단학보』</b> 발행(1934)"],"실증 사학."],
+ ["g_eoyeongu","조선어 연구회","단체","s16","L30","lang",["<b>가갸날</b>을 정하고 잡지 <b>『한글』</b> 간행"],"가갸날 → 조선어 학회로 발전."],
+ ["g_eohak","조선어 학회","단체","s16","L30","lang",["<b>한글 맞춤법 통일안</b> 제정","<b>『조선말 큰사전』</b> 편찬 추진","1942년 회원 투옥(<b>치안 유지법</b> 위반 혐의)"],"맞춤법 · 큰사전 · 1942 사건."],
+ ["g_bulgyo","조선 불교 유신회","단체","s16","L30","rel",["<b>한용운</b> 등이 청년 승려들과 조직","<b>사찰령</b> 등 불교 통제에 저항"],"불교계 민족 운동."],
+ ["g_uimin","의민단","단체","s16","L30","rel",["<b>천주교</b> 신자가 중심이 된 국외 <b>무장</b> 단체"],"천주교 · 무장 투쟁."],
+ /* s17 */
+ ["g_minhyeok","민족 혁명당","단체","s17","L31","front17",["<b>난징</b>에서 결성(1935), 중국 관내 최대 통일 전선 정당","<b>의열단</b> 계열이 당권을 쥐자 조소앙 · 지청천 탈당"],"김원봉 · 난징."],
+ ["g_gukmindang","한국 국민당","단체","s17","L31","front17",["민족 혁명당에 빠진 <b>임시 정부 옹호</b> 세력이 창당"],"김구의 당."],
+ ["g_gwangun","한국 광복 운동 단체 연합회","단체","s17","L31","front17",["중일 전쟁 뒤 <b>한국 국민당</b>을 중심으로 결성"],"김구 진영 연합체."],
+ ["g_minjeon","조선 민족 전선 연맹","단체","s17","L31","front17",["중일 전쟁 뒤 <b>민족 혁명당</b>을 중심으로 결성","이듬해 조선 의용대를 창설"],"김원봉 진영 연합체."],
+ ["g_uiyongdae","조선 의용대","단체","s17","L31","army17",["<b>우한</b>(한커우)에서 창설(1938)","<b>중국 관내 최초의 한인 부대</b>"],"중국 관내 최초의 한인 부대."],
+ ["g_hwabuk","조선 의용대 화북 지대","단체","s17","L31","army17",["<b>타이항산</b>을 중심으로 활동","<b>호가장 전투</b> · 반소탕전에서 활약"],"화북 · 호가장."],
+ /* s18 */
+ ["g_handok","한국 독립당","단체","s18","L32","dong18",["<b>충칭</b> 시기 임시 정부 운영을 이끈 <b>민족주의</b> 정당(1940)"],"충칭 임시 정부의 여당."],
+ ["g_gwangbokgun2","한국광복군","단체","s18","L32","army17",["<b>충칭</b>에서 창설(1940), 총사령관 <b>지청천</b>","<b>미얀마</b> · 인도 전선 파견, 국내 진공 작전 준비"],"임시 정부의 군대."],
+ ["g_dongnip","조선 독립 동맹","단체","s18","L33","dong18",["<b>화북</b>의 사회주의 세력이 결성(1942), 위원장 <b>김두봉</b>"],"화북 · 김두봉."],
+ ["g_uiyonggun","조선 의용군","단체","s18","L33","army17",["조선 의용대 <b>화북 지대</b>를 개편한 부대"],"조선 독립 동맹의 군대."],
+ ["g_geonguk","조선 건국 동맹","단체","s18","L33","dong18",["<b>국내</b>에서 <b>여운형</b>이 비밀리에 결성(1944)","좌우가 함께 광복에 대비"],"국내 · 여운형."]
+];
+var NAMES=NRAW.map(function(r){return {id:"n_"+r[0],n:r[1],k:r[2],u:r[3],l:r[4],
+  g:r[5]?r[5].split(" "):[],cl:r[6],e:r[7]};});
+var NMAP={}; NAMES.forEach(function(x){NMAP[x.id]=x;});
+var NUIX={}; UNITS.forEach(function(u,i){NUIX[u.id]=i;});
+/* 같은 id 면 언제 만들어도 같은 보기 — 오답 노트에 저장한 '내 답' 번호가 어긋나지 않게 */
+function nRand(seed){
+  var h=2166136261; for(var i=0;i<seed.length;i++){h^=seed.charCodeAt(i);h=Math.imul(h,16777619);}
+  return function(){h+=0x6D2B79F5;var t=h;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);
+    return ((t^(t>>>14))>>>0)/4294967296;};
+}
+function nOpts(key){
+  var p=key.split("|"),x=NMAP[p[0]],dir=p[1]; if(!x)return null;
+  var R=nRand(key);
+  /* 헷갈리는 짝(같은 묶음) → 같은 단원 → 가까운 단원 순으로 보기를 고른다 */
+  var cand=NAMES.filter(function(y){return y.k===x.k&&y.id!==x.id;}).map(function(y){
+    var sh=y.g.some(function(g){return x.g.indexOf(g)>=0;});
+    return {y:y,s:(sh?0:y.u===x.u?1:2+Math.abs(NUIX[y.u]-NUIX[x.u]))+R()*0.9};
+  }).sort(function(a,b){return a.s-b.s;});
+  var ci=Math.floor(R()*x.cl.length), ans=dir==="n"?x.cl[ci]:x.n, c=[ans], seen={};
+  seen[stripTags(ans)]=1;
+  /* 이름→설명: 정답의 핵심어(굵은 낱말)나 이름이 든 설명은 보기로 쓰지 않는다 — 그것도 맞는 말이 될 수 있어서 */
+  var terms=[x.n]; x.cl.forEach(function(t){(t.match(/<b>(.*?)<\/b>/g)||[]).forEach(function(b){terms.push(stripTags(b));});});
+  for(var i=0;i<cand.length&&c.length<4;i++){
+    var y=cand[i].y, o=dir==="n"?y.cl[Math.floor(R()*y.cl.length)]:y.n, ot=stripTags(o);
+    if(seen[ot])continue;
+    if(dir==="n"&&terms.some(function(t){return ot.indexOf(t)>=0;}))continue;
+    seen[ot]=1; c.push(o);
+  }
+  var who=x.k==="인물"?"누구일까?":"어느 단체일까?";
+  return {x:x,dir:dir,a:0,c:c,e:x.e,
+    q:dir==="n"?x.n+" — 맞는 설명은?":who+"\n"+x.cl.map(stripTags).join("\n")};
+}
+function nBox(id){return S.nbox[id]==null?-1:S.nbox[id];}
+function nKnown(){return NAMES.filter(function(x){return nBox(x.id)>=3;}).length;}
+function nPool(){
+  var o=S.nopt||{};
+  return NAMES.filter(function(x){
+    var ui=NUIX[x.u];
+    if(o.r==="a"&&ui>7)return false;
+    if(o.r==="b"&&ui<8)return false;
+    if(o.k&&o.k!=="mix"&&x.k!==o.k)return false;
+    return true;});
+}
+/* 약한 것 → 처음 보는 것 → 외운 것 순. 같은 칸 안에서는 섞는다 */
+function nDeal(ids){
+  var list=ids?ids.map(function(k){return {k:k};}):nPool().map(function(x){
+    var b=nBox(x.id); return {k:x.id+"|"+(Math.random()<0.5?"c":"n"),w:(b===0?0:b<0?1:b+1)+Math.random()};
+  }).sort(function(a,b){return a.w-b.w;}).slice(0,20);
+  if(ids)shuffleArr(list);
+  S.nrun={q:list.map(function(o){return o.k;}),miss:{},ok1:0,ok2:0,n:list.length,wr:[]};
+  save();
+}
+var NR=null;   /* 지금 화면에 떠 있는 카드(섞은 보기) */
+function vNames(){
+  titleEl.textContent="인물·단체 카드";
+  if(!S.nopt)S.nopt={r:"all",k:"mix"};
+  var o=S.nopt, pool=nPool(), kn=nKnown(), run=S.nrun&&S.nrun.q.length?S.nrun:null;
+  var wn=Object.keys(S.wrong).filter(function(k){return S.wrong[k].kind==="n";}).length;
+  var chip=function(id,v,cur,t){return '<button class="chip'+(cur===v?" on":"")+'" data-'+id+'="'+v+'">'+t+'</button>';};
+  var h='<div class="card ncard"><div class="eyebrow">인물 '+NAMES.filter(function(x){return x.k==="인물";}).length+
+      ' · 단체 '+NAMES.filter(function(x){return x.k==="단체";}).length+'</div>'+
+    '<div class="h">외운 것 '+kn+' / '+NAMES.length+'</div>'+
+    '<div style="display:flex;align-items:center;gap:12px;margin:10px 0 4px"><span class="track"><i style="width:'+(kn/NAMES.length*100)+'%"></i></span></div>'+
+    '<p class="note" style="margin-top:8px">단서를 보고 이름을, 이름을 보고 한 일을 골라. 맞히면 바로 다음 카드, '+
+    '틀리면 몇 장 뒤에 <b>다시 나오고</b> 오답 노트에도 남아. 처음에 한 번에 맞힌 게 쌓이면(세 번) 「외운 것」이 돼.</p></div>';
+  if(run)h+='<button class="cta" id="nres" style="margin-top:14px">'+IC.play+' 이어서 풀기 (남은 '+run.q.length+'장)</button>';
+  h+='<div class="part">범위</div><div class="chips">'+
+      chip("r","all",o.r,"전체")+chip("r","a",o.r,"8~33쪽")+chip("r","b",o.r,"34~63쪽")+'</div>'+
+    '<div class="part">종류</div><div class="chips">'+
+      chip("k","mix",o.k,"섞기")+chip("k","인물",o.k,"인물만")+chip("k","단체",o.k,"단체만")+'</div>'+
+    '<p class="note" style="margin:10px 0 0">이 범위 '+pool.length+'개 가운데 약한 것부터 20장을 뽑아.'+
+      (wn?' 오답 노트에 인물·단체 카드 '+wn+'장이 있어.':'')+'</p>'+
+    '<button class="cta'+(run?" ghost":"")+'" id="nnew" style="margin-top:12px">'+(run?"새 판 20장":IC.play+" 20장 시작")+'</button>';
+  view.innerHTML=h;
+  Array.prototype.forEach.call(view.querySelectorAll("[data-r]"),function(b){b.onclick=function(){S.nopt.r=b.dataset.r;save();vNames();};});
+  Array.prototype.forEach.call(view.querySelectorAll("[data-k]"),function(b){b.onclick=function(){S.nopt.k=b.dataset.k;save();vNames();};});
+  var nr=view.querySelector("#nres"); if(nr)nr.onclick=function(){NR=null;go("nrun");};
+  view.querySelector("#nnew").onclick=function(){ if(!pool.length)return; nDeal(); NR=null; go("nrun"); };
+}
+function vNRun(){
+  titleEl.textContent="인물·단체 카드";
+  var R=S.nrun;
+  if(!R){ go("names",null,true); return; }
+  if(!R.q.length)return nEnd();
+  var key=R.q[0];
+  if(!NR||NR.key!==key){
+    var b=nOpts(key); if(!b){R.q.shift();save();return vNRun();}
+    NR={key:key,b:b,m:mixQ({q:b.q,c:b.c,a:0,e:b.e}),done:false};
+  }
+  var x=NR.b.x, m=NR.m, again=R.miss[key]>0, left=R.q.length, tot=R.n;
+  var fin=tot-new Set(R.q).size;
+  var h='<div style="display:flex;align-items:center;gap:12px;padding:2px 0 16px">'+
+      '<span class="track"><i style="width:'+(fin/tot*100)+'%"></i></span>'+
+      '<span class="step">남은 '+left+'장</span></div>'+
+    '<div class="card ncard"><div class="eyebrow">'+x.k+' · '+esc(UMAP[x.u].n)+(again?' · <span class="nagain">다시 나온 카드</span>':'')+'</div>'+
+    (NR.b.dir==="n"
+      ? '<div class="nname">'+esc(x.n)+'</div><div class="h sm">맞는 설명은?</div>'
+      : '<div class="h sm">'+(x.k==="인물"?"누구일까?":"어느 단체일까?")+'</div>'+
+        '<ul class="nclue">'+x.cl.map(function(c){return '<li>'+c+'</li>';}).join("")+'</ul>')+
+    '</div><div style="margin-top:12px" id="opts">'+m.c.map(function(c,i){
+      return '<button class="qopt" data-i="'+i+'"><span class="kx">'+"ABCD".charAt(i)+'</span><span>'+stripTags(c)+'</span></button>';
+    }).join("")+'</div><div id="fb"></div>';
+  view.innerHTML=h;
+  Array.prototype.forEach.call(view.querySelectorAll("#opts .qopt"),function(bt){
+    bt.onclick=function(){
+      if(NR.done)return; NR.done=true;
+      var mine=+bt.dataset.i, ok=mine===m.a;
+      Array.prototype.forEach.call(view.querySelectorAll("#opts .qopt"),function(e,i){
+        e.disabled=true; if(i===m.a)e.classList.add("ok"); else if(e===bt)e.classList.add("no"); else e.classList.add("dim");});
+      buzz(ok?14:[20,40,20]); markDay();
+      var first=!R.miss[key];
+      if(ok){
+        R.q.shift();
+        if(first){ R.ok1++; S.nbox[x.id]=Math.min(5,Math.max(0,nBox(x.id))+1); wClear("NAME","n",key); }
+        else R.ok2++;
+        R.cmb=(R.cmb||0)+1; pop(R.cmb>=3&&R.cmb%3===0?R.cmb+"연속!":(first?"좋아!":"이번엔 맞혔어!"));
+        save();
+        var tok=NR;
+        setTimeout(function(){ if(NR===tok&&stack[stack.length-1].n==="nrun"){NR=null;vNRun();} },800);
+        document.getElementById("fb").innerHTML='<div class="fb ok"><span class="m">○</span><span>'+esc(x.e)+'</span></div>';
+        return;
+      }
+      R.cmb=0; R.miss[key]=(R.miss[key]||0)+1; if(R.wr.indexOf(key)<0)R.wr.push(key);
+      S.nbox[x.id]=0; wAdd("NAME","n",key,unmix(m,mine));
+      /* 틀린 카드는 3~5장 뒤에 다시 — 남은 게 적으면 맨 끝 */
+      R.q.shift(); R.q.splice(Math.min(R.q.length,3+Math.floor(Math.random()*3)),0,key);
+      save();
+      document.getElementById("fb").innerHTML='<div class="fb no"><span class="m">×</span><span><b>'+
+        esc(stripTags(m.c[m.a]))+'</b><br>'+esc(x.e)+
+        (LMAP[x.l]?'<br><button class="prgo" id="nles">'+esc(LMAP[x.l].title)+' 수업에서 보기 '+IC.chev+'</button>':'')+'</span></div>';
+      var nl=view.querySelector("#nles");
+      if(nl)nl.onclick=function(){ NR=null; jumpCard(x.l,prFind(x.l,x.n)); };
+      view.insertAdjacentHTML("beforeend",nextBtnW("다음",function(){NR=null;vNRun();}));
+    };
+  });
+}
+function nEnd(){
+  var R=S.nrun;
+  var h='<div class="done-hero"><div class="scene">'+scene("book",64)+'</div>'+
+    '<div class="big">'+R.ok1+' / '+R.n+'</div>'+
+    '<div class="sub">한 번에 맞힌 카드'+(R.ok2?' · 다시 나와서 맞힌 카드 '+R.ok2+'장':'')+'</div></div>';
+  if(R.wr.length)h+='<div class="part">이번 판에서 틀렸던 것</div>'+R.wr.map(function(k){
+      var x=NMAP[k.split("|")[0]]; if(!x)return "";
+      return '<div class="wcard"><div class="wq"><b>'+esc(x.n)+'</b> <small class="nk">'+x.k+'</small></div><div class="wex">'+esc(x.e)+'</div></div>';}).join("");
+  h+='<p class="note" style="margin:12px 0 0">외운 것 '+nKnown()+' / '+NAMES.length+
+    (R.wr.length?' · 틀렸던 카드는 오답 노트에도 들어갔어.':'')+'</p>'+
+    '<div class="sticky"><div class="row">'+
+    (R.wr.length?'<button class="cta ghost" id="nagain2">틀린 것만 한 판 더</button>':'<button class="cta ghost" id="nhome">처음으로</button>')+
+    '<button class="cta" id="nnext">새 판 20장</button></div></div>';
+  view.innerHTML=h;
+  var wr=R.wr.slice();
+  var a=view.querySelector("#nagain2"); if(a)a.onclick=function(){nDeal(wr);NR=null;vNRun();};
+  var hm=view.querySelector("#nhome"); if(hm)hm.onclick=function(){S.nrun=null;save();go("names",null,true);};
+  view.querySelector("#nnext").onclick=function(){nDeal();NR=null;vNRun();};
+}
+
 /* 서술형 화면은 「이전」이 필요 없다 — 목록으로 돌아가면 되니까 */
 function nextBtnW(label,fn){
   var h='<div class="sticky"><button class="cta" id="nx">'+label+'</button></div>';
@@ -5346,7 +5668,7 @@ function nextBtnW(label,fn){
 }
 VIEWS={home:vHome,lesson:vLesson,review:vReview,wrong:vWrong,wquiz:vWQuiz,due:vDue,find:vFind,
        exam:vExamPick,examRun:vExamRun,examResult:vExamResult,
-       essay:vEssayPick,essayRun:vEssayRun,print:vPrint};
+       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun};
 load(); e2init(); save();
 
 stack=[{n:"home"}];
@@ -5396,7 +5718,7 @@ render();
   var PATH={home:"/HOME",lesson:"/LESSON",review:"/REVIEW",wrong:"/WRONG",
             due:"/REVIEW/DUE",find:"/FIND",
             wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT",
-            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT"};
+            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN"};
 
   var dockEl=document.getElementById("Ldock");
   function paintDock(){
