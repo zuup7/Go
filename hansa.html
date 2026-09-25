@@ -3369,7 +3369,7 @@ var L=null;
 function vLesson(a){
   var l=LMAP[a.id];
   if(!L||L.id!==a.id){
-    L={id:a.id,l:l,i:(S.done[l.id]?0:(S.pos[l.id]||0)),phase:"card",qi:0,qok:0,qlog:[],revealed:false,answered:false};
+    L={id:a.id,l:l,i:(S.done[l.id]?0:(S.pos[l.id]||0)),phase:"card",qi:0,qok:0,qlog:[],revealed:false,answered:false,hit:{}};
     if(L.i>=l.cards.length)L.i=0;
   }
   titleEl.textContent=l.title;
@@ -3500,7 +3500,7 @@ function paintCard(){
           x.disabled=true; if(i===pc.a)x.classList.add("ok"); else if(x===b)x.classList.add("no");
         });
         buzz(ok?14:[20,40,20]); markDay();
-        uHit(L.l.u,ok);
+        if(!L.hit["p"+L.i]){L.hit["p"+L.i]=1;uHit(L.l.u,ok);}
         if(ok)wClear(L.id,"p",L.i); else wAdd(L.id,"p",L.i,unmix(pc,+b.dataset.i));
         document.getElementById("fb").innerHTML=
           '<div class="fb '+(ok?"ok":"no")+'"><span class="m">'+(ok?"맞아":"아냐")+'</span><span>'+c.e+'</span></div>';
@@ -3534,7 +3534,7 @@ function paintQuiz(){
         x.disabled=true;
         if(i===q.a)x.classList.add("ok"); else if(x===b)x.classList.add("no"); else x.classList.add("dim");
       });
-      uHit(L.l.u,ok);
+      if(!L.hit["q"+L.qi]){L.hit["q"+L.qi]=1;uHit(L.l.u,ok);}
       if(ok){
         L.qok++; L.combo=(L.combo||0)+1;
         if(L.combo>=3&&L.combo%3===0)pop(L.combo+"연속!"); else pop("좋아!");
@@ -6376,6 +6376,26 @@ function vWeak(){
   };});
 }
 /* ── 시험 전날 한 장 요약 ── */
+/* 오답 한 줄: 문제 종류마다 답만으로는 뜻이 안 통하는 게 있어서(보기 ㄱ·ㄴ, 순서 (가)~(라), 단서) 내용을 풀어 적는다 */
+function sheetWrongLine(x){
+  var plain=function(v){return String(v==null?"":v).replace(/<\/?(b|u|em|i|small|br)\s*\/?>/g,"");};
+  if(x.kind==="n"){
+    var nb=nOpts(x.idx); if(!nb)return "";
+    return nb.dir==="n"?'<b>'+esc(nb.x.n)+'</b> → '+esc(stripTags(nb.c[0]))
+                       :esc(nb.x.cl.map(stripTags).join(" · "))+' → <b>'+esc(nb.x.n)+'</b>';
+  }
+  var lines=plain(x.q).split("\n"), stem=lines[0], ans;
+  if(x.type==="short") ans=x.c[0];
+  else if(x.boki){
+    ans=String(x.c[x.a]); var parts=ans.split(/\s*,\s*/).map(function(L){var i=BOKI.indexOf(L);return i>=0&&x.boki[i]?L+". "+x.boki[i]:L;});
+    ans=ans+" ("+parts.join(" / ")+")";
+  }else if(x.type==="order"){
+    var seg={}, body=lines.slice(1).join(" "), m, re=/\(([가-힣])\)\s*(.+?)(?=\s*\([가-힣]\)|$)/g;
+    while((m=re.exec(body)))seg[m[1]]=m[2].trim();
+    ans=String(x.c[x.a]).split("-").map(function(t){var k=t.replace(/[()\s]/g,"");return seg[k]||t;}).join(" → ");
+  }else ans=plain(x.c[x.a]);
+  return esc(stem)+' → <b>'+esc(ans)+'</b>';
+}
 function sheetParts(){
   var P=[], first=function(s){s=stripTags(s).replace(/\s+/g," ").trim();var i=s.search(/[.?!](\s|$)/);return i>0&&i<120?s.slice(0,i+1):s.slice(0,120);};
   var fl=function(f){return f.s.map(function(x){return esc(x.n)+'<small>('+esc(x.y)+')</small>';}).join(" → ");};
@@ -6390,8 +6410,7 @@ function sheetParts(){
     if(x.g==="flow")return '<b>'+esc(x.h)+'</b>: '+fl(FMAP[x.fid]);
     return '<b>'+esc(stripTags(x.h))+'</b> — '+esc(first(x.b));})});
   var wl=wList();
-  if(wl.length)P.push({t:"남은 오답",n:wl.length,li:wl.map(function(x){
-    return esc(first(String(x.q).split("\n")[0]))+' → <b>'+esc(stripTags(x.c[x.a]))+'</b>';})});
+  if(wl.length)P.push({t:"남은 오답",n:wl.length,li:wl.map(sheetWrongLine).filter(Boolean)});
   var o=oS(), tl=timeline(), fm=Object.keys(o.fm).filter(function(k){return o.fm[k]>0;}).sort(function(a,b){return o.fm[b]-o.fm[a];}).slice(0,10);
   if(fm.length)P.push({t:"자주 틀린 사건",n:fm.length,li:fm.map(function(k){var r=tl.filter(function(r){return tlKey(r)===k;})[0];
     return r?'<b>'+esc(r.n)+'</b> <small>('+r.y+')</small> — '+esc(first(r.so)):"";}).filter(Boolean)});
@@ -6429,7 +6448,7 @@ function vSheet(){
         'ol{margin:0;padding-left:18px}li{margin:1px 0}small{font-size:8.5pt;color:#333}section{break-inside:auto}'+
         '</style></head><body><h1>한국사 Ⅰ단원 한 장 요약</h1>'+sheetHTML()+'</body></html>');
       d.close();
-      setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); msg.textContent=""; }
+      setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); msg.textContent="인쇄 창이 안 뜨면 화면을 캡처해 둬도 돼"; }
         catch(e){ msg.textContent="인쇄가 안 되면 화면을 캡처해 둬도 돼"; } },150);
     }catch(e){ msg.textContent="인쇄가 안 되면 화면을 캡처해 둬도 돼"; }
   };
