@@ -1273,12 +1273,16 @@ function renderOrder(g,done){
    범위 밖 단원까지 켜 두었을 때를 대비해 앞뒤로 한 칸씩 더 둔다 */
 var ERAS=[
   {max:1909,n:"1910년 이전",t:"강점 이전"},
-  {max:1919,n:"1910년대",t:"무단 통치 — 헌병 경찰과 토지 조사"},
-  {max:1930,n:"1920년대",t:"이른바 문화 통치 — 겉모습만 바꾸고 쌀을 실어 가다"},
-  {max:1945,n:"1930~40년대",t:"민족 말살 · 전시 동원 — 이름과 말까지 빼앗다"},
+  {max:1919,n:"1910년대",t:"무단 통치 — 헌병 경찰과 토지 조사 (3·1 운동까지)"},
+  {max:1930,n:"1919~1920년대",t:"이른바 문화 통치 — 3·1 운동 뒤~만주 사변 전, 겉모습만 바꾸고 쌀을 실어 가다"},
+  {max:1945,n:"1930~40년대",t:"민족 말살 · 전시 동원 — 만주 사변 뒤, 이름과 말까지 빼앗다"},
   {max:9999,n:"1945년 이후",t:"광복 이후"}
 ];
 function eraOf(y){for(var i=0;i<ERAS.length;i++)if(y<=ERAS[i].max)return i;return ERAS.length-1;}
+/* 1919년은 햇수만으로 갈리지 않는다 — 3·1 운동 뒤에 생긴 것(문화 정치 시작 s3, 신흥 무관 학교 s5, 임시 정부 s7, 의열단·강우규 s9)은 1920년대 칸.
+   1930년 「식민지 공업화」 같은 민족 말살 통치 단원(s4) 사실은 1930년대 칸 */
+var ERA1919={s3:1,s5:1,s7:1,s9:1};
+function eraOfF(f){ if(f.y===1919&&ERA1919[f.u])return eraOf(1920); if(f.y===1930&&f.u==="s4")return eraOf(1931); return eraOf(f.y); }
 var TRACK={s1:"world",s2:"rule",s3:"rule",s4:"rule",s5:"resist",s6:"resist",s7:"resist",s8:"resist",
   s9:"resist",s10:"resist",s11:"resist",s12:"resist",s13:"resist",s14:"life",s15:"resist",s16:"resist",s17:"resist",s18:"resist"};
 var TRACKN={rule:"일제",resist:"우리",world:"세계",life:"삶",other:"그 밖"};
@@ -1289,11 +1293,11 @@ var TLFLOW=true;
 function viewTimeline(){
   var fs=poolFacts(),body="",n=fs.length;
   if(TLFLOW){
-    var g=fs.slice().sort(function(a,b){return a.y-b.y;});
+    var g=fs.slice().sort(function(a,b){return a.y-b.y||eraOfF(a)-eraOfF(b);});
     var ce=-1;
     body+='<div class="rail-line">';
     g.forEach(function(f){
-      var ei=eraOf(f.y);
+      var ei=eraOfF(f);
       if(ei!==ce){ ce=ei;
         body+='<div class="era"><b>'+ERAS[ei].n+'</b><span>'+esc(ERAS[ei].t)+'</span></div>'; }
       var k=trackOf(f.u,f);
