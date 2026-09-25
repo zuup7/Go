@@ -620,6 +620,22 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .wline.no{background:var(--red-l);color:var(--ink)}
 .a-learn .wline.ok{background:var(--teal-l);color:var(--ink)}
 .a-learn .wex{font-size:13px;line-height:1.7;color:var(--ink-2);margin-top:8px}
+.a-learn .wcard.fixed{border-color:var(--teal)}
+.a-learn .wfix{display:inline-block;font-size:12px;font-weight:800;padding:2px 7px;margin-bottom:8px;background:var(--teal-l);border:2px solid var(--ink)}
+.a-learn .delrow{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.a-learn .delbtn{min-height:36px;padding:0 12px;font-size:13px;font-weight:700;color:var(--red-d);background:var(--cream);
+  border:2px solid var(--ink);white-space:nowrap}
+.a-learn .delbtn:active{background:var(--red-l)}
+.a-learn .delbtn[disabled]{color:var(--ink-3);background:var(--panel)}
+.a-learn .bulk{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.a-learn .bulk .delbtn{flex:1 1 140px}
+.a-learn .bulk .delbtn.arm{background:var(--red);color:#fff}
+.a-learn .undo{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:75;display:flex;align-items:center;gap:12px;
+  max-width:calc(100% - 32px);padding:10px 12px 10px 16px;background:var(--ink);color:#fff;font-size:14px;
+  border:2px solid var(--ink);box-shadow:3px 3px 0 rgba(43,31,51,.3)}
+.a-learn .undo span{min-width:0}
+.a-learn .undo button{flex-shrink:0;min-height:36px;padding:0 12px;font-weight:800;color:var(--ink);background:var(--yel);border:2px solid #fff}
+@media(min-width:820px){.a-learn .undo{bottom:24px}}
 
 /* 내신 시험지 */
 .a-learn .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -3180,8 +3196,9 @@ function vHome(){
   if(dl)html+='<button class="rbar" id="goDue"><span class="n">'+dl+'</span>'+
     '<span class="tx"><b>다시 볼 수업 '+dl+'개</b><small>배운 걸 잊기 직전에 다시 물어볼게. 3분이면 돼.</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>';
+  var wfx=wFixed();
   if(wc)html+='<button class="wbar" id="goWrong"><span class="n">'+wc+'</span>'+
-    '<span class="tx"><b>다시 볼 문제 '+wc+'개</b><small>틀린 문제만 모아 뒀어. 맞히면 사라져.</small></span>'+
+    '<span class="tx"><b>다시 볼 문제 '+wc+'개'+(wfx?' · 맞힘 '+wfx:'')+'</b><small>틀린 문제를 모아 뒀어. 맞혀도 남아 있으니, 다 외웠으면 직접 지워.</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>';
   /* 헷갈린다고 매겨 둔 암기 장치가 있으면 홈에서 바로 집어 준다 — 매기고 끝나면 소용없다 */
   var mw=memList().filter(function(x){return S.mem[x.k]===0;}).length;
@@ -3333,12 +3350,34 @@ function pace(){
 function wkey(lid,kind,idx){return lid+"#"+kind+idx;}
 function wAdd(lid,kind,idx,chose){
   var k=wkey(lid,kind,idx),w=S.wrong[k];
-  if(w){w.miss++;w.at=Date.now();w.chose=chose;}
+  if(w){w.miss++;w.at=Date.now();w.chose=chose;w.fix=0;}
   else S.wrong[k]={lid:lid,kind:kind,idx:idx,miss:1,at:Date.now(),chose:chose};
   save();
 }
+/* 맞혀도 지우지 않는다. 「맞힘」만 표시하고, 지우기는 사용자가 직접 한다 */
+function wOk(lid,kind,idx){ var w=S.wrong[wkey(lid,kind,idx)]; if(!w)return; w.fix=(w.fix||0)+1; w.okAt=Date.now(); save(); }
 function wClear(lid,kind,idx){ delete S.wrong[wkey(lid,kind,idx)]; save(); }
 function wCount(){return Object.keys(S.wrong).length;}
+function wFixed(){return Object.keys(S.wrong).filter(function(k){return S.wrong[k].fix>0;}).length;}
+/* 지운 뒤 5초 동안 되돌릴 수 있게 한다. view 안에 붙여야 합친 앱(한사)에서도 스타일이 먹는다 */
+var UNDO=null;
+function undoBar(msg,fn){
+  if(UNDO){clearTimeout(UNDO.t);if(UNDO.el)UNDO.el.remove();}
+  var el=document.createElement("div"); el.className="undo"; el.setAttribute("role","status");
+  el.innerHTML='<span>'+esc(msg)+'</span><button type="button">되돌리기</button>';
+  view.appendChild(el);
+  var u=UNDO={el:el,t:setTimeout(function(){el.remove();if(UNDO===u)UNDO=null;},5000)};
+  el.querySelector("button").onclick=function(){clearTimeout(u.t);el.remove();UNDO=null;fn();};
+}
+/* 한꺼번에 지우는 버튼은 두 번 눌러야 한다(3초 안에). 확인 창은 샌드박스에서 막힐 수 있어서 쓰지 않는다 */
+function armBtn(b,fn){
+  var label=b.innerHTML, tm=null;
+  b.onclick=function(){
+    if(!b.classList.contains("arm")){ b.classList.add("arm"); b.textContent="한 번 더 누르면 지워져"; buzz(10);
+      tm=setTimeout(function(){b.classList.remove("arm");b.innerHTML=label;},3000); return; }
+    clearTimeout(tm); fn();
+  };
+}
 /* 오답 항목을 실제 문제로 되살린다 */
 function wItem(w){
   if(w.kind==="e"){                      /* 내신 실전 문항 */
@@ -3358,7 +3397,7 @@ function wItem(w){
   return {lid:w.lid,kind:"p",idx:w.idx,lesson:l,q:c.q,c:c.c,a:c.a,e:c.e,miss:w.miss,chose:w.chose};
 }
 function wList(){
-  return Object.keys(S.wrong).map(function(k){return wItem(S.wrong[k]);})
+  return Object.keys(S.wrong).map(function(k){var w=S.wrong[k],x=wItem(w); if(x){x.fix=w.fix||0;x.key=k;} return x;})
     .filter(Boolean).sort(function(a,b){
       var ai=LESSONS.indexOf(LMAP[a.lid]||{}),bi=LESSONS.indexOf(LMAP[b.lid]||{});
       return ai-bi||String(a.idx).localeCompare(String(b.idx));});
@@ -3501,7 +3540,7 @@ function paintCard(){
         });
         buzz(ok?14:[20,40,20]); markDay();
         if(!L.hit["p"+L.i]){L.hit["p"+L.i]=1;uHit(L.l.u,ok);}
-        if(ok)wClear(L.id,"p",L.i); else wAdd(L.id,"p",L.i,unmix(pc,+b.dataset.i));
+        if(ok)wOk(L.id,"p",L.i); else wAdd(L.id,"p",L.i,unmix(pc,+b.dataset.i));
         document.getElementById("fb").innerHTML=
           '<div class="fb '+(ok?"ok":"no")+'"><span class="m">'+(ok?"맞아":"아냐")+'</span><span>'+c.e+'</span></div>';
         var sk0=view.querySelector(".sticky"); if(sk0)sk0.remove();
@@ -3538,7 +3577,7 @@ function paintQuiz(){
       if(ok){
         L.qok++; L.combo=(L.combo||0)+1;
         if(L.combo>=3&&L.combo%3===0)pop(L.combo+"연속!"); else pop("좋아!");
-        wClear(L.id,"q",L.qi);
+        wOk(L.id,"q",L.qi);
       }else{
         L.combo=0; wAdd(L.id,"q",L.qi,unmix(q,+b.dataset.i));
       }
@@ -3951,20 +3990,29 @@ function bindMem(card,it){
   bindGrade(card,it);
 }
 
-/* ── 오답 노트 화면 ── */
+/* ── 오답 노트 화면 ──
+   맞혀도 지우지 않는다. 「맞힘 ✓」만 붙이고, 지우기는 사용자가 하나씩 또는 한꺼번에 한다 */
+var WTAB="all", WQF=null;
 function vWrong(){
   titleEl.textContent="오답 노트";
-  var list=wList();
-  if(!list.length){
+  var all=wList();
+  if(!all.length){
     view.innerHTML='<div class="empty">'+scene("paper",64)+
-      '<p>틀린 문제가 없어.<br>수업을 풀다 틀리면 여기 자동으로 모여서,<br>맞힐 때까지 다시 물어봐 줄게.</p></div>';
+      '<p>틀린 문제가 없어.<br>수업을 풀다 틀리면 여기 자동으로 모여.<br>맞혀도 남아 있으니, 다 외웠을 때 직접 지우면 돼.</p></div>';
     return;
   }
+  var nf=all.filter(function(x){return x.fix>0;}).length, no=all.length-nf;
+  var list=WTAB==="open"?all.filter(function(x){return !x.fix;}):WTAB==="fixed"?all.filter(function(x){return x.fix>0;}):all;
   var byL={};list.forEach(function(x){(byL[x.lid]=byL[x.lid]||[]).push(x);});
-  var html='<div class="wsum"><div class="wn">'+list.length+'</div>'+
-    '<div class="wt"><b>다시 볼 문제가 '+list.length+'개 있어</b>'+
-    '<small>맞히면 사라져. 두 번 이상 틀린 건 빨간 점으로 표시했어.</small></div></div>'+
-    '<button class="cta" id="wgo" style="margin-bottom:6px">'+IC.play+' 오답만 다시 풀기</button>';
+  var T=[["all","전체 "+all.length],["open","아직 못 맞힘 "+no],["fixed","맞힘 ✓ "+nf]];
+  var html='<div class="wsum"><div class="wn">'+all.length+'</div>'+
+    '<div class="wt"><b>다시 볼 문제 '+all.length+'개'+(nf?' · 맞힌 것 '+nf+'개':'')+'</b>'+
+    '<small>맞혀도 남아 있어. 다 외웠으면 「지우기」로 직접 빼. 두 번 이상 틀린 건 빨간 점으로 표시했어.</small></div></div>'+
+    '<div class="chips" style="margin-bottom:10px">'+T.map(function(t){
+      return '<button class="chip'+(WTAB===t[0]?" on":"")+'" data-wt="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>'+
+    (list.length?'<button class="cta" id="wgo" style="margin-bottom:6px">'+IC.play+' '+
+      (WTAB==="all"?"오답 다시 풀기":WTAB==="open"?"못 맞힌 것만 다시 풀기":"맞힌 것 다시 풀기")+' ('+list.length+')</button>'
+      :'<div class="empty"><p>이 칸엔 없어.</p></div>');
   var groups=LESSONS.map(function(l){return {key:l.id,name:l.title};});
   groups.push({key:"EXAM",name:"내신 실전"});
   groups.push({key:"NAME",name:"인물·단체 카드"});
@@ -3972,7 +4020,8 @@ function vWrong(){
     var g=byL[gr.key]; if(!g)return;
     html+='<div class="part">'+esc(gr.name)+'</div>';
     g.forEach(function(x){
-      html+='<div class="wcard'+(x.miss>1?" hot":"")+'">'+
+      html+='<div class="wcard'+(x.fix>0?" fixed":x.miss>1?" hot":"")+'">'+
+        (x.fix>0?'<div class="wfix">맞힘 ✓'+(x.fix>1?'×'+x.fix:'')+'</div>':'')+
         '<div class="wq">'+qh(x.q)+(x.miss>1?'<span class="dots" title="'+x.miss+'번 틀림">'+
           new Array(Math.min(x.miss,4)).join('<i></i>')+'<i></i></span>':'')+'</div>'+bokiBox(x.boki)+
         (x.type==="short"
@@ -3980,35 +4029,68 @@ function vWrong(){
           : (x.chose!=null&&x.c[x.chose]!==undefined&&x.chose!==x.a
               ? '<div class="wline no">내 답 · '+esc(x.c[x.chose])+'</div>':'')+
             '<div class="wline ok">정답 · '+esc(x.c[x.a])+'</div>')+
-        '<div class="wex">'+esc(x.e)+'</div></div>';
+        '<div class="wex">'+esc(x.e)+'</div>'+
+        '<div class="delrow"><button class="delbtn" data-wd="'+esc(x.key)+'">지우기</button></div></div>';
     });
   });
+  html+='<div class="bulk">'+
+    (nf?'<button class="delbtn" id="wdf">맞힌 것 '+nf+'개 지우기</button>':'')+
+    '<button class="delbtn" id="wda">오답 '+all.length+'개 전부 지우기</button></div>';
   view.innerHTML=html;
-  document.getElementById("wgo").onclick=function(){go("wquiz");};
+  Array.prototype.forEach.call(view.querySelectorAll("[data-wt]"),function(b){b.onclick=function(){WTAB=b.dataset.wt;vWrong();};});
+  var wg=document.getElementById("wgo");
+  if(wg)wg.onclick=function(){WQF=WTAB;go("wquiz");};
+  Array.prototype.forEach.call(view.querySelectorAll("[data-wd]"),function(b){b.onclick=function(){
+    var k=b.dataset.wd, keep=S.wrong[k]; if(!keep)return;
+    delete S.wrong[k]; save(); buzz(10);
+    var sy=window.scrollY; vWrong(); window.scrollTo(0,sy);
+    undoBar("오답에서 지웠어",function(){ S.wrong[k]=keep; save(); if(stack[stack.length-1].n==="wrong"){var s2=window.scrollY;vWrong();window.scrollTo(0,s2);} });
+  };});
+  var bulk=function(pred,msg){
+    var gone={}; Object.keys(S.wrong).forEach(function(k){ if(pred(S.wrong[k])){gone[k]=S.wrong[k];delete S.wrong[k];} });
+    save(); WTAB="all"; vWrong();
+    undoBar(msg.replace("N",Object.keys(gone).length),function(){ for(var k in gone)S.wrong[k]=gone[k]; save();
+      if(stack[stack.length-1].n==="wrong")vWrong(); });
+  };
+  var df=document.getElementById("wdf"); if(df)armBtn(df,function(){bulk(function(w){return w.fix>0;},"맞힌 것 N개를 지웠어");});
+  armBtn(document.getElementById("wda"),function(){bulk(function(){return true;},"오답 N개를 전부 지웠어");});
 }
 
 /* ── 오답 다시 풀기 ── */
 var W=null;
 function vWQuiz(){
   if(!W){var q=wList(); if(WU){var fu=WU;q=q.filter(function(x){return wUnit(x)===fu;});} WU=null;
-    shuffleArr(q);W={q:q,i:0,ok:0,answered:false,start:q.length};}
+    var qf=WQF; WQF=null;
+    if(qf==="open")q=q.filter(function(x){return !x.fix;}); else if(qf==="fixed")q=q.filter(function(x){return x.fix>0;});
+    shuffleArr(q);
+    /* 못 맞힌 것을 앞에 둔다 */
+    q=q.filter(function(x){return !x.fix;}).concat(q.filter(function(x){return x.fix>0;}));
+    W={q:q,i:0,ok:0,answered:false,start:q.length,okKeys:[]};}
   titleEl.textContent="오답 다시 풀기";
   if(!W.q.length||W.i>=W.q.length){
-    var cleared=W.start-wCount();
+    var left=W.okKeys.filter(function(k){return S.wrong[k];});
+    var open=Object.keys(S.wrong).filter(function(k){return !S.wrong[k].fix;}).length;
+    var perfect=W.start>0&&W.ok===W.start;
     view.innerHTML='<div class="done-hero">'+
-      (wCount()===0?'<div class="stamp show">'+stampSVG(72)+'</div>':'<div class="scene">'+scene("paper",64)+'</div>')+
+      (perfect?'<div class="stamp show">'+stampSVG(72)+'</div>':'<div class="scene">'+scene("paper",64)+'</div>')+
       '<div class="big">'+W.ok+' / '+W.start+'</div>'+
-      '<div class="sub">'+(wCount()===0?"오답 노트를 다 비웠어. 대단한데?"
-        :cleared>0?cleared+"개를 지웠어. "+wCount()+"개 남았어."
-        :"아직 "+wCount()+"개 남았어. 해설을 한 번 더 읽고 오자.")+'</div></div>'+
+      '<div class="sub">'+(W.ok?W.ok+"개 맞혔어. ":"")+(open?"아직 못 맞힌 게 "+open+"개 있어.":
+        wCount()?"남은 오답은 다 한 번씩 맞혔어. 다 외운 건 지워도 돼.":"오답 노트가 비었어.")+'</div></div>'+
+      (left.length?'<div class="bulk"><button class="delbtn" id="wdok">이번에 맞힌 '+left.length+'개 오답에서 지우기</button></div>':'')+
       '<div class="sticky"><div class="row">'+
         '<button class="cta ghost" id="hm">홈으로</button>'+
-        (wCount()?'<button class="cta" id="ag">한 번 더</button>':'<button class="cta" id="hm2">홈으로</button>')+
+        (open?'<button class="cta" id="ag">못 맞힌 것 한 번 더</button>':'<button class="cta" id="wn">오답 노트 보기</button>')+
       '</div></div>';
     var home=function(){W=null;stack=[{n:"home"}];render();};
     document.getElementById("hm").onclick=home;
-    var h2=document.getElementById("hm2"); if(h2)h2.onclick=home;
-    var ag=document.getElementById("ag"); if(ag)ag.onclick=function(){W=null;go("wquiz",null,true);};
+    var ag=document.getElementById("ag"); if(ag)ag.onclick=function(){W=null;WQF="open";go("wquiz",null,true);};
+    var wn=document.getElementById("wn"); if(wn)wn.onclick=function(){W=null;WTAB="all";go("wrong",null,true);};
+    var dk=document.getElementById("wdok");
+    if(dk)dk.onclick=function(){
+      var gone={}; left.forEach(function(k){gone[k]=S.wrong[k];delete S.wrong[k];}); save(); buzz(10);
+      vWQuiz();
+      undoBar(left.length+"개를 오답에서 지웠어",function(){ for(var k in gone)S.wrong[k]=gone[k]; save(); if(W&&stack[stack.length-1].n==="wquiz")vWQuiz(); });
+    };
     return;
   }
   var x=W.q[W.i];
@@ -4035,13 +4117,19 @@ function vWQuiz(){
   var finish=function(ok,mine){
     W.answered=true;
     uHit(wUnit(x),ok);
-    if(ok){W.ok++;wClear(x.lid,x.kind,x.idx);pop("지웠다!");}
+    if(ok){W.ok++;wOk(x.lid,x.kind,x.idx);W.okKeys.push(wkey(x.lid,x.kind,x.idx));pop("맞혔어!");}
     else wAdd(x.lid,x.kind,x.idx,unmix(x,mine));
     buzz(ok?14:[20,40,20]); markDay();
     document.getElementById("fb").innerHTML=
       '<div class="fb '+(ok?"ok":"no")+'"><span class="m">'+(ok?"○":"×")+'</span><span>'+
       (x.type==="short"?'<b>정답 · '+esc(x.c[0])+'</b><br>':'')+esc(x.e)+'</span></div>';
     var sk=view.querySelector(".sticky"); if(sk)sk.remove();
+    if(ok){
+      document.getElementById("fb").insertAdjacentHTML("beforeend",
+        '<div class="delrow"><button class="delbtn" id="wdel">다 외웠어 · 오답에서 지우기</button></div>');
+      var wd=document.getElementById("wdel"), wk=wkey(x.lid,x.kind,x.idx);
+      wd.onclick=function(){ if(!S.wrong[wk])return; delete S.wrong[wk]; save(); buzz(10); wd.textContent="지웠어"; wd.disabled=true; };
+    }
     view.insertAdjacentHTML("beforeend",nextBtn(W.i+1>=W.q.length?"결과 보기":"다음",function(){W.i++;vWQuiz();}));
   };
   var wi=document.getElementById("wIn");
@@ -4167,7 +4255,7 @@ function vDue(){
         if(i===xq.a)e.classList.add("ok"); else if(e===b)e.classList.add("no"); else e.classList.add("dim");
       });
       var r=RV.byL[x.lid]; r.n++;
-      if(ok){RV.ok++;r.ok++;wClear(x.lid,"q",x.qi);pop("좋아!");}
+      if(ok){RV.ok++;r.ok++;wOk(x.lid,"q",x.qi);pop("좋아!");}
       else wAdd(x.lid,"q",x.qi,unmix(xq,+b.dataset.i));
       buzz(ok?14:[20,40,20]); markDay();
       document.getElementById("fb").innerHTML=
@@ -4281,7 +4369,7 @@ function askDday(){
     '<div class="row" style="margin-top:14px">'+
       '<button class="cta ghost" id="ddDel">지우기</button>'+
       '<button class="cta" id="ddOk">저장</button></div></div>';
-  document.body.appendChild(m);
+  (document.getElementById("Lapp-wrap")||document.body).appendChild(m);
   var close=function(){m.remove();stack=[{n:"home"}];render();};
   m.querySelector("#ddOk").onclick=function(){S.dday=document.getElementById("ddIn").value||"";save();close();};
   m.querySelector("#ddDel").onclick=function(){S.dday="";save();close();};
@@ -4295,14 +4383,14 @@ function showHit(r){
     '<div class="fb ok" style="margin-top:12px"><span class="m">O</span><span><b>'+esc(r.ans||"")+'</b><br>'+
     esc(r.ex||"")+'</span></div>'+
     '<button class="cta" id="mok" style="margin-top:14px">닫기</button></div>';
-  document.body.appendChild(m);
+  (document.getElementById("Lapp-wrap")||document.body).appendChild(m);
   m.querySelector("#mok").onclick=function(){m.remove();};
   m.onclick=function(e){if(e.target===m)m.remove();};
 }
 
 function pop(t){
   var e=document.createElement("div");e.className="pop";e.textContent=t;
-  document.body.appendChild(e);setTimeout(function(){e.remove();},920);
+  (document.getElementById("Lapp-wrap")||document.body).appendChild(e);setTimeout(function(){e.remove();},920);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -4972,7 +5060,7 @@ function gradeExam(){
     if(q.type==="short")good=a!=null&&shortOk(a,q.c);
     else good=a===q.a;
     if(good)ok++; else wAdd("EXAM","e",q.id,q.type==="short"?null:unmix(q,a));
-    if(good)wClear("EXAM","e",q.id);
+    if(good)wOk("EXAM","e",q.id);
     uHit(q.u,good);
     var t=byType[q.type]||(byType[q.type]={n:0,ok:0});
     t.n++; if(good)t.ok++;
@@ -5822,7 +5910,7 @@ function vNRun(){
       uHit(x.u,ok);
       if(ok){
         R.q.shift();
-        if(first){ R.ok1++; S.nbox[x.id]=Math.min(5,Math.max(0,nBox(x.id))+1); wClear("NAME","n",key); }
+        if(first){ R.ok1++; S.nbox[x.id]=Math.min(5,Math.max(0,nBox(x.id))+1); wOk("NAME","n",key); }
         else R.ok2++;
         R.cmb=(R.cmb||0)+1; pop(R.cmb>=3&&R.cmb%3===0?R.cmb+"연속!":(first?"좋아!":"이번엔 맞혔어!"));
         save();
@@ -5906,7 +5994,7 @@ function vKeep(){
   var hide=S.kpHide==null?true:!!S.kpHide;
   var T=[["all","전체 "+all.length],["card","수업 "+n.card],["name","인물·단체 "+n.name],["flow","흐름 "+n.flow],["blank","빈칸 "+n.blank]];
   var h='<p class="note" style="margin-bottom:12px">수업 카드와 인물·단체 카드에서 <b>☆ 킵</b>을 누른 것(흐름 맞추기 결과 포함), 프린트 빈칸에서 '+
-      '<b>헷갈림</b>을 누른 것이 여기 모여. 다 외웠으면 <b>★ 킵함</b>을 한 번 더 눌러 빼면 돼.</p>'+
+      '<b>헷갈림</b>을 누른 것이 여기 모여. 풀어도 저절로 빠지지 않아. 다 외웠으면 <b>지우기</b>를 눌러.</p>'+
     '<div class="chips" style="margin-bottom:10px">'+T.map(function(t){
       return '<button class="chip'+(KPTAB===t[0]?" on":"")+'" data-kt="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>'+
     '<div class="tlbar"><button class="chip'+(hide?" on":"")+'" id="kph">'+(hide?"가리고 보기":"다 펴 놓기")+'</button>'+
@@ -5921,23 +6009,35 @@ function vKeep(){
       h+='<div class="kitem"><div class="kt">'+esc(x.sub)+'</div>'+
         '<div class="pbl'+(bo?" open":"")+'" style="margin:6px 0 0"><button class="pbs" data-id="'+r.id+'">'+
         esc(r[2]).replace(/\{([^}]+)\}/g,function(_,a){return '<span class="pbk">'+a+'</span>';})+'</button>'+
-        '<button class="pbm on" data-id="'+r.id+'" aria-pressed="true">빼기</button></div></div>';
+        '</div><div class="delrow"><button class="delbtn" data-kd="'+esc(x.k)+'" data-kg="blank">지우기</button></div></div>';
       return;
     }
-    h+='<div class="kitem"><div class="kt">'+esc(x.sub)+kBtn(x.k)+'</div>'+
+    h+='<div class="kitem"><div class="kt">'+esc(x.sub)+'</div>'+
       '<div class="kh">'+(x.g==="card"?x.h:esc(x.h))+'</div>'+
       (open?'<div class="kb">'+x.b+'</div>':'<button class="peekbtn" data-kk="'+esc(x.k)+'"><span>속으로 떠올린 다음 눌러 봐</span></button>')+
       (x.g==="flow"?'<button class="prgo" data-of="'+x.fid+'">이 흐름 다시 맞추기 '+IC.chev+'</button>':
        x.g==="card"?'<button class="prgo" data-l="'+x.lid+'" data-ci="'+x.ci+'">수업에서 보기 '+IC.chev+'</button>':
         (LMAP[x.x.l]?'<button class="prgo" data-l="'+x.x.l+'" data-nk="'+esc(x.x.n)+'">'+esc(LMAP[x.x.l].title)+' 수업에서 보기 '+IC.chev+'</button>':''))+
-      '</div>';
+      '<div class="delrow"><button class="delbtn" data-kd="'+esc(x.k)+'" data-kg="'+x.g+'">지우기</button></div></div>';
   });
+  if(list.length)h+='<div class="bulk"><button class="delbtn" id="kda">'+(KPTAB==="all"?"킵한 것 ":"이 칸 ")+list.length+'개 전부 지우기</button></div>';
   view.innerHTML=h;
   Array.prototype.forEach.call(view.querySelectorAll("[data-kt]"),function(b){b.onclick=function(){KPTAB=b.dataset.kt;vKeep();};});
   view.querySelector("#kph").onclick=function(){S.kpHide=!hide;KPO={};save();vKeep();};
   Array.prototype.forEach.call(view.querySelectorAll("[data-kk]"),function(b){b.onclick=function(){KPO[b.dataset.kk]=1;buzz(10);vKeep();};});
   Array.prototype.forEach.call(view.querySelectorAll(".kitem .pbs"),function(b){b.onclick=function(){PBO[b.dataset.id]=!PBO[b.dataset.id];buzz(10);vKeep();};});
-  Array.prototype.forEach.call(view.querySelectorAll(".kitem .pbm"),function(b){b.onclick=function(){delete S.pmark[b.dataset.id];save();vKeep();};});
+  /* 지우기: 빈칸은 S.pmark, 나머지는 S.keep 에서 뺀다. 5초 안에 되돌릴 수 있다 */
+  var kDel=function(items){
+    var back=items.map(function(x){ var st=x.g==="blank"?S.pmark:S.keep; var v=st[x.k]; delete st[x.k]; return [st,x.k,v]; });
+    save(); return function(){ back.forEach(function(b){b[0][b[1]]=b[2];}); save(); if(stack[stack.length-1].n==="keep"){var sy=window.scrollY;vKeep();window.scrollTo(0,sy);} };
+  };
+  Array.prototype.forEach.call(view.querySelectorAll(".kitem [data-kd]"),function(b){b.onclick=function(){
+    var fn=kDel([{g:b.dataset.kg,k:b.dataset.kd}]); buzz(10);
+    var sy=window.scrollY; vKeep(); window.scrollTo(0,sy);
+    undoBar("킵에서 지웠어",fn);
+  };});
+  var kda=view.querySelector("#kda");
+  if(kda)armBtn(kda,function(){ var fn=kDel(list); vKeep(); undoBar(list.length+"개를 킵에서 지웠어",fn); });
   Array.prototype.forEach.call(view.querySelectorAll(".kitem .prgo"),function(b){b.onclick=function(){
     if(b.dataset.of){ oStartFlow(b.dataset.of); return; }
     jumpCard(b.dataset.l, b.dataset.ci!=null?+b.dataset.ci:prFind(b.dataset.l,b.dataset.nk)); };});
@@ -6310,7 +6410,7 @@ function uStats(){
   Object.keys(S.ust||{}).forEach(function(u){ if(M[u]){M[u].n+=S.ust[u].n;M[u].ok+=S.ust[u].ok;} });
   LESSONS.forEach(function(l){ var m=U(l.u); if(!m)return; m.ls++; if(S.done[l.id])m.dn++;
     var q=S.quiz[l.id]; if(q&&!(S.ust&&S.ust[l.u])){ m.n+=q.n; m.ok+=q.ok; } });
-  wList().forEach(function(x){ var m=U(wUnit(x)); if(m)m.wr++; });
+  wList().forEach(function(x){ if(x.fix>0)return; var m=U(wUnit(x)); if(m)m.wr++; });
   Object.keys(S.mem).forEach(function(k){ if(S.mem[k]!==0)return; var l=LMAP[k.split("#")[0]]; if(l&&U(l.u))U(l.u).cf++; });
   PBLANK.concat(PCHK).forEach(function(r){ if(S.pmark[r.id]&&U(r[1]))U(r[1]).cf++; });
   Object.keys(S.keep).forEach(function(k){ var u=null;
@@ -6409,8 +6509,8 @@ function sheetParts(){
     if(x.g==="name")return '<b>'+esc(x.h)+'</b> — '+esc(x.x.e);
     if(x.g==="flow")return '<b>'+esc(x.h)+'</b>: '+fl(FMAP[x.fid]);
     return '<b>'+esc(stripTags(x.h))+'</b> — '+esc(first(x.b));})});
-  var wl=wList();
-  if(wl.length)P.push({t:"남은 오답",n:wl.length,li:wl.map(sheetWrongLine).filter(Boolean)});
+  var wl=wList(); wl=wl.filter(function(x){return !x.fix;}).concat(wl.filter(function(x){return x.fix>0;}));
+  if(wl.length)P.push({t:"남은 오답",n:wl.length,li:wl.map(function(x){var t=sheetWrongLine(x);return t&&x.fix>0?"✓ "+t:t;}).filter(Boolean)});
   var o=oS(), tl=timeline(), fm=Object.keys(o.fm).filter(function(k){return o.fm[k]>0;}).sort(function(a,b){return o.fm[b]-o.fm[a];}).slice(0,10);
   if(fm.length)P.push({t:"자주 틀린 사건",n:fm.length,li:fm.map(function(k){var r=tl.filter(function(r){return tlKey(r)===k;})[0];
     return r?'<b>'+esc(r.n)+'</b> <small>('+r.y+')</small> — '+esc(first(r.so)):"";}).filter(Boolean)});
@@ -6440,7 +6540,7 @@ function vSheet(){
       var old=document.getElementById("sheetFrame"); if(old)old.remove();
       var f=document.createElement("iframe"); f.id="sheetFrame";
       f.style.cssText="position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0";
-      document.body.appendChild(f);
+      (document.getElementById("Lapp-wrap")||document.body).appendChild(f);
       var d=f.contentWindow.document;
       d.open(); d.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>한국사 한 장 요약</title><style>'+
         'body{font-family:"Gothic A1","Apple SD Gothic Neo",sans-serif;font-size:10.5pt;line-height:1.45;color:#000;margin:12mm}'+
@@ -7602,7 +7702,7 @@ function finish(){ stopAll(); G.done=true; go("result",null,true); }
 
 function pop(t){
   var e=document.createElement("div");e.className="pop";e.textContent=t;
-  document.body.appendChild(e);setTimeout(function(){e.remove();},820);
+  (document.getElementById("Mapp-wrap")||document.body).appendChild(e);setTimeout(function(){e.remove();},820);
 }
 function flash(c){
   var f=document.getElementById("Mflash");
@@ -8086,7 +8186,7 @@ function dexRate(){ return Math.round(Object.keys(S.dex).length/FIGURES.length*1
 /* ── 알림 · 카드 연출 ── */
 function toast(t){
   var e=document.createElement("div");e.className="toast";e.textContent=t;
-  document.body.appendChild(e);setTimeout(function(){e.remove();},2100);
+  (document.getElementById("Mapp-wrap")||document.body).appendChild(e);setTimeout(function(){e.remove();},2100);
 }
 function cardModal(f,then){
   var m=document.createElement("div");m.className="modal";
@@ -8094,7 +8194,7 @@ function cardModal(f,then){
     '<div class="pf" style="border-color:'+GRADE[f.g].c+'">'+portrait(f,140)+'</div>'+
     '<div class="nm">'+esc(f.n)+'</div><div class="ds">'+esc(f.d)+'</div>'+
     '<button class="btn" id="mok">받기</button></div>';
-  document.body.appendChild(m);
+  (document.getElementById("Mapp-wrap")||document.body).appendChild(m);
   var close=function(){ m.remove(); if(then)then(); };
   m.querySelector("#mok").onclick=close;
   m.onclick=function(e){if(e.target===m)close();};
@@ -8160,7 +8260,7 @@ function storyDamage(ms){
 function ultimate(){
   var e=document.createElement("div");e.className="ult";
   e.innerHTML='<span>필살기</span><em>연속 '+G.combo+'타</em>';
-  document.body.appendChild(e);setTimeout(function(){e.remove();},1000);
+  (document.getElementById("Mapp-wrap")||document.body).appendChild(e);setTimeout(function(){e.remove();},1000);
   buzz([30,50,30,50,60]);
 }
 function storyClear(){
@@ -9844,7 +9944,7 @@ function grade(id,score){          /* score: 0 다시 · 1 애매 · 2 정답/�
 var combo=0;
 function flashCombo(n){
   var el=document.createElement("div");el.className="combo";el.textContent=n+" 연속!";
-  document.body.appendChild(el);setTimeout(function(){el.remove();},760);
+  (document.getElementById("Sapp")||document.body).appendChild(el);setTimeout(function(){el.remove();},760);
 }
 
 /* ---------- 상단 페인트 ---------- */

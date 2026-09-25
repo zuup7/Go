@@ -124,6 +124,17 @@ def strip_osbar(body):
     return out.strip()
 Lbody = strip_osbar(Lbody); Mbody = strip_osbar(Mbody); Ibody = strip_osbar(Ibody)
 
+# 팝업·모달·「좋아!」 같은 겹침 요소는 앱 CSS 범위(.a-learn 등) 안에 붙여야 스타일이 먹는다.
+# body 에 바로 붙이면 범위 밖이라 맨 글자로 떠 버린다
+def scope_overlays(js, wrap_id):
+    n = js.count("document.body.appendChild(")
+    return js.replace("document.body.appendChild(",
+                      '(document.getElementById("%s")||document.body).appendChild(' % wrap_id), n
+Ljs, n1 = scope_overlays(Ljs, "Lapp-wrap")
+Mjs, n2 = scope_overlays(Mjs, "Mapp-wrap")
+Ijs, n3 = scope_overlays(Ijs, "Sapp")
+assert n1 >= 3 and n2 >= 3 and n3 >= 1, (n1, n2, n3)
+
 # 쉬는 앱은 뒤로가기·단축키에 반응하면 안 된다
 Ljs = Ljs.replace(
     'window.addEventListener("popstate",function(){',
