@@ -5332,6 +5332,8 @@ const CUT_PREVIEWS = [
   { id: 'hardEnd', label: '2회차 엔딩', hard: true, phaseId: 4 },
   // 결혼식 뒤에 앨범들이 지나간다. 보스를 세 번 잡아야 볼 수 있어서 여기 둔다
   { id: 'credits', label: '엔딩 크레딧', credits: true },
+  // 일반모드를 깨면 통계 다음에 뜨는 것 — 보스를 잡아야 볼 수 있어서 여기 둔다
+  { id: 'unlock', label: '2회차 열림', unlock: true },
 ];
 
 return { PHASE2_CUT, PHASE3_CUT, HARD3_CUT, BOSS_DOWN_CUT, PHASE4_CUT, ENDING_CUT, HARD_END_CUT, BOSS_CUTS, bossCutLength, PHASE2_AT, HARD3_AT, BOSS_DOWN_AT, PHASE3_AT, PHASE4_AT, ENDING_AT, HARD_END_AT, endingCut, isEndingCut, cutForPhase, CUT_PREVIEWS };
@@ -6179,6 +6181,36 @@ function creditAt(t) {
 
 return { CREDIT_IN, CREDIT_HOLD, CREDIT_SLIDE, CREDIT_OUT, CREDIT_COUNT, CREDITS_LENGTH, creditAt };
 })();
+__m["chartrun/src/data/unlockCut.js"] = (() => {
+// 일반모드를 깨면 — 2회차(하드모드)로 가는 문이 열린다.
+//
+// 통계표의 「2회차 열림」 한 줄로는 아무도 못 봤다. 결혼식·크레딧·통계를 다 보고
+// 스테이지 1 로 떨어지면, 왜 거기 서 있는지 화면이 말해주지 않았다.
+// 그래서 통계 **다음**, 스테이지 1 **앞**에 둔다 — 문이 열리는 걸 보고 나면
+// 바로 그 문 옆에 서게 된다.
+//
+// **대사는 없다.** 마지막 제목(HARD MODE)만 「PHASE 2」와 같은 큰 도트 글자로 박는다.
+// 문 옆의 흰수염 노인은 판에서 실제로 문을 열어주는 그 사람이다 — 거기로 가라는 뜻.
+const { lengthOf } = __m["chartrun/src/data/cutscene.js"];
+
+const UNLOCK_CUT = [
+  { at: 0.0, kind: 'shut' }, // 밤. 보라색 문에 빗장 둘, 금색 자물쇠
+  { at: 0.9, kind: 'rattle' }, // 자물쇠가 덜컥덜컥 떤다
+  { at: 1.8, kind: 'crack' }, // 자물쇠가 튀어 오르고 빗장이 양옆으로 날아간다
+  { at: 2.4, kind: 'open' }, // 문 안이 소용돌이친다
+  { at: 3.2, kind: 'title' }, // HARD MODE — 문 옆에서 노인이 춤춘다
+  { at: 5.0, kind: 'end' },
+];
+
+/** 마지막에 박히는 제목. 그리는 쪽이 이걸 쓴다 — 글리프 테스트가 이 글자들을 본다 */
+const UNLOCK_TITLE = 'HARD MODE';
+
+const UNLOCK_AT = Object.fromEntries(UNLOCK_CUT.map((s) => [s.kind, s.at]));
+
+const unlockLength = () => lengthOf(UNLOCK_CUT);
+
+return { UNLOCK_CUT, UNLOCK_TITLE, UNLOCK_AT, unlockLength };
+})();
 __m["chartrun/src/core/rng.js"] = (() => {
 // 결정론적 난수 생성기 (mulberry32). 시드를 저장/복원하면 같은 흐름이 재현된다.
 function createRng(seed = Date.now()) {
@@ -6251,6 +6283,7 @@ const { FX_SLOTS, SHOP_ITEMS, fxOf, owns, canBuy, points, pointsText, sanitizeFx
 const { CAUGHT_CUT, caughtLength } = __m["chartrun/src/data/caughtCut.js"];
 const { emptySave, beatRecord } = __m["chartrun/src/core/save.js"];
 const { CREDITS_LENGTH } = __m["chartrun/src/data/credits.js"];
+const { UNLOCK_CUT, unlockLength } = __m["chartrun/src/data/unlockCut.js"];
 const { createRng } = __m["chartrun/src/core/rng.js"];
 const { clamp, overlaps } = __m["chartrun/src/core/util.js"];
 const { TILE, SOLID } = __m["chartrun/src/core/physics.js"];
@@ -7678,11 +7711,27 @@ function finishRun(game) {
      * 기록을 안 건드리므로(mergeRun) 신기록도 아니다.
      */
     fresh: !game.partial && beatRecord(game.save, game.elapsedMs, game.hard),
+    /**
+     * 통계 다음에 「HARD MODE」 컷신을 틀까. **일반모드를 깰 때마다** 튼다 —
+     * 처음 한 번만이 아니다. 하드를 깼는데 「하드모드 열림」은 틀린 말이라 거기만 뺀다.
+     */
+    unlocked: !game.hard,
   };
   game.scene = 'credits';
   game.sceneTime = 0;
   emit(game, 'ending', game.ending);
   emit(game, 'credits', { hard: game.hard });
+}
+
+/**
+ * 2회차 문이 열리는 컷신 (data/unlockCut.js). 통계를 닫으면 여기로 온다.
+ * 끝나면 그 문 옆(스테이지 1)으로 간다 — 문이 열리는 걸 보고 바로 그 문 앞에 선다.
+ */
+function startUnlockCut(game) {
+  game.scene = 'unlock';
+  game.sceneTime = 0;
+  game.cutsceneTime = 0;
+  emit(game, 'cutscene', { id: 'unlock' });
 }
 
 /**
@@ -7762,6 +7811,10 @@ function previewCut(game, index) {
     game.scene = 'credits';
     game.sceneTime = 0;
     emit(game, 'credits', { hard: false });
+    return true;
+  }
+  if (p.unlock) {
+    startUnlockCut(game);
     return true;
   }
   // 오프닝·2회차 시작은 보스가 없는 컷신이다 — 같은 목록에 있지만 트는 길이 다르다
@@ -7964,6 +8017,7 @@ const inCutscene = (game) =>
   game.scene === 'cutscene' ||
   // 크레딧도 컷신이다 — HUD 를 치우고, 폰에는 「건너뛰기」가 떠야 한다
   game.scene === 'credits' ||
+  game.scene === 'unlock' ||
   !!game.bossCut ||
   // 컷신 사이의 암전도 컷신이다 — 여기서 HUD 가 0.3초 돌아왔다 사라지면 깜빡인다
   game.bossCutGap > 0 ||
@@ -8552,8 +8606,24 @@ function updateGame(game, input, dt) {
       }
       break;
 
+    case 'unlock': {
+      const was = game.cutsceneTime;
+      game.cutsceneTime += dt;
+      beat(game, 'unlock', UNLOCK_CUT, was, game.cutsceneTime);
+      if (skipping(input, game.cutsceneTime)) game.cutsceneTime = unlockLength();
+      if (game.cutsceneTime >= unlockLength()) {
+        // 컷신 보기로 틀었으면 목록으로 — 판을 깬 게 아니다
+        if (game.cutPreview != null) openCutList(game);
+        else returnToHub(game);
+      }
+      break;
+    }
+
     case 'ending':
-      if (game.sceneTime > ENDING_LOCK && input.confirmPressed) {
+      if (game.sceneTime > ENDING_LOCK && input.confirmPressed && game.ending?.unlocked) {
+        // 일반모드를 깼다 — 2회차 문이 열리는 걸 보여주고 그 문 옆으로 간다
+        startUnlockCut(game);
+      } else if (game.sceneTime > ENDING_LOCK && input.confirmPressed) {
         // 한 바퀴를 돈 사람은 타이틀이 아니라 **판으로 돌아온다** — 거기 NPC 가 서 있다
         if (game.save.clearedOnce) returnToHub(game);
         else {
@@ -10795,6 +10865,10 @@ const GLYPHS = {
   V: ['10001', '10001', '10001', '10001', '10001', '01010', '00100'],
   O: ['01110', '10001', '10001', '10001', '10001', '10001', '01110'],
   D: ['11110', '10001', '10001', '10001', '10001', '10001', '11110'],
+  // 「HARD MODE」 — 1회차를 깨면 뜨는 컷신 제목. 없으면 R·M 자리가 빈 칸으로 흘러
+  // 「HA D  ODE」 가 된다 (FINAL 이 'A' 한 글자로 찍혔던 것과 같은 일)
+  R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
+  M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
   '#': ['01010', '01010', '11111', '01010', '11111', '01010', '01010'],
   0: ['01110', '10001', '10011', '10101', '11001', '10001', '01110'],
   1: ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
@@ -12359,6 +12433,8 @@ const { drawCoverAt } = __m["chartrun/src/render/albumArt.js"];
 const { drawSprite } = __m["chartrun/src/render/pixel.js"];
 const { playerFrame, NOTE, DISC, BRIDE, RING, HEART } = __m["chartrun/src/render/sprites.js"];
 const { creditAt } = __m["chartrun/src/data/credits.js"];
+const { UNLOCK_AT, UNLOCK_TITLE, unlockLength } = __m["chartrun/src/data/unlockCut.js"];
+const { npcFrame, npcBob } = __m["chartrun/src/render/npcSprites.js"];
 const { ALBUMS } = __m["chartrun/src/data/albums.js"];
 const { VIEW } = __m["chartrun/src/core/game.js"];
 const { bossBody, NEUTRAL_POSE } = __m["chartrun/src/core/boss.js"];
@@ -14540,7 +14616,144 @@ function drawCredits(ctx, t, time) {
   }
 }
 
-return { drawCutscene, drawBossCut, drawCutTitle, drawWatchingEyes, drawIntroCut, drawHardOpenCut, drawCredits };
+
+// ── 2회차 문이 열린다 ───────────────────────────────────────
+//
+// 일반모드를 깨면 통계 다음에 뜬다 (data/unlockCut.js). 빗장 걸린 문 → 자물쇠가
+// 떨고 → 부서지고 → 문 안이 소용돌이치고 → HARD MODE. 문 옆의 노인은 판에서
+// 실제로 문을 열어주는 그 사람이다 — 컷신이 끝나면 바로 그 옆에 서게 된다.
+
+const UNLOCK_FLOOR = 196;
+const DOOR_W = 52;
+const DOOR_H = 112;
+
+/** 문틀과 문. open 0→1 이면 안이 소용돌이로 차오른다 */
+function drawUnlockDoor(ctx, cx, open, time) {
+  const x = Math.round(cx - DOOR_W / 2);
+  const y = UNLOCK_FLOOR - DOOR_H;
+  // 돌 문틀 — 판에 박힌 포탈과 같은 보라
+  ctx.fillStyle = '#3a2a55';
+  ctx.fillRect(x - 6, y - 6, DOOR_W + 12, DOOR_H + 6);
+  ctx.fillStyle = '#5a4480';
+  ctx.fillRect(x - 6, y - 6, DOOR_W + 12, 2);
+  ctx.fillStyle = '#140828';
+  ctx.fillRect(x, y, DOOR_W, DOOR_H);
+  if (open <= 0) return;
+  // 안이 소용돌이친다 — 판의 포탈 말풍선과 같은 그림을 크게
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, DOOR_W, DOOR_H);
+  ctx.clip();
+  ctx.globalAlpha = open;
+  ctx.fillStyle = '#2a1050';
+  ctx.fillRect(x, y, DOOR_W, DOOR_H);
+  const mx = x + DOOR_W / 2;
+  const my = y + DOOR_H / 2;
+  for (let i = 0; i < 5; i++) {
+    const k = (time * 0.8 + i * 0.2) % 1;
+    ctx.globalAlpha = open * (1 - k);
+    ctx.strokeStyle = i % 2 ? '#ff5d8f' : '#a98cff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(Math.round(mx - (DOOR_W / 2) * k) + 0.5, Math.round(my - (DOOR_H / 2) * k) + 0.5,
+      Math.round(DOOR_W * k), Math.round(DOOR_H * k));
+  }
+  ctx.restore();
+}
+
+/** 빗장 둘과 자물쇠. burst 0→1 이면 날아간다 */
+function drawUnlockBars(ctx, cx, jig, burst) {
+  const y = UNLOCK_FLOOR - DOOR_H;
+  const barW = DOOR_W + 30;
+  const e = ease(burst);
+  for (const by of [y + 28, y + 74]) {
+    // 가운데서 둘로 갈라져 양옆으로 날아간다
+    const fly = e * 150;
+    const drop = e * e * 40;
+    ctx.fillStyle = '#8a7fb8';
+    ctx.fillRect(Math.round(cx - barW / 2 - fly + jig), Math.round(by + drop), barW / 2, 7);
+    ctx.fillRect(Math.round(cx + fly + jig), Math.round(by + drop), barW / 2, 7);
+    ctx.fillStyle = '#b3aecd';
+    ctx.fillRect(Math.round(cx - barW / 2 - fly + jig), Math.round(by + drop), barW / 2, 1);
+    ctx.fillRect(Math.round(cx + fly + jig), Math.round(by + drop), barW / 2, 1);
+  }
+  // 자물쇠 — 위로 튀어 올라 빙글 돈다
+  const ly = y + 44 - e * 90;
+  ctx.save();
+  ctx.translate(Math.round(cx + jig), Math.round(ly));
+  ctx.rotate(e * 5);
+  ctx.globalAlpha *= 1 - burst * 0.6;
+  ctx.fillStyle = '#8a7fb8';
+  ctx.fillRect(-6, -12, 3, 9);
+  ctx.fillRect(3, -12, 3, 9);
+  ctx.fillRect(-6, -14, 12, 3);
+  ctx.fillStyle = '#ffd166';
+  ctx.fillRect(-10, -4, 20, 16);
+  ctx.fillStyle = '#b98a2a';
+  ctx.fillRect(-10, 10, 20, 2);
+  ctx.fillStyle = '#241a33';
+  ctx.fillRect(-1, 1, 3, 6);
+  ctx.restore();
+}
+
+function drawUnlockCut(ctx, t, time) {
+  const cx = VIEW.w / 2;
+
+  const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
+  grad.addColorStop(0, '#07030f');
+  grad.addColorStop(1, '#1c0b2c');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  for (let i = 0; i < 30; i++) {
+    ctx.fillStyle = Math.sin(time * 1.2 + i * 2.3) > 0.4 ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.12)';
+    ctx.fillRect((i * 127 + 31) % VIEW.w, (i * 41) % 150, 1, 1);
+  }
+
+  const opened = t >= UNLOCK_AT.open;
+  // 문이 열리면 뒤로 빛줄기가 돈다
+  if (opened) {
+    drawRays(ctx, cx, UNLOCK_FLOOR - DOOR_H / 2, time * 0.7, '#7c5cff', 0.22 * clamp01((t - UNLOCK_AT.open) / 0.5));
+  }
+
+  // 땅
+  ctx.fillStyle = '#120a1e';
+  ctx.fillRect(0, UNLOCK_FLOOR, VIEW.w, VIEW.h - UNLOCK_FLOOR);
+  ctx.fillStyle = '#3a2a55';
+  ctx.fillRect(0, UNLOCK_FLOOR, VIEW.w, 1);
+
+  drawUnlockDoor(ctx, cx, opened ? clamp01((t - UNLOCK_AT.open) / 0.6) : 0, time);
+
+  // 빗장과 자물쇠 — 떨다가, 부서지면 날아가 사라진다
+  const rattling = t >= UNLOCK_AT.rattle && t < UNLOCK_AT.crack;
+  const jig = rattling ? Math.round(Math.sin(time * 40) * 2) : 0;
+  const burst = t >= UNLOCK_AT.crack ? clamp01((t - UNLOCK_AT.crack) / 0.6) : 0;
+  if (burst < 1) drawUnlockBars(ctx, cx, jig, burst);
+
+  // 부서지는 순간 번쩍
+  if (t >= UNLOCK_AT.crack && t < UNLOCK_AT.crack + 0.3) {
+    ctx.fillStyle = `rgba(255,255,255,${0.8 * (1 - (t - UNLOCK_AT.crack) / 0.3)})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
+
+  // 문 옆의 노인 — 문을 열어주는 그 사람. 두 배로 키워 춤춘다
+  if (t >= UNLOCK_AT.title) {
+    const frame = npcFrame({ dancing: true }, time);
+    ctx.save();
+    ctx.translate(Math.round(cx + DOOR_W / 2 + 18), UNLOCK_FLOOR - frame.h * 2 - Math.round(npcBob(time) * 2));
+    ctx.scale(2, 2);
+    drawSprite(ctx, frame, 0, 0);
+    ctx.restore();
+    drawCutTitle(ctx, UNLOCK_TITLE, t - UNLOCK_AT.title, 4, 22);
+  }
+
+  // 끝에서 검게 닫는다 — 곧 스테이지 1 로 넘어간다
+  const left = unlockLength() - t;
+  if (left < 0.4) {
+    ctx.fillStyle = `rgba(0,0,0,${clamp01(1 - left / 0.4)})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
+}
+
+return { drawCutscene, drawBossCut, drawCutTitle, drawWatchingEyes, drawIntroCut, drawHardOpenCut, drawCredits, drawUnlockCut };
 })();
 __m["chartrun/src/render/scene.js"] = (() => {
 // 픽셀 월드를 캔버스에 그린다. 글자는 여기서 그리지 않는다 (한글은 DOM 이 맡는다).
@@ -14569,7 +14782,7 @@ const { VIEW, PHASE1_CARD } = __m["chartrun/src/core/game.js"];
 const { bossPhase, bossCombined, ceilingSlabs, laserBeams, tailBand, shockWaves, whirlGapX } = __m["chartrun/src/core/boss.js"];
 const { clamp01, ease, noise, band, beatKind, mixHex } = __m["chartrun/src/render/sceneParts.js"];
 const { drawBoss, drawGiantRobot, drawMics, drawBossHealth, giantSize, giantCanvas } = __m["chartrun/src/render/sceneBoss.js"];
-const { drawBossCut, drawCutTitle, drawCutscene, drawHardOpenCut, drawIntroCut, drawCredits } = __m["chartrun/src/render/sceneCuts.js"];
+const { drawBossCut, drawCutTitle, drawCutscene, drawHardOpenCut, drawIntroCut, drawCredits, drawUnlockCut } = __m["chartrun/src/render/sceneCuts.js"];
 const { PLAYER } = __m["chartrun/src/core/player.js"];
 
 // ── 배경 ────────────────────────────────────────────────────
@@ -16148,6 +16361,11 @@ function drawScene(ctx, game, time) {
     drawCredits(ctx, game.sceneTime, time);
     return;
   }
+  // 일반모드를 깬 뒤 — 2회차 문이 열린다
+  if (game.scene === 'unlock') {
+    drawUnlockCut(ctx, game.cutsceneTime, time);
+    return;
+  }
   if (game.scene === 'intro') {
     // 1회차 오프닝과 2회차 시작은 같은 장면을 타고 그림만 다르다
     if (game.introCut === 'hardopen') drawHardOpenCut(ctx, game.cutsceneTime);
@@ -16908,6 +17126,19 @@ const CUT_SOUND = {
   /** 이미 열어준 뒤. 문을 가리키는 그림이 같으니 소리도 같다 */
   talkAgain: {
     portal: { sfx: 'swirl' },
+    end: {},
+  },
+
+  /**
+   * 일반모드를 깨고 나면 — 2회차 문의 빗장이 부서지고 열린다.
+   * 문이 열리는 소리는 판에서 실제로 문을 지날 때(swirl)와 같다
+   */
+  unlock: {
+    shut: {},
+    rattle: { sfx: 'thud' }, // 자물쇠가 덜컥인다
+    crack: { sfx: 'crack' }, // 부서진다
+    open: { sfx: 'swirl' },
+    title: { sfx: 'title' },
     end: {},
   },
 

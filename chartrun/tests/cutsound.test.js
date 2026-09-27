@@ -19,6 +19,7 @@ import { CUT_SOUND, soundFor } from '../src/data/cutSound.js';
 import { INTRO_CUT, HARD_OPEN_CUT } from '../src/data/introCutscene.js';
 import { CAUGHT_CUT } from '../src/data/caughtCut.js';
 import { NPC_TALK, NPC_LOCKED, NPC_AGAIN, NPC_SHOP } from '../src/data/npcTalk.js';
+import { UNLOCK_CUT } from '../src/data/unlockCut.js';
 
 const DT = 1 / 60;
 
@@ -91,6 +92,8 @@ const TIMELINES = {
   talkAgain: NPC_AGAIN,
   // 좌판 아줌마. 사람이 둘이 됐어도 규칙은 하나다
   talkShop: NPC_SHOP,
+  // 일반모드를 깨면 — 2회차 문이 열린다
+  unlock: UNLOCK_CUT,
 };
 
 test('소리 표와 타임라인이 서로 빠짐없이 맞는다', () => {

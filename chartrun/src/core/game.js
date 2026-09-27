@@ -38,6 +38,7 @@ import { FX_SLOTS, SHOP_ITEMS, fxOf, owns, canBuy, points, pointsText, sanitizeF
 import { CAUGHT_CUT, caughtLength } from '../data/caughtCut.js';
 import { emptySave, beatRecord } from './save.js';
 import { CREDITS_LENGTH } from '../data/credits.js';
+import { UNLOCK_CUT, unlockLength } from '../data/unlockCut.js';
 import { createRng } from './rng.js';
 import { clamp, overlaps } from './util.js';
 import { TILE, SOLID } from './physics.js';
@@ -1465,11 +1466,27 @@ function finishRun(game) {
      * 기록을 안 건드리므로(mergeRun) 신기록도 아니다.
      */
     fresh: !game.partial && beatRecord(game.save, game.elapsedMs, game.hard),
+    /**
+     * 통계 다음에 「HARD MODE」 컷신을 틀까. **일반모드를 깰 때마다** 튼다 —
+     * 처음 한 번만이 아니다. 하드를 깼는데 「하드모드 열림」은 틀린 말이라 거기만 뺀다.
+     */
+    unlocked: !game.hard,
   };
   game.scene = 'credits';
   game.sceneTime = 0;
   emit(game, 'ending', game.ending);
   emit(game, 'credits', { hard: game.hard });
+}
+
+/**
+ * 2회차 문이 열리는 컷신 (data/unlockCut.js). 통계를 닫으면 여기로 온다.
+ * 끝나면 그 문 옆(스테이지 1)으로 간다 — 문이 열리는 걸 보고 바로 그 문 앞에 선다.
+ */
+function startUnlockCut(game) {
+  game.scene = 'unlock';
+  game.sceneTime = 0;
+  game.cutsceneTime = 0;
+  emit(game, 'cutscene', { id: 'unlock' });
 }
 
 /**
@@ -1549,6 +1566,10 @@ export function previewCut(game, index) {
     game.scene = 'credits';
     game.sceneTime = 0;
     emit(game, 'credits', { hard: false });
+    return true;
+  }
+  if (p.unlock) {
+    startUnlockCut(game);
     return true;
   }
   // 오프닝·2회차 시작은 보스가 없는 컷신이다 — 같은 목록에 있지만 트는 길이 다르다
@@ -1751,6 +1772,7 @@ export const inCutscene = (game) =>
   game.scene === 'cutscene' ||
   // 크레딧도 컷신이다 — HUD 를 치우고, 폰에는 「건너뛰기」가 떠야 한다
   game.scene === 'credits' ||
+  game.scene === 'unlock' ||
   !!game.bossCut ||
   // 컷신 사이의 암전도 컷신이다 — 여기서 HUD 가 0.3초 돌아왔다 사라지면 깜빡인다
   game.bossCutGap > 0 ||
@@ -2339,8 +2361,24 @@ export function updateGame(game, input, dt) {
       }
       break;
 
+    case 'unlock': {
+      const was = game.cutsceneTime;
+      game.cutsceneTime += dt;
+      beat(game, 'unlock', UNLOCK_CUT, was, game.cutsceneTime);
+      if (skipping(input, game.cutsceneTime)) game.cutsceneTime = unlockLength();
+      if (game.cutsceneTime >= unlockLength()) {
+        // 컷신 보기로 틀었으면 목록으로 — 판을 깬 게 아니다
+        if (game.cutPreview != null) openCutList(game);
+        else returnToHub(game);
+      }
+      break;
+    }
+
     case 'ending':
-      if (game.sceneTime > ENDING_LOCK && input.confirmPressed) {
+      if (game.sceneTime > ENDING_LOCK && input.confirmPressed && game.ending?.unlocked) {
+        // 일반모드를 깼다 — 2회차 문이 열리는 걸 보여주고 그 문 옆으로 간다
+        startUnlockCut(game);
+      } else if (game.sceneTime > ENDING_LOCK && input.confirmPressed) {
         // 한 바퀴를 돈 사람은 타이틀이 아니라 **판으로 돌아온다** — 거기 NPC 가 서 있다
         if (game.save.clearedOnce) returnToHub(game);
         else {

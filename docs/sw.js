@@ -4,7 +4,7 @@
 // 네트워크가 없으면 캐시로 연다 — 비행기 모드에서도 열린다.
 // 캐시 이름의 해시는 빌드 내용에서 나온다 — 게임이 바뀌면 이름이 달라지고,
 // 새 워커가 깔리면서 옛 캐시를 통째로 지운다.
-const CACHE = 'chartrun-05fb8432461f';
+const CACHE = 'chartrun-03767a35bf88';
 const FILES = ["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","./icon-maskable.png"];
 
 self.addEventListener('install', (e) => {

@@ -191,6 +191,19 @@ export const CUT_SOUND = {
   },
 
   /**
+   * 일반모드를 깨고 나면 — 2회차 문의 빗장이 부서지고 열린다.
+   * 문이 열리는 소리는 판에서 실제로 문을 지날 때(swirl)와 같다
+   */
+  unlock: {
+    shut: {},
+    rattle: { sfx: 'thud' }, // 자물쇠가 덜컥인다
+    crack: { sfx: 'crack' }, // 부서진다
+    open: { sfx: 'swirl' },
+    title: { sfx: 'title' },
+    end: {},
+  },
+
+  /**
    * 좌판 아줌마. talkLocked 와 같은 이유로 **작은 소리만** 낸다 —
    * 달리는 중에 저 혼자 뜨는 것이다.
    */

@@ -8,6 +8,8 @@ import { drawCoverAt } from './albumArt.js';
 import { drawSprite } from './pixel.js';
 import { playerFrame, NOTE, DISC, BRIDE, RING, HEART } from './sprites.js';
 import { creditAt } from '../data/credits.js';
+import { UNLOCK_AT, UNLOCK_TITLE, unlockLength } from '../data/unlockCut.js';
+import { npcFrame, npcBob } from './npcSprites.js';
 import { ALBUMS } from '../data/albums.js';
 import { VIEW } from '../core/game.js';
 import { bossBody, NEUTRAL_POSE } from '../core/boss.js';
@@ -2204,6 +2206,143 @@ export function drawCredits(ctx, t, time) {
 
   if (fade < 1) {
     ctx.fillStyle = `rgba(0,0,0,${1 - fade})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
+}
+
+
+// ── 2회차 문이 열린다 ───────────────────────────────────────
+//
+// 일반모드를 깨면 통계 다음에 뜬다 (data/unlockCut.js). 빗장 걸린 문 → 자물쇠가
+// 떨고 → 부서지고 → 문 안이 소용돌이치고 → HARD MODE. 문 옆의 노인은 판에서
+// 실제로 문을 열어주는 그 사람이다 — 컷신이 끝나면 바로 그 옆에 서게 된다.
+
+const UNLOCK_FLOOR = 196;
+const DOOR_W = 52;
+const DOOR_H = 112;
+
+/** 문틀과 문. open 0→1 이면 안이 소용돌이로 차오른다 */
+function drawUnlockDoor(ctx, cx, open, time) {
+  const x = Math.round(cx - DOOR_W / 2);
+  const y = UNLOCK_FLOOR - DOOR_H;
+  // 돌 문틀 — 판에 박힌 포탈과 같은 보라
+  ctx.fillStyle = '#3a2a55';
+  ctx.fillRect(x - 6, y - 6, DOOR_W + 12, DOOR_H + 6);
+  ctx.fillStyle = '#5a4480';
+  ctx.fillRect(x - 6, y - 6, DOOR_W + 12, 2);
+  ctx.fillStyle = '#140828';
+  ctx.fillRect(x, y, DOOR_W, DOOR_H);
+  if (open <= 0) return;
+  // 안이 소용돌이친다 — 판의 포탈 말풍선과 같은 그림을 크게
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, DOOR_W, DOOR_H);
+  ctx.clip();
+  ctx.globalAlpha = open;
+  ctx.fillStyle = '#2a1050';
+  ctx.fillRect(x, y, DOOR_W, DOOR_H);
+  const mx = x + DOOR_W / 2;
+  const my = y + DOOR_H / 2;
+  for (let i = 0; i < 5; i++) {
+    const k = (time * 0.8 + i * 0.2) % 1;
+    ctx.globalAlpha = open * (1 - k);
+    ctx.strokeStyle = i % 2 ? '#ff5d8f' : '#a98cff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(Math.round(mx - (DOOR_W / 2) * k) + 0.5, Math.round(my - (DOOR_H / 2) * k) + 0.5,
+      Math.round(DOOR_W * k), Math.round(DOOR_H * k));
+  }
+  ctx.restore();
+}
+
+/** 빗장 둘과 자물쇠. burst 0→1 이면 날아간다 */
+function drawUnlockBars(ctx, cx, jig, burst) {
+  const y = UNLOCK_FLOOR - DOOR_H;
+  const barW = DOOR_W + 30;
+  const e = ease(burst);
+  for (const by of [y + 28, y + 74]) {
+    // 가운데서 둘로 갈라져 양옆으로 날아간다
+    const fly = e * 150;
+    const drop = e * e * 40;
+    ctx.fillStyle = '#8a7fb8';
+    ctx.fillRect(Math.round(cx - barW / 2 - fly + jig), Math.round(by + drop), barW / 2, 7);
+    ctx.fillRect(Math.round(cx + fly + jig), Math.round(by + drop), barW / 2, 7);
+    ctx.fillStyle = '#b3aecd';
+    ctx.fillRect(Math.round(cx - barW / 2 - fly + jig), Math.round(by + drop), barW / 2, 1);
+    ctx.fillRect(Math.round(cx + fly + jig), Math.round(by + drop), barW / 2, 1);
+  }
+  // 자물쇠 — 위로 튀어 올라 빙글 돈다
+  const ly = y + 44 - e * 90;
+  ctx.save();
+  ctx.translate(Math.round(cx + jig), Math.round(ly));
+  ctx.rotate(e * 5);
+  ctx.globalAlpha *= 1 - burst * 0.6;
+  ctx.fillStyle = '#8a7fb8';
+  ctx.fillRect(-6, -12, 3, 9);
+  ctx.fillRect(3, -12, 3, 9);
+  ctx.fillRect(-6, -14, 12, 3);
+  ctx.fillStyle = '#ffd166';
+  ctx.fillRect(-10, -4, 20, 16);
+  ctx.fillStyle = '#b98a2a';
+  ctx.fillRect(-10, 10, 20, 2);
+  ctx.fillStyle = '#241a33';
+  ctx.fillRect(-1, 1, 3, 6);
+  ctx.restore();
+}
+
+export function drawUnlockCut(ctx, t, time) {
+  const cx = VIEW.w / 2;
+
+  const grad = ctx.createLinearGradient(0, 0, 0, VIEW.h);
+  grad.addColorStop(0, '#07030f');
+  grad.addColorStop(1, '#1c0b2c');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  for (let i = 0; i < 30; i++) {
+    ctx.fillStyle = Math.sin(time * 1.2 + i * 2.3) > 0.4 ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.12)';
+    ctx.fillRect((i * 127 + 31) % VIEW.w, (i * 41) % 150, 1, 1);
+  }
+
+  const opened = t >= UNLOCK_AT.open;
+  // 문이 열리면 뒤로 빛줄기가 돈다
+  if (opened) {
+    drawRays(ctx, cx, UNLOCK_FLOOR - DOOR_H / 2, time * 0.7, '#7c5cff', 0.22 * clamp01((t - UNLOCK_AT.open) / 0.5));
+  }
+
+  // 땅
+  ctx.fillStyle = '#120a1e';
+  ctx.fillRect(0, UNLOCK_FLOOR, VIEW.w, VIEW.h - UNLOCK_FLOOR);
+  ctx.fillStyle = '#3a2a55';
+  ctx.fillRect(0, UNLOCK_FLOOR, VIEW.w, 1);
+
+  drawUnlockDoor(ctx, cx, opened ? clamp01((t - UNLOCK_AT.open) / 0.6) : 0, time);
+
+  // 빗장과 자물쇠 — 떨다가, 부서지면 날아가 사라진다
+  const rattling = t >= UNLOCK_AT.rattle && t < UNLOCK_AT.crack;
+  const jig = rattling ? Math.round(Math.sin(time * 40) * 2) : 0;
+  const burst = t >= UNLOCK_AT.crack ? clamp01((t - UNLOCK_AT.crack) / 0.6) : 0;
+  if (burst < 1) drawUnlockBars(ctx, cx, jig, burst);
+
+  // 부서지는 순간 번쩍
+  if (t >= UNLOCK_AT.crack && t < UNLOCK_AT.crack + 0.3) {
+    ctx.fillStyle = `rgba(255,255,255,${0.8 * (1 - (t - UNLOCK_AT.crack) / 0.3)})`;
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  }
+
+  // 문 옆의 노인 — 문을 열어주는 그 사람. 두 배로 키워 춤춘다
+  if (t >= UNLOCK_AT.title) {
+    const frame = npcFrame({ dancing: true }, time);
+    ctx.save();
+    ctx.translate(Math.round(cx + DOOR_W / 2 + 18), UNLOCK_FLOOR - frame.h * 2 - Math.round(npcBob(time) * 2));
+    ctx.scale(2, 2);
+    drawSprite(ctx, frame, 0, 0);
+    ctx.restore();
+    drawCutTitle(ctx, UNLOCK_TITLE, t - UNLOCK_AT.title, 4, 22);
+  }
+
+  // 끝에서 검게 닫는다 — 곧 스테이지 1 로 넘어간다
+  const left = unlockLength() - t;
+  if (left < 0.4) {
+    ctx.fillStyle = `rgba(0,0,0,${clamp01(1 - left / 0.4)})`;
     ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   }
 }

@@ -46,7 +46,15 @@ import {
   giantSize,
   giantCanvas,
 } from './sceneBoss.js';
-import { drawBossCut, drawCutTitle, drawCutscene, drawHardOpenCut, drawIntroCut, drawCredits } from './sceneCuts.js';
+import {
+  drawBossCut,
+  drawCutTitle,
+  drawCutscene,
+  drawHardOpenCut,
+  drawIntroCut,
+  drawCredits,
+  drawUnlockCut,
+} from './sceneCuts.js';
 import { PLAYER } from '../core/player.js';
 
 // ── 배경 ────────────────────────────────────────────────────
@@ -1623,6 +1631,11 @@ export function drawScene(ctx, game, time) {
   // 결혼식 뒤의 크레딧. 판도 보스도 없다 — 통째로 제 화면이다
   if (game.scene === 'credits') {
     drawCredits(ctx, game.sceneTime, time);
+    return;
+  }
+  // 일반모드를 깬 뒤 — 2회차 문이 열린다
+  if (game.scene === 'unlock') {
+    drawUnlockCut(ctx, game.cutsceneTime, time);
     return;
   }
   if (game.scene === 'intro') {

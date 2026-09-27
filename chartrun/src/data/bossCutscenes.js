@@ -232,4 +232,6 @@ export const CUT_PREVIEWS = [
   { id: 'hardEnd', label: '2회차 엔딩', hard: true, phaseId: 4 },
   // 결혼식 뒤에 앨범들이 지나간다. 보스를 세 번 잡아야 볼 수 있어서 여기 둔다
   { id: 'credits', label: '엔딩 크레딧', credits: true },
+  // 일반모드를 깨면 통계 다음에 뜨는 것 — 보스를 잡아야 볼 수 있어서 여기 둔다
+  { id: 'unlock', label: '2회차 열림', unlock: true },
 ];
