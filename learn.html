@@ -657,6 +657,29 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .orgsvg .og.q-cur .oq{fill:var(--red-d)}
 .orgsvg .og.q-ok rect{fill:var(--teal-l);stroke:var(--jade-d);stroke-width:2.6}
 .orgsvg .og.q-no rect{fill:var(--red-l);stroke:var(--red-d);stroke-width:2.6}
+.orgsvg .og.q-new rect{animation:qnew 1.1s ease-out}
+@keyframes qnew{0%{fill:var(--yel);stroke-width:5}100%{fill:var(--teal-l)}}
+@media (prefers-reduced-motion:reduce){.orgsvg .og.q-new rect{animation:none}}
+.oqmodes{flex-wrap:wrap;gap:6px}
+.oqbest{margin:6px 0 8px}
+.mytag{font-size:11px;font-weight:800;background:var(--ink);color:var(--cream);padding:2px 7px}
+.mytitle{flex:1;min-width:0;font-size:15px;overflow-wrap:anywhere}
+.mytin{width:100%;margin-bottom:10px}
+.myform{display:flex;flex-direction:column;gap:6px}
+.myform .tyin{width:100%}
+.myarrow{display:flex;align-items:center;gap:8px;font-size:22px;font-weight:800;padding-left:10px}
+.myarrow .myl{flex:1;min-height:42px;font-size:15px}
+.mywarn{margin-top:6px;padding:7px 9px;border:2px solid var(--org-d);background:#FFF3C4;font-size:13px;line-height:1.6;color:#2B1F33}
+.mywarn.ok{border-color:var(--jade-d);background:var(--teal-l)}
+.myrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.myrow .mydel.arm{background:var(--red-l);color:var(--red-d)}
+.myedge{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:2px dashed var(--panel-d);font-size:14px;line-height:1.5}
+.myedge span{flex:1;min-width:0;overflow-wrap:anywhere}
+.myedge small{color:var(--ink-2)}
+.myedge .chip{min-height:34px;padding:0 10px}
+.mynode{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 9px;border:2px solid var(--ink);background:var(--cream);font-size:13px;font-weight:700}
+.mynode.unk{background:#FFF3C4;border-color:var(--org-d)}
+.mynode button{min-width:30px;min-height:30px;font-size:13px;color:var(--ink-2)}
 .oqbar{position:sticky;bottom:6px;z-index:6;background:var(--cream);border:var(--bd) solid var(--ink);padding:8px 10px 2px;margin-top:10px;
   box-shadow:0 -4px 0 rgba(43,31,51,.12)}
 @media(max-width:819px){.oqbar{bottom:calc(90px + env(safe-area-inset-bottom,0px))}}
@@ -2314,8 +2337,8 @@ function vHome(){
     '<span class="tx"><b>단체 계보도</b><small>합쳐지고 갈라진 단체들을 화살표 그림으로 · 그림 '+ORGMAP.length+'장</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="exbar orbar" id="goOrgQ" style="margin-bottom:9px"><span class="ic">⌨</span>'+
-    '<span class="tx"><b>계보 빈칸 채우기</b><small>계보도를 가리고 흐름대로 이름 직접 쓰기 · '+
-      ORGMAP.filter(function(x){return (S.gq||{})[x.id]&&S.gq[x.id].full;}).length+' / '+ORGMAP.length+'장 다 맞힘</small></span>'+
+    '<span class="tx"><b>계보 채우기 · 내 계보 만들기</b><small>가리고 흐름대로 쓰기 · 빈 판에서 떠올리기 · 내 계보 '+myList().length+'개 · '+
+      ORGMAP.filter(function(x){return (S.gfree||{})[x.id]&&S.gfree[x.id].full;}).length+' / '+ORGMAP.length+'장 다 떠올림</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="cta ghost" id="goRev2">'+IC.book+' 암기 장치와 인과 사슬 모아 보기</button>'+
     '<button class="cta ghost" id="goTL" style="margin-top:9px">&#9202; 연표 한 장으로 쭉 보기 ('+timeline().length+'개 사건)</button>'+
@@ -4913,7 +4936,49 @@ var NRAW=[
  ["g_gwangbokgun2","한국광복군","단체","s18","L32","army17",["<b>충칭</b>에서 창설(1940), 총사령관 <b>지청천</b>","<b>미얀마</b> · 인도 전선 파견, 국내 진공 작전 준비"],"임시 정부의 군대."],
  ["g_dongnip","조선 독립 동맹","단체","s18","L33","dong18",["<b>화북</b>의 사회주의 세력이 결성(1942), 위원장 <b>김두봉</b>"],"화북 · 김두봉."],
  ["g_uiyonggun","조선 의용군","단체","s18","L33","army17",["조선 의용대 <b>화북 지대</b>를 개편한 부대"],"조선 독립 동맹의 군대."],
- ["g_geonguk","조선 건국 동맹","단체","s18","L33","dong18",["<b>국내</b>에서 <b>여운형</b>이 비밀리에 결성(1944)","좌우가 함께 광복에 대비"],"국내 · 여운형."]
+ ["g_geonguk","조선 건국 동맹","단체","s18","L33","dong18",["<b>국내</b>에서 <b>여운형</b>이 비밀리에 결성(1944)","좌우가 함께 광복에 대비"],"국내 · 여운형."],
+ /* ───── 더 외울 인물 (교과서 수업 카드 · 계보도 · 프린트에 나오는 사람) ───── */
+ ["bismarck","비스마르크","인물","s1","L1","p1",["독일 통일 뒤 <b>현상 유지</b> · <b>프랑스 고립</b> 외교를 이끎"],"현상 유지 → 뒤이은 빌헬름 2세는 세계 정책."],
+ ["wilhelm2","빌헬름 2세","인물","s1","L1","p1",["<b>세계 정책</b>을 내세워 식민지 쟁탈에 뛰어든 독일 황제"],"세계 정책 → 제1차 세계 대전의 배경."],
+ ["saito","사이토 마코토","인물","s3","L6","",["3·1 운동 뒤 새로 부임해 <b>'문화 정치'</b>를 내세운 총독","부임하던 날 남대문역에서 <b>강우규</b>의 폭탄 공격을 받음"],"문화 정치 = 민족 분열 통치."],
+ ["yanggt","양기탁","인물","s5","L11","sin",["<b>안창호</b>와 함께 비밀 결사 <b>신민회</b>를 조직(1907)"],"신민회를 만든 사람 — 안창호와 함께."],
+ ["leesr","이상룡","인물","s5","L11","p5",["<b>신민회</b> 인사로 서간도 삼원보로 이주해 <b>경학사</b>를 만듦","1925년 임시 정부의 초대 국무령"],"삼원보 경학사 · 초대 국무령 — 이상재와 헷갈리지 말기."],
+ ["seoil","서일","인물","s5","L11","p5 rel",["<b>대종교</b> 간부로 무장 단체 <b>중광단</b>을 만듦"],"대종교 · 중광단 → 북로 군정서."],
+ ["sonbh","손병희","인물","s6","L13","",["<b>천도교</b>를 이끈 지도자, 3·1 운동 민족 대표 33인의 대표"],"천도교 · 민족 대표 33인."],
+ ["leesh2","이승훈","인물","s10","L23","sil10",["3·1 운동 민족 대표 33인 가운데 한 사람","<b>이상재</b>와 함께 <b>조선 민립 대학 기성회</b>를 이끎"],"민족 대표 · 민립 대학 기성회."],
+ ["yugs","유관순","인물","s6","L14","",["이화 학당 학생으로 천안 아우내 장터에서 만세 시위를 이끎","붙잡혀 옥중에서 순국"],"아우내 장터 · 옥중 순국."],
+ ["leedn","이동녕","인물","s7","L17","kim",["1927년 개헌 뒤 <b>김구</b>와 함께 임시 정부 운영을 이끎"],"국무위원 중심 집단 지도 체제 — 이동녕 · 김구."],
+ ["ahnmu","안무","인물","s8","L18","gen8",["<b>국민회군</b>을 이끌고 봉오동 전투에 참여"],"국민회군 · 봉오동."],
+ ["choijd","최진동","인물","s8","L18","gen8",["<b>군무 도독부군</b>을 이끌고 봉오동 전투에 참여"],"군무 도독부군 · 봉오동."],
+ ["yoonsj","윤세주","인물","s9","L21","",["1919년 <b>김원봉</b> 등과 만주 지린에서 <b>의열단</b>을 조직"],"의열단 창립 — 김원봉 · 윤세주."],
+ ["choirin","최린","인물","s10","L23","sil10",["<b>이광수</b> · <b>김성수</b> 등과 자치 운동을 벌인 타협적 민족주의자"],"자치 운동(타협)."],
+ ["kimss","김성수","인물","s10","L23","sil10",["<b>이광수</b> · <b>최린</b> 등과 자치 운동에 나선 타협적 민족주의자"],"자치 운동(타협)."],
+ /* ───── 더 외울 단체 ───── */
+ ["g_sinheungsg","신흥 강습소","단체","s5","L11","base5 sin",["<b>신민회</b> 인사들이 서간도 <b>삼원보</b>에 세운 독립군 양성 학교","뒤에 <b>신흥 무관 학교</b>로 발전"],"삼원보 → 신흥 무관 학교."],
+ ["g_bumin","부민단","단체","s5","L11","base5",["서간도의 자치 단체 <b>경학사</b>가 발전한 단체"],"경학사 → 부민단."],
+ ["g_seoro","서로 군정서","단체","s5","L11","base5 gun8",["<b>서간도</b>에서 활동한 무장 독립운동 단체(북간도의 북로 군정서와 구별)"],"서간도 무장 단체."],
+ ["g_ganmin","간민회","단체","s5","L11","base5",["<b>북간도</b> 동포 사회를 이끈 자치 단체"],"북간도 자치 단체."],
+ ["g_seojeon","서전서숙","단체","s5","L11","base5",["<b>북간도</b> 민족 교육의 시작이 된 학교","뒤에 <b>명동 학교</b>가 이어받음"],"북간도 민족 교육의 시작."],
+ ["g_myeongdong","명동 학교","단체","s5","L11","base5",["1908년 북간도에 세워져 <b>서전서숙</b>을 이어 민족 교육을 이끈 학교"],"서전서숙 → 명동 학교."],
+ ["g_uijeong","임시 의정원","단체","s7","L15","gov7",["대한민국 임시 정부의 <b>입법</b> 기관(행정은 국무원, 사법은 법원)"],"삼권 분립 — 입법."],
+ ["g_iryung","이륭 양행","단체","s7","L16","gov7",["<b>교통국</b>의 안동 지부를 둔 무역 회사"],"안동 교통국의 거점."],
+ ["g_changjo","창조파","단체","s7","L17","gov7",["국민 대표 회의에서 임시 정부를 없애고 <b>새 정부</b>를 세우자고 한 쪽"],"국민 대표 회의 — 새로 세우자."],
+ ["g_gaejo","개조파","단체","s7","L17","gov7",["국민 대표 회의에서 임시 정부를 두고 <b>조직만 고치자</b>고 한 쪽"],"국민 대표 회의 — 고쳐 쓰자."],
+ ["g_gukminhoegun","국민회군","단체","s8","L18","gun8",["<b>안무</b>가 이끈 부대, 봉오동 전투에 참여"],"안무 · 봉오동."],
+ ["g_gunmu","군무 도독부군","단체","s8","L18","gun8",["<b>최진동</b>이 이끈 부대, 봉오동 전투에 참여"],"최진동 · 봉오동."],
+ ["g_johyeokdang","조선 혁명당","단체","s8","L20","3bu",["3부 통합 뒤 남만주의 <b>국민부</b>가 결성한 당","산하에 <b>조선 혁명군</b>을 둠"],"국민부 → 조선 혁명당 → 조선 혁명군."],
+ ["g_inmin","동북 인민 혁명군","단체","s8","L20","gun8",["<b>중국 공산당</b>이 만주의 항일 유격대를 모아 만든 군대","뒤에 <b>동북 항일 연군</b>으로 발전"],"→ 동북 항일 연군."],
+ ["g_joguk","조국 광복회","단체","s8","L20","gun8",["<b>동북 항일 연군</b> 안의 한인들이 만든 조직(1936)"],"동북 항일 연군 안의 한인 조직."],
+ ["g_noin","대한 국민 노인 동맹단","단체","s9","L21","uiyeol",["<b>강우규</b>가 속한 단체 — 그래도 그의 의거는 조직의 거사가 아닌 개인 의열 투쟁"],"강우규의 소속."],
+ ["g_hwangpu","황푸 군관 학교","단체","s9","L22","uiyeol",["<b>중국 국민당</b> 정부가 운영한 군관 학교","1920년대 후반 <b>의열단</b>원들이 들어가 정규 군사 훈련을 받음"],"개인 의거의 한계 → 정규 군사 훈련."],
+ ["g_ganbu","조선 혁명 간부 학교","단체","s9","L22","uiyeol",["<b>김원봉</b>의 <b>의열단</b>이 중국 국민당 정부의 지원으로 세움(1932)","여기서 길러진 사람들이 <b>민족 혁명당</b> · <b>조선 의용대</b>로 이어짐"],"의열단의 간부 양성 학교."],
+ ["g_gongsan","조선 공산당","단체","s12","L25","",["<b>사회주의</b> 계열 조직(1925)","천도교 · 학생 단체와 함께 <b>6·10 만세 운동</b>을 준비"],"사회주의 계열 · 6·10 만세 운동."],
+ ["g_yuildang","한국 독립 유일당 촉성회","단체","s13","L26","sin",["중국 관내(<b>베이징</b> 등)에서 조직된 민족 유일당 운동 단체"],"관내의 유일당 운동."],
+ ["g_daejong","대종교","단체","s16","L30","rel",["<b>나철</b>이 일으킨 단군 신앙 종교","간부 <b>서일</b> 등이 무장 단체 <b>중광단</b>을 만듦"],"단군 신앙 · 중광단."],
+ ["g_cheondo","천도교","단체","s16","L30","rel",["<b>손병희</b>가 이끈 종교, 3·1 운동을 이끌고 1922년 제2의 독립 선언을 계획","잡지 『개벽』 · 『신여성』을 펴내고 청년 · 여성 · 소년 운동에 앞장섬"],"3·1 운동 · 『개벽』 · 소년 운동."],
+ ["g_gukmun","국문 연구소","단체","s16","L30","lang",["대한 제국 때 세운 국어 연구 기관 — <b>주시경</b>도 참여"],"한글 연구의 뿌리."],
+ ["g_dongcheok","동양 척식 주식회사","단체","s9","L21","",["토지 수탈에 앞장선 일제의 회사","1926년 의열단원 <b>나석주</b>가 폭탄을 던짐"],"동척 — 토지 수탈 · 나석주."],
+ ["g_mulsan","조선 물산 장려회","단체","s10","L23","sil10",["1920년 평양에서 <b>조만식</b> 등이 만든 단체","1923년 서울에서도 조직되며 운동이 전국으로 퍼짐"],"물산 장려 운동의 중심."]
 ];
 var NAMES=NRAW.map(function(r){return {id:"n_"+r[0],n:r[1],k:r[2],u:r[3],l:r[4],
   g:r[5]?r[5].split(" "):[],cl:r[6],e:r[7]};});
@@ -5854,7 +5919,11 @@ var PTRAP=[
  {t:"'조선 청년' 두 개",n:["조선 청년 독립단","조선 청년 총동맹"],tip:"독립단 = 도쿄 유학생의 2·8 독립 선언 / 총동맹 = 청년 운동을 하나로 묶은 조직(1924)"},
  {t:"소년 운동 두 단체",n:["천도교 소년회","조선 소년 연합회"],tip:"천도교 소년회 = 방정환 · 어린이날 / 조선 소년 연합회 = 전국 조직(1927)"},
  {t:"중일 전쟁 뒤 두 연합체",n:["한국 광복 운동 단체 연합회","조선 민족 전선 연맹"],tip:"연합회 = 한국 국민당 중심(김구 진영) / 연맹 = 민족 혁명당 중심(김원봉 진영) → 이듬해 조선 의용대"},
- {t:"의열단 · 의민단",n:["의열단","의민단"],tip:"의열단 = 김원봉 · 「조선 혁명 선언」 / 의민단 = 천주교 신자 중심의 국외 무장 단체"}
+ {t:"의열단 · 의민단",n:["의열단","의민단"],tip:"의열단 = 김원봉 · 「조선 혁명 선언」 / 의민단 = 천주교 신자 중심의 국외 무장 단체"},
+ {t:"이상룡 · 이상재 — 한 글자 차이",n:["이상룡","이상재"],tip:"이상룡 = 신민회 · 서간도 삼원보(경학사) · 초대 국무령(1925) / 이상재 = 조선 민립 대학 기성회(1923) · 신간회 초대 회장"},
+ {t:"서로냐 북로냐 — 군정서",n:["서로 군정서","북로 군정서"],tip:"서로 군정서 = 서간도 / 북로 군정서 = 북간도 · 김좌진 · 청산리(중광단에서 발전)"},
+ {t:"창조파 · 개조파",n:["창조파","개조파"],tip:"국민 대표 회의(1923) — 창조파 = 임시 정부를 없애고 새로 / 개조파 = 두고 조직만 고치자"},
+ {t:"신흥 두 개",n:["신흥 강습소","신흥 무관 학교"],tip:"신흥 강습소(삼원보, 신민회)가 먼저 → 발전해서 신흥 무관 학교"}
 ];
 var PCMP_IDX=[{"u": "s2", "t": "무단 통치 vs 문화 정치", "a": {"n": "무단 통치 (1910년대)", "p": ["<b>헌병 경찰</b>제 · 즉결 심판권", "<b>조선 태형령</b> (조선인에 한하여)", "관리·교사도 제복에 칼 착용", "<b>토지 조사 사업</b> · <b>회사령(허가제)</b>"]}, "b": {"n": "문화 정치 (1920년대)", "p": ["<b>보통 경찰</b>제 — 인원·관서는 오히려 증가", "문관 총독 <b>단 한 명도</b> 임명 안 됨", "신문 허용하되 <b>사전 검열</b>·정간·폐간", "<b>산미 증식 계획</b> · 회사령 폐지(신고제)"]}}, {"u": "s4", "t": "문화 정치 vs 민족 말살 통치", "a": {"n": "문화 정치 (1920년대)", "p": ["목적: <b>민족 분열</b>, 친일파 양성", "치안 유지법(1925)", "도 평의회·부·면 협의회 (자문 기구)", "경제: 쌀 수탈 중심"]}, "b": {"n": "민족 말살 통치 (1930년대~)", "p": ["목적: <b>전쟁 동원</b>, 민족의식 말살", "내선일체·일선동조론, 황국 신민 서사", "창씨개명 · 신사 참배 · 국민학교", "경제: <b>병참 기지화</b> · 국가 총동원법"]}}, {"u": "s5", "t": "독립 의군부 vs 대한 광복회", "a": {"n": "독립 의군부 (1912)", "p": ["<b>임병찬</b> 등 의병장 출신", "<b>고종의 밀명</b>을 받아 조직", "지향: <b>복벽주의</b> (고종 복위)", "일제에 국권 반환 요구서 발송 시도"]}, "b": {"n": "대한 광복회 (1915)", "p": ["<b>박상진</b> 등이 주축", "군자금 모금 · 친일파 처단", "지향: <b>공화주의</b> (민주 공화제)", "만주에 무관 학교 설립 추진"]}}, {"u": "s5", "t": "1910년대 독립운동 기지 — 어디에 뭐가?", "a": {"n": "서간도 · 북간도", "p": ["<b>서간도(삼원보)</b>: 경학사 → 부민단", "신흥 강습소 → <b>신흥 무관 학교</b>", "<b>북간도</b>: 간민회, 명동 학교", "<b>중광단</b>(대종교) → 북로 군정서"]}, "b": {"n": "연해주 · 미주 · 상하이", "p": ["<b>연해주(신한촌)</b>: 권업회", "→ 대한 광복군 정부(이상설·이동휘)", "<b>미주</b>: 대한인 국민회(안창호)", "하와이: 대조선 국민군단(박용만)", "<b>상하이</b>: 동제사 → 신한청년당"]}}, {"u": "s6", "t": "3·1 운동 vs 6·10 만세 운동", "a": {"n": "3·1 운동 (1919)", "p": ["계기: <b>고종</b> 서거, 2·8 독립 선언", "민족 대표는 <b>태화관</b>, 시민은 <b>탑골 공원</b>", "제암리 학살 → 무력 투쟁으로 발전", "결과: <b>임시 정부 수립</b>, 문화 정치로 전환"]}, "b": {"n": "6·10 만세 운동 (1926)", "p": ["계기: <b>순종</b>의 장례일", "준비 과정에서 좌우가 협력", "→ <b>민족 유일당 운동</b>의 계기", "→ 신간회 창립(1927)으로 이어짐"]}}, {"u": "s7", "t": "연통제 vs 교통국", "a": {"n": "연통제", "p": ["국내에 둔 <b>비밀 행정</b> 조직", "군자금 조달", "정부의 문서와 명령 전달"]}, "b": {"n": "교통국", "p": ["<b>통신</b> 기관", "정보 수집과 분석, 자금 모집", "<b>이륭 양행</b>의 안동 교통국이 대활약"]}}, {"u": "s7", "t": "개조파 vs 창조파 (국민 대표 회의, 1923)", "a": {"n": "개조파", "p": ["임시 정부는 <b>민족의 대표 기관</b>", "3·1 운동의 열망으로 출범했으니 정통성 인정", "문제가 있다면 <b>조직과 체제를 개선</b>", "→ 임시 정부를 고쳐 쓰자"]}, "b": {"n": "창조파", "p": ["상하이 임시 정부의 <b>계통을 이을 이유 없다</b>", "실제 독립운동에 적합한 <b>새 조직</b> 필요", "→ 임시 정부를 <b>새로 만들자</b>", "결과: 대립 끝에 회의 <b>결렬</b>"]}}, {"u": "s8", "t": "봉오동 전투 vs 청산리 대첩", "a": {"n": "봉오동 전투 (1920. 6.)", "p": ["<b>홍범도</b>의 대한 독립군", "+ 안무의 국민회군, <b>최진동</b>의 군무 도독부군", "일본군을 <b>골짜기로 유인</b>해 기습", "→ 이에 일제가 훈춘 사건을 조작"]}, "b": {"n": "청산리 대첩 (1920. 10.)", "p": ["<b>김좌진</b>의 북로 군정서 + 홍범도", "<b>백운평</b>·완루구·어랑촌·고동하 등 10여 차례", "독립 전쟁사 최대의 승리", "→ 보복으로 <b>간도 참변</b>"]}}, {"u": "s8", "t": "간도 참변 vs 자유시 참변", "a": {"n": "간도 참변 (1920)", "p": ["가해자: <b>일본군</b>", "구실: 독립군의 <b>근거지</b>를 없앤다", "3~4개월간 한인 마을 방화·학살", "청산리 대첩에 대한 <b>보복</b>"]}, "b": {"n": "자유시 참변 (1921)", "p": ["가해자: 러시아 <b>적군</b>", "배경: 밀산 집결 → 자유시 이동", "원인: <b>지휘권</b>을 둘러싼 내부 분쟁", "무장 해제 과정에서 다수 희생"]}}, {"u": "s8", "t": "조선 혁명군 vs 한국 독립군", "a": {"n": "조선 혁명군", "p": ["총사령관: <b>양세봉</b>", "모체: <b>국민부</b> → 조선 혁명당", "활동: <b>남만주</b>", "전투: <b>영릉가</b>(1932) · <b>흥경성</b>(1933)"]}, "b": {"n": "한국 독립군", "p": ["총사령관: <b>지청천</b>", "모체: <b>혁신 의회</b> → 한국 독립당", "활동: <b>북만주</b>", "전투: <b>쌍성보</b>(1932) · 동경성 · <b>대전자령</b>(1933)"]}}, {"u": "s9", "t": "의열단 vs 한인 애국단", "a": {"n": "의열단 (1919)", "p": ["조직: <b>김원봉</b>·윤세주, 만주 <b>지린</b>", "지침: 신채호의 <b>「조선 혁명 선언」</b>", "김익상(총독부)·김상옥(종로 경찰서)·나석주(동척)", "뒤에 <b>황푸 군관 학교</b> 입교 → 조직적 무장 투쟁"]}, "b": {"n": "한인 애국단 (1931)", "p": ["조직: <b>김구</b>, 상하이", "목적: 침체된 <b>임시 정부</b>에 활기", "<b>이봉창</b>(도쿄 일왕 마차)", "<b>윤봉길</b>(훙커우 공원) → 중국 국민당의 지원"]}}, {"u": "s10", "t": "물산 장려 운동 vs 민립 대학 설립 운동", "a": {"n": "물산 장려 운동", "p": ["<b>조만식</b>, 평양에서 시작", "'내 살림 내 것으로', '조선 사람 조선 것'", "토산품 애용·근검저축·<b>금주·단연</b>", "한계: 값 폭등, <b>자본가 계급</b>의 이익만 좇는다는 비판"]}, "b": {"n": "민립 대학 설립 운동", "p": ["<b>이상재</b>·이승훈 — 조선 민립 대학 기성회", "'교육이 아니면 아니 된다' — 대학을 세우자", "<b>1천만 원</b> 전국 모금", "한계: 자연재해, 일제가 <b>정치 운동</b>이라며 탄압"]}}, {"u": "s10", "t": "문자 보급 운동 vs 브나로드 운동", "a": {"n": "문자 보급 운동 (1929)", "p": ["<b>『조선일보』</b>", "구호: '아는 것이 힘, 배워야 산다'", "한글 교재 보급", "전국 순회강연"]}, "b": {"n": "브나로드 운동 (1931)", "p": ["<b>『동아일보』</b>", "뜻: 러시아어로 '<b>민중 속으로</b>'", "학생·청년이 농촌을 찾아감", "미신 타파·근검절약 계몽"]}}, {"u": "s11", "t": "암태도 소작 쟁의 vs 원산 총파업", "a": {"n": "암태도 소작 쟁의 (1923)", "p": ["<b>농민</b>의 싸움", "고율 <b>소작료</b>를 걷는 지주에 맞섬", "1년여 투쟁 — 목포 법원까지", "결과: <b>소작료 인하</b>"]}, "b": {"n": "원산 총파업 (1929)", "p": ["<b>노동자</b>의 싸움", "계기: 일본인 감독의 한국인 노동자 <b>구타</b>", "<b>4개월여</b> 지속, 국내외 단체 지원", "일제 강점기 <b>최대 규모</b> 노동 운동"]}}, {"u": "s12", "t": "6·10 만세 운동 vs 광주 학생 항일 운동", "a": {"n": "6·10 만세 운동 (1926)", "p": ["계기: <b>순종</b>의 장례일", "사회주의 계열·천도교가 준비 → 사전 발각", "학생들이 격문·만세", "의의: 민족 협동 전선의 <b>공감대</b>"]}, "b": {"n": "광주 학생 항일 운동 (1929)", "p": ["계기: <b>나주역</b> 한·일 학생 충돌", "<b>독서회</b>를 통해 확산", "<b>신간회</b>가 진상 조사단 파견", "3·1 운동 이후 <b>최대 규모</b> 항일 운동"]}}, {"u": "s13", "t": "신민회 vs 신간회", "a": {"n": "신민회 (1907)", "p": ["안창호·양기탁, <b>비밀 결사</b>", "대성 학교·오산 학교", "국외 <b>독립운동 기지</b> (삼원보)", "105인 사건으로 해체"]}, "b": {"n": "신간회 (1927)", "p": ["<b>합법</b> 단체, 일제 강점기 최대 규모", "비타협적 민족주의 + 사회주의", "약 <b>140개</b> 지회, 4만여 명", "<b>광주 학생</b> 항일 운동 진상 조사단"]}}, {"u": "s16", "t": "민족주의 사학 vs 사회 경제 사학", "a": {"n": "민족주의 사학", "p": ["<b>박은식</b>·<b>신채호</b>", "<b>민족정신</b>을 바로 세우면 독립할 수 있다", "『한국통사』, 『조선상고사』", "정인보의 <b>조선학 운동</b>으로 이어짐"]}, "b": {"n": "사회 경제 사학", "p": ["<b>백남운</b>", "마르크스의 <b>유물 사관</b>", "『조선사회경제사』", "한국사도 <b>보편적인 발전 법칙</b> → 정체성론 반박"]}}, {"u": "s16", "t": "박은식 vs 신채호", "a": {"n": "박은식", "p": ["'조선 <b>국혼</b>' 강조", "<b>『한국통사』</b> — 일제의 침략 과정", "<b>『한국독립운동지혈사』</b>", "민족주의 사학"]}, "b": {"n": "신채호", "p": ["<b>고대사</b> 연구에 주력", "<b>『조선상고사』</b>, 『조선사연구초』", "의열단 <b>「조선 혁명 선언」</b> 작성", "민족주의 사학"]}}, {"u": "s17", "t": "민족 혁명당 vs 한국 국민당", "a": {"n": "민족 혁명당 (1935)", "p": ["<b>난징</b>, 여러 단체 통합", "중국 관내 최대 <b>통일 전선 정당</b>", "의열단 계열(<b>김원봉</b>)이 당권 장악", "조소앙·지청천 탈당 → 통일 전선 약화"]}, "b": {"n": "한국 국민당 (1935)", "p": ["<b>김구</b> 등 임시 정부 옹호 세력", "민족 혁명당에 참여하지 않음", "중일 전쟁 뒤 <b>한국 광복 운동 단체 연합회</b>의 중심", "→ 1940 한국 독립당으로"]}}, {"u": "s17", "t": "조선 의용대 vs 한국광복군", "a": {"n": "조선 의용대 (1938)", "p": ["<b>조선 민족 전선 연맹</b>(김원봉)", "<b>우한</b>에서 창설, 중국 관내 최초 한인 부대", "심리전·포로 심문·후방 공작", "다수는 <b>화북</b>(타이항산)으로 이동"]}, "b": {"n": "한국광복군 (1940)", "p": ["<b>대한민국 임시 정부</b>", "<b>충칭</b>, 총사령관 <b>지청천</b>", "미얀마·인도 전선 파견 (영국군 요청)", "미국 OSS와 <b>국내 진공 작전</b> 준비"]}}, {"u": "s18", "t": "조선 독립 동맹 vs 조선 건국 동맹", "a": {"n": "조선 독립 동맹 (1942)", "p": ["<b>화북</b> 지방(옌안)", "위원장 <b>김두봉</b>, 사회주의 세력 중심", "조선 의용대 화북 지대 → <b>조선 의용군</b>", "항일 무장 투쟁"]}, "b": {"n": "조선 건국 동맹 (1944)", "p": ["<b>국내</b>, 광복 1년여 앞두고", "<b>여운형</b> 주도", "민족주의·사회주의 계열 함께 참여한 <b>비밀 결사</b>", "중앙과 지방 조직, 일제 패망에 대비"]}}, {"u": "s18", "t": "카이로 선언 vs 포츠담 선언", "a": {"n": "카이로 선언 (1943. 12.)", "p": ["<b>미국·영국·중국</b>", "한국 독립을 <b>처음으로</b> 약속", "'<b>적절한 시기</b>에' 독립", "김구: 그 표현을 좋아하지 않는다"]}, "b": {"n": "포츠담 선언 (1945. 7.)", "p": ["미국·영국·중국 (+ 뒤에 <b>소련</b>)", "카이로 선언을 <b>재확인</b>", "일본의 <b>무조건 항복</b> 촉구", "미·영·중·소 4개국이 한국 독립을 재확인"]}}];
 var PAIRS_C=null;
@@ -6120,7 +6189,7 @@ var ORGMAP=[
  {id:"base",s:"국외 기지",t:"1910년대 국외 기지",cols:3,
   cap:"1910년대 독립운동 기지는 지역마다 자치 단체 → 학교 → 무장 단체로 자라났고, 국내에선 복벽(독립 의군부)에서 공화(대한 광복회)로 이념이 바뀌었다.",
   n:[["l1","서간도 · 삼원보 — 신민회가 세운 기지","",0,0,"l"],
-     ["sinmin","신민회","이회영·이상룡",0,0.4,"o","n"],["gh","경학사","자치 단체",1,0.4,"o","n"],["bm","부민단","",2,0.4,"o","n","L11","경학사가 발전한 자치 단체."],
+     ["sinmin","신민회","1907 · 안창호·양기탁",0,0.4,"o","n"],["gh","경학사","자치 단체",1,0.4,"o","n"],["bm","부민단","",2,0.4,"o","n","L11","경학사가 발전한 자치 단체."],
      ["sg","신흥 강습소","",0,1.4,"o","n","L11","독립군을 기르려고 세운 학교. 뒤에 신흥 무관 학교가 됐다."],["sh","신흥 무관 학교","독립군 양성",1,1.4,"o","n"],["sr","서로 군정서","무장 단체",2,1.4,"o","n","L11","서간도의 독립운동 단체."],
      ["l2","북간도 · 명동촌","",0,2.4,"l"],
      ["gm","간민회","자치 단체",0,2.8,"o","n","L11","북간도 동포 사회를 이끈 자치 단체."],["sj","서전서숙","학교",1,2.8,"o","n","L11","북간도 민족 교육의 시작. 명동 학교가 이어받았다."],["md","명동 학교","",2,2.8,"o","n","L11","서전서숙을 계승한 북간도의 학교."],
@@ -6297,13 +6366,13 @@ function orgSVG(g,gi,q){
     if(n.kind==="l"){ s+='<text class="olane" x="'+(ORG_PX+2)+'" y="'+(n.top+12)+'">'+esc(msk(n.name))+'</text>'+
       '<line class="olline" x1="'+ORG_PX+'" x2="'+(ORG_W-ORG_PX)+'" y1="'+(n.top+17)+'" y2="'+(n.top+17)+'"/>'; return; }
     var x=n.cx-n.w/2, cov=q?open(k):hide&&!ORGOPEN[gi+":"+k], sel=!q&&ORGSEL&&ORGSEL.g===gi&&ORGSEL.k===k;
-    var qc=q?(q.cur===k?" q-cur":q.ok[k]?" q-ok":q.no[k]?" q-no":cov?" q-cov":""):"";
+    var qc=q?(q.cur===k?" q-cur":q.ok[k]?" q-ok":q.no[k]?" q-no":cov?" q-cov":"")+(q.nw===k&&q.ok[k]?" q-new":""):"";
     s+='<g class="og k-'+n.kind+' c-'+(n.camp||"0")+(sel?" sel":"")+qc+'" data-k="'+k+'" tabindex="0" role="button" aria-label="'+esc(cov?"가린 단체":n.plain)+'">'+
       '<rect x="'+x+'" y="'+n.top+'" width="'+n.w+'" height="'+n.h+'" rx="'+(n.kind==="e"?12:3)+'"/>';
-    var sb=msk(n.sub);
-    if(cov&&q&&sb&&sb!=="?")s+='<text class="onm oq" x="'+n.cx+'" y="'+(n.top+20)+'" text-anchor="middle">?</text>'+
+    var sb=msk(n.sub), qt=q&&q.cho&&q.cho[k]?esc(q.cho[k]):"?";
+    if(cov&&q&&q.sub!==false&&sb&&sb!=="?")s+='<text class="onm oq" x="'+n.cx+'" y="'+(n.top+20)+'" text-anchor="middle">'+qt+'</text>'+
       '<text class="osb" x="'+n.cx+'" y="'+(n.top+36)+'" text-anchor="middle">'+esc(sb)+'</text>';
-    else if(cov) s+='<text class="onm'+(q?" oq":"")+'" x="'+n.cx+'" y="'+(n.top+n.h/2+5)+'" text-anchor="middle">?</text>';
+    else if(cov) s+='<text class="onm'+(q?" oq":"")+'" x="'+n.cx+'" y="'+(n.top+n.h/2+5)+'" text-anchor="middle">'+qt+'</text>';
     else{
       n.lines.forEach(function(ln,i){ s+='<text class="onm" x="'+n.cx+'" y="'+(n.top+20+i*15)+'" text-anchor="middle">'+esc(msk(ln))+'</text>'; });
       if(n.sub)s+='<text class="osb" x="'+n.cx+'" y="'+(n.top+17+n.lines.length*15)+'" text-anchor="middle">'+esc(sb)+'</text>';
@@ -6327,7 +6396,8 @@ function vOrgs(a){
       '<span class="cnt">'+(ORGTAB+1)+' / '+ORGMAP.length+'</span></div>'+
     '<figure class="orgfig"><div class="eyebrow">'+(ORGTAB+1)+'. '+esc(g.t)+'</div>'+orgSVG(g,ORGTAB)+
       '<figcaption>'+esc(g.cap)+'</figcaption></figure>'+
-    '<button class="cta" id="orq" style="margin-top:10px">⌨ 이 그림 가리고 이름 써 보기</button><div id="orinfo"></div>'+
+    '<button class="cta" id="orq" style="margin-top:10px">⌨ 이 그림 가리고 이름 써 보기</button>'+
+    '<button class="prgo" id="ormy" style="margin-top:8px">✎ 내 계보 직접 만들기 '+IC.chev+'</button><div id="orinfo"></div>'+
     '<div class="sticky"><div class="row"><button class="cta ghost" id="orp"'+(ORGTAB?'':' disabled')+'>이전 그림</button>'+
       '<button class="cta" id="orn"'+(ORGTAB<ORGMAP.length-1?'':' disabled')+'>다음 그림</button></div></div>';
   view.innerHTML=h;
@@ -6344,6 +6414,7 @@ function vOrgs(a){
   Array.prototype.forEach.call(view.querySelectorAll("[data-og]"),function(b){b.onclick=function(){ORGTAB=+b.dataset.og;ORGSEL=null;vOrgs();};});
   view.querySelector("#orh").onclick=function(){S.orgHide=!hide;ORGOPEN={};save();vOrgs();};
   view.querySelector("#orq").onclick=function(){ OQ=null; go("orgq",{g:ORGTAB}); };
+  view.querySelector("#ormy").onclick=function(){ go("mymap"); };
   view.querySelector("#orp").onclick=function(){ if(ORGTAB>0){ORGTAB--;ORGSEL=null;vOrgs();window.scrollTo(0,0);} };
   view.querySelector("#orn").onclick=function(){ if(ORGTAB<ORGMAP.length-1){ORGTAB++;ORGSEL=null;vOrgs();window.scrollTo(0,0);} };
   Array.prototype.forEach.call(view.querySelectorAll(".orgsvg .og"),function(el){
@@ -6355,73 +6426,113 @@ function vOrgs(a){
 }
 
 /* ── 계보 빈칸 채우기 ──
-   계보도의 단체 칸을 가리고, 위에서 아래로(화살표 흐름대로) 하나씩 이름을 친다. 사건 칸 · 화살표 글은 남겨 두는 실마리.
-   칸 아래 작은 글씨(이끈 사람 · 해)는 단서로 보여 준다. 틀리면 칸에 정답이 빨갛게 뜨고, 한 번 따라 쓰면 다음 칸 */
+   계보도의 단체 칸을 가리고 이름을 직접 친다. 사건 칸 · 화살표 글은 남겨 두는 실마리.
+   · 순서대로(조금 / 전부 가리기): 위에서 아래로(화살표 흐름대로) 빨간 칸부터 하나씩. 칸 아래 작은 글씨(이끈 사람 · 해)는 단서.
+     틀리면 칸에 정답이 빨갛게 뜨고, 한 번 따라 쓰면 다음 칸
+   · 빈 판에서 떠올리기: 단서도 숨기고, 생각나는 이름을 아무 순서로 친다. 맞으면 그 자리에 채워진다
+   기본 그림(ORGMAP)과 내가 만든 계보(S.mymap → myGraph) 둘 다 같은 그림 객체로 돈다 */
 var OQ_SKIP={"gov:tn":1,"mass:ym":1,"mass:ys":1,"mass:ds":1};
-var OQ=null, OQTAB=0;
-function oqCells(gi){ var g=ORGMAP[gi], N=orgNodes(g);
+var OQ=null, OQTAB=0, OQMY=null;
+function oqGraph(){ if(OQMY){ var m=myGet(OQMY); return m?myGraph(m):null; } return ORGMAP[OQTAB]; }
+function oqCells(g){ var N=orgNodes(g);
   return Object.keys(N).filter(function(k){ var n=N[k]; return (n.kind==="o"||n.kind==="g")&&!OQ_SKIP[g.id+":"+k]; })
     .sort(function(a,b){ return N[a].row-N[b].row||N[a].col-N[b].col; }); }
-function oqBox(gi,k){ var v=(S.gbox||{})[ORGMAP[gi].id+":"+k]; return v==null?-1:v; }
-function oqStart(gi,mode,keys){
-  var all=oqCells(gi), N=orgNodes(ORGMAP[gi]), pick;
+function oqBox(g,k){ var v=(S.gbox||{})[g.id+":"+k]; return v==null?-1:v; }
+function oqSetBox(g,k,v){ if(!S.gbox)S.gbox={}; S.gbox[g.id+":"+k]=v; }
+function oqStart(g,mode,keys){
+  var all=oqCells(g), N=orgNodes(g), pick;
   if(keys)pick=keys.slice();
-  else if(mode==="all")pick=all.slice();
-  else { var n=Math.max(3,Math.ceil(all.length*0.4));
-    pick=all.map(function(k){ var b=oqBox(gi,k); return {k:k,w:(b===0?0:b<0?1:b+1)+Math.random()*0.9}; })
+  else if(mode==="all"||mode==="free")pick=all.slice();
+  else { var n=Math.min(all.length,Math.max(3,Math.ceil(all.length*0.4)));
+    pick=all.map(function(k){ var b=oqBox(g,k); return {k:k,w:(b===0?0:b<0?1:b+1)+Math.random()*0.9}; })
       .sort(function(a,b){return a.w-b.w;}).slice(0,n).map(function(o){return o.k;}); }
   pick.sort(function(a,b){ return N[a].row-N[b].row||N[a].col-N[b].col; });
   var cov={}; pick.forEach(function(k){cov[k]=1;});
-  OQ={gi:gi,mode:keys?"miss":mode,keys:pick,i:0,cov:cov,ok:{},no:{},first:0,tries:0,hint:0,ph:"ask",done:false};
+  OQ={g:g,gi:OQMY?null:OQTAB,mode:keys?"miss":mode,keys:pick,i:0,cov:cov,ok:{},no:{},first:0,tries:0,hint:0,ph:"ask",done:false,
+      sub:mode!=="free",cho:{},help:{},miss:0,nw:null,t0:Date.now()};
 }
 function oqUnit(n){ var x=orgName(n); if(x)return x.u; var l=n.lid&&LMAP[n.lid]; return l?l.u:null; }
 function vOrgQ(a){
   titleEl.textContent="계보 빈칸 채우기";
-  if(a&&a.g!=null){ OQTAB=a.g; a.g=null; OQ=null; }
-  if(!OQ||OQ.gi!==OQTAB)oqStart(OQTAB,"some");
-  var g=ORGMAP[OQTAB], best=(S.gq||{})[g.id];
-  var h='<p class="note" style="margin-bottom:10px">계보도의 단체 칸을 가렸어. <b>빨간 칸</b>부터 위에서 아래로, 화살표를 따라가며 이름을 직접 쳐. '+
-      '칸 아래 작은 글씨는 단서야.</p>'+
-    '<div class="chips strip orgtabs" style="margin-bottom:10px">'+ORGMAP.map(function(x,i){
-      var b=(S.gq||{})[x.id];
-      return '<button class="chip'+(i===OQTAB?" on":"")+'" data-oq="'+i+'">'+(i+1)+' '+esc(x.s)+(b&&b.full?' ✓':'')+'</button>';}).join("")+'</div>'+
-    '<div class="tlbar"><button class="chip'+(OQ.mode==="some"?" on":"")+'" id="oqs">조금 가리기</button>'+
+  if(a&&a.my){ OQMY=a.my; a.my=null; OQ=null; }
+  else if(a&&a.g!=null){ OQMY=null; OQTAB=a.g; a.g=null; OQ=null; }
+  var g=oqGraph();
+  if(!g){ OQMY=null; OQ=null; g=oqGraph(); }
+  if(!OQ||OQ.g.id!==g.id)oqStart(g,"some");
+  g=OQ.g;
+  var free=OQ.mode==="free", best=(S.gq||{})[g.id], fb=(S.gfree||{})[g.id];
+  var h='<button class="prgo" id="oqmine" style="margin:0 0 10px">✎ 내 계보 직접 만들기 · 내가 만든 것 '+myList().length+'개 '+IC.chev+'</button>'+
+    '<p class="note" style="margin-bottom:10px">'+(free?'단체 칸이 전부 비었어. <b>생각나는 이름을 아무 순서로</b> 쳐. 맞으면 제자리에 채워져. 사건 칸과 화살표가 실마리야.'
+      :'단체 칸을 가렸어. <b>빨간 칸</b>부터 위에서 아래로, 화살표를 따라가며 이름을 직접 쳐. 칸 아래 작은 글씨는 단서야.')+'</p>'+
+    (OQMY?'<div class="tlbar" style="margin-bottom:8px"><span class="mytag">내 계보</span><b class="mytitle">'+esc(g.t)+'</b>'+
+        '<button class="chip" id="oqedit">✎ 고치기</button></div>'
+      :'<div class="chips strip orgtabs" style="margin-bottom:10px">'+ORGMAP.map(function(x,i){
+        var b=(S.gq||{})[x.id], f=(S.gfree||{})[x.id];
+        return '<button class="chip'+(i===OQTAB?" on":"")+'" data-oq="'+i+'">'+(i+1)+' '+esc(x.s)+(f&&f.full?' ★':b&&b.full?' ✓':'')+'</button>';}).join("")+'</div>')+
+    '<div class="tlbar oqmodes"><button class="chip'+(OQ.mode==="some"||OQ.mode==="miss"?" on":"")+'" id="oqs">조금 가리기</button>'+
       '<button class="chip'+(OQ.mode==="all"?" on":"")+'" id="oqa">전부 가리기</button>'+
-      '<span class="cnt">'+(best?'전부 가리기 최고 '+best.best+' / '+best.n:oqCells(OQTAB).length+'칸')+'</span></div>'+
-    '<figure class="orgfig"><div class="eyebrow">'+(OQTAB+1)+'. '+esc(g.t)+'</div><div id="oqfig"></div></figure>'+
+      '<button class="chip'+(free?" on":"")+'" id="oqf">빈 판에서 떠올리기</button></div>'+
+    '<p class="note oqbest">'+(free?(fb?'떠올리기 최고 '+fb.best+' / '+fb.n+(fb.t?' · '+oqTime(fb.t):''):oqCells(g).length+'칸 · 아직 기록 없음')
+      :(best?'전부 가리기 최고 '+best.best+' / '+best.n:oqCells(g).length+'칸'))+'</p>'+
+    '<figure class="orgfig"><div class="eyebrow">'+(OQMY?'내 계보':(OQTAB+1)+'.')+' '+esc(g.t)+'</div><div id="oqfig"></div></figure>'+
     '<div id="oqend"></div>'+
     '<div class="oqbar" id="oqbar"><div id="oqmsg"></div><div class="oqask" id="oqask"></div>'+
       '<form class="tyf" id="oqform" autocomplete="off" style="margin-top:6px">'+
       '<input class="tyin" id="oqin" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">'+
       '<button class="cta" type="submit">확인</button></form>'+
       '<div class="tyrow"><button class="nskip" type="button" id="oqhint">힌트</button>'+
+      (free?'<button class="nskip" type="button" id="oqcho">칸 하나 초성</button>':'')+
       '<button class="nskip" type="button" id="oqskip">모르겠어</button></div></div>';
   view.innerHTML=h;
   Array.prototype.forEach.call(view.querySelectorAll("[data-oq]"),function(b){b.onclick=function(){OQTAB=+b.dataset.oq;OQ=null;vOrgQ();window.scrollTo(0,0);};});
-  view.querySelector("#oqs").onclick=function(){oqStart(OQTAB,"some");vOrgQ();};
-  view.querySelector("#oqa").onclick=function(){oqStart(OQTAB,"all");vOrgQ();};
+  var mode=function(md){ return function(){ oqStart(g,md); vOrgQ(); }; };
+  view.querySelector("#oqs").onclick=mode("some"); view.querySelector("#oqa").onclick=mode("all"); view.querySelector("#oqf").onclick=mode("free");
+  view.querySelector("#oqmine").onclick=function(){ go("mymap"); };
+  var ed=view.querySelector("#oqedit"); if(ed)ed.onclick=function(){ go("myedit",{id:OQMY}); };
   var inp=view.querySelector("#oqin");
   view.querySelector("#oqform").onsubmit=function(e){ e.preventDefault(); oqSubmit(inp.value); };
-  view.querySelector("#oqhint").onclick=function(){ if(OQ.ph!=="ask")return; OQ.hint=Math.min(2,OQ.hint+1); oqPaint(); inp.focus(); };
-  view.querySelector("#oqskip").onclick=function(){ if(OQ.ph!=="ask")return; oqWrong(null); inp.focus(); };
+  view.querySelector("#oqhint").onclick=function(){
+    if(OQ.done)return;
+    if(free){ OQ.sub=true; OQ.nw=null; oqMsg("mid","?","남은 칸 아래에 단서를 보여 줬어. 이제부터 채우는 칸은 「도움받음」이야."); oqPaint(); inp.focus(); return; }
+    if(OQ.ph!=="ask")return; OQ.hint=Math.min(2,OQ.hint+1); oqPaint(); inp.focus(); };
+  var cb=view.querySelector("#oqcho"); if(cb)cb.onclick=function(){
+    if(OQ.done)return;
+    var left=OQ.keys.filter(function(k){return !OQ.ok[k]&&!OQ.no[k]&&!OQ.cho[k];}); if(!left.length)return;
+    var k=left[Math.floor(Math.random()*left.length)]; OQ.cho[k]=tCho(orgNodes(g)[k].plain); OQ.nw=k;
+    oqMsg("mid","ㄱ","초성을 띄운 칸이 하나 생겼어."); oqPaint(); inp.focus(); };
+  view.querySelector("#oqskip").onclick=function(){
+    if(OQ.done)return;
+    if(free){ OQ.keys.forEach(function(k){ if(!OQ.ok[k]){ OQ.no[k]=1; oqSetBox(g,k,0); } }); save(); OQ.done=true; oqPaint(); return; }
+    if(OQ.ph!=="ask")return; oqWrong(null); inp.focus(); };
   oqPaint(true);
 }
+function oqTime(ms){ var s=Math.round(ms/1000); return (s>=60?Math.floor(s/60)+"분 ":"")+(s%60)+"초"; }
 function oqCur(){ return OQ.keys[OQ.i]; }
 function oqPaint(first){
-  var g=ORGMAP[OQ.gi], N=orgNodes(g), k=oqCur(), inp=view.querySelector("#oqin");
-  view.querySelector("#oqfig").innerHTML=orgSVG(g,OQ.gi,{cov:OQ.cov,cur:OQ.done?null:k,ok:OQ.ok,no:OQ.no});
+  var g=OQ.g, N=orgNodes(g), free=OQ.mode==="free", inp=view.querySelector("#oqin");
+  view.querySelector("#oqfig").innerHTML=orgSVG(g,-1,{cov:OQ.cov,cur:OQ.done||free?null:oqCur(),ok:OQ.ok,no:OQ.no,sub:OQ.sub,cho:OQ.cho,nw:OQ.nw});
   if(OQ.done)return oqEnd();
-  var n=N[k];
+  if(free){
+    var left=OQ.keys.filter(function(k){return !OQ.ok[k];}).length;
+    view.querySelector("#oqask").innerHTML='<b>남은 칸 '+left+' / '+OQ.keys.length+'</b> · 생각나는 이름을 아무 순서로'+(OQ.miss?' · 헛친 '+OQ.miss+'번':'');
+    inp.placeholder="떠오르는 단체 이름";
+    var hb=view.querySelector("#oqhint"); hb.disabled=OQ.sub; hb.textContent=OQ.sub?"단서 보는 중":"단서 보기";
+    view.querySelector("#oqcho").disabled=!OQ.keys.some(function(k){return !OQ.ok[k]&&!OQ.cho[k];});
+    view.querySelector("#oqskip").textContent="포기하고 정답 보기";
+    if(OQ.nw)oqScroll();
+    return;
+  }
+  var k=oqCur(), n=N[k];
   view.querySelector("#oqask").innerHTML='<b>'+(OQ.i+1)+' / '+OQ.keys.length+'</b> · 빨간 칸의 '+(n.kind==="g"?"정부":"단체")+' 이름은?'+
     (OQ.hint&&OQ.ph==="ask"?' <span class="tyhint oqh">'+esc(tHint(n.plain,OQ.hint))+' <small>('+n.plain.replace(/\s/g,"").length+'글자)</small></span>':'');
   inp.placeholder=OQ.ph==="copy"?"정답을 똑같이 한 번 써 봐":"이름을 써 봐";
-  var hb=view.querySelector("#oqhint"); hb.disabled=OQ.ph!=="ask"||OQ.hint>=2; hb.textContent=OQ.hint?"힌트 더 (첫 글자)":"힌트 (초성)";
+  var hb2=view.querySelector("#oqhint"); hb2.disabled=OQ.ph!=="ask"||OQ.hint>=2; hb2.textContent=OQ.hint?"힌트 더 (첫 글자)":"힌트 (초성)";
   view.querySelector("#oqskip").disabled=OQ.ph!=="ask";
   oqScroll();
 }
-/* 지금 칸을 입력줄 위 보이는 곳 한가운데로. 입력줄이 화면 아래에 붙어 있어서 scrollIntoView 가운데로는 가려진다 */
+/* 지금 칸(또는 방금 채운 칸)을 입력줄 위 보이는 곳 한가운데로. 입력줄이 화면 아래에 붙어 있어서 scrollIntoView 가운데로는 가려진다 */
 function oqScroll(){
-  var el=view.querySelector("#oqfig .og.q-cur"), bar=view.querySelector("#oqbar"); if(!el||!bar)return;
+  var el=view.querySelector("#oqfig .og.q-cur")||view.querySelector("#oqfig .og.q-new"), bar=view.querySelector("#oqbar"); if(!el||!bar)return;
   var r=el.getBoundingClientRect(), top=64, bot=bar.getBoundingClientRect().top;
   if(bot<top+80)bot=window.innerHeight*0.6;
   window.scrollBy(0, r.top+r.height/2-(top+(bot-top)/2));
@@ -6433,10 +6544,39 @@ function oqNext(){
   if(OQ.i>=OQ.keys.length)OQ.done=true;
   oqPaint(); if(!OQ.done)inp.focus();
 }
+/* 이 그림에 없는 이름이면 어디 있는지 알려 준다 */
+function oqWhere(me,g){
+  var N=orgNodes(g);
+  for(var k in N) if(N[k].kind!=="o"&&N[k].kind!=="g"&&tNorm(N[k].plain)===me) return "그건 이미 보이는 칸이야. 가려진 건 단체 칸이야.";
+  for(var i=0;i<ORGMAP.length;i++){ if(ORGMAP[i].id===g.id)continue; var M=orgNodes(ORGMAP[i]);
+    for(var j in M) if(tNorm(M[j].plain)===me) return "그건 「"+(i+1)+". "+ORGMAP[i].s+"」 그림에 있는 이름이야. 이 그림엔 없어.";
+  }
+  if(NAMES.some(function(x){return tNorm(x.n)===me;})) return "인물·단체 카드엔 있는 이름인데, 이 그림엔 없어.";
+  return "이 그림에 없는 이름이야. 맞춤법도 확인해 봐.";
+}
 function oqSubmit(v){
   if(!OQ||OQ.done)return;
-  var g=ORGMAP[OQ.gi], k=oqCur(), n=orgNodes(g)[k], a=tNorm(n.plain), me=tNorm(v), inp=view.querySelector("#oqin");
+  var g=OQ.g, N=orgNodes(g), me=tNorm(v), inp=view.querySelector("#oqin");
   if(!me){ inp.focus(); return; }
+  if(OQ.mode==="free"){
+    var hit=OQ.keys.filter(function(k){return !OQ.ok[k]&&!OQ.no[k]&&tNorm(N[k].plain)===me;});
+    if(hit.length){
+      hit.forEach(function(k){ OQ.ok[k]=1; var help=OQ.sub||!!OQ.cho[k]; if(help)OQ.help[k]=1;
+        oqSetBox(g,k,help?Math.max(0,oqBox(g,k)):Math.min(5,Math.max(0,oqBox(g,k))+1)); uHit(oqUnit(N[k]),true); });
+      OQ.nw=hit[0]; inp.value=""; buzz(14); markDay(); save();
+      var left=OQ.keys.filter(function(k){return !OQ.ok[k];}).length;
+      if(!left){ OQ.done=true; oqPaint(); return; }
+      oqPaint(); oqMsg("ok","○","<b>"+esc(N[hit[0]].plain)+"</b>"+(OQ.help[hit[0]]?' <small class="nskd">도움받음</small>':'')+" · 남은 칸 "+left);
+      inp.focus(); return;
+    }
+    if(OQ.keys.some(function(k){return OQ.ok[k]&&tNorm(N[k].plain)===me;})){ inp.value=""; oqMsg("mid","✓","이미 채운 이름이야."); inp.focus(); return; }
+    OQ.miss++; buzz([20,40,20]);
+    if(OQ.keys.some(function(k){return !OQ.ok[k]&&tNear(me,tNorm(N[k].plain));})){ inp.select(); oqMsg("mid","≈","거의! 한 글자쯤 달라. 고쳐서 다시."); }
+    else { inp.value=""; oqMsg("no","×",esc(oqWhere(me,g))); }
+    var ask=view.querySelector("#oqask"); if(ask)ask.innerHTML=ask.innerHTML.replace(/ · 헛친 \d+번$/,"")+' · 헛친 '+OQ.miss+'번';
+    inp.focus(); return;
+  }
+  var k=oqCur(), n=N[k], a=tNorm(n.plain);
   if(OQ.ph==="copy"){
     if(me===a){ OQ.ph="wait"; inp.disabled=true; oqMsg("ok","✎","좋아, 다음 칸.");
       var o1=OQ; setTimeout(function(){ if(OQ===o1&&stack[stack.length-1].n==="orgq")oqNext(); },600); }
@@ -6447,8 +6587,7 @@ function oqSubmit(v){
   if(me===a){
     var clean=!OQ.tries&&!OQ.hint;
     OQ.ok[k]=1; if(clean)OQ.first++;
-    if(!S.gbox)S.gbox={};
-    var id=g.id+":"+k; S.gbox[id]=clean?Math.min(5,Math.max(0,oqBox(OQ.gi,k))+1):Math.max(0,oqBox(OQ.gi,k));
+    oqSetBox(g,k,clean?Math.min(5,Math.max(0,oqBox(g,k))+1):Math.max(0,oqBox(g,k)));
     uHit(oqUnit(n),true); markDay(); buzz(14); save();
     OQ.ph="wait"; inp.disabled=true;
     oqMsg("ok","○","<b>"+esc(n.plain)+"</b>"+(clean?"":' <small class="nskd">'+(OQ.hint?"힌트 써서":"두 번째에")+' 맞힘</small>'));
@@ -6460,8 +6599,8 @@ function oqSubmit(v){
   oqWrong(v);
 }
 function oqWrong(v){
-  var g=ORGMAP[OQ.gi], k=oqCur(), n=orgNodes(g)[k], x=orgName(n), inp=view.querySelector("#oqin");
-  OQ.no[k]=1; if(!S.gbox)S.gbox={}; S.gbox[g.id+":"+k]=0;
+  var g=OQ.g, k=oqCur(), n=orgNodes(g)[k], x=orgName(n), inp=view.querySelector("#oqin");
+  OQ.no[k]=1; oqSetBox(g,k,0);
   uHit(oqUnit(n),false); markDay(); buzz([20,40,20]); save();
   OQ.ph="copy"; inp.value=""; inp.disabled=false;
   oqPaint();
@@ -6470,26 +6609,176 @@ function oqWrong(v){
   inp.focus();
 }
 function oqEnd(){
-  var g=ORGMAP[OQ.gi], N=orgNodes(g), m=OQ.keys.length, miss=OQ.keys.filter(function(k){return OQ.no[k];});
+  var g=OQ.g, N=orgNodes(g), m=OQ.keys.length, free=OQ.mode==="free";
+  var miss=OQ.keys.filter(function(k){return OQ.no[k];}), helped=OQ.keys.filter(function(k){return OQ.help[k];});
+  var score=free?OQ.keys.filter(function(k){return OQ.ok[k]&&!OQ.help[k];}).length:OQ.first, t=Date.now()-OQ.t0;
   if(OQ.mode==="all"){ if(!S.gq)S.gq={}; var b=S.gq[g.id]||{best:0,n:m};
-    if(OQ.first>=b.best){ b.best=OQ.first; b.n=m; } b.full=b.full||OQ.first===m; S.gq[g.id]=b; save(); }
-  view.querySelector("#oqbar").remove();
-  var h='<div class="card oqres"><div class="big">'+OQ.first+' / '+m+'</div><div class="sub">힌트 없이 한 번에 쓴 칸'+
-      (OQ.mode==="all"?'':' · 「전부 가리기」로 하면 최고 점수가 남아')+'</div></div>';
-  if(miss.length)h+='<div class="part">틀린 칸 — 화살표 앞뒤와 같이 외우자</div>'+miss.map(function(k){
+    if(score>=b.best){ b.best=score; b.n=m; } b.full=b.full||score===m; S.gq[g.id]=b; save(); }
+  if(free){ if(!S.gfree)S.gfree={}; var f=S.gfree[g.id]||{best:0,n:m};
+    if(score>f.best||(score===f.best&&(!f.t||t<f.t))){ f.best=score; f.n=m; f.t=t; } f.full=f.full||score===m; S.gfree[g.id]=f; save(); }
+  var bar=view.querySelector("#oqbar"); if(bar)bar.remove();
+  var h='<div class="card oqres"><div class="big">'+score+' / '+m+'</div><div class="sub">'+
+      (free?'혼자 떠올린 칸 · '+oqTime(t)+(OQ.miss?' · 헛친 '+OQ.miss+'번':'')+(helped.length?' · 도움받은 칸 '+helped.length:'')
+        :'힌트 없이 한 번에 쓴 칸'+(OQ.mode==="all"?'':' · 「전부 가리기」로 하면 최고 점수가 남아'))+'</div></div>';
+  var list=free?miss.concat(helped):miss;
+  if(list.length)h+='<div class="part">'+(free?'못 떠올렸거나 도움받은 칸':'틀린 칸')+' — 화살표 앞뒤와 같이 외우자</div>'+list.map(function(k){
     var n=N[k], x=orgName(n), from=g.e.filter(function(e){return e[1]===k;}).map(function(e){return N[e[0]].plain;}),
         to=g.e.filter(function(e){return e[0]===k;}).map(function(e){return N[e[1]].plain;});
     return '<div class="wcard"><div class="wq"><b>'+esc(n.plain)+'</b>'+(n.sub?' <small class="nk">'+esc(n.sub)+'</small>':'')+'</div>'+
       '<div class="wex">'+(from.length?esc(from.join(" · "))+' → ':'')+'<b>'+esc(n.plain)+'</b>'+(to.length?' → '+esc(to.join(" · ")):'')+
       ((x&&x.e)||n.d?'<br>'+esc(x?x.e:n.d):'')+'</div></div>';}).join("");
+  var last=OQMY||OQ.gi>=ORGMAP.length-1;
   h+='<div class="sticky"><div class="row">'+
-    (miss.length?'<button class="cta ghost" id="oqmiss">틀린 칸만 다시</button>':'<button class="cta ghost" id="oqall2">전부 가리고 다시</button>')+
-    (OQ.gi<ORGMAP.length-1?'<button class="cta" id="oqnx">다음 그림</button>':'<button class="cta" id="oqall3">전부 가리고 다시</button>')+'</div></div>';
+    (list.length?'<button class="cta ghost" id="oqmiss">'+(free?'그 칸만 순서대로':'틀린 칸만 다시')+'</button>'
+      :'<button class="cta ghost" id="oqagain">'+(free?'다시 떠올리기':'전부 가리고 다시')+'</button>')+
+    (last?(OQMY?'<button class="cta" id="oqmy">내 계보 목록</button>':'<button class="cta" id="oqagain2">'+(free?'다시 떠올리기':'전부 가리고 다시')+'</button>')
+      :'<button class="cta" id="oqnx">다음 그림</button>')+'</div></div>';
   view.querySelector("#oqend").innerHTML=h;
-  var gi=OQ.gi;
-  var b1=view.querySelector("#oqmiss"); if(b1)b1.onclick=function(){ oqStart(gi,"some",miss); vOrgQ(); };
-  ["#oqall2","#oqall3"].forEach(function(s){ var b=view.querySelector(s); if(b)b.onclick=function(){ oqStart(gi,"all"); vOrgQ(); }; });
-  var b3=view.querySelector("#oqnx"); if(b3)b3.onclick=function(){ OQTAB=gi+1; oqStart(OQTAB,"all"); vOrgQ(); window.scrollTo(0,0); };
+  var md=free?"free":"all";
+  var b1=view.querySelector("#oqmiss"); if(b1)b1.onclick=function(){ oqStart(g,"some",list); vOrgQ(); };
+  ["#oqagain","#oqagain2"].forEach(function(s){ var b=view.querySelector(s); if(b)b.onclick=function(){ oqStart(g,md); vOrgQ(); window.scrollTo(0,0); }; });
+  var b3=view.querySelector("#oqnx"); if(b3)b3.onclick=function(){ OQTAB=OQ.gi+1; oqStart(ORGMAP[OQTAB],md); vOrgQ(); window.scrollTo(0,0); };
+  var b4=view.querySelector("#oqmy"); if(b4)b4.onclick=function(){ go("mymap"); };
+}
+
+/* ── 내 계보 만들기 ──
+   단체 이름과 화살표(앞 → 뒤 · 관계 말)를 직접 쳐서 나만의 계보도를 만든다. S.mymap 에 저장(이 기기).
+   칸 자리는 자동: 화살표를 따라 위에서 아래로 층을 나누고(시작점에서 가장 긴 길), 한 줄에 셋까지.
+   거꾸로 도는 화살표(순환)는 화살촉 없는 관계선으로 그린다. 만든 계보는 계보 빈칸 채우기와 똑같이 가리고 연습한다 */
+var MY_LABELS=["발전","통합","창설","결성","조직","계승","개편","합류","분리","해체 뒤","재편","주도","파견","지원"];
+function myList(){ if(!S.mymap)S.mymap=[]; return S.mymap; }
+function myGet(id){ return myList().filter(function(m){return m.id===id;})[0]||null; }
+function myNodes(m){ var out=[], seen={}, add=function(n){ if(n&&!seen[n]){ seen[n]=1; out.push(n); } };
+  m.n.forEach(add); m.e.forEach(function(e){ add(e[0]); add(e[1]); }); return out; }
+function myKey(n){ var h=5381; for(var i=0;i<n.length;i++)h=((h<<5)+h+n.charCodeAt(i))|0; return "m"+(h>>>0).toString(36); }
+function myWrap(s){ if(s.length<=7||s.indexOf(" ")<0)return s; var mid=s.length/2, b=-1;
+  for(var i=0;i<s.length;i++) if(s[i]===" "&&(b<0||Math.abs(i-mid)<Math.abs(b-mid)))b=i;
+  return s.slice(0,b)+"\n"+s.slice(b+1); }
+/* 기본 그림에 같은 이름이 있으면 그 색(진영)과 종류(사건 칸)를 따른다 */
+function myLook(n){ for(var i=0;i<ORGMAP.length;i++){ var N=orgNodes(ORGMAP[i]); for(var k in N) if(N[k].plain===n&&N[k].kind!=="l") return N[k]; } return null; }
+var MYKNOWN=null;
+function myKnown(){ if(MYKNOWN)return MYKNOWN; var s={}, add=function(n){ s[tNorm(n)]=n; };
+  NAMES.forEach(function(x){add(x.n);}); ORGMAP.forEach(function(g){ var N=orgNodes(g); for(var k in N) if(N[k].kind!=="l")add(N[k].plain); });
+  timeline().forEach(function(r){add(r.n);}); return MYKNOWN=s; }
+function myGraph(m){
+  var names=myNodes(m), adj={}; names.forEach(function(n){adj[n]=[];});
+  var reach=function(a,b){ var st=[a], seen={}; while(st.length){ var x=st.pop(); if(x===b)return true; if(seen[x])continue; seen[x]=1; adj[x].forEach(function(y){st.push(y);}); } return false; };
+  var es=m.e.map(function(e){ var cyc=e[3]==="r"||e[0]===e[1]||reach(e[1],e[0]); if(!cyc)adj[e[0]].push(e[1]); return {a:e[0],b:e[1],l:e[2]||"",r:cyc}; });
+  var L={}, depth=function(n){ if(L[n]!=null)return L[n]; L[n]=0; var d=0;
+    es.forEach(function(e){ if(!e.r&&e.b===n)d=Math.max(d,depth(e.a)+1); }); return L[n]=d; };
+  names.forEach(depth);
+  /* 들어오는 화살표 없이 나가기만 하는 칸(예: 광주 학생 항일 운동 → 진상 조사단)은 맨 위가 아니라 가리키는 칸 바로 위 줄로 내린다 */
+  for(var pass=0;pass<3;pass++) names.forEach(function(n){
+    if(es.some(function(e){return !e.r&&e.b===n;}))return;
+    var ch=es.filter(function(e){return !e.r&&e.a===n;}).map(function(e){return L[e.b];});
+    if(ch.length)L[n]=Math.max(L[n],Math.min.apply(null,ch)-1); });
+  var maxL=0, wide=1; names.forEach(function(n){maxL=Math.max(maxL,L[n]);});
+  for(var l=0;l<=maxL;l++) wide=Math.max(wide,names.filter(function(n){return L[n]===l;}).length);
+  var cols=Math.min(3,wide), pos={}, rowOf={}, row=0;
+  for(l=0;l<=maxL;l++){
+    var layer=names.filter(function(n){return L[n]===l;});
+    var bc=function(n){ var ps=es.filter(function(e){return !e.r&&e.b===n&&pos[e.a]!=null;}).map(function(e){return pos[e.a];});
+      return ps.length?ps.reduce(function(a,b){return a+b;},0)/ps.length:99; };
+    layer=layer.map(function(n,i){return {n:n,s:bc(n),i:i};}).sort(function(a,b){return a.s-b.s||a.i-b.i;}).map(function(o){return o.n;});
+    for(var c=0;c<layer.length;c+=cols){ var chunk=layer.slice(c,c+cols), off=(cols-chunk.length)/2;
+      chunk.forEach(function(n,j){ pos[n]=j+off; rowOf[n]=row; }); row++; }
+  }
+  var kinds=m.k||{};
+  var n=names.map(function(nm){ var lk=myLook(nm), kd=kinds[nm]||(lk&&lk.kind==="e"?"e":"o");
+    return [myKey(nm),myWrap(nm),"",pos[nm],rowOf[nm],kd==="g"?"g":kd,lk?lk.camp:"",lk?lk.lid:null,lk?lk.d:""]; });
+  /* 관계선(화살촉 없음)은 위 칸에서 아래 칸으로 그린다 — 거꾸로 그리면 선이 그림을 가로지른다 */
+  var e=es.map(function(x){ var a=x.a, b=x.b; if(x.r&&rowOf[a]>rowOf[b]){ a=x.b; b=x.a; }
+    return [myKey(a),myKey(b),x.l,x.r?"r":""]; });
+  return {id:"my_"+m.id,s:m.t,t:m.t||"내 계보",cols:Math.max(1,cols),cap:"",n:n,e:e};
+}
+function vMyMap(){
+  titleEl.textContent="내 계보 만들기";
+  var ls=myList();
+  var h='<p class="note" style="margin-bottom:12px">단체 이름과 화살표를 <b>직접 쳐서</b> 나만의 계보도를 만들어. 칸 자리는 알아서 잡아 줘. '+
+      '만든 건 이 기기에 저장되고, 「가리고 연습」으로 계보 빈칸 채우기처럼 외울 수 있어.</p>'+
+    '<button class="cta" id="mynew">+ 빈 계보 새로 만들기</button>'+
+    '<div class="part">기본 그림에서 가져와 고치기</div><div class="chips">'+ORGMAP.map(function(g,i){
+      return '<button class="chip" data-imp="'+i+'">'+(i+1)+' '+esc(g.s)+'</button>';}).join("")+'</div>'+
+    '<div class="part">내가 만든 계보 '+ls.length+'</div>';
+  if(!ls.length)h+='<p class="note">아직 없어. 위에서 새로 만들거나 기본 그림을 가져와 봐.</p>';
+  ls.forEach(function(m,i){
+    var nn=myNodes(m).length, f=(S.gfree||{})["my_"+m.id], q=(S.gq||{})["my_"+m.id];
+    h+='<div class="wcard mycard"><div class="wq"><b>'+esc(m.t||"내 계보")+'</b> <small class="nk">칸 '+nn+' · 화살표 '+m.e.length+
+        (f?' · 떠올리기 '+f.best+'/'+f.n:q?' · 전부 가리기 '+q.best+'/'+q.n:'')+'</small></div>'+
+      '<div class="myrow"><button class="chip" data-ed="'+i+'">✎ 고치기</button>'+
+      '<button class="chip on" data-pr="'+i+'"'+(nn<2?' disabled':'')+'>⌨ 가리고 연습</button>'+
+      '<button class="chip mydel" data-del="'+i+'">지우기</button></div></div>';
+  });
+  h+='<button class="prgo" id="myorgq" style="margin-top:12px">기본 계보도 9장 빈칸 채우기로 '+IC.chev+'</button>';
+  view.innerHTML=h;
+  view.querySelector("#mynew").onclick=function(){
+    var m={id:Date.now().toString(36),t:"내 계보 "+(ls.length+1),n:[],e:[],k:{}}; ls.push(m); save(); go("myedit",{id:m.id}); };
+  Array.prototype.forEach.call(view.querySelectorAll("[data-imp]"),function(b){ b.onclick=function(){
+    var g=ORGMAP[+b.dataset.imp], N=orgNodes(g), m={id:Date.now().toString(36),t:g.t,n:[],e:[],k:{}};
+    Object.keys(N).sort(function(a,c){return N[a].row-N[c].row||N[a].col-N[c].col;}).forEach(function(k){
+      var nd=N[k]; if(nd.kind==="l")return; if(m.n.indexOf(nd.plain)<0)m.n.push(nd.plain); if(nd.kind!=="o")m.k[nd.plain]=nd.kind; });
+    g.e.forEach(function(e){ m.e.push([N[e[0]].plain,N[e[1]].plain,e[2]||"",e[3]==="r"?"r":""]); });
+    ls.push(m); save(); go("myedit",{id:m.id}); }; });
+  Array.prototype.forEach.call(view.querySelectorAll("[data-ed]"),function(b){ b.onclick=function(){ go("myedit",{id:ls[+b.dataset.ed].id}); }; });
+  Array.prototype.forEach.call(view.querySelectorAll("[data-pr]"),function(b){ b.onclick=function(){ OQ=null; go("orgq",{my:ls[+b.dataset.pr].id}); }; });
+  Array.prototype.forEach.call(view.querySelectorAll("[data-del]"),function(b){ armBtn(b,function(){
+    var i=+b.dataset.del, m=ls.splice(i,1)[0]; save(); vMyMap();
+    undoBar("「"+(m.t||"내 계보")+"」를 지웠어",function(){ ls.splice(i,0,m); save(); vMyMap(); }); }); });
+  view.querySelector("#myorgq").onclick=function(){ go("orgq"); };
+}
+function vMyEdit(a){
+  titleEl.textContent="내 계보 고치기";
+  var m=a&&myGet(a.id); if(!m){ go("mymap",null,true); return; }
+  var kn=myKnown();
+  var h='<input class="tyin mytin" id="myt" type="text" value="'+esc(m.t||"")+'" placeholder="계보 제목" autocomplete="off">'+
+    '<form class="card myform" id="myform" autocomplete="off">'+
+      '<div class="eyebrow">연결 추가 — 앞 칸에서 뒤 칸으로 화살표</div>'+
+      '<input class="tyin" id="mya" list="mydl" placeholder="앞 칸 (예: 의열단)" autocomplete="off" autocapitalize="off" spellcheck="false">'+
+      '<div class="myarrow">↓ <input class="tyin myl" id="myl" list="mylab" placeholder="관계 말 (선택)" autocomplete="off"></div>'+
+      '<input class="tyin" id="myb" list="mydl" placeholder="뒤 칸 (비우면 칸만 추가)" autocomplete="off" autocapitalize="off" spellcheck="false">'+
+      '<button class="cta" type="submit" style="margin-top:8px">추가</button>'+
+      '<div id="mywarn"></div></form>'+
+    '<datalist id="mydl">'+Object.keys(kn).map(function(k){return '<option value="'+esc(kn[k])+'">';}).join("")+'</datalist>'+
+    '<datalist id="mylab">'+MY_LABELS.map(function(l){return '<option value="'+l+'">';}).join("")+'</datalist>'+
+    '<figure class="orgfig"><div class="eyebrow">미리보기</div><div id="myfig"></div></figure>'+
+    '<div id="mylists"></div>'+
+    '<div class="sticky"><div class="row"><button class="cta ghost" id="myls">목록으로</button>'+
+      '<button class="cta" id="mypr">⌨ 가리고 연습</button></div></div>';
+  view.innerHTML=h;
+  var A=view.querySelector("#mya"), B=view.querySelector("#myb"), Lb=view.querySelector("#myl"), W=view.querySelector("#mywarn");
+  view.querySelector("#myt").oninput=function(e){ m.t=e.target.value; save(); };
+  var check=function(n){ if(!n||kn[tNorm(n)])return ""; var near=null;
+    for(var k in kn){ if(tNear(tNorm(n),k)){ near=kn[k]; break; } }
+    return '<div class="mywarn">⚠ 「'+esc(n)+'」는 앱 사전에 없는 이름이야 — 맞춤법 확인!'+(near?' 혹시 <b>'+esc(near)+'</b>?':'')+' (그래도 넣었어)</div>'; };
+  var paint=function(){
+    var names=myNodes(m), g=myGraph(m);
+    view.querySelector("#myfig").innerHTML=names.length?orgSVG(g,-1,{cov:{},cur:null,ok:{},no:{},sub:true,cho:{}})
+      :'<p class="note">아래 칸이 비었어. 위에서 첫 연결을 추가해 봐. 예: 의열단 → 민족 혁명당 (관계: 통합)</p>';
+    var hh='<div class="part">화살표 '+m.e.length+'</div>'+(m.e.length?'':'<p class="note">아직 없어.</p>')+
+      m.e.map(function(e,i){ return '<div class="myedge"><span>'+esc(e[0])+' <b>'+(e[3]==="r"?"—":"→")+'</b> '+esc(e[1])+(e[2]?' <small>· '+esc(e[2])+'</small>':'')+'</span>'+
+        '<button class="chip" data-de="'+i+'" aria-label="화살표 지우기">✕</button></div>'; }).join("")+
+      '<div class="part">칸 '+names.length+'</div><div class="chips">'+names.map(function(n){
+        return '<span class="mynode'+(kn[tNorm(n)]?'':' unk')+'">'+esc(n)+(kn[tNorm(n)]?'':' ⚠')+
+          '<button type="button" data-dn="'+esc(n)+'" aria-label="칸 지우기">✕</button></span>'; }).join("")+'</div>';
+    var box=view.querySelector("#mylists"); box.innerHTML=hh;
+    Array.prototype.forEach.call(box.querySelectorAll("[data-de]"),function(b){ b.onclick=function(){ m.e.splice(+b.dataset.de,1); save(); paint(); }; });
+    Array.prototype.forEach.call(box.querySelectorAll("[data-dn]"),function(b){ b.onclick=function(){ var n=b.getAttribute("data-dn");
+      m.n=m.n.filter(function(x){return x!==n;}); m.e=m.e.filter(function(e){return e[0]!==n&&e[1]!==n;}); if(m.k)delete m.k[n]; save(); paint(); }; });
+    view.querySelector("#mypr").disabled=names.length<2;
+  };
+  view.querySelector("#myform").onsubmit=function(ev){ ev.preventDefault();
+    var a1=A.value.trim(), b1=B.value.trim(), l1=Lb.value.trim();
+    if(!a1){ A.focus(); return; }
+    var warn=check(a1)+(b1?check(b1):"");
+    if(b1){ if(!m.e.some(function(e){return e[0]===a1&&e[1]===b1;}))m.e.push([a1,b1,l1]); }
+    else if(myNodes(m).indexOf(a1)<0)m.n.push(a1);
+    save(); paint(); buzz(10);
+    W.innerHTML=warn||'<div class="mywarn ok">추가했어.'+(b1?' 다음 연결을 이어 쓰기 좋게 앞 칸에 「'+esc(b1)+'」를 넣어 뒀어.':'')+'</div>';
+    if(b1){ A.value=b1; B.value=""; Lb.value=""; B.focus(); } else { A.value=""; A.focus(); }
+  };
+  view.querySelector("#myls").onclick=function(){ go("mymap"); };
+  view.querySelector("#mypr").onclick=function(){ OQ=null; go("orgq",{my:m.id}); };
+  paint();
 }
 
 /* ── 단원별 기록 · 약점 리포트 · 한 장 요약 ── */
@@ -6660,7 +6949,7 @@ function nextBtnW(label,fn){
 }
 VIEWS={home:vHome,lesson:vLesson,review:vReview,wrong:vWrong,wquiz:vWQuiz,due:vDue,find:vFind,
        exam:vExamPick,examRun:vExamRun,examResult:vExamResult,
-       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,type:vType,trun:vTRun,orgq:vOrgQ,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet,orgs:vOrgs,chron:vChron,pairs:vPairs,pairq:vPairQ};
+       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,type:vType,trun:vTRun,orgq:vOrgQ,mymap:vMyMap,myedit:vMyEdit,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet,orgs:vOrgs,chron:vChron,pairs:vPairs,pairq:vPairQ};
 load(); e2init(); save();
 /* 킵 버튼은 어느 화면에 있든 view 한곳에서 받는다 */
 view.addEventListener("click",function(e){
@@ -6718,7 +7007,7 @@ render();
   var PATH={home:"/HOME",lesson:"/LESSON",review:"/REVIEW",wrong:"/WRONG",
             due:"/REVIEW/DUE",find:"/FIND",
             wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT",
-            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",type:"/NAMES/TYPE",trun:"/NAMES/TYPE/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET",orgs:"/ORGS",orgq:"/ORGS/QUIZ",chron:"/CHRON",pairs:"/PAIRS",pairq:"/PAIRS/QUIZ"};
+            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",type:"/NAMES/TYPE",trun:"/NAMES/TYPE/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET",orgs:"/ORGS",orgq:"/ORGS/QUIZ",mymap:"/ORGS/MINE",myedit:"/ORGS/MINE/EDIT",chron:"/CHRON",pairs:"/PAIRS",pairq:"/PAIRS/QUIZ"};
 
   var dockEl=document.getElementById("dock");
   function paintDock(){
