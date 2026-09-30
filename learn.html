@@ -4969,7 +4969,7 @@ var NRAW=[
  ["g_johyeokdang","조선 혁명당","단체","s8","L20","3bu",["3부 통합 뒤 남만주의 <b>국민부</b>가 결성한 당","산하에 <b>조선 혁명군</b>을 둠"],"국민부 → 조선 혁명당 → 조선 혁명군."],
  ["g_inmin","동북 인민 혁명군","단체","s8","L20","gun8",["<b>중국 공산당</b>이 만주의 항일 유격대를 모아 만든 군대","뒤에 <b>동북 항일 연군</b>으로 발전"],"→ 동북 항일 연군."],
  ["g_joguk","조국 광복회","단체","s8","L20","gun8",["<b>동북 항일 연군</b> 안의 한인들이 만든 조직(1936)"],"동북 항일 연군 안의 한인 조직."],
- ["g_noin","대한 국민 노인 동맹단","단체","s9","L21","uiyeol",["<b>강우규</b>가 속한 단체 — 그래도 그의 의거는 조직의 거사가 아닌 개인 의열 투쟁"],"강우규의 소속."],
+ ["g_noin","대한 국민 노인 동맹단","단체","s9","L21","uiyeol",["<b>강우규</b>가 단원이었던 단체 — 그래도 프린트는 그의 의거를 <b>개인 의열 투쟁</b>으로 분류"],"강우규의 소속."],
  ["g_hwangpu","황푸 군관 학교","단체","s9","L22","uiyeol",["<b>중국 국민당</b> 정부가 운영한 군관 학교","1920년대 후반 <b>의열단</b>원들이 들어가 정규 군사 훈련을 받음"],"개인 의거의 한계 → 정규 군사 훈련."],
  ["g_ganbu","조선 혁명 간부 학교","단체","s9","L22","uiyeol",["<b>김원봉</b>의 <b>의열단</b>이 중국 국민당 정부의 지원으로 세움(1932)","여기서 길러진 사람들이 <b>민족 혁명당</b> · <b>조선 의용대</b>로 이어짐"],"의열단의 간부 양성 학교."],
  ["g_gongsan","조선 공산당","단체","s12","L25","",["<b>사회주의</b> 계열 조직(1925)","천도교 · 학생 단체와 함께 <b>6·10 만세 운동</b>을 준비"],"사회주의 계열 · 6·10 만세 운동."],
@@ -5182,8 +5182,11 @@ var TALT={"독일의 오스트리아·체코슬로바키아 병합":["독일의 
   "문관 총독 임명 관제 개정":["문관 총독 임명"],"신간회의 진상 조사단 파견":["진상 조사단 파견","신간회 진상 조사단"],
   "혁명적 농민·노동 조합":["혁명적 농민 조합","혁명적 노동 조합"],"박재혁·최수봉의 의거":["박재혁 의거","최수봉 의거"],
   "연해주 한인 강제 이주":["한인 강제 이주"],"조선 의용대의 광복군 합류":["조선 의용대 광복군 합류"]};
+/* 인물·단체 이름을 다르게 쓰는 경우(책마다 순서가 다른 이름) — 정답으로 받고 앱 표기를 같이 보여 준다 */
+var NALT={"한국 독립 유일당 촉성회":["한국 유일 독립당 촉성회"]};
+function nAltOk(name,me){ return (NALT[name]||[]).some(function(s){return tNorm(s)===me;}); }
 function tAlts(q){
-  if(q.t!=="e")return [];
+  if(q.t!=="e")return (NALT[q.a.n]||[]).map(tNorm);
   var out=[], add=function(s){ var v=tNorm(s); if(v.length>=3&&out.indexOf(v)<0)out.push(v); };
   (TALT[q.a.n]||[]).forEach(add);
   [q.a.n, q.a.n.replace(/의 /g," ")].forEach(function(n){
@@ -6431,7 +6434,8 @@ function vOrgs(a){
      틀리면 칸에 정답이 빨갛게 뜨고, 한 번 따라 쓰면 다음 칸
    · 빈 판에서 떠올리기: 단서도 숨기고, 생각나는 이름을 아무 순서로 친다. 맞으면 그 자리에 채워진다
    기본 그림(ORGMAP)과 내가 만든 계보(S.mymap → myGraph) 둘 다 같은 그림 객체로 돈다 */
-var OQ_SKIP={"gov:tn":1,"mass:ym":1,"mass:ys":1,"mass:ds":1};
+/* 이름이 아니라 설명인 칸(「상하이 임시 정부」 등)은 가리지 않고 실마리로 둔다 */
+var OQ_SKIP={"gov:tn":1,"gov:shg":1,"end:ip":1,"mass:ym":1,"mass:ys":1,"mass:ds":1};
 var OQ=null, OQTAB=0, OQMY=null;
 function oqGraph(){ if(OQMY){ var m=myGet(OQMY); return m?myGraph(m):null; } return ORGMAP[OQTAB]; }
 function oqCells(g){ var N=orgNodes(g);
@@ -6559,7 +6563,7 @@ function oqSubmit(v){
   var g=OQ.g, N=orgNodes(g), me=tNorm(v), inp=view.querySelector("#oqin");
   if(!me){ inp.focus(); return; }
   if(OQ.mode==="free"){
-    var hit=OQ.keys.filter(function(k){return !OQ.ok[k]&&!OQ.no[k]&&tNorm(N[k].plain)===me;});
+    var hit=OQ.keys.filter(function(k){return !OQ.ok[k]&&!OQ.no[k]&&(tNorm(N[k].plain)===me||nAltOk(N[k].plain,me));});
     if(hit.length){
       hit.forEach(function(k){ OQ.ok[k]=1; var help=OQ.sub||!!OQ.cho[k]; if(help)OQ.help[k]=1;
         oqSetBox(g,k,help?Math.max(0,oqBox(g,k)):Math.min(5,Math.max(0,oqBox(g,k))+1)); uHit(oqUnit(N[k]),true); });
@@ -6569,7 +6573,7 @@ function oqSubmit(v){
       oqPaint(); oqMsg("ok","○","<b>"+esc(N[hit[0]].plain)+"</b>"+(OQ.help[hit[0]]?' <small class="nskd">도움받음</small>':'')+" · 남은 칸 "+left);
       inp.focus(); return;
     }
-    if(OQ.keys.some(function(k){return OQ.ok[k]&&tNorm(N[k].plain)===me;})){ inp.value=""; oqMsg("mid","✓","이미 채운 이름이야."); inp.focus(); return; }
+    if(OQ.keys.some(function(k){return OQ.ok[k]&&(tNorm(N[k].plain)===me||nAltOk(N[k].plain,me));})){ inp.value=""; oqMsg("mid","✓","이미 채운 이름이야."); inp.focus(); return; }
     OQ.miss++; buzz([20,40,20]);
     if(OQ.keys.some(function(k){return !OQ.ok[k]&&tNear(me,tNorm(N[k].plain));})){ inp.select(); oqMsg("mid","≈","거의! 한 글자쯤 달라. 고쳐서 다시."); }
     else { inp.value=""; oqMsg("no","×",esc(oqWhere(me,g))); }
@@ -6577,6 +6581,7 @@ function oqSubmit(v){
     inp.focus(); return;
   }
   var k=oqCur(), n=N[k], a=tNorm(n.plain);
+  if(nAltOk(n.plain,me))me=a;
   if(OQ.ph==="copy"){
     if(me===a){ OQ.ph="wait"; inp.disabled=true; oqMsg("ok","✎","좋아, 다음 칸.");
       var o1=OQ; setTimeout(function(){ if(OQ===o1&&stack[stack.length-1].n==="orgq")oqNext(); },600); }
