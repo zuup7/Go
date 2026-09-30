@@ -5540,11 +5540,20 @@ function pairsAll(){
     else if(!cmp[key].lid)cmp[key].lid=o.lid; };
   LESSONS.forEach(function(l){ l.cards.forEach(function(c,ci){ if(c.t==="compare")
     add({kind:"cmp",t:c.title,u:l.u,lid:l.id,ci:ci,cols:[{n:c.l.n,p:c.l.p},{n:c.r.n,p:c.r.p}]}); }); });
-  PCMP_IDX.forEach(function(c){ var l=LESSONS.filter(function(x){return x.u===c.u;})[0];
-    add({kind:"cmp",t:c.t,u:c.u,lid:null,ul:l?l.id:null,cols:[{n:c.a.n,p:c.a.p},{n:c.b.n,p:c.b.p}]}); });
+  /* 연표 스프린트에서만 온 짝은 그 내용이 실제로 나오는 수업에 잇는다 — 두 칸 이름이 다 나오는 수업, 없으면 한 칸이라도(같은 단원 먼저) */
+  var pKeys=function(n){ var b=pNorm(n); return [b].concat(b.split(/\s*·\s*/)).filter(function(x){return x.length>=2;}); };
+  var hitL=function(l,c){ var js=JSON.stringify(l.cards); return pKeys(c.n).some(function(k){return js.indexOf(k)>=0;}); };
+  var findL=function(cols,u){ var ls=LESSONS.slice().sort(function(a,b){return (a.u===u?0:1)-(b.u===u?0:1);});
+    return ls.filter(function(l){return cols.every(function(c){return hitL(l,c);});})[0]||
+           ls.filter(function(l){return cols.some(function(c){return hitL(l,c);});})[0]||null; };
+  PCMP_IDX.forEach(function(c){ var cols=[{n:c.a.n,p:c.a.p},{n:c.b.n,p:c.b.p}], l=findL(cols,c.u)||LESSONS.filter(function(x){return x.u===c.u;})[0];
+    add({kind:"cmp",t:c.t,u:c.u,lid:null,ul:l?l.id:null,cols:cols}); });
   var cs=Object.keys(cmp).map(function(k){var o=cmp[k]; if(!o.lid)o.lid=o.ul||null; return o;});
   cs.sort(function(a,b){return (UO[a.u]||0)-(UO[b.u]||0);});
   PAIRS_C=out.concat(cs);
+  /* 「수업에서 보기」가 그 수업 안의 해당 카드로 가도록, 그 수업에 실제로 나오는 이름을 찾아 둔다 */
+  PAIRS_C.forEach(function(p){ var l=LMAP[p.lid]; if(!l)return; var js=JSON.stringify(l.cards);
+    p.pk=null; p.cols.some(function(c){ return pKeys(c.n).some(function(k){ if(js.indexOf(k)>=0){p.pk=k;return true;} return false; }); }); });
   return PAIRS_C;
 }
 var PTAB="all", PHIDE={}, PQ=null;
@@ -5558,11 +5567,12 @@ function pairCard(p,i,hide){
     '<div class="'+(p.cols.length===2?"cmp":"cmp3")+'">'+cols+'</div>'+
     (cov?'<button class="peekbtn" data-po="'+i+'"><span>칸마다 무엇이었는지 떠올린 다음 눌러 봐</span></button>'
        :(p.tip?'<div class="ptip"><b>구별 포인트</b> '+esc(p.tip)+'</div>':''))+
-    (p.lid&&LMAP[p.lid]?'<button class="prgo" data-pl="'+p.lid+'" data-pk="'+esc(pNorm(p.cols[0].n))+'">'+esc(LMAP[p.lid].title)+' 수업에서 보기 '+IC.chev+'</button>':'')+'</div>';
+    (p.lid&&LMAP[p.lid]?'<button class="prgo" data-pl="'+p.lid+'" data-pk="'+esc(p.pk||pNorm(p.cols[0].n))+'">'+esc(LMAP[p.lid].title)+' 수업에서 보기 '+IC.chev+'</button>':'')+'</div>';
 }
 function vPairs(a){
   titleEl.textContent="헷갈리는 짝 모음";
   var all=pairsAll(), nt=all.filter(function(p){return p.kind==="trap";}).length, hide=!!S.pHide;
+  if(a&&a.to!=null)PTAB="all";   /* 틀린 짝으로 갈 때는 필터를 풀어야 그 짝이 목록에 있다 */
   var list=all.map(function(p,i){return {p:p,i:i};}).filter(function(x){return PTAB==="all"||x.p.kind===PTAB;});
   var h='<p class="note" style="margin-bottom:10px">시험에서 자주 섞는 짝만 모았어. <b>이름이 비슷한 함정</b> '+nt+'개와 '+
       '<b>같은 시기 비슷한 일</b> '+(all.length-nt)+'개. 다 읽었으면 「어느 쪽? 연습」으로 바로 확인해 봐.</p>'+
@@ -5581,7 +5591,7 @@ function vPairs(a){
     tmp.innerHTML=pairCard(all[i],i,true); var nw=tmp.firstChild; nw.style.animation="none"; el.parentNode.replaceChild(nw,el); bindGo(nw); };});
   var bindGo=function(root){ Array.prototype.forEach.call(root.querySelectorAll("[data-pl]"),function(b){b.onclick=function(){ jumpCard(b.dataset.pl,prFind(b.dataset.pl,b.dataset.pk)); };}); };
   bindGo(view);
-  if(a&&a.to!=null){ var t=a.to; a.to=null; PTAB="all"; var el=document.getElementById("pc"+t); if(el)el.scrollIntoView({block:"start"}); }
+  if(a&&a.to!=null){ var t=a.to; a.to=null; var el=document.getElementById("pc"+t); if(el)el.scrollIntoView({block:"start"}); }
 }
 /* 어느 쪽? — 짝의 한 줄을 보고 어느 칸인지 고른다. 칸 이름이 그대로 든 줄, 두 칸에 똑같이 있는 줄은 뺀다 */
 function pqLines(){
