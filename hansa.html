@@ -790,6 +790,24 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .orgsvg .og.sel rect,.a-learn .orgsvg .og:focus-visible rect{stroke:var(--blue);stroke-width:3}
 .a-learn .orgsvg .onm{font-size:12px;font-weight:800;fill:var(--ink)}
 .a-learn .orgsvg .osb{font-size:10px;fill:var(--ink-2)}
+.a-learn .orgsvg .og .oq{font-size:15px;fill:var(--ink-2)}
+.a-learn .orgsvg .og.q-cov rect{fill:var(--panel-d)}
+.a-learn .orgsvg .og.q-cur rect{fill:#FFF3C4;stroke:var(--red-d);stroke-width:3.5}
+.a-learn .orgsvg .og.q-cur .oq{fill:var(--red-d)}
+.a-learn .orgsvg .og.q-ok rect{fill:var(--teal-l);stroke:var(--jade-d);stroke-width:2.6}
+.a-learn .orgsvg .og.q-no rect{fill:var(--red-l);stroke:var(--red-d);stroke-width:2.6}
+.a-learn .oqbar{position:sticky;bottom:6px;z-index:6;background:var(--cream);border:var(--bd) solid var(--ink);padding:8px 10px 2px;margin-top:10px;
+  box-shadow:0 -4px 0 rgba(43,31,51,.12)}
+@media(max-width:819px){.a-learn .oqbar{bottom:calc(90px + env(safe-area-inset-bottom,0px))}}
+.a-learn .oqbar .tyf .cta,.a-learn .oqbar .tyin{min-height:46px}
+.a-learn .oqbar .tyrow{margin:6px 0 6px}
+.a-learn .oqbar .tyrow .nskip{min-height:36px;font-size:13px}
+.a-learn .oqbar .fb{margin-bottom:6px;padding:6px 9px;font-size:13px;line-height:1.6}
+.a-learn .oqask{font-size:14px;line-height:1.6}
+.a-learn .oqask .oqh{display:inline-block;margin:4px 0 0;padding:2px 8px;font-size:14px}
+.a-learn .oqres{text-align:center;margin-top:12px}
+.a-learn .oqres .big{font-family:var(--f-h);font-size:34px}
+.a-learn .oqres .sub{font-size:13px;color:var(--ink-2)}
 .a-learn .orgleg{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--ink-2);margin:0 0 10px}
 .a-learn .orgleg span{display:inline-flex;align-items:center;gap:5px}
 .a-learn .orgleg i{display:inline-block;width:14px;height:11px;border:1.5px solid var(--ink)}
@@ -871,6 +889,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
 .a-learn .tyhint small{font-size:12px}
 .a-learn .ncard .nname.sm{font-size:22px;margin:2px 0 4px}
 .a-learn .ncard .nname small{font-family:var(--f-b);font-size:12px;color:var(--ink-2)}
+.a-learn .tyso{display:inline-block;margin-top:4px;font-size:14px;color:var(--ink-2)}
 .a-learn .tyans{font-size:18px;background:var(--yel);padding:0 4px;color:#2B1F33}
 .a-learn .kbar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:70px;padding:11px 12px;margin-bottom:12px;
   background:#FFF3C4;border:var(--bd) solid var(--yel-d);box-shadow:var(--sh) var(--sh) 0 rgba(43,31,51,.28)}
@@ -3375,7 +3394,7 @@ function vHome(){
       '외운 것 '+nKnown()+' / '+NAMES.length+' · 틀리면 다시 나와</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="exbar nbar" id="goType" style="margin-top:9px"><span class="ic">⌨</span>'+
-    '<span class="tx"><b>인물·단체 이름 직접 쓰기</b><small>'+(S.trun&&S.trun.q&&S.trun.q.length?'이어서 쓰기 · 남은 '+S.trun.q.length+'문제 · ':'')+
+    '<span class="tx"><b>인물·단체·사건 이름 직접 쓰기</b><small>'+(S.trun&&S.trun.q&&S.trun.q.length?'이어서 쓰기 · 남은 '+S.trun.q.length+'문제 · ':'')+
       '단서 보고 타자로 · 외운 것 '+tKnown()+' / '+tAll().length+'</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="exbar prbar" id="goPrint" style="margin-top:9px"><span class="ic">'+IC.paper+'</span>'+
@@ -3391,6 +3410,10 @@ function vHome(){
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="exbar orbar" id="goOrgs" style="margin-bottom:9px"><span class="ic">⇶</span>'+
     '<span class="tx"><b>단체 계보도</b><small>합쳐지고 갈라진 단체들을 화살표 그림으로 · 그림 '+ORGMAP.length+'장</small></span>'+
+    '<span class="ch">'+IC.chev+'</span></button>'+
+    '<button class="exbar orbar" id="goOrgQ" style="margin-bottom:9px"><span class="ic">⌨</span>'+
+    '<span class="tx"><b>계보 빈칸 채우기</b><small>계보도를 가리고 흐름대로 이름 직접 쓰기 · '+
+      ORGMAP.filter(function(x){return (S.gq||{})[x.id]&&S.gq[x.id].full;}).length+' / '+ORGMAP.length+'장 다 맞힘</small></span>'+
     '<span class="ch">'+IC.chev+'</span></button>'+
     '<button class="cta ghost" id="goRev2">'+IC.book+' 암기 장치와 인과 사슬 모아 보기</button>'+
     '<button class="cta ghost" id="goTL" style="margin-top:9px">&#9202; 연표 한 장으로 쭉 보기 ('+timeline().length+'개 사건)</button>'+
@@ -3411,6 +3434,8 @@ function vHome(){
   if(gpr)gpr.onclick=function(){go("pairs");};
   var gch=document.getElementById("goChron");
   if(gch)gch.onclick=function(){go("chron",{ch:S.chron&&S.chron.ch>0?S.chron.ch:null});};
+  var goq=document.getElementById("goOrgQ");
+  if(goq)goq.onclick=function(){go("orgq");};
   var gog=document.getElementById("goOrgs");
   if(gog)gog.onclick=function(){go("orgs");};
   var gk=document.getElementById("goKeep");
@@ -6170,6 +6195,47 @@ function nEnd(){
    r: 단서 속 굵은 이름이 다른 인물·단체면 빈칸으로(「한국광복군 — 총사령관 ____」 → 지청천). 누가 무슨 단체인지 짝을 외운다
    맞히면 칸(S.tbox)이 오르고, 세 번 한 번에 맞히면 「외운 것」. 틀리면 정답을 한 번 따라 쓰고, 3~5문제 뒤에 다시 나온다 */
 var TQS=null, TQM={};
+/* 사건 이름 쓰기에서 뺄 수업 카드 — 사건 이름이 아니라 설명 제목이거나(「세계사적 의의」), 지역 소개거나,
+   인물·단체 이름 쓰기에 이미 있는 것 */
+var TEX={"미주":1,"서간도 — 삼원보":1,"연해주 — 신한촌":1,"상하이":1,"북간도":1,"박은식":1,"토지 조사 사업의 결과":1,"국제적 배경":1,
+  "민족 대표의 독립 선언":1,"탑골 공원의 만세":1,"전국으로, 모든 계층으로":1,"무력 투쟁으로":1,"임시 정부 수립의 계기":1,"통치 방식의 전환":1,
+  "민족 운동 주체의 확대":1,"세계사적 의의":1,"세 곳의 임시 정부":1,"왜 상하이였을까":1,"독립신문과 사료집":1,"통합의 방식":1,"초대 각료":1,
+  "물산 장려 운동에 대한 비판":1,"3부의 성격":1,"증산 비용의 전가":1,"전체주의의 확산":1,"기간 시설 건설":1,"신채호의 고대사 연구":1,
+  "백남운의 사회 경제 사학":1,"조선 혁명군 — 양세봉":1,"한국 독립군 — 지청천":1,"미얀마·인도 전선 파견":1,"여성에 대한 동원":1,
+  "내선일체와 일선동조론":1,"임시 정부의 충칭 정착":1};
+/* 사건 이름 끝에 흔히 붙는 말 — 단서에서 가리지 않고, 떼고 써도 받아 준다(「조선 총독부 설치」 → 「조선 총독부」) */
+var TGEN={"운동":1,"전투":1,"사건":1,"의거":1,"계획":1,"정책":1,"선언":1,"회의":1,"설치":1,"조직":1,"체제":1,"수립":1,"결성":1,
+  "창립":1,"폐지":1,"제정":1,"학살":1,"참변":1,"대첩":1,"사업":1,"허용":1,"파견":1,"합류":1,"철폐":1,"강요":1,"개칭":1};
+/* 너무 흔해서 따로 가리면 단서가 망가지는 낱말 */
+var TSOFT={"조선":1,"한국":1,"일본":1,"대한":1,"민족":1,"국민":1,"독립":1,"임시":1,"정부":1,"세계":1,"대전":1,"제1차":1,"제2차":1};
+function tWords(n){ return String(n).replace(/[「」『』]/g,"").split(/[\s·—,]+/).map(function(w){return w.replace(/의$/,"");})
+  .filter(function(w){return w.length>=2&&!TGEN[w]&&!TSOFT[w];}); }
+/* 정식 이름 말고도 받아 주는 답(정규화한 것) — 「강우규 의거」, 꼬리말 뗀 「조선 총독부」 */
+/* 긴 사건 이름을 줄여 부르는 말(교과서 · 프린트에서도 쓰는 것) */
+var TALT={"독일의 오스트리아·체코슬로바키아 병합":["독일의 오스트리아 병합","오스트리아 병합","독일 병합"],
+  "도 평의회 · 부·면 협의회":["도 평의회"],"관동 대지진 한국인 학살":["관동 대지진","관동 대학살"],
+  "천도교의 제2의 독립 선언 계획":["제2의 독립 선언","천도교 제2의 독립 선언"],"일본 상품 관세 철폐":["관세 철폐"],
+  "문관 총독 임명 관제 개정":["문관 총독 임명"],"신간회의 진상 조사단 파견":["진상 조사단 파견","신간회 진상 조사단"],
+  "혁명적 농민·노동 조합":["혁명적 농민 조합","혁명적 노동 조합"],"박재혁·최수봉의 의거":["박재혁 의거","최수봉 의거"],
+  "연해주 한인 강제 이주":["한인 강제 이주"],"조선 의용대의 광복군 합류":["조선 의용대 광복군 합류"]};
+function tAlts(q){
+  if(q.t!=="e")return [];
+  var out=[], add=function(s){ var v=tNorm(s); if(v.length>=3&&out.indexOf(v)<0)out.push(v); };
+  (TALT[q.a.n]||[]).forEach(add);
+  [q.a.n, q.a.n.replace(/의 /g," ")].forEach(function(n){
+    add(n); var w=n.split(" "); if(w.length>1&&TGEN[w[w.length-1]])add(w.slice(0,-1).join(" "));
+  });
+  return out;
+}
+function tMaskE(q){
+  var b=q.c.b, m=function(s){return new Array(s.length+1).join("○");};
+  b=b.split(q.a.n).join(m(q.a.n.replace(/\s/g,"")));
+  /* 본문이 짧거나 너무 많이 가려지면 「그래서」 한 줄을 더 보여 준다 */
+  var s=stripTags(b); if(s.length<60)b+='<br><span class="tyso">→ '+(q.c.so||"")+'</span>';
+  b=b.split(q.a.n).join(m(q.a.n.replace(/\s/g,"")));
+  tWords(q.a.n).sort(function(a,b){return b.length-a.length;}).forEach(function(w){ b=b.split(w).join(m(w)); });
+  return b;
+}
 function tAll(){
   if(TQS)return TQS; TQS=[];
   var byN={}; NAMES.forEach(function(x){byN[x.n]=x;});
@@ -6179,6 +6245,11 @@ function tAll(){
     x.cl.forEach(function(c){ (c.match(/<b>(.*?)<\/b>/g)||[]).forEach(function(b){
       var y=byN[stripTags(b)];
       if(y&&y!==x&&!seen[y.id]){ seen[y.id]=1; TQS.push({k:"r:"+x.id+":"+y.id,t:"r",x:x,a:y}); } }); });
+  });
+  timeline().forEach(function(r){
+    if(!r.lid||TEX[r.n]||byN[r.n])return;
+    var c=LMAP[r.lid].cards[r.ci];
+    TQS.push({k:"e:"+r.lid+"#"+r.ci,t:"e",x:{u:r.u,n:r.n},a:{n:r.n,k:"사건",e:stripTags(c.so||"")},c:c,lid:r.lid,ci:r.ci});
   });
   TQS.forEach(function(q){TQM[q.k]=q;});
   return TQS;
@@ -6192,7 +6263,7 @@ function tPool(){
     var ui=NUIX[q.x.u];
     if(o.r==="a"&&ui>7)return false;
     if(o.r==="b"&&ui<8)return false;
-    if(o.k!=="mix"&&q.a.k!==o.k)return false;
+    if(o.t!=="e"&&o.k!=="mix"&&q.a.k!==o.k)return false;
     if(o.t!=="mix"&&q.t!==o.t)return false;
     return true;});
 }
@@ -6228,25 +6299,26 @@ function vType(){
   titleEl.textContent="이름 직접 쓰기";
   tOptInit();
   var o=S.topt, all=tAll(), pool=tPool(), kn=tKnown(), run=S.trun&&S.trun.q.length?S.trun:null;
-  var nc=all.filter(function(q){return q.t==="c";}).length, nr=all.length-nc;
+  var nc=all.filter(function(q){return q.t==="c";}).length, nr=all.filter(function(q){return q.t==="r";}).length, ne=all.length-nc-nr;
   var weak=pool.filter(function(q){return tBox(q.k)===0;});
   var chip=function(id,v,cur,t){return '<button class="chip'+(cur===v?" on":"")+'" data-'+id+'="'+v+'">'+t+'</button>';};
-  var h='<div class="card ncard"><div class="eyebrow">이름 쓰기 '+nc+' · 짝 이름 빈칸 '+nr+'</div>'+
+  var h='<div class="card ncard"><div class="eyebrow">인물·단체 '+nc+' · 짝 이름 빈칸 '+nr+' · 사건 '+ne+'</div>'+
     '<div class="h">외운 것 '+kn+' / '+all.length+'</div>'+
     '<div style="display:flex;align-items:center;gap:12px;margin:10px 0 4px"><span class="track"><i style="width:'+(kn/all.length*100)+'%"></i></span></div>'+
-    '<p class="note" style="margin-top:8px">단서를 보고 인물·단체 이름을 <b>직접 쳐</b>. 띄어쓰기와 가운뎃점은 안 따져. '+
+    '<p class="note" style="margin-top:8px">단서를 보고 인물·단체·사건 이름을 <b>직접 쳐</b>. 띄어쓰기와 가운뎃점은 안 따져. '+
     '한 글자만 틀리면 한 번 더 기회를 주고, 틀리면 정답을 <b>한 번 따라 쓴 뒤</b> 몇 문제 뒤에 다시 나와. '+
     '힌트 없이 한 번에 맞힌 게 세 번 쌓이면 「외운 것」이야.</p></div>';
   if(run)h+='<button class="cta" id="tyres" style="margin-top:14px">'+IC.play+' 이어서 쓰기 (남은 '+run.q.length+'문제)</button>';
   h+='<div class="part">문제</div><div class="chips">'+
-      chip("t","mix",o.t,"섞기")+chip("t","c",o.t,"이름 쓰기")+chip("t","r",o.t,"짝 이름 빈칸")+'</div>'+
-    '<div class="part">답이 되는 이름</div><div class="chips">'+
-      chip("k","mix",o.k,"섞기")+chip("k","인물",o.k,"인물만")+chip("k","단체",o.k,"단체만")+'</div>'+
+      chip("t","mix",o.t,"섞기")+chip("t","c",o.t,"인물·단체")+chip("t","r",o.t,"짝 이름 빈칸")+chip("t","e",o.t,"사건 이름")+'</div>'+
+    (o.t==="e"?'':'<div class="part">답이 되는 이름</div><div class="chips">'+
+      chip("k","mix",o.k,"섞기")+chip("k","인물",o.k,"인물만")+chip("k","단체",o.k,"단체만")+'</div>')+
     '<div class="part">범위</div><div class="chips">'+
       chip("r","all",o.r,"전체")+chip("r","a",o.r,"8~33쪽")+chip("r","b",o.r,"34~63쪽")+'</div>'+
     '<p class="note" style="margin:10px 0 0">이 범위 '+pool.length+'문제 · 외운 것 '+tKnown(pool)+' · 약한 것부터 20문제를 뽑아.</p>'+
     '<button class="cta'+(run?" ghost":"")+'" id="tynew" style="margin-top:12px">'+(run?"새 판 20문제":IC.play+" 20문제 시작")+'</button>'+
-    (weak.length?'<button class="cta ghost" id="tyweak" style="margin-top:9px">지난번에 틀린 것만 ('+weak.length+')</button>':'');
+    (weak.length?'<button class="cta ghost" id="tyweak" style="margin-top:9px">지난번에 틀린 것만 ('+weak.length+')</button>':'')+
+    '<button class="prgo" id="tyorg" style="margin-top:12px">단체가 이어지는 흐름째 외우려면 「계보 빈칸 채우기」 '+IC.chev+'</button>';
   view.innerHTML=h;
   ["t","k","r"].forEach(function(f){
     Array.prototype.forEach.call(view.querySelectorAll("[data-"+f+"]"),function(b){
@@ -6254,6 +6326,7 @@ function vType(){
   });
   var rs=view.querySelector("#tyres"); if(rs)rs.onclick=function(){go("trun");};
   view.querySelector("#tynew").onclick=function(){ if(!pool.length)return; tDeal(); go("trun"); };
+  view.querySelector("#tyorg").onclick=function(){go("orgq");};
   var wk=view.querySelector("#tyweak"); if(wk)wk.onclick=function(){ tDeal(weak.map(function(q){return q.k;}).slice(0,30)); go("trun"); };
 }
 /* 한 판 화면은 한 번만 그리고, 문제가 바뀌어도 입력칸은 그대로 둔다 — 폰에서 키보드가 닫혔다 열렸다 하지 않게 */
@@ -6289,6 +6362,7 @@ function tNext(){
   tPaint();
 }
 function tClues(q){
+  if(q.t==="e")return '<li>'+tMaskE(q)+'</li>';
   var blank='<span class="tyblank">'+(q.a.k==="인물"?"누구":"어느 단체")+'</span>';
   return q.x.cl.map(function(c){
     if(q.t==="r"){ c=c.split("<b>"+q.a.n+"</b>").join(blank).split(q.a.n).join(blank); }
@@ -6300,16 +6374,17 @@ function tPaint(){
   var R=S.trun, q=TY.q, again=R.miss[TY.key]>0, fin=R.n-new Set(R.q).size;
   view.querySelector("#tybar").style.width=(fin/R.n*100)+"%";
   view.querySelector("#tystep").textContent="남은 "+R.q.length+"문제";
-  var ask=q.t==="c"?(q.a.k==="인물"?"이 사람은 누구?":"이 단체 이름은?")
+  var ask=q.t==="e"?"이 사건 이름은?":q.t==="c"?(q.a.k==="인물"?"이 사람은 누구?":"이 단체 이름은?")
                    :"빈칸에 들어갈 "+(q.a.k==="인물"?"인물":"단체")+" 이름은?";
-  view.querySelector("#tycard").innerHTML='<div class="eyebrow">'+(q.t==="c"?"이름 쓰기":"짝 이름 빈칸")+' · '+esc(UMAP[q.x.u].n)+
+  view.querySelector("#tycard").innerHTML='<div class="eyebrow">'+({c:"이름 쓰기",r:"짝 이름 빈칸",e:"사건 이름"})[q.t]+' · '+esc(UMAP[q.x.u].n)+
       (again?' · <span class="nagain">다시 나온 문제</span>':'')+'</div>'+
     (q.t==="r"?'<div class="nname sm">'+esc(q.x.n)+' <small>'+q.x.k+'</small></div>':'')+
+    (q.t==="e"?'<div class="nname sm">'+esc(String(yLab(q.c)))+'<small>'+(YAPX[q.c.n]?'':'년')+'</small></div>':'')+
     '<div class="h sm">'+ask+'</div><ul class="nclue">'+tClues(q)+'</ul>'+
     (TY.hint&&TY.ph==="ask"?'<div class="tyhint">힌트 · <b>'+esc(tHint(q.a.n,TY.hint))+'</b> <small>('+q.a.n.replace(/\s/g,"").length+'글자'+
       (q.a.n.indexOf(" ")>=0?' · 띄어 쓰면 '+q.a.n.split(" ").length+'낱말':'')+')</small></div>':'');
   var inp=view.querySelector("#tyin");
-  inp.placeholder=TY.ph==="copy"?"정답을 똑같이 한 번 써 봐":(q.a.k==="인물"?"인물 이름":"단체 이름")+"을 써 봐";
+  inp.placeholder=TY.ph==="copy"?"정답을 똑같이 한 번 써 봐":(q.a.k==="인물"?"인물 이름":q.a.k==="단체"?"단체 이름":"사건 이름")+"을 써 봐";
   var hb=view.querySelector("#tyhint");
   hb.disabled=TY.ph!=="ask"||TY.hint>=2; hb.textContent=TY.hint?"힌트 더 (첫 글자)":"힌트 (초성)";
   view.querySelector("#tyskip").disabled=TY.ph!=="ask";
@@ -6332,15 +6407,16 @@ function tSubmit(v){
     return;
   }
   if(TY.ph!=="ask")return;
-  if(me===a){
+  var alt=me!==a&&tAlts(q).indexOf(me)>=0;
+  if(me===a||alt){
     var first=!R.miss[TY.key]&&!TY.tries&&!TY.hint;
     buzz(14); markDay(); uHit(q.x.u,true);
     R.q.shift();
-    if(first){ R.ok1++; tSet(TY.key,Math.min(5,Math.max(0,tBox(TY.key))+1)); wOk("NAME","n",q.a.id+"|c"); }
+    if(first){ R.ok1++; tSet(TY.key,Math.min(5,Math.max(0,tBox(TY.key))+1)); if(q.t!=="e")wOk("NAME","n",q.a.id+"|c"); }
     else { R.ok2++; if(tBox(TY.key)<0)tSet(TY.key,0+(TY.hint||TY.tries?0:1)); }
     R.cmb=(R.cmb||0)+1; save();
     pop(R.cmb>=3&&R.cmb%3===0?R.cmb+"연속!":first?"정답!":TY.hint?"힌트로 맞혔어":"맞았어!");
-    tMsg("ok","○","<b>"+esc(q.a.n)+"</b> — "+esc(q.a.e)+(first?"":'<br><small class="nskd">'+(TY.hint?"힌트를 써서":"두 번째에")+' 맞혀서 「외운 것」 칸은 안 올라가.</small>'));
+    tMsg("ok","○",(alt?'<small class="nskd">맞아. 정식 이름은</small><br>':'')+"<b>"+esc(q.a.n)+"</b> — "+esc(q.a.e)+(first?"":'<br><small class="nskd">'+(TY.hint?"힌트를 써서":"두 번째에")+' 맞혀서 「외운 것」 칸은 안 올라가.</small>'));
     TY.ph="wait"; inp.disabled=true;
     var t2=TY; setTimeout(function(){ if(TY===t2&&stack[stack.length-1].n==="trun"){ tNext(); inp.focus(); } },first?900:1500);
     return;
@@ -6359,12 +6435,14 @@ function tWrong(v){
   if(R.wr.indexOf(TY.key)<0)R.wr.push(TY.key);
   R.typed[TY.key]=v==null?"(모르겠어)":v;
   if(v==null)R.sk=(R.sk||0)+1;
-  tSet(TY.key,0); wAdd("NAME","n",q.a.id+"|c",null); save();
+  tSet(TY.key,0); if(q.t!=="e")wAdd("NAME","n",q.a.id+"|c",null); save();
   TY.ph="copy"; tPaint();
   inp.value=""; inp.disabled=false;
   tMsg("no",v==null?"→":"×",(v!=null?'내가 쓴 것: <s>'+esc(v)+'</s><br>':'')+
     '정답: <b class="tyans">'+esc(q.a.n)+'</b><br>'+esc(q.a.e)+
-    '<br><small class="nskd">아래 칸에 정답을 한 번 똑같이 써 보면 넘어가. 몇 문제 뒤에 다시 나와.</small>');
+    '<br><small class="nskd">아래 칸에 정답을 한 번 똑같이 써 보면 넘어가. 몇 문제 뒤에 다시 나와.</small>'+
+    (q.t==="e"?'<br><button class="prgo" type="button" id="tyles">'+esc(LMAP[q.lid].title)+' 수업에서 보기 '+IC.chev+'</button>':''));
+  var tl=view.querySelector("#tyles"); if(tl)tl.onclick=function(){ TY=null; jumpCard(q.lid,q.ci); };
 }
 function tEnd(){
   var R=S.trun;
@@ -6373,10 +6451,10 @@ function tEnd(){
     '<div class="sub">힌트 없이 한 번에 쓴 문제'+(R.ok2?' · 다시 나와서/힌트로 맞힌 문제 '+R.ok2+'개':'')+(R.sk?' · 모르겠어 '+R.sk+'번':'')+'</div></div>';
   if(R.wr.length)h+='<div class="part">이번 판에서 틀린 것 — 다시 써 보자</div>'+R.wr.map(function(k){
       var q=TQM[k]; if(!q)return "";
-      return '<div class="wcard"><div class="wq"><b>'+esc(q.a.n)+'</b> <small class="nk">'+q.a.k+(q.t==="r"?' · '+esc(q.x.n)+'의 짝':'')+'</small></div>'+
+      return '<div class="wcard"><div class="wq"><b>'+esc(q.a.n)+'</b> <small class="nk">'+q.a.k+(q.t==="r"?' · '+esc(q.x.n)+'의 짝':q.t==="e"?' · '+esc(String(yLab(q.c))):'')+'</small></div>'+
         '<div class="wex">내가 쓴 것: '+esc(R.typed[k]||"")+'<br>'+esc(q.a.e)+'</div></div>';}).join("");
   h+='<p class="note" style="margin:12px 0 0">외운 것 '+tKnown()+' / '+tAll().length+
-    (R.wr.length?' · 틀린 이름은 오답 노트(인물·단체 카드)에도 들어갔어.':'')+'</p>'+
+    (R.wr.some(function(k){return k.charAt(0)!=="e";})?' · 틀린 인물·단체 이름은 오답 노트에도 들어갔어.':'')+'</p>'+
     '<div class="sticky"><div class="row">'+
     (R.wr.length?'<button class="cta ghost" id="tyagain">틀린 것만 다시 쓰기</button>':'<button class="cta ghost" id="tyhome">처음으로</button>')+
     '<button class="cta" id="tynext">새 판 20문제</button></div></div>';
@@ -7288,8 +7366,11 @@ function orgNode(g,t){ var x=t[3],cw=(ORG_W-2*ORG_PX)/g.cols;
 function orgNodes(g){ if(!g._n){ g._n={}; g.n.forEach(function(t){ g._n[t[0]]=orgNode(g,t); }); } return g._n; }
 function orgName(nd){ return NAMES.filter(function(x){return x.n===nd.plain;})[0]||null; }
 function orgFind(name){ for(var i=0;i<ORGMAP.length;i++){ var N=orgNodes(ORGMAP[i]); for(var k in N)if(N[k].plain===name)return i; } return -1; }
-function orgSVG(g,gi){
+function orgSVG(g,gi,q){
   var N=orgNodes(g), H=0, s="", hide=!!S.orgHide; g._seg=[];
+  /* q(계보 빈칸 채우기)가 있으면: 아직 못 쓴 칸의 이름이 다른 칸 설명·화살표 글에 보이지 않게 가린다 */
+  var open=function(k){return q&&q.cov[k]&&!q.ok[k]&&!q.no[k];};
+  var msk=function(txt){ if(!q||!txt)return txt; Object.keys(q.cov).forEach(function(k){ if(open(k))txt=String(txt).split(N[k].plain).join("?"); }); return txt; };
   Object.keys(N).forEach(function(k){ H=Math.max(H,N[k].top+N[k].h); });
   H+=ORG_PAD+4;
   /* 화살표 — 아래로는 직각으로 꺾고(대상 바로 위에서 가로), 같은 줄이면 가로로 */
@@ -7310,19 +7391,23 @@ function orgSVG(g,gi){
       if(head)tip=b.cx+","+y2+" "+(b.cx-4)+","+(y2-7)+" "+(b.cx+4)+","+(y2-7);
     }
     s+='<path class="oe'+(dash?" dash":"")+'" d="'+p+'"/>'+(tip?'<polygon class="oh" points="'+tip+'"/>':'');
-    if(e[2])s+='<text class="ol" x="'+lx+'" y="'+ly+'" text-anchor="middle">'+esc(e[2])+'</text>';
+    if(e[2])s+='<text class="ol" x="'+lx+'" y="'+ly+'" text-anchor="middle">'+esc(msk(e[2]))+'</text>';
   });
   Object.keys(N).forEach(function(k){
     var n=N[k];
-    if(n.kind==="l"){ s+='<text class="olane" x="'+(ORG_PX+2)+'" y="'+(n.top+12)+'">'+esc(n.name)+'</text>'+
+    if(n.kind==="l"){ s+='<text class="olane" x="'+(ORG_PX+2)+'" y="'+(n.top+12)+'">'+esc(msk(n.name))+'</text>'+
       '<line class="olline" x1="'+ORG_PX+'" x2="'+(ORG_W-ORG_PX)+'" y1="'+(n.top+17)+'" y2="'+(n.top+17)+'"/>'; return; }
-    var x=n.cx-n.w/2, cov=hide&&!ORGOPEN[gi+":"+k], sel=ORGSEL&&ORGSEL.g===gi&&ORGSEL.k===k;
-    s+='<g class="og k-'+n.kind+' c-'+(n.camp||"0")+(sel?" sel":"")+'" data-k="'+k+'" tabindex="0" role="button" aria-label="'+esc(cov?"가린 단체":n.plain)+'">'+
+    var x=n.cx-n.w/2, cov=q?open(k):hide&&!ORGOPEN[gi+":"+k], sel=!q&&ORGSEL&&ORGSEL.g===gi&&ORGSEL.k===k;
+    var qc=q?(q.cur===k?" q-cur":q.ok[k]?" q-ok":q.no[k]?" q-no":cov?" q-cov":""):"";
+    s+='<g class="og k-'+n.kind+' c-'+(n.camp||"0")+(sel?" sel":"")+qc+'" data-k="'+k+'" tabindex="0" role="button" aria-label="'+esc(cov?"가린 단체":n.plain)+'">'+
       '<rect x="'+x+'" y="'+n.top+'" width="'+n.w+'" height="'+n.h+'" rx="'+(n.kind==="e"?12:3)+'"/>';
-    if(cov) s+='<text class="onm" x="'+n.cx+'" y="'+(n.top+n.h/2+5)+'" text-anchor="middle">?</text>';
+    var sb=msk(n.sub);
+    if(cov&&q&&sb&&sb!=="?")s+='<text class="onm oq" x="'+n.cx+'" y="'+(n.top+20)+'" text-anchor="middle">?</text>'+
+      '<text class="osb" x="'+n.cx+'" y="'+(n.top+36)+'" text-anchor="middle">'+esc(sb)+'</text>';
+    else if(cov) s+='<text class="onm'+(q?" oq":"")+'" x="'+n.cx+'" y="'+(n.top+n.h/2+5)+'" text-anchor="middle">?</text>';
     else{
-      n.lines.forEach(function(ln,i){ s+='<text class="onm" x="'+n.cx+'" y="'+(n.top+20+i*15)+'" text-anchor="middle">'+esc(ln)+'</text>'; });
-      if(n.sub)s+='<text class="osb" x="'+n.cx+'" y="'+(n.top+17+n.lines.length*15)+'" text-anchor="middle">'+esc(n.sub)+'</text>';
+      n.lines.forEach(function(ln,i){ s+='<text class="onm" x="'+n.cx+'" y="'+(n.top+20+i*15)+'" text-anchor="middle">'+esc(msk(ln))+'</text>'; });
+      if(n.sub)s+='<text class="osb" x="'+n.cx+'" y="'+(n.top+17+n.lines.length*15)+'" text-anchor="middle">'+esc(sb)+'</text>';
     }
     s+='</g>';
   });
@@ -7342,7 +7427,8 @@ function vOrgs(a){
     '<div class="tlbar"><button class="chip'+(hide?" on":"")+'" id="orh">'+(hide?"이름 가리는 중":"이름 가리기")+'</button>'+
       '<span class="cnt">'+(ORGTAB+1)+' / '+ORGMAP.length+'</span></div>'+
     '<figure class="orgfig"><div class="eyebrow">'+(ORGTAB+1)+'. '+esc(g.t)+'</div>'+orgSVG(g,ORGTAB)+
-      '<figcaption>'+esc(g.cap)+'</figcaption></figure><div id="orinfo"></div>'+
+      '<figcaption>'+esc(g.cap)+'</figcaption></figure>'+
+    '<button class="cta" id="orq" style="margin-top:10px">⌨ 이 그림 가리고 이름 써 보기</button><div id="orinfo"></div>'+
     '<div class="sticky"><div class="row"><button class="cta ghost" id="orp"'+(ORGTAB?'':' disabled')+'>이전 그림</button>'+
       '<button class="cta" id="orn"'+(ORGTAB<ORGMAP.length-1?'':' disabled')+'>다음 그림</button></div></div>';
   view.innerHTML=h;
@@ -7358,6 +7444,7 @@ function vOrgs(a){
   info();
   Array.prototype.forEach.call(view.querySelectorAll("[data-og]"),function(b){b.onclick=function(){ORGTAB=+b.dataset.og;ORGSEL=null;vOrgs();};});
   view.querySelector("#orh").onclick=function(){S.orgHide=!hide;ORGOPEN={};save();vOrgs();};
+  view.querySelector("#orq").onclick=function(){ OQ=null; go("orgq",{g:ORGTAB}); };
   view.querySelector("#orp").onclick=function(){ if(ORGTAB>0){ORGTAB--;ORGSEL=null;vOrgs();window.scrollTo(0,0);} };
   view.querySelector("#orn").onclick=function(){ if(ORGTAB<ORGMAP.length-1){ORGTAB++;ORGSEL=null;vOrgs();window.scrollTo(0,0);} };
   Array.prototype.forEach.call(view.querySelectorAll(".orgsvg .og"),function(el){
@@ -7366,6 +7453,144 @@ function vOrgs(a){
     el.addEventListener("click",pick);
     el.addEventListener("keydown",function(ev){ if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();pick();} });
   });
+}
+
+/* ── 계보 빈칸 채우기 ──
+   계보도의 단체 칸을 가리고, 위에서 아래로(화살표 흐름대로) 하나씩 이름을 친다. 사건 칸 · 화살표 글은 남겨 두는 실마리.
+   칸 아래 작은 글씨(이끈 사람 · 해)는 단서로 보여 준다. 틀리면 칸에 정답이 빨갛게 뜨고, 한 번 따라 쓰면 다음 칸 */
+var OQ_SKIP={"gov:tn":1,"mass:ym":1,"mass:ys":1,"mass:ds":1};
+var OQ=null, OQTAB=0;
+function oqCells(gi){ var g=ORGMAP[gi], N=orgNodes(g);
+  return Object.keys(N).filter(function(k){ var n=N[k]; return (n.kind==="o"||n.kind==="g")&&!OQ_SKIP[g.id+":"+k]; })
+    .sort(function(a,b){ return N[a].row-N[b].row||N[a].col-N[b].col; }); }
+function oqBox(gi,k){ var v=(S.gbox||{})[ORGMAP[gi].id+":"+k]; return v==null?-1:v; }
+function oqStart(gi,mode,keys){
+  var all=oqCells(gi), N=orgNodes(ORGMAP[gi]), pick;
+  if(keys)pick=keys.slice();
+  else if(mode==="all")pick=all.slice();
+  else { var n=Math.max(3,Math.ceil(all.length*0.4));
+    pick=all.map(function(k){ var b=oqBox(gi,k); return {k:k,w:(b===0?0:b<0?1:b+1)+Math.random()*0.9}; })
+      .sort(function(a,b){return a.w-b.w;}).slice(0,n).map(function(o){return o.k;}); }
+  pick.sort(function(a,b){ return N[a].row-N[b].row||N[a].col-N[b].col; });
+  var cov={}; pick.forEach(function(k){cov[k]=1;});
+  OQ={gi:gi,mode:keys?"miss":mode,keys:pick,i:0,cov:cov,ok:{},no:{},first:0,tries:0,hint:0,ph:"ask",done:false};
+}
+function oqUnit(n){ var x=orgName(n); if(x)return x.u; var l=n.lid&&LMAP[n.lid]; return l?l.u:null; }
+function vOrgQ(a){
+  titleEl.textContent="계보 빈칸 채우기";
+  if(a&&a.g!=null){ OQTAB=a.g; a.g=null; OQ=null; }
+  if(!OQ||OQ.gi!==OQTAB)oqStart(OQTAB,"some");
+  var g=ORGMAP[OQTAB], best=(S.gq||{})[g.id];
+  var h='<p class="note" style="margin-bottom:10px">계보도의 단체 칸을 가렸어. <b>빨간 칸</b>부터 위에서 아래로, 화살표를 따라가며 이름을 직접 쳐. '+
+      '칸 아래 작은 글씨는 단서야.</p>'+
+    '<div class="chips strip orgtabs" style="margin-bottom:10px">'+ORGMAP.map(function(x,i){
+      var b=(S.gq||{})[x.id];
+      return '<button class="chip'+(i===OQTAB?" on":"")+'" data-oq="'+i+'">'+(i+1)+' '+esc(x.s)+(b&&b.full?' ✓':'')+'</button>';}).join("")+'</div>'+
+    '<div class="tlbar"><button class="chip'+(OQ.mode==="some"?" on":"")+'" id="oqs">조금 가리기</button>'+
+      '<button class="chip'+(OQ.mode==="all"?" on":"")+'" id="oqa">전부 가리기</button>'+
+      '<span class="cnt">'+(best?'전부 가리기 최고 '+best.best+' / '+best.n:oqCells(OQTAB).length+'칸')+'</span></div>'+
+    '<figure class="orgfig"><div class="eyebrow">'+(OQTAB+1)+'. '+esc(g.t)+'</div><div id="oqfig"></div></figure>'+
+    '<div id="oqend"></div>'+
+    '<div class="oqbar" id="oqbar"><div id="oqmsg"></div><div class="oqask" id="oqask"></div>'+
+      '<form class="tyf" id="oqform" autocomplete="off" style="margin-top:6px">'+
+      '<input class="tyin" id="oqin" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">'+
+      '<button class="cta" type="submit">확인</button></form>'+
+      '<div class="tyrow"><button class="nskip" type="button" id="oqhint">힌트</button>'+
+      '<button class="nskip" type="button" id="oqskip">모르겠어</button></div></div>';
+  view.innerHTML=h;
+  Array.prototype.forEach.call(view.querySelectorAll("[data-oq]"),function(b){b.onclick=function(){OQTAB=+b.dataset.oq;OQ=null;vOrgQ();window.scrollTo(0,0);};});
+  view.querySelector("#oqs").onclick=function(){oqStart(OQTAB,"some");vOrgQ();};
+  view.querySelector("#oqa").onclick=function(){oqStart(OQTAB,"all");vOrgQ();};
+  var inp=view.querySelector("#oqin");
+  view.querySelector("#oqform").onsubmit=function(e){ e.preventDefault(); oqSubmit(inp.value); };
+  view.querySelector("#oqhint").onclick=function(){ if(OQ.ph!=="ask")return; OQ.hint=Math.min(2,OQ.hint+1); oqPaint(); inp.focus(); };
+  view.querySelector("#oqskip").onclick=function(){ if(OQ.ph!=="ask")return; oqWrong(null); inp.focus(); };
+  oqPaint(true);
+}
+function oqCur(){ return OQ.keys[OQ.i]; }
+function oqPaint(first){
+  var g=ORGMAP[OQ.gi], N=orgNodes(g), k=oqCur(), inp=view.querySelector("#oqin");
+  view.querySelector("#oqfig").innerHTML=orgSVG(g,OQ.gi,{cov:OQ.cov,cur:OQ.done?null:k,ok:OQ.ok,no:OQ.no});
+  if(OQ.done)return oqEnd();
+  var n=N[k];
+  view.querySelector("#oqask").innerHTML='<b>'+(OQ.i+1)+' / '+OQ.keys.length+'</b> · 빨간 칸의 '+(n.kind==="g"?"정부":"단체")+' 이름은?'+
+    (OQ.hint&&OQ.ph==="ask"?' <span class="tyhint oqh">'+esc(tHint(n.plain,OQ.hint))+' <small>('+n.plain.replace(/\s/g,"").length+'글자)</small></span>':'');
+  inp.placeholder=OQ.ph==="copy"?"정답을 똑같이 한 번 써 봐":"이름을 써 봐";
+  var hb=view.querySelector("#oqhint"); hb.disabled=OQ.ph!=="ask"||OQ.hint>=2; hb.textContent=OQ.hint?"힌트 더 (첫 글자)":"힌트 (초성)";
+  view.querySelector("#oqskip").disabled=OQ.ph!=="ask";
+  oqScroll();
+}
+/* 지금 칸을 입력줄 위 보이는 곳 한가운데로. 입력줄이 화면 아래에 붙어 있어서 scrollIntoView 가운데로는 가려진다 */
+function oqScroll(){
+  var el=view.querySelector("#oqfig .og.q-cur"), bar=view.querySelector("#oqbar"); if(!el||!bar)return;
+  var r=el.getBoundingClientRect(), top=64, bot=bar.getBoundingClientRect().top;
+  if(bot<top+80)bot=window.innerHeight*0.6;
+  window.scrollBy(0, r.top+r.height/2-(top+(bot-top)/2));
+}
+function oqMsg(cls,mark,body){ view.querySelector("#oqmsg").innerHTML=body?'<div class="fb '+cls+'"><span class="m">'+mark+'</span><span>'+body+'</span></div>':''; oqScroll(); }
+function oqNext(){
+  OQ.i++; OQ.tries=0; OQ.hint=0; OQ.ph="ask"; oqMsg();
+  var inp=view.querySelector("#oqin"); inp.value=""; inp.disabled=false;
+  if(OQ.i>=OQ.keys.length)OQ.done=true;
+  oqPaint(); if(!OQ.done)inp.focus();
+}
+function oqSubmit(v){
+  if(!OQ||OQ.done)return;
+  var g=ORGMAP[OQ.gi], k=oqCur(), n=orgNodes(g)[k], a=tNorm(n.plain), me=tNorm(v), inp=view.querySelector("#oqin");
+  if(!me){ inp.focus(); return; }
+  if(OQ.ph==="copy"){
+    if(me===a){ OQ.ph="wait"; inp.disabled=true; oqMsg("ok","✎","좋아, 다음 칸.");
+      var o1=OQ; setTimeout(function(){ if(OQ===o1&&stack[stack.length-1].n==="orgq")oqNext(); },600); }
+    else { buzz([20,40,20]); inp.select(); oqMsg("no","✎","글자가 달라. 정답: <b>"+esc(n.plain)+"</b> — 그대로 한 번 더."); }
+    return;
+  }
+  if(OQ.ph!=="ask")return;
+  if(me===a){
+    var clean=!OQ.tries&&!OQ.hint;
+    OQ.ok[k]=1; if(clean)OQ.first++;
+    if(!S.gbox)S.gbox={};
+    var id=g.id+":"+k; S.gbox[id]=clean?Math.min(5,Math.max(0,oqBox(OQ.gi,k))+1):Math.max(0,oqBox(OQ.gi,k));
+    uHit(oqUnit(n),true); markDay(); buzz(14); save();
+    OQ.ph="wait"; inp.disabled=true;
+    oqMsg("ok","○","<b>"+esc(n.plain)+"</b>"+(clean?"":' <small class="nskd">'+(OQ.hint?"힌트 써서":"두 번째에")+' 맞힘</small>'));
+    oqPaint();
+    var o2=OQ; setTimeout(function(){ if(OQ===o2&&stack[stack.length-1].n==="orgq")oqNext(); },clean?550:1000);
+    return;
+  }
+  if(!OQ.tries&&tNear(me,a)){ OQ.tries=1; buzz(10); inp.select(); oqMsg("mid","≈","거의 맞았어! 한 글자쯤 달라. 한 번 더."); return; }
+  oqWrong(v);
+}
+function oqWrong(v){
+  var g=ORGMAP[OQ.gi], k=oqCur(), n=orgNodes(g)[k], x=orgName(n), inp=view.querySelector("#oqin");
+  OQ.no[k]=1; if(!S.gbox)S.gbox={}; S.gbox[g.id+":"+k]=0;
+  uHit(oqUnit(n),false); markDay(); buzz([20,40,20]); save();
+  OQ.ph="copy"; inp.value=""; inp.disabled=false;
+  oqPaint();
+  oqMsg("no",v==null?"→":"×",(v!=null?'내가 쓴 것: <s>'+esc(v)+'</s><br>':'')+'정답: <b class="tyans">'+esc(n.plain)+'</b>'+
+    ((x&&x.e)||n.d?'<br>'+esc(x?x.e:n.d):'')+'<br><small class="nskd">한 번 똑같이 써 보면 다음 칸으로 가.</small>');
+  inp.focus();
+}
+function oqEnd(){
+  var g=ORGMAP[OQ.gi], N=orgNodes(g), m=OQ.keys.length, miss=OQ.keys.filter(function(k){return OQ.no[k];});
+  if(OQ.mode==="all"){ if(!S.gq)S.gq={}; var b=S.gq[g.id]||{best:0,n:m};
+    if(OQ.first>=b.best){ b.best=OQ.first; b.n=m; } b.full=b.full||OQ.first===m; S.gq[g.id]=b; save(); }
+  view.querySelector("#oqbar").remove();
+  var h='<div class="card oqres"><div class="big">'+OQ.first+' / '+m+'</div><div class="sub">힌트 없이 한 번에 쓴 칸'+
+      (OQ.mode==="all"?'':' · 「전부 가리기」로 하면 최고 점수가 남아')+'</div></div>';
+  if(miss.length)h+='<div class="part">틀린 칸 — 화살표 앞뒤와 같이 외우자</div>'+miss.map(function(k){
+    var n=N[k], x=orgName(n), from=g.e.filter(function(e){return e[1]===k;}).map(function(e){return N[e[0]].plain;}),
+        to=g.e.filter(function(e){return e[0]===k;}).map(function(e){return N[e[1]].plain;});
+    return '<div class="wcard"><div class="wq"><b>'+esc(n.plain)+'</b>'+(n.sub?' <small class="nk">'+esc(n.sub)+'</small>':'')+'</div>'+
+      '<div class="wex">'+(from.length?esc(from.join(" · "))+' → ':'')+'<b>'+esc(n.plain)+'</b>'+(to.length?' → '+esc(to.join(" · ")):'')+
+      ((x&&x.e)||n.d?'<br>'+esc(x?x.e:n.d):'')+'</div></div>';}).join("");
+  h+='<div class="sticky"><div class="row">'+
+    (miss.length?'<button class="cta ghost" id="oqmiss">틀린 칸만 다시</button>':'<button class="cta ghost" id="oqall2">전부 가리고 다시</button>')+
+    (OQ.gi<ORGMAP.length-1?'<button class="cta" id="oqnx">다음 그림</button>':'<button class="cta" id="oqall3">전부 가리고 다시</button>')+'</div></div>';
+  view.querySelector("#oqend").innerHTML=h;
+  var gi=OQ.gi;
+  var b1=view.querySelector("#oqmiss"); if(b1)b1.onclick=function(){ oqStart(gi,"some",miss); vOrgQ(); };
+  ["#oqall2","#oqall3"].forEach(function(s){ var b=view.querySelector(s); if(b)b.onclick=function(){ oqStart(gi,"all"); vOrgQ(); }; });
+  var b3=view.querySelector("#oqnx"); if(b3)b3.onclick=function(){ OQTAB=gi+1; oqStart(OQTAB,"all"); vOrgQ(); window.scrollTo(0,0); };
 }
 
 /* ── 단원별 기록 · 약점 리포트 · 한 장 요약 ── */
@@ -7536,7 +7761,7 @@ function nextBtnW(label,fn){
 }
 VIEWS={home:vHome,lesson:vLesson,review:vReview,wrong:vWrong,wquiz:vWQuiz,due:vDue,find:vFind,
        exam:vExamPick,examRun:vExamRun,examResult:vExamResult,
-       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,type:vType,trun:vTRun,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet,orgs:vOrgs,chron:vChron,pairs:vPairs,pairq:vPairQ};
+       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,type:vType,trun:vTRun,orgq:vOrgQ,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet,orgs:vOrgs,chron:vChron,pairs:vPairs,pairq:vPairQ};
 load(); e2init(); save();
 /* 킵 버튼은 어느 화면에 있든 view 한곳에서 받는다 */
 view.addEventListener("click",function(e){
@@ -7594,7 +7819,7 @@ render();
   var PATH={home:"/HOME",lesson:"/LESSON",review:"/REVIEW",wrong:"/WRONG",
             due:"/REVIEW/DUE",find:"/FIND",
             wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT",
-            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",type:"/NAMES/TYPE",trun:"/NAMES/TYPE/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET",orgs:"/ORGS",chron:"/CHRON",pairs:"/PAIRS",pairq:"/PAIRS/QUIZ"};
+            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",type:"/NAMES/TYPE",trun:"/NAMES/TYPE/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET",orgs:"/ORGS",orgq:"/ORGS/QUIZ",chron:"/CHRON",pairs:"/PAIRS",pairq:"/PAIRS/QUIZ"};
 
   var dockEl=document.getElementById("Ldock");
   function paintDock(){
