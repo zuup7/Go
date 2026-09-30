@@ -689,6 +689,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;fon
   background:var(--yel);border:var(--bd) solid var(--ink);padding:9px 11px;color:var(--ink)}
 .chq .tip{font-size:12.5px;color:var(--ink-3);margin-top:8px}
 .chnext{margin:14px 0 6px}
+/* 헷갈리는 짝 모음 */
+.pcard{margin-bottom:12px;content-visibility:auto;contain-intrinsic-size:auto 320px}
+.pcard .cmp .pce,.pcard .cmp3 .pce{font-size:12.5px;color:var(--ink);margin-top:6px;font-weight:700}
+.cmp3{margin-top:13px;border:var(--bd) solid var(--ink)}
+.cmp3>.pc{background:var(--cream);padding:11px;min-width:0;overflow-wrap:anywhere}
+.cmp3>.pc+.pc{border-top:var(--bd) solid var(--ink)}
+.cmp3 h4{font-family:var(--f-h);font-size:15px;margin-bottom:6px;line-height:1.45;color:var(--blue-d)}
+.cmp3 li{list-style:none;font-size:13px;line-height:1.6;color:var(--ink-2);padding-left:11px;position:relative}
+.cmp3 li::before{content:"";position:absolute;left:0;top:8px;width:5px;height:5px;background:var(--ink-3)}
+.cmp3 li b{background:var(--yel);color:var(--ink);padding:0 3px}
+.ptip{margin-top:10px;font-size:13.5px;line-height:1.7;background:#FFF3C4;border:2px solid var(--ink);padding:8px 10px}
+.ptip b{font-size:12px;background:var(--ink);color:var(--cream);padding:1px 6px;margin-right:4px}
+.pcard .peekbtn{margin-top:10px}
+.pql b{background:var(--yel);padding:0 3px}
 .chs .card{animation:none}
 .chnav .chip{min-height:36px;padding:0 11px;font-size:13px}
 .chnav .tlbar{gap:8px}
@@ -2234,6 +2248,9 @@ function vHome(){
       '<span class="ch">'+IC.chev+'</span></button>'+
       '<button class="exbar wkbar2" id="goSheet" style="margin-top:9px"><span class="ic">'+IC.paper+'</span>'+
       '<span class="tx"><b>시험 전날 한 장 요약</b><small>선생님 밑줄 · 교과서와 다른 점 · 내가 킵하고 틀린 것 · 흐름 '+FLOWS.length+'개</small></span>'+
+      '<span class="ch">'+IC.chev+'</span></button>'+
+      '<button class="exbar wkbar2" id="goPairs" style="margin-top:9px"><span class="ic">⇄</span>'+
+      '<span class="tx"><b>헷갈리는 짝 모음</b><small>이름 함정 · 같은 시기 비교 '+pairsAll().length+'쌍 · 「어느 쪽?」 연습</small></span>'+
       '<span class="ch">'+IC.chev+'</span></button>'; })()+
     '<button class="exbar nbar" id="goNames" style="margin-top:9px"><span class="ic">'+IC.book+'</span>'+
     '<span class="tx"><b>인물·단체 카드</b><small>'+(S.nrun&&S.nrun.q&&S.nrun.q.length?'이어서 풀기 · 남은 '+S.nrun.q.length+'장 · ':'')+
@@ -2265,6 +2282,8 @@ function vHome(){
   if(gd)gd.onclick=function(){RV=null;go("due");};
   var go2=document.getElementById("goOrd");
   if(go2)go2.onclick=function(){go("ord");};
+  var gpr=document.getElementById("goPairs");
+  if(gpr)gpr.onclick=function(){go("pairs");};
   var gch=document.getElementById("goChron");
   if(gch)gch.onclick=function(){go("chron",{ch:S.chron&&S.chron.ch>0?S.chron.ch:null});};
   var gog=document.getElementById("goOrgs");
@@ -5485,6 +5504,139 @@ function vOStack(){
   Array.prototype.forEach.call(view.querySelectorAll("[data-b]"),function(b){b.onclick=function(){oStartBlockOrder(+b.dataset.b);};});
 }
 
+/* ══════════ 헷갈리는 짝 모음 ══════════
+   시험 전날용. 교과서로 이미 확인한 자료만 모은다 —
+   ① 이름이 비슷한 함정: 인물·단체 카드(NAMES) 단서를 칸에 그대로 넣고, 그 단서 안의 사실로만 한 줄 구별 포인트를 단다
+   ② 같은 시기 비슷한 일: 수업의 비교 카드 + 연표 스프린트의 「헷갈리는 짝」(PCMP_IDX, index.html COMPARE 에서 Ⅰ단원만 그대로 옮김).
+      같은 두 이름이면 줄이 많은 쪽 하나만 */
+var PTRAP=[
+ {t:"'대한'이냐 '한국'이냐 — 독립군",n:["대한 독립군","한국 독립군"],tip:"대한 독립군 = 홍범도 · 봉오동 / 한국 독립군 = 지청천 · 쌍성보 · 대전자령"},
+ {t:"'광복' 세 개",n:["대한 광복회","대한 광복군 정부","한국광복군"],tip:"광복회 = 국내 비밀 결사(박상진) · 광복군 정부 = 연해주(이상설 · 이동휘) · 한국광복군 = 충칭 임시 정부의 군대(지청천)"},
+ {t:"의용대냐 의용군이냐",n:["조선 의용대","조선 의용군"],tip:"조선 의용대(우한)가 먼저 — 그 화북 지대를 개편한 것이 조선 의용군(조선 독립 동맹)"},
+ {t:"신민회 · 신민부",n:["신민회","신민부"],tip:"신민회 = 삼원보 독립운동 기지(이회영 · 이상룡) / 신민부 = 3부 가운데 북만주"},
+ {t:"3부는 어디에?",n:["참의부","정의부","신민부"],tip:"참의부 = 남만주 · 정의부 = 지린성 일대 · 신민부 = 북만주(자유시에서 돌아온 독립군)"},
+ {t:"3부 통합 뒤 남과 북",n:["국민부","혁신 의회"],tip:"남만주 국민부 → 조선 혁명당 · 조선 혁명군 / 북만주 혁신 의회 → 한국 독립당 · 한국 독립군"},
+ {t:"'국민' 세 개",n:["대한인 국민회","대한 국민 의회","국민부"],tip:"대한인 국민회 = 미주(안창호) · 대한 국민 의회 = 연해주 임시 정부 · 국민부 = 3부 통합 뒤 남만주"},
+ {t:"연구회냐 학회냐",n:["조선어 연구회","조선어 학회"],tip:"연구회 = 가갸날 · 『한글』 → 학회 = 맞춤법 통일안 · 큰사전 · 1942년 사건"},
+ {t:"'조선 청년' 두 개",n:["조선 청년 독립단","조선 청년 총동맹"],tip:"독립단 = 도쿄 유학생의 2·8 독립 선언 / 총동맹 = 청년 운동을 하나로 묶은 조직(1924)"},
+ {t:"소년 운동 두 단체",n:["천도교 소년회","조선 소년 연합회"],tip:"천도교 소년회 = 방정환 · 어린이날 / 조선 소년 연합회 = 전국 조직(1927)"},
+ {t:"중일 전쟁 뒤 두 연합체",n:["한국 광복 운동 단체 연합회","조선 민족 전선 연맹"],tip:"연합회 = 한국 국민당 중심(김구 진영) / 연맹 = 민족 혁명당 중심(김원봉 진영) → 이듬해 조선 의용대"},
+ {t:"의열단 · 의민단",n:["의열단","의민단"],tip:"의열단 = 김원봉 · 「조선 혁명 선언」 / 의민단 = 천주교 신자 중심의 국외 무장 단체"}
+];
+var PCMP_IDX=[{"u": "s2", "t": "무단 통치 vs 문화 정치", "a": {"n": "무단 통치 (1910년대)", "p": ["<b>헌병 경찰</b>제 · 즉결 심판권", "<b>조선 태형령</b> (조선인에 한하여)", "관리·교사도 제복에 칼 착용", "<b>토지 조사 사업</b> · <b>회사령(허가제)</b>"]}, "b": {"n": "문화 정치 (1920년대)", "p": ["<b>보통 경찰</b>제 — 인원·관서는 오히려 증가", "문관 총독 <b>단 한 명도</b> 임명 안 됨", "신문 허용하되 <b>사전 검열</b>·정간·폐간", "<b>산미 증식 계획</b> · 회사령 폐지(신고제)"]}}, {"u": "s4", "t": "문화 정치 vs 민족 말살 통치", "a": {"n": "문화 정치 (1920년대)", "p": ["목적: <b>민족 분열</b>, 친일파 양성", "치안 유지법(1925)", "도 평의회·부·면 협의회 (자문 기구)", "경제: 쌀 수탈 중심"]}, "b": {"n": "민족 말살 통치 (1930년대~)", "p": ["목적: <b>전쟁 동원</b>, 민족의식 말살", "내선일체·일선동조론, 황국 신민 서사", "창씨개명 · 신사 참배 · 국민학교", "경제: <b>병참 기지화</b> · 국가 총동원법"]}}, {"u": "s5", "t": "독립 의군부 vs 대한 광복회", "a": {"n": "독립 의군부 (1912)", "p": ["<b>임병찬</b> 등 의병장 출신", "<b>고종의 밀명</b>을 받아 조직", "지향: <b>복벽주의</b> (고종 복위)", "일제에 국권 반환 요구서 발송 시도"]}, "b": {"n": "대한 광복회 (1915)", "p": ["<b>박상진</b> 등이 주축", "군자금 모금 · 친일파 처단", "지향: <b>공화주의</b> (민주 공화제)", "만주에 무관 학교 설립 추진"]}}, {"u": "s5", "t": "1910년대 독립운동 기지 — 어디에 뭐가?", "a": {"n": "서간도 · 북간도", "p": ["<b>서간도(삼원보)</b>: 경학사 → 부민단", "신흥 강습소 → <b>신흥 무관 학교</b>", "<b>북간도</b>: 간민회, 명동 학교", "<b>중광단</b>(대종교) → 북로 군정서"]}, "b": {"n": "연해주 · 미주 · 상하이", "p": ["<b>연해주(신한촌)</b>: 권업회", "→ 대한 광복군 정부(이상설·이동휘)", "<b>미주</b>: 대한인 국민회(안창호)", "하와이: 대조선 국민군단(박용만)", "<b>상하이</b>: 동제사 → 신한청년당"]}}, {"u": "s6", "t": "3·1 운동 vs 6·10 만세 운동", "a": {"n": "3·1 운동 (1919)", "p": ["계기: <b>고종</b> 서거, 2·8 독립 선언", "민족 대표는 <b>태화관</b>, 시민은 <b>탑골 공원</b>", "제암리 학살 → 무력 투쟁으로 발전", "결과: <b>임시 정부 수립</b>, 문화 정치로 전환"]}, "b": {"n": "6·10 만세 운동 (1926)", "p": ["계기: <b>순종</b>의 장례일", "준비 과정에서 좌우가 협력", "→ <b>민족 유일당 운동</b>의 계기", "→ 신간회 창립(1927)으로 이어짐"]}}, {"u": "s7", "t": "연통제 vs 교통국", "a": {"n": "연통제", "p": ["국내에 둔 <b>비밀 행정</b> 조직", "군자금 조달", "정부의 문서와 명령 전달"]}, "b": {"n": "교통국", "p": ["<b>통신</b> 기관", "정보 수집과 분석, 자금 모집", "<b>이륭 양행</b>의 안동 교통국이 대활약"]}}, {"u": "s7", "t": "개조파 vs 창조파 (국민 대표 회의, 1923)", "a": {"n": "개조파", "p": ["임시 정부는 <b>민족의 대표 기관</b>", "3·1 운동의 열망으로 출범했으니 정통성 인정", "문제가 있다면 <b>조직과 체제를 개선</b>", "→ 임시 정부를 고쳐 쓰자"]}, "b": {"n": "창조파", "p": ["상하이 임시 정부의 <b>계통을 이을 이유 없다</b>", "실제 독립운동에 적합한 <b>새 조직</b> 필요", "→ 임시 정부를 <b>새로 만들자</b>", "결과: 대립 끝에 회의 <b>결렬</b>"]}}, {"u": "s8", "t": "봉오동 전투 vs 청산리 대첩", "a": {"n": "봉오동 전투 (1920. 6.)", "p": ["<b>홍범도</b>의 대한 독립군", "+ 안무의 국민회군, <b>최진동</b>의 군무 도독부군", "일본군을 <b>골짜기로 유인</b>해 기습", "→ 이에 일제가 훈춘 사건을 조작"]}, "b": {"n": "청산리 대첩 (1920. 10.)", "p": ["<b>김좌진</b>의 북로 군정서 + 홍범도", "<b>백운평</b>·완루구·어랑촌·고동하 등 10여 차례", "독립 전쟁사 최대의 승리", "→ 보복으로 <b>간도 참변</b>"]}}, {"u": "s8", "t": "간도 참변 vs 자유시 참변", "a": {"n": "간도 참변 (1920)", "p": ["가해자: <b>일본군</b>", "구실: 독립군의 <b>근거지</b>를 없앤다", "3~4개월간 한인 마을 방화·학살", "청산리 대첩에 대한 <b>보복</b>"]}, "b": {"n": "자유시 참변 (1921)", "p": ["가해자: 러시아 <b>적군</b>", "배경: 밀산 집결 → 자유시 이동", "원인: <b>지휘권</b>을 둘러싼 내부 분쟁", "무장 해제 과정에서 다수 희생"]}}, {"u": "s8", "t": "조선 혁명군 vs 한국 독립군", "a": {"n": "조선 혁명군", "p": ["총사령관: <b>양세봉</b>", "모체: <b>국민부</b> → 조선 혁명당", "활동: <b>남만주</b>", "전투: <b>영릉가</b>(1932) · <b>흥경성</b>(1933)"]}, "b": {"n": "한국 독립군", "p": ["총사령관: <b>지청천</b>", "모체: <b>혁신 의회</b> → 한국 독립당", "활동: <b>북만주</b>", "전투: <b>쌍성보</b>(1932) · 동경성 · <b>대전자령</b>(1933)"]}}, {"u": "s9", "t": "의열단 vs 한인 애국단", "a": {"n": "의열단 (1919)", "p": ["조직: <b>김원봉</b>·윤세주, 만주 <b>지린</b>", "지침: 신채호의 <b>「조선 혁명 선언」</b>", "김익상(총독부)·김상옥(종로 경찰서)·나석주(동척)", "뒤에 <b>황푸 군관 학교</b> 입교 → 조직적 무장 투쟁"]}, "b": {"n": "한인 애국단 (1931)", "p": ["조직: <b>김구</b>, 상하이", "목적: 침체된 <b>임시 정부</b>에 활기", "<b>이봉창</b>(도쿄 일왕 마차)", "<b>윤봉길</b>(훙커우 공원) → 중국 국민당의 지원"]}}, {"u": "s10", "t": "물산 장려 운동 vs 민립 대학 설립 운동", "a": {"n": "물산 장려 운동", "p": ["<b>조만식</b>, 평양에서 시작", "'내 살림 내 것으로', '조선 사람 조선 것'", "토산품 애용·근검저축·<b>금주·단연</b>", "한계: 값 폭등, <b>자본가 계급</b>의 이익만 좇는다는 비판"]}, "b": {"n": "민립 대학 설립 운동", "p": ["<b>이상재</b>·이승훈 — 조선 민립 대학 기성회", "'교육이 아니면 아니 된다' — 대학을 세우자", "<b>1천만 원</b> 전국 모금", "한계: 자연재해, 일제가 <b>정치 운동</b>이라며 탄압"]}}, {"u": "s10", "t": "문자 보급 운동 vs 브나로드 운동", "a": {"n": "문자 보급 운동 (1929)", "p": ["<b>『조선일보』</b>", "구호: '아는 것이 힘, 배워야 산다'", "한글 교재 보급", "전국 순회강연"]}, "b": {"n": "브나로드 운동 (1931)", "p": ["<b>『동아일보』</b>", "뜻: 러시아어로 '<b>민중 속으로</b>'", "학생·청년이 농촌을 찾아감", "미신 타파·근검절약 계몽"]}}, {"u": "s11", "t": "암태도 소작 쟁의 vs 원산 총파업", "a": {"n": "암태도 소작 쟁의 (1923)", "p": ["<b>농민</b>의 싸움", "고율 <b>소작료</b>를 걷는 지주에 맞섬", "1년여 투쟁 — 목포 법원까지", "결과: <b>소작료 인하</b>"]}, "b": {"n": "원산 총파업 (1929)", "p": ["<b>노동자</b>의 싸움", "계기: 일본인 감독의 한국인 노동자 <b>구타</b>", "<b>4개월여</b> 지속, 국내외 단체 지원", "일제 강점기 <b>최대 규모</b> 노동 운동"]}}, {"u": "s12", "t": "6·10 만세 운동 vs 광주 학생 항일 운동", "a": {"n": "6·10 만세 운동 (1926)", "p": ["계기: <b>순종</b>의 장례일", "사회주의 계열·천도교가 준비 → 사전 발각", "학생들이 격문·만세", "의의: 민족 협동 전선의 <b>공감대</b>"]}, "b": {"n": "광주 학생 항일 운동 (1929)", "p": ["계기: <b>나주역</b> 한·일 학생 충돌", "<b>독서회</b>를 통해 확산", "<b>신간회</b>가 진상 조사단 파견", "3·1 운동 이후 <b>최대 규모</b> 항일 운동"]}}, {"u": "s13", "t": "신민회 vs 신간회", "a": {"n": "신민회 (1907)", "p": ["안창호·양기탁, <b>비밀 결사</b>", "대성 학교·오산 학교", "국외 <b>독립운동 기지</b> (삼원보)", "105인 사건으로 해체"]}, "b": {"n": "신간회 (1927)", "p": ["<b>합법</b> 단체, 일제 강점기 최대 규모", "비타협적 민족주의 + 사회주의", "약 <b>140개</b> 지회, 4만여 명", "<b>광주 학생</b> 항일 운동 진상 조사단"]}}, {"u": "s16", "t": "민족주의 사학 vs 사회 경제 사학", "a": {"n": "민족주의 사학", "p": ["<b>박은식</b>·<b>신채호</b>", "<b>민족정신</b>을 바로 세우면 독립할 수 있다", "『한국통사』, 『조선상고사』", "정인보의 <b>조선학 운동</b>으로 이어짐"]}, "b": {"n": "사회 경제 사학", "p": ["<b>백남운</b>", "마르크스의 <b>유물 사관</b>", "『조선사회경제사』", "한국사도 <b>보편적인 발전 법칙</b> → 정체성론 반박"]}}, {"u": "s16", "t": "박은식 vs 신채호", "a": {"n": "박은식", "p": ["'조선 <b>국혼</b>' 강조", "<b>『한국통사』</b> — 일제의 침략 과정", "<b>『한국독립운동지혈사』</b>", "민족주의 사학"]}, "b": {"n": "신채호", "p": ["<b>고대사</b> 연구에 주력", "<b>『조선상고사』</b>, 『조선사연구초』", "의열단 <b>「조선 혁명 선언」</b> 작성", "민족주의 사학"]}}, {"u": "s17", "t": "민족 혁명당 vs 한국 국민당", "a": {"n": "민족 혁명당 (1935)", "p": ["<b>난징</b>, 여러 단체 통합", "중국 관내 최대 <b>통일 전선 정당</b>", "의열단 계열(<b>김원봉</b>)이 당권 장악", "조소앙·지청천 탈당 → 통일 전선 약화"]}, "b": {"n": "한국 국민당 (1935)", "p": ["<b>김구</b> 등 임시 정부 옹호 세력", "민족 혁명당에 참여하지 않음", "중일 전쟁 뒤 <b>한국 광복 운동 단체 연합회</b>의 중심", "→ 1940 한국 독립당으로"]}}, {"u": "s17", "t": "조선 의용대 vs 한국광복군", "a": {"n": "조선 의용대 (1938)", "p": ["<b>조선 민족 전선 연맹</b>(김원봉)", "<b>우한</b>에서 창설, 중국 관내 최초 한인 부대", "심리전·포로 심문·후방 공작", "다수는 <b>화북</b>(타이항산)으로 이동"]}, "b": {"n": "한국광복군 (1940)", "p": ["<b>대한민국 임시 정부</b>", "<b>충칭</b>, 총사령관 <b>지청천</b>", "미얀마·인도 전선 파견 (영국군 요청)", "미국 OSS와 <b>국내 진공 작전</b> 준비"]}}, {"u": "s18", "t": "조선 독립 동맹 vs 조선 건국 동맹", "a": {"n": "조선 독립 동맹 (1942)", "p": ["<b>화북</b> 지방(옌안)", "위원장 <b>김두봉</b>, 사회주의 세력 중심", "조선 의용대 화북 지대 → <b>조선 의용군</b>", "항일 무장 투쟁"]}, "b": {"n": "조선 건국 동맹 (1944)", "p": ["<b>국내</b>, 광복 1년여 앞두고", "<b>여운형</b> 주도", "민족주의·사회주의 계열 함께 참여한 <b>비밀 결사</b>", "중앙과 지방 조직, 일제 패망에 대비"]}}, {"u": "s18", "t": "카이로 선언 vs 포츠담 선언", "a": {"n": "카이로 선언 (1943. 12.)", "p": ["<b>미국·영국·중국</b>", "한국 독립을 <b>처음으로</b> 약속", "'<b>적절한 시기</b>에' 독립", "김구: 그 표현을 좋아하지 않는다"]}, "b": {"n": "포츠담 선언 (1945. 7.)", "p": ["미국·영국·중국 (+ 뒤에 <b>소련</b>)", "카이로 선언을 <b>재확인</b>", "일본의 <b>무조건 항복</b> 촉구", "미·영·중·소 4개국이 한국 독립을 재확인"]}}];
+var PAIRS_C=null;
+function pNorm(n){ return String(n).replace(/<[^>]+>/g,"").replace(/\s*\([^)]*\)\s*/g,"").trim(); }
+function pairsAll(){
+  if(PAIRS_C)return PAIRS_C;
+  var out=[], UO={}; UNITS.forEach(function(u,i){UO[u.id]=i;});
+  PTRAP.forEach(function(p){ var xs=p.n.map(function(n){return NAMES.filter(function(x){return x.n===n;})[0];});
+    if(xs.some(function(x){return !x;}))return;
+    out.push({kind:"trap",t:p.t,tip:p.tip,u:xs[0].u,lid:xs[0].l,
+      cols:xs.map(function(x){return {n:x.n,p:x.cl.slice(),e:x.e,lid:x.l};})}); });
+  var cmp={};
+  var add=function(o){ var key=o.cols.map(function(c){return pNorm(c.n);}).sort().join("|");
+    var len=function(v){return v.cols.reduce(function(s,c){return s+c.p.length;},0);};
+    if(!cmp[key]||len(o)>len(cmp[key])){ if(cmp[key]&&!o.lid)o.lid=cmp[key].lid; cmp[key]=o; }
+    else if(!cmp[key].lid)cmp[key].lid=o.lid; };
+  LESSONS.forEach(function(l){ l.cards.forEach(function(c,ci){ if(c.t==="compare")
+    add({kind:"cmp",t:c.title,u:l.u,lid:l.id,ci:ci,cols:[{n:c.l.n,p:c.l.p},{n:c.r.n,p:c.r.p}]}); }); });
+  PCMP_IDX.forEach(function(c){ var l=LESSONS.filter(function(x){return x.u===c.u;})[0];
+    add({kind:"cmp",t:c.t,u:c.u,lid:null,ul:l?l.id:null,cols:[{n:c.a.n,p:c.a.p},{n:c.b.n,p:c.b.p}]}); });
+  var cs=Object.keys(cmp).map(function(k){var o=cmp[k]; if(!o.lid)o.lid=o.ul||null; return o;});
+  cs.sort(function(a,b){return (UO[a.u]||0)-(UO[b.u]||0);});
+  PAIRS_C=out.concat(cs);
+  return PAIRS_C;
+}
+var PTAB="all", PHIDE={}, PQ=null;
+function pairCard(p,i,hide){
+  var cov=hide&&!PHIDE[i];
+  var cols=p.cols.map(function(c,j){
+    return '<div class="'+(p.cols.length===2?(j?"b":"a"):"pc")+'"><h4>'+c.n+'</h4>'+
+      (cov?'':'<ul>'+c.p.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ul>'+(c.e?'<p class="pce">→ '+esc(c.e)+'</p>':''))+'</div>'; }).join("");
+  return '<div class="card pcard" id="pc'+i+'"><div class="eyebrow">'+(p.kind==="trap"?"이름 함정":"비교")+' · '+esc(UMAP[p.u]?UMAP[p.u].n:"")+'</div>'+
+    '<div class="h sm">'+esc(p.t)+'</div>'+
+    '<div class="'+(p.cols.length===2?"cmp":"cmp3")+'">'+cols+'</div>'+
+    (cov?'<button class="peekbtn" data-po="'+i+'"><span>칸마다 무엇이었는지 떠올린 다음 눌러 봐</span></button>'
+       :(p.tip?'<div class="ptip"><b>구별 포인트</b> '+esc(p.tip)+'</div>':''))+
+    (p.lid&&LMAP[p.lid]?'<button class="prgo" data-pl="'+p.lid+'" data-pk="'+esc(pNorm(p.cols[0].n))+'">'+esc(LMAP[p.lid].title)+' 수업에서 보기 '+IC.chev+'</button>':'')+'</div>';
+}
+function vPairs(a){
+  titleEl.textContent="헷갈리는 짝 모음";
+  var all=pairsAll(), nt=all.filter(function(p){return p.kind==="trap";}).length, hide=!!S.pHide;
+  var list=all.map(function(p,i){return {p:p,i:i};}).filter(function(x){return PTAB==="all"||x.p.kind===PTAB;});
+  var h='<p class="note" style="margin-bottom:10px">시험에서 자주 섞는 짝만 모았어. <b>이름이 비슷한 함정</b> '+nt+'개와 '+
+      '<b>같은 시기 비슷한 일</b> '+(all.length-nt)+'개. 다 읽었으면 「어느 쪽? 연습」으로 바로 확인해 봐.</p>'+
+    '<button class="cta" id="pqgo" style="margin-bottom:12px">'+IC.play+' 어느 쪽? 연습 (20문제)</button>'+
+    '<div class="chips" style="margin-bottom:8px">'+[["all","전체 "+all.length],["trap","이름 함정 "+nt],["cmp","비교 "+(all.length-nt)]].map(function(t){
+      return '<button class="chip'+(PTAB===t[0]?" on":"")+'" data-pt="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>'+
+    '<div class="tlbar"><button class="chip'+(hide?" on":"")+'" id="phd">'+(hide?"내용 가리는 중":"내용 가리기")+'</button>'+
+      '<span class="cnt">'+list.length+'개</span></div>';
+  list.forEach(function(x){ h+=pairCard(x.p,x.i,hide); });
+  view.innerHTML=h;
+  Array.prototype.forEach.call(view.querySelectorAll("[data-pt]"),function(b){b.onclick=function(){PTAB=b.dataset.pt;vPairs();};});
+  view.querySelector("#phd").onclick=function(){ var sy=window.scrollY; S.pHide=!hide; PHIDE={}; save(); vPairs(); window.scrollTo(0,sy); };
+  view.querySelector("#pqgo").onclick=function(){ PQ=null; go("pairq"); };
+  Array.prototype.forEach.call(view.querySelectorAll("[data-po]"),function(b){b.onclick=function(){
+    var i=+b.dataset.po; PHIDE[i]=1; buzz(8); var el=document.getElementById("pc"+i), tmp=document.createElement("div");
+    tmp.innerHTML=pairCard(all[i],i,true); var nw=tmp.firstChild; nw.style.animation="none"; el.parentNode.replaceChild(nw,el); bindGo(nw); };});
+  var bindGo=function(root){ Array.prototype.forEach.call(root.querySelectorAll("[data-pl]"),function(b){b.onclick=function(){ jumpCard(b.dataset.pl,prFind(b.dataset.pl,b.dataset.pk)); };}); };
+  bindGo(view);
+  if(a&&a.to!=null){ var t=a.to; a.to=null; PTAB="all"; var el=document.getElementById("pc"+t); if(el)el.scrollIntoView({block:"start"}); }
+}
+/* 어느 쪽? — 짝의 한 줄을 보고 어느 칸인지 고른다. 칸 이름이 그대로 든 줄, 두 칸에 똑같이 있는 줄은 뺀다 */
+function pqLines(){
+  var out=[];
+  pairsAll().forEach(function(p,i){
+    var names=p.cols.map(function(c){return pNorm(c.n);});
+    p.cols.forEach(function(c,j){ c.p.forEach(function(line){
+      var tx=pNorm(line);
+      if(names.some(function(n){return n&&tx.indexOf(n)>=0;}))return;
+      if(p.cols.some(function(o,k){return k!==j&&o.p.some(function(x){return pNorm(x)===tx;});}))return;
+      out.push({i:i,c:j,line:line}); }); });
+  });
+  return out;
+}
+function vPairQ(){
+  titleEl.textContent="어느 쪽? 연습";
+  if(!PQ){ var L0=pqLines(); shuffleArr(L0); var seen={}, pick=[];
+    L0.forEach(function(x){ if(pick.length<20&&!seen[x.i]){seen[x.i]=1;pick.push(x);} });
+    L0.forEach(function(x){ if(pick.length<20&&pick.indexOf(x)<0)pick.push(x); });
+    PQ={q:pick,n:pick.length,ok1:0,miss:{},wr:[],done:false}; }
+  var all=pairsAll();
+  if(!PQ.q.length){
+    var h='<div class="done-hero"><div class="big">'+PQ.ok1+' / '+PQ.n+'</div><div class="sub">한 번에 맞힌 문제</div></div>';
+    if(PQ.wr.length)h+='<div class="part">틀렸던 짝 — 다시 읽고 가자</div>'+PQ.wr.map(function(i){
+      return '<button class="prgo" data-pto="'+i+'">'+esc(all[i].t)+' '+IC.chev+'</button>';}).join("<br>");
+    h+='<div class="sticky"><div class="row"><button class="cta ghost" id="pqb">짝 모음으로</button><button class="cta" id="pqa">한 판 더</button></div></div>';
+    view.innerHTML=h;
+    Array.prototype.forEach.call(view.querySelectorAll("[data-pto]"),function(b){b.onclick=function(){ if(stack.length>1){ stack.pop(); stack[stack.length-1].a={to:+b.dataset.pto}; render(); } };});
+    view.querySelector("#pqb").onclick=function(){back();};
+    view.querySelector("#pqa").onclick=function(){PQ=null;vPairQ();};
+    return;
+  }
+  var x=PQ.q[0], p=all[x.i], again=PQ.miss[x.i+":"+x.line]>0, fin=PQ.n-PQ.q.length;
+  var h='<div style="display:flex;align-items:center;gap:12px;padding:2px 0 16px"><span class="track"><i style="width:'+(fin/PQ.n*100)+'%"></i></span>'+
+      '<span class="step">남은 '+PQ.q.length+'</span></div>'+
+    '<div class="card"><div class="eyebrow">'+esc(p.t)+(again?' · 다시 나온 문제':'')+'</div>'+
+      '<div class="h sm pql">'+x.line+'</div><p class="note" style="margin-top:8px">이 설명은 어느 쪽일까?</p></div>'+
+    '<div style="margin-top:12px" id="opts">'+p.cols.map(function(c,j){
+      return '<button class="qopt" data-j="'+j+'"><span class="kx">'+"ABC".charAt(j)+'</span><span>'+esc(pNorm(c.n))+'</span></button>';}).join("")+'</div><div id="fb"></div>';
+  view.innerHTML=h; PQ.done=false;
+  Array.prototype.forEach.call(view.querySelectorAll("#opts .qopt"),function(b){b.onclick=function(){
+    if(PQ.done)return; PQ.done=true; var j=+b.dataset.j, ok=j===x.c, key=x.i+":"+x.line;
+    Array.prototype.forEach.call(view.querySelectorAll("#opts .qopt"),function(e,k){ e.disabled=true;
+      if(k===x.c)e.classList.add("ok"); else if(e===b)e.classList.add("no"); else e.classList.add("dim"); });
+    buzz(ok?14:[20,40,20]); markDay();
+    if(ok){ if(!PQ.miss[key])PQ.ok1++; PQ.q.shift(); pop(PQ.miss[key]?"이번엔 맞혔어!":"좋아!");
+      var tok=PQ.q[0]; setTimeout(function(){ if(stack[stack.length-1].n==="pairq"&&PQ&&PQ.q[0]===tok)vPairQ(); },700); return; }
+    PQ.miss[key]=(PQ.miss[key]||0)+1; if(PQ.wr.indexOf(x.i)<0)PQ.wr.push(x.i);
+    PQ.q.shift(); PQ.q.splice(Math.min(PQ.q.length,3+Math.floor(Math.random()*3)),0,x);
+    document.getElementById("fb").innerHTML='<div class="fb no"><span class="m">×</span><span><b>'+esc(pNorm(p.cols[x.c].n))+'</b> 쪽이야.'+
+      (p.tip?'<br>'+esc(p.tip):'')+'</span></div>';
+    view.insertAdjacentHTML("beforeend",nextBtnW("다음",function(){vPairQ();}));
+  };});
+}
+
 /* ══════════ 시간순 복습 ══════════
    첫 수업은 수업(단원) 차례로 짜여 있다. 여기서는 사실 카드 전부를 일어난 순서(timeline())대로 한 페이지에 늘어놓고,
    큰 묶음(BLOCKS) 여섯 개를 장으로 삼는다. 장마다 그 시기 수업의 암기 장치 · 비교 · 인과 사슬 · 확인 문제를 붙인다.
@@ -5985,9 +6137,11 @@ function vSheet(){
   var mine=kList().length+wList().length;
   var h='<p class="note" style="margin-bottom:10px">시험 전날 이것만 훑자. 프린트에서 선생님이 짚은 것, 교과서와 다른 점, '+
     '<b>내가 킵하거나 틀린 것</b>, 그리고 Ⅰ단원 흐름 전체를 한 장에 모았어.'+(mine?'':' 아직 킵하거나 틀린 게 없어서 그 칸은 비어 있어.')+'</p>'+
+    '<button class="prgo" id="shpairs" style="margin:-2px 0 10px">헷갈리는 짝만 따로 보려면 「헷갈리는 짝 모음」 '+IC.chev+'</button>'+
     '<div class="tlbar"><button class="chip" id="shp">인쇄하기</button><span class="cnt" id="shm"></span></div>'+
     '<div class="sheet">'+sheetHTML()+'</div>';
   view.innerHTML=h;
+  var shpr=view.querySelector("#shpairs"); if(shpr)shpr.onclick=function(){go("pairs");};
   view.querySelector("#shp").onclick=function(){
     var msg=view.querySelector("#shm");
     try{
@@ -6016,7 +6170,7 @@ function nextBtnW(label,fn){
 }
 VIEWS={home:vHome,lesson:vLesson,review:vReview,wrong:vWrong,wquiz:vWQuiz,due:vDue,find:vFind,
        exam:vExamPick,examRun:vExamRun,examResult:vExamResult,
-       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet,orgs:vOrgs,chron:vChron};
+       essay:vEssayPick,essayRun:vEssayRun,print:vPrint,names:vNames,nrun:vNRun,keep:vKeep,ord:vOrd,ordRun:vORun,ordStack:vOStack,weak:vWeak,sheet:vSheet,orgs:vOrgs,chron:vChron,pairs:vPairs,pairq:vPairQ};
 load(); e2init(); save();
 /* 킵 버튼은 어느 화면에 있든 view 한곳에서 받는다 */
 view.addEventListener("click",function(e){
@@ -6074,7 +6228,7 @@ render();
   var PATH={home:"/HOME",lesson:"/LESSON",review:"/REVIEW",wrong:"/WRONG",
             due:"/REVIEW/DUE",find:"/FIND",
             wquiz:"/WRONG/RETRY",exam:"/EXAM",examRun:"/EXAM/RUN",examResult:"/EXAM/RESULT",
-            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET",orgs:"/ORGS",chron:"/CHRON"};
+            essay:"/ESSAY",essayRun:"/ESSAY/RUN",print:"/PRINT",names:"/NAMES",nrun:"/NAMES/RUN",keep:"/KEEP",ord:"/FLOW",ordRun:"/FLOW/RUN",ordStack:"/FLOW/STACK",weak:"/WEAK",sheet:"/SHEET",orgs:"/ORGS",chron:"/CHRON",pairs:"/PAIRS",pairq:"/PAIRS/QUIZ"};
 
   var dockEl=document.getElementById("dock");
   function paintDock(){
